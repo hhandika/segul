@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, LineWriter};
+use std::io::{BufReader, LineWriter, Lines};
 use std::path::Path;
 
 pub fn parse_fasta_id(path: &str) {
@@ -14,7 +14,18 @@ pub fn parse_fasta_id(path: &str) {
     write_records(path, &mut records);
 }
 
-fn get_ids(path: &str) -> Vec<String> {
+pub fn parse_fasta<P: AsRef<Path>>(path: P) {
+    let file = File::open(path).expect("CANNOT OPEN THE FILE");
+    let buff = BufReader::new(file);
+
+    let fasta = FastaReader::new(buff);
+    fasta.into_iter().for_each(|fast| {
+        println!("{}", fast.ids);
+        println!("{}", fast.seq);
+    });
+}
+
+fn get_ids<P: AsRef<Path>>(path: P) -> Vec<String> {
     let file = File::open(path).expect("CANNOT OPEN THE FILE");
     let buff = BufReader::new(file);
     buff.lines()
@@ -77,5 +88,69 @@ impl IDs {
         if ids.len() > 3 {
             self.geography.push_str(&ids[3]);
         }
+    }
+}
+
+pub struct FastaReader<R> {
+    reader: Lines<BufReader<R>>,
+    pub id: Option<String>,
+    pub seq: String,
+}
+
+pub struct Fasta {
+    ids: String,
+    seq: String,
+}
+
+impl Fasta {
+    fn new() -> Self {
+        Self {
+            ids: String::new(),
+            seq: String::new(),
+        }
+    }
+}
+
+impl<R: Read> FastaReader<R> {
+    fn new(file: R) -> Self {
+        Self {
+            reader: BufReader::new(file).lines(),
+            id: None,
+            seq: String::new(),
+        }
+    }
+}
+
+impl<R: Read> Iterator for FastaReader<R> {
+    type Item = Fasta;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(Ok(line)) = self.reader.next() {
+            if line.starts_with('>') {
+                if self.id.is_some() {
+                    let mut res = Fasta::new();
+                    res.ids.push_str(&self.id.as_ref().unwrap());
+                    res.seq.push_str(&self.seq);
+                    self.id = Some(String::from(&line[1..]));
+                    self.seq.clear();
+                    return Some(res);
+                } else {
+                    self.id = Some(String::from(&line[1..]));
+                    self.seq.clear();
+                }
+                continue;
+            }
+            self.seq.push_str(line.trim());
+        }
+        if self.id.is_some() {
+            let mut res = Fasta::new();
+            res.ids.push_str(&self.id.as_ref().unwrap());
+            res.seq.push_str(&self.seq);
+            self.id = None;
+            self.seq.clear();
+            self.seq.shrink_to_fit();
+            return Some(res);
+        }
+        None
     }
 }
