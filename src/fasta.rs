@@ -3,11 +3,11 @@ use std::io::prelude::*;
 use std::io::{BufReader, LineWriter};
 use std::path::Path;
 
-pub fn parse_fasta(path: &str) {
+pub fn parse_fasta_id(path: &str) {
     let ids = get_ids(path);
-    let mut records: Vec<Fasta> = Vec::with_capacity(ids.len());
+    let mut records: Vec<IDs> = Vec::with_capacity(ids.len());
     ids.iter().for_each(|r| {
-        let mut fasta = Fasta::new();
+        let mut fasta = IDs::new();
         fasta.parse_id(r);
         records.push(fasta);
     });
@@ -19,12 +19,12 @@ fn get_ids(path: &str) -> Vec<String> {
     let buff = BufReader::new(file);
     buff.lines()
         .filter_map(|ok| ok.ok())
-        .filter(|line| line.starts_with(">"))
+        .filter(|line| line.starts_with('>'))
         .map(|line| line.replace('>', ""))
         .collect::<Vec<String>>()
 }
 
-fn write_records(path: &str, records: &mut [Fasta]) {
+fn write_records(path: &str, records: &mut [IDs]) {
     let fstem = Path::new(path)
         .file_stem()
         .expect("CANNOT GET THE FILENAME FROM PATH");
@@ -46,14 +46,14 @@ fn write_records(path: &str, records: &mut [Fasta]) {
     println!("The result is saved as {}", &fname);
 }
 
-struct Fasta {
+struct IDs {
     genus: String,
     species: String,
     voucher_id: String,
     geography: String,
 }
 
-impl Fasta {
+impl IDs {
     fn new() -> Self {
         Self {
             genus: String::new(),

@@ -34,5 +34,5 @@ fn parse_fasta(matches: &ArgMatches) {
     let input = matches
         .value_of("input")
         .expect("CANNOT FIND AN INPUT FILE");
-    fasta::parse_fasta(input);
+    fasta::parse_fasta_id(input);
 }
