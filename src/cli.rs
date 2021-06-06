@@ -9,15 +9,23 @@ fn get_args(version: &str) -> ArgMatches {
         .author("Heru Handika")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
-            App::new("fasta").about("Any fasta tools").arg(
-                Arg::with_name("input")
-                    .short("i")
-                    .long("input")
-                    .help("Inputs file path")
-                    .takes_value(true)
-                    .required(true)
-                    .value_name("INPUT FILE"),
-            ),
+            App::new("fasta")
+                .about("Any fasta tools")
+                .arg(
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Inputs file path")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("INPUT FILE"),
+                )
+                .arg(
+                    Arg::with_name("id")
+                        .long("id")
+                        .takes_value(false)
+                        .help("Gets IDs only"),
+                ),
         )
         .get_matches()
 }
@@ -34,5 +42,11 @@ fn parse_fasta(matches: &ArgMatches) {
     let input = matches
         .value_of("input")
         .expect("CANNOT FIND AN INPUT FILE");
-    fasta::parse_fasta_id(input);
+    let id = matches.is_present("id");
+
+    if id {
+        fasta::parse_fasta_id(input);
+    } else {
+        fasta::parse_fasta(input);
+    }
 }
