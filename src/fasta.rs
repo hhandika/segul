@@ -20,8 +20,7 @@ pub fn parse_fasta<P: AsRef<Path>>(path: P) {
 
     let fasta = FastaReader::new(buff);
     fasta.into_iter().for_each(|fast| {
-        println!("{}", fast.ids);
-        println!("{}", fast.seq);
+        fast.get_seq_stats();
     });
 }
 
@@ -108,6 +107,29 @@ impl Fasta {
             ids: String::new(),
             seq: String::new(),
         }
+    }
+
+    fn get_seq_stats(&self) {
+        let (gc, len) = self.get_gc_content();
+        println!("{}", self.ids);
+        println!("Sequence len\t: {} bp", len);
+        println!("GC Content\t: {:.2}\n", gc as f64 / len as f64);
+    }
+
+    fn get_gc_content(&self) -> (usize, usize) {
+        let mut gc = 0;
+        let mut len = 0;
+
+        self.seq.chars().for_each(|base| match base {
+            'G' | 'g' | 'C' | 'c' => {
+                gc += 1;
+                len += 1;
+            }
+            '-' | '?' => (),
+            _ => len += 1,
+        });
+
+        (gc, len)
     }
 }
 
