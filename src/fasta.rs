@@ -90,12 +90,6 @@ impl IDs {
     }
 }
 
-pub struct FastaReader<R> {
-    reader: Lines<BufReader<R>>,
-    pub id: Option<String>,
-    pub seq: String,
-}
-
 pub struct Fasta {
     ids: String,
     seq: String,
@@ -131,6 +125,12 @@ impl Fasta {
 
         (gc, len)
     }
+}
+
+pub struct FastaReader<R> {
+    reader: Lines<BufReader<R>>,
+    pub id: Option<String>,
+    pub seq: String,
 }
 
 impl<R: Read> FastaReader<R> {

@@ -1,5 +1,6 @@
 mod cli;
 mod fasta;
+mod nexus;
 
 use std::time::Instant;
 
