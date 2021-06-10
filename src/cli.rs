@@ -68,5 +68,5 @@ fn parse_nexus(matches: &ArgMatches) {
     let input = matches
         .value_of("input")
         .expect("CANNOT FIND AN INPUT FILE");
-    nexus::parse_nexus_id(input);
+    nexus::read_nexus(input);
 }
