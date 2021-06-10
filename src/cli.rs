@@ -29,15 +29,23 @@ fn get_args(version: &str) -> ArgMatches {
                 ),
         )
         .subcommand(
-            App::new("nexus").about("Any fasta tools").arg(
-                Arg::with_name("input")
-                    .short("i")
-                    .long("input")
-                    .help("Inputs file path")
-                    .takes_value(true)
-                    .required(true)
-                    .value_name("INPUT FILE"),
-            ),
+            App::new("nexus")
+                .about("Any fasta tools")
+                .arg(
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Inputs file path")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("INPUT FILE"),
+                )
+                .arg(
+                    Arg::with_name("convert")
+                        .long("convert")
+                        .help("Convert nexus to fasta")
+                        .takes_value(false),
+                ),
         )
         .get_matches()
 }
@@ -68,5 +76,11 @@ fn parse_nexus(matches: &ArgMatches) {
     let input = matches
         .value_of("input")
         .expect("CANNOT FIND AN INPUT FILE");
-    nexus::read_nexus(input);
+    let convert = matches.is_present("convert");
+
+    if convert {
+        nexus::convert_to_fasta(input);
+    } else {
+        nexus::read_nexus(&input);
+    }
 }
