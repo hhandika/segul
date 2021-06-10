@@ -25,7 +25,7 @@ pub fn convert_to_fasta(path: &str) {
 
     nex.read(buff).expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
-    write_fasta(matrix, path)
+    write_fasta(matrix, path);
 }
 
 fn write_fasta(matrix: BTreeMap<String, String>, path: &str) {
