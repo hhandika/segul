@@ -73,7 +73,13 @@ impl NexusReader {
             .for_each(|l| {
                 let seq: Vec<&str> = l.split_whitespace().collect();
                 if seq.len() == 2 {
-                    seqs.insert(seq[0].to_string(), seq[1].to_string());
+                    let id = seq[0].to_string();
+                    let dna = seq[1].to_string();
+                    if seqs.contains_key(&id) {
+                        panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
+                    } else {
+                        seqs.insert(id, dna);
+                    }
                 }
             });
         seqs
@@ -120,32 +126,28 @@ impl<R: Read> Iterator for Reader<R> {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
+#[cfg(test)]
+mod test {
+    use super::*;
 
-//     #[test]
-//     fn delimit_matrix_test() {
-//         let sample = "matrix\nABCDA AGTC--\n;";
-//         let (_, id) = delimit_mat(sample).unwrap();
-//         id.iter().for_each(|l| {
-//             let (res, _) = l;
-//             let s = res.to_string();
-//             assert_eq!("ABCDA", s);
-//         });
-//     }
+    #[test]
+    #[should_panic]
+    fn delimit_matrix_test() {
+        let sample = "test_files/duplicates.nex";
+        read_nexus(&sample);
+    }
 
-//     #[test]
-//     fn regex_seq_id_test() {
-//         let text = "agga--";
-//         let re = regex_seq_id();
-//         assert_eq!(true, re.is_match(text))
-//     }
+    // #[test]
+    // fn regex_seq_id_test() {
+    //     let text = "agga--";
+    //     let re = regex_seq_id();
+    //     assert_eq!(true, re.is_match(text))
+    // }
 
-//     #[test]
-//     fn regex_seq_end_test() {
-//         let text = "agga--\n";
-//         let re = regex_seq_id();
-//         assert_eq!(true, re.is_match(text))
-//     }
-// }
+    // #[test]
+    // fn regex_seq_end_test() {
+    //     let text = "agga--\n";
+    //     let re = regex_seq_id();
+    //     assert_eq!(true, re.is_match(text))
+    // }
+}
