@@ -7,7 +7,7 @@ use std::path::Path;
 pub fn read_nexus<P: AsRef<Path>>(path: &P) {
     let input = File::open(path).unwrap();
     let buff = BufReader::new(input);
-    let mut nex = NexusReader::new();
+    let mut nex = Nexus::new();
     nex.read(buff).unwrap();
 
     let matrix = nex.parse_matrix();
@@ -21,7 +21,7 @@ pub fn read_nexus<P: AsRef<Path>>(path: &P) {
 pub fn convert_to_fasta(path: &str) {
     let input = File::open(path).unwrap();
     let buff = BufReader::new(input);
-    let mut nex = NexusReader::new();
+    let mut nex = Nexus::new();
 
     nex.read(buff).expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
@@ -40,11 +40,11 @@ fn write_fasta(matrix: BTreeMap<String, String>, path: &str) {
     });
 }
 
-struct NexusReader {
+struct Nexus {
     matrix: String,
 }
 
-impl NexusReader {
+impl Nexus {
     fn new() -> Self {
         Self {
             matrix: String::new(),
@@ -68,12 +68,21 @@ impl NexusReader {
         let mut seqs = BTreeMap::new();
         matrix[1..]
             .iter()
-            .filter(|l| !l.is_empty())
             .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
             .for_each(|l| {
                 let seq: Vec<&str> = l.split_whitespace().collect();
-                if seq.len() == 2 {
-                    seqs.insert(seq[0].to_string(), seq[1].to_string());
+                if seq.len() != 2 {
+                    panic!(
+                        "UNSUPPORTED NEXUS FORMAT. MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs"
+                    );
+                }
+                let id = seq[0].to_string();
+                let dna = seq[1].to_string();
+                if seqs.contains_key(&id) {
+                    panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
+                } else {
+                    seqs.insert(id, dna);
                 }
             });
         seqs
@@ -120,32 +129,67 @@ impl<R: Read> Iterator for Reader<R> {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
+#[cfg(test)]
+mod test {
+    use super::*;
 
-//     #[test]
-//     fn delimit_matrix_test() {
-//         let sample = "matrix\nABCDA AGTC--\n;";
-//         let (_, id) = delimit_mat(sample).unwrap();
-//         id.iter().for_each(|l| {
-//             let (res, _) = l;
-//             let s = res.to_string();
-//             assert_eq!("ABCDA", s);
-//         });
-//     }
+    #[test]
+    fn nexus_reading_simple_test() {
+        let sample = "test_files/simple.nex";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        let read = nex.parse_matrix();
+        assert_eq!(1, read.len());
+    }
 
-//     #[test]
-//     fn regex_seq_id_test() {
-//         let text = "agga--";
-//         let re = regex_seq_id();
-//         assert_eq!(true, re.is_match(text))
-//     }
+    #[test]
+    fn nexus_reading_complete_test() {
+        let sample = "test_files/complete.nex";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        let read = nex.parse_matrix();
+        assert_eq!(5, read.len());
+    }
 
-//     #[test]
-//     fn regex_seq_end_test() {
-//         let text = "agga--\n";
-//         let re = regex_seq_id();
-//         assert_eq!(true, re.is_match(text))
-//     }
-// }
+    #[test]
+    fn nexus_reading_tabulated_test() {
+        let sample = "test_files/tabulated.nex";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        let read = nex.parse_matrix();
+        assert_eq!(2, read.len());
+    }
+
+    #[test]
+    #[should_panic]
+    fn nexus_duplicate_panic_test() {
+        let sample = "test_files/duplicates.nex";
+        read_nexus(&sample);
+    }
+
+    #[test]
+    #[should_panic]
+    fn nexus_space_panic_test() {
+        let sample = "test_files/idspaces.nex";
+        read_nexus(&sample);
+    }
+
+    #[test]
+    fn nexus_sequence_test() {
+        let sample = "test_files/tabulated.nex";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        let read = nex.parse_matrix();
+        let key = String::from("ABEF");
+        let res = String::from("GATATA---");
+        assert_eq!(Some(&res), read.get(&key));
+    }
+}
