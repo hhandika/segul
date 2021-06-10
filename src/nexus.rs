@@ -68,18 +68,16 @@ impl Nexus {
         let mut seqs = BTreeMap::new();
         matrix[1..]
             .iter()
-            .filter(|l| !l.is_empty())
             .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
             .for_each(|l| {
                 let seq: Vec<&str> = l.split_whitespace().collect();
-                if seq.len() == 2 {
-                    let id = seq[0].to_string();
-                    let dna = seq[1].to_string();
-                    if seqs.contains_key(&id) {
-                        panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
-                    } else {
-                        seqs.insert(id, dna);
-                    }
+                let id = seq[0].to_string();
+                let dna = seq[1].to_string();
+                if seqs.contains_key(&id) {
+                    panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
+                } else {
+                    seqs.insert(id, dna);
                 }
             });
         seqs
@@ -168,5 +166,18 @@ mod test {
     fn nexus_duplicate_panic_test() {
         let sample = "test_files/duplicates.nex";
         read_nexus(&sample);
+    }
+
+    #[test]
+    fn nexus_sequence_test() {
+        let sample = "test_files/tabulated.nex";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        let read = nex.parse_matrix();
+        let key = String::from("ABEF");
+        let res = String::from("GATATA---");
+        assert_eq!(Some(&res), read.get(&key));
     }
 }
