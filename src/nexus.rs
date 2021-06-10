@@ -7,7 +7,7 @@ use std::path::Path;
 pub fn read_nexus<P: AsRef<Path>>(path: &P) {
     let input = File::open(path).unwrap();
     let buff = BufReader::new(input);
-    let mut nex = NexusReader::new();
+    let mut nex = Nexus::new();
     nex.read(buff).unwrap();
 
     let matrix = nex.parse_matrix();
@@ -21,7 +21,7 @@ pub fn read_nexus<P: AsRef<Path>>(path: &P) {
 pub fn convert_to_fasta(path: &str) {
     let input = File::open(path).unwrap();
     let buff = BufReader::new(input);
-    let mut nex = NexusReader::new();
+    let mut nex = Nexus::new();
 
     nex.read(buff).expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
@@ -40,11 +40,11 @@ fn write_fasta(matrix: BTreeMap<String, String>, path: &str) {
     });
 }
 
-struct NexusReader {
+struct Nexus {
     matrix: String,
 }
 
-impl NexusReader {
+impl Nexus {
     fn new() -> Self {
         Self {
             matrix: String::new(),
@@ -131,23 +131,42 @@ mod test {
     use super::*;
 
     #[test]
+    fn nexus_reading_simple_test() {
+        let sample = "test_files/simple.nex";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        let read = nex.parse_matrix();
+        assert_eq!(1, read.len());
+    }
+
+    #[test]
+    fn nexus_reading_complete_test() {
+        let sample = "test_files/complete.nex";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        let read = nex.parse_matrix();
+        assert_eq!(5, read.len());
+    }
+
+    #[test]
+    fn nexus_reading_tabulated_test() {
+        let sample = "test_files/tabulated.nex";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        let read = nex.parse_matrix();
+        assert_eq!(2, read.len());
+    }
+
+    #[test]
     #[should_panic]
-    fn delimit_matrix_test() {
+    fn nexus_duplicate_panic_test() {
         let sample = "test_files/duplicates.nex";
         read_nexus(&sample);
     }
-
-    // #[test]
-    // fn regex_seq_id_test() {
-    //     let text = "agga--";
-    //     let re = regex_seq_id();
-    //     assert_eq!(true, re.is_match(text))
-    // }
-
-    // #[test]
-    // fn regex_seq_end_test() {
-    //     let text = "agga--\n";
-    //     let re = regex_seq_id();
-    //     assert_eq!(true, re.is_match(text))
-    // }
 }
