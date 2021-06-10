@@ -72,6 +72,11 @@ impl Nexus {
             .filter(|l| !l.is_empty())
             .for_each(|l| {
                 let seq: Vec<&str> = l.split_whitespace().collect();
+                if seq.len() != 2 {
+                    panic!(
+                        "UNSUPPORTED NEXUS FORMAT. MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs"
+                    );
+                }
                 let id = seq[0].to_string();
                 let dna = seq[1].to_string();
                 if seqs.contains_key(&id) {
@@ -165,6 +170,13 @@ mod test {
     #[should_panic]
     fn nexus_duplicate_panic_test() {
         let sample = "test_files/duplicates.nex";
+        read_nexus(&sample);
+    }
+
+    #[test]
+    #[should_panic]
+    fn nexus_space_panic_test() {
+        let sample = "test_files/idspaces.nex";
         read_nexus(&sample);
     }
 
