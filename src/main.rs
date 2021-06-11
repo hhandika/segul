@@ -1,4 +1,5 @@
 mod cli;
+mod converter;
 mod fasta;
 mod nexus;
 mod phylip;

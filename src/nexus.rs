@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, LineWriter, Lines, Read, Result};
+use std::io::{BufReader, Lines, Read, Result};
 use std::path::Path;
+
+use crate::converter;
 
 pub fn read_nexus<P: AsRef<Path>>(path: &P) {
     let input = File::open(path).unwrap();
@@ -25,19 +27,7 @@ pub fn convert_to_fasta(path: &str) {
 
     nex.read(buff).expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
-    write_fasta(matrix, path);
-}
-
-fn write_fasta(matrix: BTreeMap<String, String>, path: &str) {
-    let name = Path::new(path).file_stem().unwrap();
-    let fname = format!("{}.fas", name.to_string_lossy());
-    let file = File::create(fname).expect("CANNOT CREATE FASTA FILE");
-    let mut writer = LineWriter::new(file);
-
-    matrix.iter().for_each(|(id, seq)| {
-        writeln!(writer, ">{}", id).unwrap();
-        writeln!(writer, "{}", seq).unwrap();
-    });
+    converter::write_fasta(&matrix, path);
 }
 
 struct Nexus {
@@ -79,6 +69,7 @@ impl Nexus {
                 }
                 let id = seq[0].to_string();
                 let dna = seq[1].to_string();
+                #[allow(clippy::all)]
                 if seqs.contains_key(&id) {
                     panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
                 } else {
