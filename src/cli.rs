@@ -94,7 +94,6 @@ fn convert_nexus(matches: &ArgMatches) {
         .value_of("input")
         .expect("CANNOT FIND AN INPUT FILE");
     let phylip = matches.is_present("phylip");
-
     if phylip {
         nexus::convert_to_phylip(input);
     } else {

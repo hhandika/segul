@@ -27,6 +27,7 @@ impl<'m> Converter<'m> {
             writeln!(writer, ">{}", id).unwrap();
             writeln!(writer, "{}", seq).unwrap();
         });
+        println!("Save as {}", self.outname.display());
     }
 
     pub fn write_phylip(&mut self) {
@@ -48,10 +49,13 @@ impl<'m> Converter<'m> {
             write!(writer, "{}", self.insert_whitespaces(taxa, max_id_len)).unwrap();
             writeln!(writer, "{}", seq).unwrap();
         });
+
+        println!("Save as {}", self.outname.display());
     }
 
     fn get_output_name(&mut self, ext: &str) {
-        self.outname = self.path.with_extension(ext);
+        let name = Path::new(self.path.file_name().unwrap());
+        self.outname = name.with_extension(ext);
     }
 
     fn create_output_file(&self, fname: &Path) -> LineWriter<File> {
