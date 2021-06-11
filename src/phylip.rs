@@ -37,7 +37,7 @@ impl Phylip {
 
         let mut header_line = String::new();
         buff.read_line(&mut header_line).unwrap();
-        self.parse_header(&header_line);
+        self.parse_header(&header_line.trim());
 
         buff.lines().filter_map(|ok| ok.ok()).for_each(|line| {
             let seq: Vec<&str> = line.split_whitespace().collect();
