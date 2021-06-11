@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
 use std::path::Path;
 
-use crate::converter;
+use crate::converter::Converter;
 
 pub fn read_nexus<P: AsRef<Path>>(path: &P) {
     let input = File::open(path).unwrap();
@@ -27,7 +27,19 @@ pub fn convert_to_fasta(path: &str) {
 
     nex.read(buff).expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
-    converter::write_fasta(&matrix, path);
+    let mut convert = Converter::new(path, &matrix);
+    convert.write_fasta();
+}
+
+pub fn convert_to_phylip(path: &str) {
+    let input = File::open(path).unwrap();
+    let buff = BufReader::new(input);
+    let mut nex = Nexus::new();
+
+    nex.read(buff).expect("CANNOT READ NEXUS FILES");
+    let matrix = nex.parse_matrix();
+    let mut convert = Converter::new(path, &matrix);
+    convert.write_phylip();
 }
 
 struct Nexus {
