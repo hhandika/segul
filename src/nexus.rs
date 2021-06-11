@@ -2,23 +2,8 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
-use std::path::Path;
 
 use crate::converter::Converter;
-
-pub fn read_nexus<P: AsRef<Path>>(path: &P) {
-    let input = File::open(path).unwrap();
-    let buff = BufReader::new(input);
-    let mut nex = Nexus::new();
-    nex.read(buff).unwrap();
-
-    let matrix = nex.parse_matrix();
-
-    matrix.iter().for_each(|(id, seq)| {
-        println!(">{}", id);
-        println!("{}", seq);
-    });
-}
 
 pub fn convert_to_fasta(path: &str) {
     let input = File::open(path).unwrap();
@@ -173,14 +158,22 @@ mod test {
     #[should_panic]
     fn nexus_duplicate_panic_test() {
         let sample = "test_files/duplicates.nex";
-        read_nexus(&sample);
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        nex.parse_matrix();
     }
 
     #[test]
     #[should_panic]
     fn nexus_space_panic_test() {
         let sample = "test_files/idspaces.nex";
-        read_nexus(&sample);
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
+        nex.parse_matrix();
     }
 
     #[test]
