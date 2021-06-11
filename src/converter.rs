@@ -82,3 +82,17 @@ impl<'m> Converter<'m> {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn insert_whitespaces_test() {
+        let max_len = 10;
+        let id = "ABCDE";
+        let matrix = BTreeMap::new();
+        let convert = Converter::new(".", &matrix);
+        assert_eq!(10, convert.insert_whitespaces(id, max_len).len())
+    }
+}
