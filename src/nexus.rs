@@ -9,7 +9,6 @@ pub fn convert_to_fasta(path: &str) {
     let input = File::open(path).unwrap();
     let buff = BufReader::new(input);
     let mut nex = Nexus::new();
-
     nex.read(buff).expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
     let mut convert = Converter::new(path, &matrix);
@@ -39,14 +38,24 @@ impl Nexus {
     }
 
     fn read<R: Read>(&mut self, reader: R) -> Result<()> {
-        let reader = Reader::new(reader);
+        let mut buff = BufReader::new(reader);
+        let mut header = String::new();
+        buff.read_line(&mut header).unwrap();
+        self.check_nexus(&header.trim());
+        let reader = Reader::new(buff);
         reader.into_iter().for_each(|r| {
-            if r.to_lowercase().contains("matrix") {
+            if r.to_lowercase().starts_with("matrix") {
                 self.matrix = r.trim().to_string();
             }
         });
 
         Ok(())
+    }
+
+    fn check_nexus(&self, line: &str) {
+        if !line.to_lowercase().starts_with("#nexus") {
+            panic!("INVALID NEXUS FORMAT");
+        }
     }
 
     fn parse_matrix(&mut self) -> BTreeMap<String, String> {
@@ -152,6 +161,16 @@ mod test {
         nex.read(buff).unwrap();
         let read = nex.parse_matrix();
         assert_eq!(2, read.len());
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_invalid_nexus_test() {
+        let sample = "test_files/simple.fas";
+        let input = File::open(sample).unwrap();
+        let buff = BufReader::new(input);
+        let mut nex = Nexus::new();
+        nex.read(buff).unwrap();
     }
 
     #[test]
