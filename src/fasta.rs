@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, LineWriter, Lines};
@@ -14,14 +15,40 @@ pub fn parse_fasta_id(path: &str) {
     write_records(path, &mut records);
 }
 
-pub fn parse_fasta<P: AsRef<Path>>(path: P) {
+pub fn parse_fasta(path: &str) {
     let file = File::open(path).expect("CANNOT OPEN THE FILE");
     let buff = BufReader::new(file);
 
+    let fas = get_records(buff);
+    fas.iter().for_each(|(id, seq)| {
+        println!("ID: {}", id);
+        println!("Seq: {}", seq);
+    })
+}
+
+#[allow(dead_code)]
+pub fn get_stats(path: &str) {
+    let file = File::open(path).expect("CANNOT OPEN THE FILE");
+    let buff = BufReader::new(file);
     let fasta = FastaReader::new(buff);
     fasta.into_iter().for_each(|fast| {
         fast.get_seq_stats();
     });
+}
+
+fn get_records<R: Read>(buff: R) -> BTreeMap<String, String> {
+    let fasta = FastaReader::new(buff);
+    let mut records: BTreeMap<String, String> = BTreeMap::new();
+    fasta.into_iter().for_each(|fas| {
+        #[allow(clippy::all)]
+        if records.contains_key(&fas.id) {
+            panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", fas.id);
+        } else {
+            records.insert(fas.id, fas.seq);
+        }
+    });
+
+    records
 }
 
 fn get_ids<P: AsRef<Path>>(path: P) -> Vec<String> {
@@ -91,21 +118,21 @@ impl IDs {
 }
 
 pub struct Fasta {
-    ids: String,
+    id: String,
     seq: String,
 }
 
 impl Fasta {
     fn new() -> Self {
         Self {
-            ids: String::new(),
+            id: String::new(),
             seq: String::new(),
         }
     }
 
     fn get_seq_stats(&self) {
         let (gc, len) = self.get_gc_content();
-        println!("{}", self.ids);
+        println!("{}", self.id);
         println!("Sequence len\t: {} bp", len);
         println!("GC Content\t: {:.2}\n", gc as f64 / len as f64);
     }
@@ -148,16 +175,16 @@ impl<R: Read> Iterator for FastaReader<R> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(Ok(line)) = self.reader.next() {
-            if line.starts_with('>') {
+            if let Some(id) = line.strip_prefix('>') {
                 if self.id.is_some() {
                     let mut res = Fasta::new();
-                    res.ids.push_str(&self.id.as_ref().unwrap());
+                    res.id.push_str(&self.id.as_ref().unwrap());
                     res.seq.push_str(&self.seq);
-                    self.id = Some(String::from(&line[1..]));
+                    self.id = Some(String::from(id));
                     self.seq.clear();
                     return Some(res);
                 } else {
-                    self.id = Some(String::from(&line[1..]));
+                    self.id = Some(String::from(id));
                     self.seq.clear();
                 }
                 continue;
@@ -166,7 +193,7 @@ impl<R: Read> Iterator for FastaReader<R> {
         }
         if self.id.is_some() {
             let mut res = Fasta::new();
-            res.ids.push_str(&self.id.as_ref().unwrap());
+            res.id.push_str(&self.id.as_ref().unwrap());
             res.seq.push_str(&self.seq);
             self.id = None;
             self.seq.clear();
@@ -174,5 +201,20 @@ impl<R: Read> Iterator for FastaReader<R> {
             return Some(res);
         }
         None
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn read_fasta_simple_test() {
+        let path = "test_files/simple.fas";
+        let file = File::open(path).unwrap();
+        let buff = BufReader::new(file);
+        let res = get_records(buff);
+
+        assert_eq!(2, res.len());
     }
 }
