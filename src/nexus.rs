@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
 
-use crate::common::SeqFormat;
+use crate::common::{self, SeqFormat};
 use crate::writer::SeqWriter;
 
 pub fn convert_nexus(path: &str, filetype: SeqFormat) {
@@ -88,6 +88,7 @@ impl Nexus {
                 self.check_seq_len(seq.len());
                 let id = seq[0].to_string();
                 let dna = seq[1].to_string();
+                self.check_valid_dna(&id, &dna);
                 #[allow(clippy::all)]
                 if self.matrix.contains_key(&id) {
                     panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
@@ -96,6 +97,16 @@ impl Nexus {
                 }
             });
         matrix.clear();
+    }
+
+    fn check_valid_dna(&self, id: &str, dna: &String) {
+        if !self.is_valid_dna(dna) {
+            panic!("INVALID DNA SEQUENCE FOUND FOR {}", id);
+        }
+    }
+
+    fn is_valid_dna(&self, dna: &String) -> bool {
+        dna.chars().all(|char| common::valid_dna().contains(char))
     }
 
     fn check_seq_len(&self, len: usize) {
@@ -174,6 +185,29 @@ mod test {
         let mut nex = Nexus::new();
         nex.read(sample).unwrap();
         assert_eq!(2, nex.matrix.len());
+    }
+
+    #[test]
+    fn check_valid_dna_test() {
+        let nex = Nexus::new();
+        let dna = String::from("AGTC?-");
+        assert_eq!(true, nex.is_valid_dna(&dna));
+    }
+
+    #[test]
+    fn check_invalid_dna_test() {
+        let nex = Nexus::new();
+        let dna = String::from("AGTC?-Z");
+        assert_eq!(false, nex.is_valid_dna(&dna));
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_invalid_dna_panic_test() {
+        let nex = Nexus::new();
+        let id = "ABCD";
+        let dna = String::from("AGTC?-Z");
+        nex.check_valid_dna(id, &dna);
     }
 
     #[test]
