@@ -63,25 +63,6 @@ impl Nexus {
         Ok(())
     }
 
-    fn check_nexus(&self, line: &str) {
-        if !line.to_lowercase().starts_with("#nexus") {
-            panic!("INVALID NEXUS FORMAT");
-        }
-    }
-
-    fn check_ntax_matches(&self) {
-        if self.matrix.len() != self.ntax {
-            panic!(
-                "ERROR READING NEXUS FILES. \
-            THE NUMBER OF TAXA IS NOT MATCH THE INFORMATION IN THE BLOCK.\
-            IN THE BLOCK: {} \
-            AND TAXA FOUND: {}",
-                self.ntax,
-                self.matrix.len()
-            );
-        }
-    }
-
     fn parse_blocks<R: Read>(&self, buff: R) -> Commands {
         let reader = Reader::new(buff);
         let mut commands = Commands::new();
@@ -205,6 +186,25 @@ impl Nexus {
         match tag {
             Ok((_, out)) => text.push_str(out.trim()),
             Err(_) => eprintln!("CANNOT PARSE NEXUS TAG"),
+        }
+    }
+
+    fn check_nexus(&self, line: &str) {
+        if !line.to_lowercase().starts_with("#nexus") {
+            panic!("INVALID NEXUS FORMAT");
+        }
+    }
+
+    fn check_ntax_matches(&self) {
+        if self.matrix.len() != self.ntax {
+            panic!(
+                "ERROR READING NEXUS FILES. \
+            THE NUMBER OF TAXA IS NOT MATCH THE INFORMATION IN THE BLOCK.\
+            IN THE BLOCK: {} \
+            AND TAXA FOUND: {}",
+                self.ntax,
+                self.matrix.len()
+            );
         }
     }
 
