@@ -52,23 +52,25 @@ fn get_args(version: &str) -> ArgMatches {
             ),
         )
         .subcommand(
-            App::new("phylip")
-                .about("Any phylip tools")
-                .arg(
-                    Arg::with_name("input")
-                        .short("i")
-                        .long("input")
-                        .help("Inputs file path")
-                        .takes_value(true)
-                        .required(true)
-                        .value_name("INPUT FILE"),
-                )
-                .arg(
-                    Arg::with_name("convert")
-                        .long("convert")
-                        .help("Convert nexus to fasta")
-                        .takes_value(false),
-                ),
+            App::new("phylip").about("Any phylip tools").subcommand(
+                App::new("convert")
+                    .about("Convert phylip")
+                    .arg(
+                        Arg::with_name("input")
+                            .short("i")
+                            .long("input")
+                            .help("Inputs file path")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("INPUT FILE"),
+                    )
+                    .arg(
+                        Arg::with_name("nexus")
+                            .long("nexus")
+                            .help("Convert phylip to nexus")
+                            .takes_value(false),
+                    ),
+            ),
         )
         .get_matches()
 }
@@ -78,7 +80,7 @@ pub fn parse_cli(version: &str) {
     match args.subcommand() {
         ("fasta", Some(fasta_matches)) => parse_fasta(fasta_matches),
         ("nexus", Some(nexus_matches)) => parse_nexus_subcommand(nexus_matches),
-        ("phylip", Some(phylip_matches)) => parse_phylip(phylip_matches),
+        ("phylip", Some(phylip_matches)) => parse_phylip_subcommand(phylip_matches),
         _ => unreachable!(),
     }
 }
@@ -86,6 +88,13 @@ pub fn parse_cli(version: &str) {
 fn parse_nexus_subcommand(args: &ArgMatches) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => convert_nexus(convert_matches),
+        _ => unreachable!(),
+    }
+}
+
+fn parse_phylip_subcommand(args: &ArgMatches) {
+    match args.subcommand() {
+        ("convert", Some(convert_matches)) => convert_phylip(convert_matches),
         _ => unreachable!(),
     }
 }
@@ -114,9 +123,13 @@ fn parse_fasta(matches: &ArgMatches) {
     }
 }
 
-fn parse_phylip(matches: &ArgMatches) {
+fn convert_phylip(matches: &ArgMatches) {
     let input = matches
         .value_of("input")
         .expect("CANNOT FIND AN INPUT FILE");
-    phylip::read_phylip(input);
+    if matches.is_present("nexus") {
+        phylip::convert_phylip(input, SeqFormat::Nexus);
+    } else {
+        phylip::convert_phylip(input, SeqFormat::Fasta);
+    }
 }

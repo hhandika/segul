@@ -1,15 +1,18 @@
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::LineWriter;
+use std::io::{LineWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
+
+use crate::common::SeqFormat;
 
 #[allow(dead_code)]
 pub struct SeqWriter<'m> {
     path: PathBuf,
     outname: PathBuf,
     matrix: &'m BTreeMap<String, String>,
+    id_len: usize,
     ntax: Option<usize>,
     nchar: Option<usize>,
     datatype: Option<String>,
@@ -30,6 +33,7 @@ impl<'m> SeqWriter<'m> {
         Self {
             path: PathBuf::from(path),
             outname: PathBuf::new(),
+            id_len: 0,
             matrix,
             ntax,
             nchar,
@@ -39,42 +43,95 @@ impl<'m> SeqWriter<'m> {
         }
     }
 
+    pub fn write_sequence(&mut self, filetype: &SeqFormat) {
+        self.get_output_name(filetype);
+        self.get_ntax();
+        self.get_nchar();
+        self.get_max_id_len();
+
+        match filetype {
+            SeqFormat::Nexus => self.write_nexus().expect("CANNOT WRITE A NEXUS FILE."),
+            SeqFormat::Phylip => self.write_phylip().expect("CANNOT WRITE A PHYLIP FILE."),
+            _ => self.write_fasta(),
+        }
+    }
+
     pub fn write_fasta(&mut self) {
-        self.get_output_name("fas");
         let mut writer = self.create_output_file(&self.outname);
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
             writeln!(writer, "{}", seq).unwrap();
         });
-        println!("Save as {}", self.outname.display());
+        self.display_save_path();
     }
 
-    pub fn write_phylip(&mut self) {
-        self.get_output_name("phy");
-        let (num_taxa, chars) = self.get_num_taxa_chars();
-        let max_id_len = self.get_max_id_len();
+    fn write_phylip(&mut self) -> Result<()> {
         let mut writer = self.create_output_file(&self.outname);
-        writeln!(writer, "{} {}", num_taxa, chars).unwrap();
+        writeln!(
+            writer,
+            "{} {}",
+            self.ntax.as_ref().unwrap(),
+            self.nchar.as_ref().unwrap()
+        )?;
+        self.write_matrix(&mut writer);
+        self.display_save_path();
+        Ok(())
+    }
 
+    fn write_nexus(&mut self) -> Result<()> {
+        self.get_datatype();
+        self.get_missing();
+        self.get_gap();
+        let mut writer = self.create_output_file(&self.outname);
+        writeln!(writer, "#NEXUS")?;
+        writeln!(writer, "begin data;")?;
+        writeln!(
+            writer,
+            "dimensions ntax={} nchar={}",
+            self.ntax.as_ref().unwrap(),
+            self.nchar.as_ref().unwrap()
+        )?;
+        writeln!(
+            writer,
+            "format datatype={}, missing={} gap={};",
+            self.datatype.as_ref().unwrap(),
+            self.missing.as_ref().unwrap(),
+            self.gap.as_ref().unwrap()
+        )?;
+        writeln!(writer, "matrix")?;
+        self.write_matrix(&mut writer);
+        Ok(())
+    }
+
+    fn write_matrix<W: Write>(&self, writer: &mut W) {
         self.matrix.iter().for_each(|(taxa, seq)| {
-            if seq.len() != chars {
-                panic!(
-                    "DIFFERENT SEQUENCE LENGTH FOUND AT {}. \
-                MAKE SURE THE INPUT IS AN ALIGNMENT",
-                    taxa
-                )
-            }
+            self.check_sequence_len(seq.len(), taxa);
             write!(writer, "{}", taxa).unwrap();
-            write!(writer, "{}", self.insert_whitespaces(taxa, max_id_len)).unwrap();
+            write!(writer, "{}", self.insert_whitespaces(taxa, self.id_len)).unwrap();
             writeln!(writer, "{}", seq).unwrap();
         });
+    }
 
+    fn check_sequence_len(&self, len: usize, taxa: &str) {
+        if len != *self.nchar.as_ref().unwrap() {
+            panic!(
+                "DIFFERENT SEQUENCE LENGTH FOUND AT {}. \
+                MAKE SURE THE INPUT IS AN ALIGNMENT",
+                taxa
+            )
+        }
+    }
+    fn display_save_path(&self) {
         println!("Save as {}", self.outname.display());
     }
 
-    fn get_output_name(&mut self, ext: &str) {
+    fn get_output_name(&mut self, ext: &SeqFormat) {
         let name = Path::new(self.path.file_name().unwrap());
-        self.outname = name.with_extension(ext);
+        match ext {
+            SeqFormat::Fasta => self.outname = name.with_extension("fas"),
+            SeqFormat::Nexus => self.outname = name.with_extension("nex"),
+            SeqFormat::Phylip => self.outname = name.with_extension("phy"),
+        };
     }
 
     fn create_output_file(&self, fname: &Path) -> LineWriter<File> {
@@ -82,16 +139,40 @@ impl<'m> SeqWriter<'m> {
         LineWriter::new(file)
     }
 
-    fn get_num_taxa_chars(&self) -> (usize, usize) {
-        let taxa = self.matrix.len();
-        let (_, seq) = self.matrix.iter().next().unwrap();
-        let chars: usize = seq.len();
-        (taxa, chars)
+    fn get_ntax(&mut self) {
+        if self.ntax.is_none() {
+            self.ntax = Some(self.matrix.len());
+        }
     }
 
-    fn get_max_id_len(&self) -> usize {
+    fn get_nchar(&mut self) {
+        if self.nchar.is_none() {
+            let (_, chars) = self.matrix.iter().next().unwrap();
+            self.nchar = Some(chars.len())
+        }
+    }
+
+    fn get_datatype(&mut self) {
+        if self.datatype.is_none() {
+            self.datatype = Some(String::from("dna"));
+        }
+    }
+
+    fn get_missing(&mut self) {
+        if self.missing.is_none() {
+            self.missing = Some('?');
+        }
+    }
+
+    fn get_gap(&mut self) {
+        if self.gap.is_none() {
+            self.gap = Some('-');
+        }
+    }
+
+    fn get_max_id_len(&mut self) {
         let longest = self.matrix.keys().max_by_key(|id| id.len()).unwrap();
-        longest.len()
+        self.id_len = longest.len();
     }
 
     fn insert_whitespaces(&self, id: &str, max_len: usize) -> String {
