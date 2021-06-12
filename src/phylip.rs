@@ -5,29 +5,42 @@ use std::io::BufReader;
 
 use nom::{character::complete, sequence, IResult};
 
-pub fn read_phylip(path: &str) {
+use crate::common::SeqFormat;
+use crate::writer::SeqWriter;
+
+pub fn convert_phylip(path: &str, filetype: SeqFormat) {
     let mut phylip = Phylip::new();
     phylip.read(path);
 
-    // Test print to fasta
-    phylip.matrix.iter().for_each(|(tax, seq)| {
-        println!(">{}", tax);
-        println!("{}", seq);
-    })
+    let mut convert = SeqWriter::new(
+        path,
+        &phylip.matrix,
+        Some(phylip.ntax),
+        Some(phylip.nchar),
+        Some(String::from("dna")),
+        Some('?'),
+        Some('-'),
+    );
+
+    match filetype {
+        SeqFormat::Nexus => convert.write_sequence(&filetype),
+        SeqFormat::Fasta => convert.write_fasta(),
+        _ => (),
+    }
 }
 
 struct Phylip {
     matrix: BTreeMap<String, String>,
-    num_tax: usize,
-    num_chars: usize,
+    ntax: usize,
+    nchar: usize,
 }
 
 impl Phylip {
     fn new() -> Self {
         Self {
             matrix: BTreeMap::new(),
-            num_tax: 0,
-            num_chars: 0,
+            ntax: 0,
+            nchar: 0,
         }
     }
 
@@ -66,10 +79,10 @@ impl Phylip {
     }
 
     fn parse_num(&mut self, tax: &str, seq: &str) {
-        self.num_tax = tax
+        self.ntax = tax
             .parse::<usize>()
             .expect("HEADER TAXA NUMBER IS NOT A NUMBER");
-        self.num_chars = seq
+        self.nchar = seq
             .parse::<usize>()
             .expect("HEADER CHARS LENGTH IS NOT A NUMBER");
     }
@@ -85,8 +98,8 @@ mod test {
         let mut phylip = Phylip::new();
         phylip.read(path);
 
-        assert_eq!(2, phylip.num_tax);
-        assert_eq!(4, phylip.num_chars);
+        assert_eq!(2, phylip.ntax);
+        assert_eq!(4, phylip.nchar);
         assert_eq!(2, phylip.matrix.len());
     }
 }
