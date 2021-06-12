@@ -1,9 +1,9 @@
 mod cli;
 mod common;
-mod converter;
 mod fasta;
 mod nexus;
 mod phylip;
+mod writer;
 
 use std::time::Instant;
 

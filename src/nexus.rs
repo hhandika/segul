@@ -4,18 +4,17 @@ use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
 
 use crate::common::SeqFormat;
-use crate::converter::Converter;
+use crate::writer::SeqWriter;
 
-pub fn convert_nexus(path: &str, format: SeqFormat) {
+pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     let mut nex = Nexus::new(path);
     nex.read().expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
-    let mut convert = Converter::new(path, &matrix);
+    let mut convert = SeqWriter::new(path, &matrix);
 
-    match format {
+    match filetype {
         SeqFormat::Phylip => convert.write_phylip(),
         SeqFormat::Fasta => convert.write_fasta(),
-        _ => (),
     }
 }
 

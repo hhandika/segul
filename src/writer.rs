@@ -5,13 +5,13 @@ use std::io::LineWriter;
 use std::iter;
 use std::path::{Path, PathBuf};
 
-pub struct Converter<'m> {
+pub struct SeqWriter<'m> {
     path: PathBuf,
     outname: PathBuf,
     matrix: &'m BTreeMap<String, String>,
 }
 
-impl<'m> Converter<'m> {
+impl<'m> SeqWriter<'m> {
     pub fn new(path: &str, matrix: &'m BTreeMap<String, String>) -> Self {
         Self {
             path: PathBuf::from(path),
@@ -96,7 +96,7 @@ mod test {
         let max_len = 10;
         let id = "ABCDE";
         let matrix = BTreeMap::new();
-        let convert = Converter::new(".", &matrix);
+        let convert = SeqWriter::new(".", &matrix);
         assert_eq!(10, convert.insert_whitespaces(id, max_len).len())
     }
 }
