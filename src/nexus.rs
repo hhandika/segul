@@ -7,10 +7,17 @@ use crate::common::SeqFormat;
 use crate::writer::SeqWriter;
 
 pub fn convert_nexus(path: &str, filetype: SeqFormat) {
-    let mut nex = Nexus::new(path);
-    nex.read().expect("CANNOT READ NEXUS FILES");
-    let matrix = nex.parse_matrix();
-    let mut convert = SeqWriter::new(path, &matrix);
+    let mut nex = Nexus::new();
+    nex.read(path).expect("CANNOT READ NEXUS FILES");
+    let mut convert = SeqWriter::new(
+        path,
+        &nex.matrix,
+        Some(nex.ntax),
+        Some(nex.nchar),
+        Some(nex.datatype),
+        Some(nex.missing),
+        Some(nex.gap),
+    );
 
     match filetype {
         SeqFormat::Phylip => convert.write_phylip(),
@@ -19,31 +26,34 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
 }
 
 struct Nexus {
-    input: String,
-    matrix: String,
+    matrix: BTreeMap<String, String>,
+    ntax: usize,
+    nchar: usize,
+    datatype: String,
+    missing: char,
+    gap: char,
 }
 
 impl Nexus {
-    fn new(path: &str) -> Self {
+    fn new() -> Self {
         Self {
-            input: String::from(path),
-            matrix: String::new(),
+            matrix: BTreeMap::new(),
+            ntax: 0,
+            nchar: 0,
+            datatype: String::new(),
+            missing: '?',
+            gap: '-',
         }
     }
 
-    fn read(&mut self) -> Result<()> {
-        let input = File::open(&self.input).expect("CANNOT OPEN THE INPUT FILE");
+    fn read(&mut self, path: &str) -> Result<()> {
+        let input = File::open(path).expect("CANNOT OPEN THE INPUT FILE");
         let mut buff = BufReader::new(input);
         let mut header = String::new();
-        buff.read_line(&mut header).unwrap();
+        buff.read_line(&mut header)?;
         self.check_nexus(&header.trim());
-        let reader = Reader::new(buff);
-        reader.into_iter().for_each(|r| {
-            if r.to_lowercase().starts_with("matrix") {
-                self.matrix = r.trim().to_string();
-            }
-        });
-
+        let mut matrix = self.parse_nexus(buff);
+        self.parse_matrix(&mut matrix);
         Ok(())
     }
 
@@ -53,31 +63,48 @@ impl Nexus {
         }
     }
 
-    fn parse_matrix(&mut self) -> BTreeMap<String, String> {
-        self.matrix.pop(); // remove terminated semicolon.
-        let matrix: Vec<&str> = self.matrix.split('\n').collect();
-        let mut seqs = BTreeMap::new();
-        matrix[1..]
+    fn parse_nexus<R: Read>(&self, buff: R) -> String {
+        let reader = Reader::new(buff);
+        let mut matrix = String::new();
+        reader.into_iter().for_each(|read| {
+            match read.to_lowercase() {
+                command if command.starts_with("matrix") => matrix.push_str(read.trim()),
+                _ => (),
+            };
+        });
+
+        matrix
+    }
+
+    fn parse_matrix(&mut self, matrix: &mut String) {
+        matrix.pop(); // remove terminated semicolon.
+        let content: Vec<&str> = matrix.split('\n').collect();
+        content[1..]
             .iter()
             .map(|l| l.trim())
             .filter(|l| !l.is_empty())
-            .for_each(|l| {
-                let seq: Vec<&str> = l.split_whitespace().collect();
-                if seq.len() != 2 {
-                    panic!(
-                        "UNSUPPORTED NEXUS FORMAT. MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs"
-                    );
-                }
+            .for_each(|line| {
+                let seq: Vec<&str> = line.split_whitespace().collect();
+                self.check_seq_len(seq.len());
                 let id = seq[0].to_string();
                 let dna = seq[1].to_string();
                 #[allow(clippy::all)]
-                if seqs.contains_key(&id) {
+                if self.matrix.contains_key(&id) {
                     panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
                 } else {
-                    seqs.insert(id, dna);
+                    self.matrix.insert(id, dna);
                 }
             });
-        seqs
+        matrix.clear();
+    }
+
+    fn check_seq_len(&self, len: usize) {
+        if len != 2 {
+            panic!(
+                "UNSUPPORTED NEXUS FORMAT. \
+            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs"
+            );
+        }
     }
 }
 
@@ -128,64 +155,58 @@ mod test {
     #[test]
     fn nexus_reading_simple_test() {
         let sample = "test_files/simple.nex";
-        let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
-        let read = nex.parse_matrix();
-        assert_eq!(1, read.len());
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
+        assert_eq!(1, nex.matrix.len());
     }
 
     #[test]
     fn nexus_reading_complete_test() {
         let sample = "test_files/complete.nex";
-        let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
-        let read = nex.parse_matrix();
-        assert_eq!(5, read.len());
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
+        assert_eq!(5, nex.matrix.len());
     }
 
     #[test]
     fn nexus_reading_tabulated_test() {
         let sample = "test_files/tabulated.nex";
-        let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
-        let read = nex.parse_matrix();
-        assert_eq!(2, read.len());
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
+        assert_eq!(2, nex.matrix.len());
     }
 
     #[test]
     #[should_panic]
     fn check_invalid_nexus_test() {
         let sample = "test_files/simple.fas";
-        let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn nexus_duplicate_panic_test() {
         let sample = "test_files/duplicates.nex";
-        let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
-        nex.parse_matrix();
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn nexus_space_panic_test() {
         let sample = "test_files/idspaces.nex";
-        let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
-        nex.parse_matrix();
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
     }
 
     #[test]
     fn nexus_sequence_test() {
         let sample = "test_files/tabulated.nex";
-        let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
-        let read = nex.parse_matrix();
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
         let key = String::from("ABEF");
         let res = String::from("GATATA---");
-        assert_eq!(Some(&res), read.get(&key));
+        assert_eq!(Some(&res), nex.matrix.get(&key));
     }
 }
