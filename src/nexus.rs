@@ -27,20 +27,6 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     }
 }
 
-pub fn read_nexus(path: &str) {
-    let mut nex = Nexus::new();
-    nex.read(path).expect("CANNOT READ NEXUS FILES");
-    println!("Datatype: {}", nex.datatype);
-    println!("NTax: {}", nex.ntax);
-    println!("nchar: {}", nex.nchar);
-    println!("missing: {}", nex.missing);
-    println!("Matrix:");
-    nex.matrix.iter().for_each(|(id, dna)| {
-        println!("ID: {}", id);
-        println!("{}", dna);
-    });
-}
-
 struct NexusCommands {
     matrix: String,
     dimensions: String,
