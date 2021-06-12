@@ -132,6 +132,29 @@ impl Nexus {
             });
     }
 
+    fn parse_matrix(&mut self, read: &mut String) {
+        read.pop(); // remove terminated semicolon.
+        let matrix: Vec<&str> = read.split('\n').collect();
+        matrix[1..]
+            .iter()
+            .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
+            .for_each(|line| {
+                let seq: Vec<&str> = line.split_whitespace().collect();
+                self.check_seq_len(seq.len());
+                let id = seq[0].to_string();
+                let dna = seq[1].to_string();
+                self.check_valid_dna(&id, &dna);
+                #[allow(clippy::all)]
+                if self.matrix.contains_key(&id) {
+                    panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
+                } else {
+                    self.matrix.insert(id, dna);
+                }
+            });
+        read.clear();
+    }
+
     fn parse_datatype(&self, input: &str) -> String {
         let tag: IResult<&str, &str> =
             sequence::preceded(complete::tag("datatype="), character::complete::alpha1)(input);
@@ -182,29 +205,6 @@ impl Nexus {
             Ok((_, out)) => text.push_str(out.trim()),
             Err(_) => eprintln!("CANNOT PARSE NEXUS TAG"),
         }
-    }
-
-    fn parse_matrix(&mut self, read: &mut String) {
-        read.pop(); // remove terminated semicolon.
-        let matrix: Vec<&str> = read.split('\n').collect();
-        matrix[1..]
-            .iter()
-            .map(|l| l.trim())
-            .filter(|l| !l.is_empty())
-            .for_each(|line| {
-                let seq: Vec<&str> = line.split_whitespace().collect();
-                self.check_seq_len(seq.len());
-                let id = seq[0].to_string();
-                let dna = seq[1].to_string();
-                self.check_valid_dna(&id, &dna);
-                #[allow(clippy::all)]
-                if self.matrix.contains_key(&id) {
-                    panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
-                } else {
-                    self.matrix.insert(id, dna);
-                }
-            });
-        read.clear();
     }
 
     fn check_valid_dna(&self, id: &str, dna: &String) {
