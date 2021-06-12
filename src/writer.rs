@@ -100,6 +100,9 @@ impl<'m> SeqWriter<'m> {
         )?;
         writeln!(writer, "matrix")?;
         self.write_matrix(&mut writer);
+        writeln!(writer, ";")?;
+        writeln!(writer, "end;")?;
+        self.display_save_path();
         Ok(())
     }
 
