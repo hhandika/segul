@@ -87,13 +87,13 @@ impl<'m> SeqWriter<'m> {
         writeln!(writer, "begin data;")?;
         writeln!(
             writer,
-            "dimensions ntax={} nchar={}",
+            "dimensions ntax={} nchar={};",
             self.ntax.as_ref().unwrap(),
             self.nchar.as_ref().unwrap()
         )?;
         writeln!(
             writer,
-            "format datatype={}, missing={} gap={};",
+            "format datatype={} missing={} gap={};",
             self.datatype.as_ref().unwrap(),
             self.missing.as_ref().unwrap(),
             self.gap.as_ref().unwrap()
@@ -180,7 +180,7 @@ impl<'m> SeqWriter<'m> {
 
     fn insert_whitespaces(&self, id: &str, max_len: usize) -> String {
         let len = id.len();
-        let spaces = 5;
+        let spaces = 1;
         if len < max_len {
             let inserts = (max_len - len) + spaces;
             iter::repeat(' ').take(inserts).collect::<String>()
