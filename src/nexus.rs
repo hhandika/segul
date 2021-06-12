@@ -3,6 +3,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
 
+use nom::{bytes::complete, character, sequence, IResult};
+
 use crate::common::{self, SeqFormat};
 use crate::writer::SeqWriter;
 
@@ -22,6 +24,36 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     match filetype {
         SeqFormat::Phylip => convert.write_phylip(),
         SeqFormat::Fasta => convert.write_fasta(),
+    }
+}
+
+pub fn read_nexus(path: &str) {
+    let mut nex = Nexus::new();
+    nex.read(path).expect("CANNOT READ NEXUS FILES");
+    println!("Datatype: {}", nex.datatype);
+    println!("NTax: {}", nex.ntax);
+    println!("nchar: {}", nex.nchar);
+    println!("missing: {}", nex.missing);
+    println!("Matrix:");
+    nex.matrix.iter().for_each(|(id, dna)| {
+        println!("ID: {}", id);
+        println!("{}", dna);
+    });
+}
+
+struct NexusCommands {
+    matrix: String,
+    dimensions: String,
+    format: String,
+}
+
+impl NexusCommands {
+    fn new() -> Self {
+        Self {
+            matrix: String::new(),
+            dimensions: String::new(),
+            format: String::new(),
+        }
     }
 }
 
@@ -52,8 +84,10 @@ impl Nexus {
         let mut header = String::new();
         buff.read_line(&mut header)?;
         self.check_nexus(&header.trim());
-        let mut matrix = self.parse_nexus(buff);
-        self.parse_matrix(&mut matrix);
+        let mut commands = self.parse_nexus(buff);
+        self.parse_matrix(&mut commands.matrix);
+        self.parse_dimensions(&mut commands.dimensions);
+        self.parse_format(&mut commands.format);
         Ok(())
     }
 
@@ -63,23 +97,111 @@ impl Nexus {
         }
     }
 
-    fn parse_nexus<R: Read>(&self, buff: R) -> String {
+    fn parse_nexus<R: Read>(&self, buff: R) -> NexusCommands {
         let reader = Reader::new(buff);
-        let mut matrix = String::new();
+        let mut commands = NexusCommands::new();
         reader.into_iter().for_each(|read| {
             match read.to_lowercase() {
-                command if command.starts_with("matrix") => matrix.push_str(read.trim()),
+                command if command.starts_with("matrix") => {
+                    commands.matrix.push_str(&read.trim().to_uppercase())
+                }
+                command if command.starts_with("dimensions") => {
+                    commands.dimensions.push_str(&read.trim().to_lowercase())
+                }
+                command if command.starts_with("format") => {
+                    commands.format.push_str(&read.trim().to_lowercase())
+                }
                 _ => (),
             };
         });
 
-        matrix
+        commands
     }
 
-    fn parse_matrix(&mut self, matrix: &mut String) {
-        matrix.pop(); // remove terminated semicolon.
-        let content: Vec<&str> = matrix.split('\n').collect();
-        content[1..]
+    fn parse_dimensions(&mut self, input: &mut String) {
+        input.pop();
+        let dimensions: Vec<&str> = input.split_whitespace().collect();
+        dimensions
+            .iter()
+            .map(|d| d.trim())
+            .for_each(|dimension| match dimension {
+                tag if tag.starts_with("ntax") => self.ntax = self.parse_ntax(&dimension),
+                tag if tag.starts_with("nchar") => self.nchar = self.parse_characters(&dimension),
+                _ => (),
+            });
+    }
+
+    fn parse_format(&mut self, input: &mut String) {
+        input.pop();
+        let formats: Vec<&str> = input.split_ascii_whitespace().collect();
+        formats
+            .iter()
+            .map(|f| f.trim())
+            .filter(|f| !f.is_empty())
+            .for_each(|format| match format {
+                tag if tag.starts_with("datatype") => self.datatype = self.parse_datatype(&format),
+                tag if tag.starts_with("missing") => self.missing = self.parse_missing(&format),
+                tag if tag.starts_with("gap") => self.gap = self.parse_gap(&format),
+                _ => (),
+            });
+    }
+
+    fn parse_datatype(&self, input: &str) -> String {
+        let tag: IResult<&str, &str> =
+            sequence::preceded(complete::tag("datatype="), character::complete::alpha1)(input);
+        self.parse_string(tag)
+    }
+
+    fn parse_gap(&self, input: &str) -> char {
+        let gap = input.replace("gap=", "");
+        self.parse_char(&gap)
+    }
+
+    fn parse_missing(&self, input: &str) -> char {
+        let missing = input.replace("missing=", "");
+        self.parse_char(&missing)
+    }
+
+    fn parse_string(&self, tag: IResult<&str, &str>) -> String {
+        let mut text = String::new();
+        self.convert_nomtag_to_string(tag, &mut text);
+        text
+    }
+
+    fn parse_char(&self, text: &str) -> char {
+        text.parse::<char>().expect("CANNOT PARSE TAG TO CHAR")
+    }
+
+    fn parse_ntax(&self, input: &str) -> usize {
+        let tag: IResult<&str, &str> =
+            sequence::preceded(complete::tag("ntax="), character::complete::digit1)(input);
+        self.parse_usize(tag)
+    }
+
+    fn parse_characters(&self, input: &str) -> usize {
+        let tag: IResult<&str, &str> =
+            sequence::preceded(complete::tag("nchar="), character::complete::digit1)(input);
+        self.parse_usize(tag)
+    }
+
+    fn parse_usize(&self, tag: IResult<&str, &str>) -> usize {
+        let mut text = String::new();
+        self.convert_nomtag_to_string(tag, &mut text);
+        text.parse::<usize>()
+            .expect("HEADER TAXA NUMBER IS NOT A NUMBER")
+    }
+
+    fn convert_nomtag_to_string(&self, tag: IResult<&str, &str>, text: &mut String) {
+        match tag {
+            Ok((_, out)) => text.push_str(out.trim()),
+            Err(_) => eprintln!("CANNOT PARSE NEXUS TAG"),
+        }
+    }
+
+    fn parse_matrix(&mut self, read: &mut String) {
+        read.pop(); // remove terminated semicolon.
+        let matrix: Vec<&str> = read.split('\n').collect();
+        matrix[1..]
             .iter()
             .map(|l| l.trim())
             .filter(|l| !l.is_empty())
@@ -96,7 +218,7 @@ impl Nexus {
                     self.matrix.insert(id, dna);
                 }
             });
-        matrix.clear();
+        read.clear();
     }
 
     fn check_valid_dna(&self, id: &str, dna: &String) {
@@ -185,6 +307,26 @@ mod test {
         let mut nex = Nexus::new();
         nex.read(sample).unwrap();
         assert_eq!(2, nex.matrix.len());
+    }
+
+    #[test]
+    fn nexus_parsing_object_test() {
+        let sample = "test_files/complete.nex";
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
+        assert_eq!(5, nex.ntax);
+        assert_eq!(802, nex.nchar);
+        assert_eq!("dna", nex.datatype);
+        assert_eq!('-', nex.gap);
+        assert_eq!('?', nex.missing);
+    }
+
+    #[test]
+    fn nexus_parse_ntax_test() {
+        let tax = "ntax=5";
+        let nex = Nexus::new();
+        let res = nex.parse_ntax(tax);
+        assert_eq!(5, res);
     }
 
     #[test]
