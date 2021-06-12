@@ -78,9 +78,7 @@ impl Nexus {
                 command if command.starts_with("format") => {
                     commands.format.push_str(&read.trim().to_lowercase())
                 }
-                command if command.starts_with("matrix") => {
-                    commands.matrix.push_str(&read.trim().to_uppercase())
-                }
+                command if command.starts_with("matrix") => commands.matrix.push_str(&read.trim()),
                 _ => (),
             };
         });
@@ -116,6 +114,10 @@ impl Nexus {
             });
     }
 
+    // Iterate each matrix. Convert dna to lowercase for
+    // consistency with the other blocks lettercase.
+    // This also matches biopython format.
+    // The ID text is left intact.
     fn parse_matrix(&mut self, read: &mut String) {
         read.pop(); // remove terminated semicolon.
         let matrix: Vec<&str> = read.split('\n').collect();
@@ -127,7 +129,7 @@ impl Nexus {
                 let seq: Vec<&str> = line.split_whitespace().collect();
                 self.check_seq_len(seq.len());
                 let id = seq[0].to_string();
-                let dna = seq[1].to_string();
+                let dna = seq[1].to_string().to_lowercase();
                 self.check_valid_dna(&id, &dna);
                 #[allow(clippy::all)]
                 if self.matrix.contains_key(&id) {
@@ -368,7 +370,7 @@ mod test {
         let mut nex = Nexus::new();
         nex.read(sample).unwrap();
         let key = String::from("ABEF");
-        let res = String::from("GATATA---");
+        let res = String::from("gatata---");
         assert_eq!(Some(&res), nex.matrix.get(&key));
     }
 }
