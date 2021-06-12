@@ -5,5 +5,5 @@ pub enum SeqFormat {
 
 // Alphabeth for dna. Include IUPAC characters plus missing (?)
 pub fn valid_dna() -> String {
-    String::from("ACGTRYSWKMBDHVN.-?")
+    String::from("ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?")
 }
