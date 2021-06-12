@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 
 use crate::common::SeqFormat;
 
-#[allow(dead_code)]
 pub struct SeqWriter<'m> {
     path: PathBuf,
     outname: PathBuf,
@@ -57,6 +56,7 @@ impl<'m> SeqWriter<'m> {
     }
 
     pub fn write_fasta(&mut self) {
+        self.get_output_name(&SeqFormat::Fasta);
         let mut writer = self.create_output_file(&self.outname);
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
@@ -205,6 +205,6 @@ mod test {
         let gap = Some('-');
         let matrix = BTreeMap::new();
         let convert = SeqWriter::new(".", &matrix, ntax, nchar, datatype, missing, gap);
-        assert_eq!(10, convert.insert_whitespaces(id, max_len).len())
+        assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 }
