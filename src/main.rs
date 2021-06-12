@@ -1,4 +1,5 @@
 mod cli;
+mod common;
 mod converter;
 mod fasta;
 mod nexus;

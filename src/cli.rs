@@ -1,5 +1,6 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
 
+use crate::common::SeqFormat;
 use crate::fasta;
 use crate::nexus;
 use crate::phylip;
@@ -93,11 +94,10 @@ fn convert_nexus(matches: &ArgMatches) {
     let input = matches
         .value_of("input")
         .expect("CANNOT FIND AN INPUT FILE");
-    let phylip = matches.is_present("phylip");
-    if phylip {
-        nexus::convert_to_phylip(input);
+    if matches.is_present("phylip") {
+        nexus::convert_nexus(input, SeqFormat::Phylip);
     } else {
-        nexus::convert_to_fasta(&input);
+        nexus::convert_nexus(input, SeqFormat::Fasta);
     }
 }
 

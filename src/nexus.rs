@@ -3,22 +3,20 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
 
+use crate::common::SeqFormat;
 use crate::converter::Converter;
 
-pub fn convert_to_fasta(path: &str) {
+pub fn convert_nexus(path: &str, format: SeqFormat) {
     let mut nex = Nexus::new(path);
     nex.read().expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
     let mut convert = Converter::new(path, &matrix);
-    convert.write_fasta();
-}
 
-pub fn convert_to_phylip(path: &str) {
-    let mut nex = Nexus::new(path);
-    nex.read().expect("CANNOT READ NEXUS FILES");
-    let matrix = nex.parse_matrix();
-    let mut convert = Converter::new(path, &matrix);
-    convert.write_phylip();
+    match format {
+        SeqFormat::Phylip => convert.write_phylip(),
+        SeqFormat::Fasta => convert.write_fasta(),
+        _ => (),
+    }
 }
 
 struct Nexus {
