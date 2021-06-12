@@ -59,12 +59,26 @@ impl Nexus {
         self.parse_matrix(&mut commands.matrix);
         self.parse_dimensions(&mut commands.dimensions);
         self.parse_format(&mut commands.format);
+        self.check_ntax_matches();
         Ok(())
     }
 
     fn check_nexus(&self, line: &str) {
         if !line.to_lowercase().starts_with("#nexus") {
             panic!("INVALID NEXUS FORMAT");
+        }
+    }
+
+    fn check_ntax_matches(&self) {
+        if self.matrix.len() != self.ntax {
+            panic!(
+                "ERROR READING NEXUS FILES. \
+            THE NUMBER OF TAXA IS NOT MATCH THE INFORMATION IN THE BLOCK.\
+            IN THE BLOCK: {} \
+            AND TAXA FOUND: {}",
+                self.ntax,
+                self.matrix.len()
+            );
         }
     }
 
@@ -321,6 +335,22 @@ mod test {
         let id = "ABCD";
         let dna = String::from("AGTC?-Z");
         nex.check_valid_dna(id, &dna);
+    }
+
+    #[test]
+    // #[should_panic]
+    fn check_match_ntax_test() {
+        let sample = "test_files/simple.nex";
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_match_ntax_panic_test() {
+        let sample = "test_files/unmatched_block.nex";
+        let mut nex = Nexus::new();
+        nex.read(sample).unwrap();
     }
 
     #[test]
