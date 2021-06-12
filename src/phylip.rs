@@ -54,7 +54,7 @@ impl Phylip {
     }
 
     fn parse_header<'a>(&'a mut self, header_line: &'a str) {
-        let header: IResult<&'a str, (&'a str, &'a str)> =
+        let header: IResult<&str, (&str, &str)> =
             sequence::separated_pair(complete::digit0, complete::space0, complete::digit0)(
                 header_line,
             );
