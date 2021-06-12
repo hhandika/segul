@@ -194,13 +194,9 @@ impl Nexus {
     }
 
     fn check_valid_dna(&self, id: &str, dna: &String) {
-        if !self.is_valid_dna(dna) {
+        if !common::is_valid_dna(dna) {
             panic!("INVALID DNA SEQUENCE FOUND FOR {}", id);
         }
-    }
-
-    fn is_valid_dna(&self, dna: &String) -> bool {
-        dna.chars().all(|char| common::valid_dna().contains(char))
     }
 
     fn check_seq_len(&self, len: usize) {
@@ -315,20 +311,6 @@ mod test {
         let nex = Nexus::new();
         let res = nex.parse_ntax(tax);
         assert_eq!(5, res);
-    }
-
-    #[test]
-    fn check_valid_dna_test() {
-        let nex = Nexus::new();
-        let dna = String::from("AGTC?-");
-        assert_eq!(true, nex.is_valid_dna(&dna));
-    }
-
-    #[test]
-    fn check_invalid_dna_test() {
-        let nex = Nexus::new();
-        let dna = String::from("AGTC?-Z");
-        assert_eq!(false, nex.is_valid_dna(&dna));
     }
 
     #[test]
