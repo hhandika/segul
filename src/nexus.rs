@@ -27,22 +27,6 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     }
 }
 
-struct NexusCommands {
-    matrix: String,
-    dimensions: String,
-    format: String,
-}
-
-impl NexusCommands {
-    fn new() -> Self {
-        Self {
-            matrix: String::new(),
-            dimensions: String::new(),
-            format: String::new(),
-        }
-    }
-}
-
 struct Nexus {
     matrix: BTreeMap<String, String>,
     ntax: usize,
@@ -83,9 +67,9 @@ impl Nexus {
         }
     }
 
-    fn parse_blocks<R: Read>(&self, buff: R) -> NexusCommands {
+    fn parse_blocks<R: Read>(&self, buff: R) -> Commands {
         let reader = Reader::new(buff);
-        let mut commands = NexusCommands::new();
+        let mut commands = Commands::new();
         reader.into_iter().for_each(|read| {
             match read.to_lowercase() {
                 command if command.starts_with("dimensions") => {
@@ -223,6 +207,22 @@ impl Nexus {
                 "UNSUPPORTED NEXUS FORMAT. \
             MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs"
             );
+        }
+    }
+}
+
+struct Commands {
+    matrix: String,
+    dimensions: String,
+    format: String,
+}
+
+impl Commands {
+    fn new() -> Self {
+        Self {
+            matrix: String::new(),
+            dimensions: String::new(),
+            format: String::new(),
         }
     }
 }
