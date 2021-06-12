@@ -1,6 +1,7 @@
 pub enum SeqFormat {
-    Phylip,
     Fasta,
+    Nexus,
+    Phylip,
 }
 
 // Alphabeth for dna.

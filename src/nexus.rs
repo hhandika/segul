@@ -22,8 +22,9 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     );
 
     match filetype {
-        SeqFormat::Phylip => convert.write_phylip(),
+        SeqFormat::Phylip => convert.write_sequence(&filetype),
         SeqFormat::Fasta => convert.write_fasta(),
+        _ => (),
     }
 }
 
@@ -193,7 +194,7 @@ impl Nexus {
         }
     }
 
-    fn check_valid_dna(&self, id: &str, dna: &String) {
+    fn check_valid_dna(&self, id: &str, dna: &str) {
         if !common::is_valid_dna(dna) {
             panic!("INVALID DNA SEQUENCE FOUND FOR {}", id);
         }
