@@ -5,18 +5,37 @@ use std::io::LineWriter;
 use std::iter;
 use std::path::{Path, PathBuf};
 
+#[allow(dead_code)]
 pub struct SeqWriter<'m> {
     path: PathBuf,
     outname: PathBuf,
     matrix: &'m BTreeMap<String, String>,
+    ntax: Option<usize>,
+    nchar: Option<usize>,
+    datatype: Option<String>,
+    missing: Option<char>,
+    gap: Option<char>,
 }
 
 impl<'m> SeqWriter<'m> {
-    pub fn new(path: &str, matrix: &'m BTreeMap<String, String>) -> Self {
+    pub fn new(
+        path: &str,
+        matrix: &'m BTreeMap<String, String>,
+        ntax: Option<usize>,
+        nchar: Option<usize>,
+        datatype: Option<String>,
+        missing: Option<char>,
+        gap: Option<char>,
+    ) -> Self {
         Self {
             path: PathBuf::from(path),
             outname: PathBuf::new(),
             matrix,
+            ntax,
+            nchar,
+            datatype,
+            missing,
+            gap,
         }
     }
 
@@ -95,8 +114,13 @@ mod test {
     fn insert_whitespaces_test() {
         let max_len = 10;
         let id = "ABCDE";
+        let ntax = Some(2);
+        let nchar = Some(5);
+        let datatype = Some(String::from("dna"));
+        let missing = Some('?');
+        let gap = Some('-');
         let matrix = BTreeMap::new();
-        let convert = SeqWriter::new(".", &matrix);
+        let convert = SeqWriter::new(".", &matrix, ntax, nchar, datatype, missing, gap);
         assert_eq!(10, convert.insert_whitespaces(id, max_len).len())
     }
 }
