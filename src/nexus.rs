@@ -27,17 +27,17 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     }
 }
 
-struct Nexus {
-    matrix: BTreeMap<String, String>,
-    ntax: usize,
-    nchar: usize,
-    datatype: String,
-    missing: char,
-    gap: char,
+pub struct Nexus {
+    pub matrix: BTreeMap<String, String>,
+    pub ntax: usize,
+    pub nchar: usize,
+    pub datatype: String,
+    pub missing: char,
+    pub gap: char,
 }
 
 impl Nexus {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             matrix: BTreeMap::new(),
             ntax: 0,
@@ -48,7 +48,7 @@ impl Nexus {
         }
     }
 
-    fn read(&mut self, path: &str) -> Result<()> {
+    pub fn read(&mut self, path: &str) -> Result<()> {
         let input = File::open(path).expect("CANNOT OPEN THE INPUT FILE");
         let mut buff = BufReader::new(input);
         let mut header = String::new();
