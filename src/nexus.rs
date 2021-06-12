@@ -6,39 +6,37 @@ use std::io::{BufReader, Lines, Read, Result};
 use crate::converter::Converter;
 
 pub fn convert_to_fasta(path: &str) {
-    let input = File::open(path).unwrap();
-    let buff = BufReader::new(input);
-    let mut nex = Nexus::new();
-    nex.read(buff).expect("CANNOT READ NEXUS FILES");
+    let mut nex = Nexus::new(path);
+    nex.read().expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
     let mut convert = Converter::new(path, &matrix);
     convert.write_fasta();
 }
 
 pub fn convert_to_phylip(path: &str) {
-    let input = File::open(path).unwrap();
-    let buff = BufReader::new(input);
-    let mut nex = Nexus::new();
-
-    nex.read(buff).expect("CANNOT READ NEXUS FILES");
+    let mut nex = Nexus::new(path);
+    nex.read().expect("CANNOT READ NEXUS FILES");
     let matrix = nex.parse_matrix();
     let mut convert = Converter::new(path, &matrix);
     convert.write_phylip();
 }
 
 struct Nexus {
+    input: String,
     matrix: String,
 }
 
 impl Nexus {
-    fn new() -> Self {
+    fn new(path: &str) -> Self {
         Self {
+            input: String::from(path),
             matrix: String::new(),
         }
     }
 
-    fn read<R: Read>(&mut self, reader: R) -> Result<()> {
-        let mut buff = BufReader::new(reader);
+    fn read(&mut self) -> Result<()> {
+        let input = File::open(&self.input).expect("CANNOT OPEN THE INPUT FILE");
+        let mut buff = BufReader::new(input);
         let mut header = String::new();
         buff.read_line(&mut header).unwrap();
         self.check_nexus(&header.trim());
@@ -133,10 +131,8 @@ mod test {
     #[test]
     fn nexus_reading_simple_test() {
         let sample = "test_files/simple.nex";
-        let input = File::open(sample).unwrap();
-        let buff = BufReader::new(input);
-        let mut nex = Nexus::new();
-        nex.read(buff).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         let read = nex.parse_matrix();
         assert_eq!(1, read.len());
     }
@@ -144,10 +140,8 @@ mod test {
     #[test]
     fn nexus_reading_complete_test() {
         let sample = "test_files/complete.nex";
-        let input = File::open(sample).unwrap();
-        let buff = BufReader::new(input);
-        let mut nex = Nexus::new();
-        nex.read(buff).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         let read = nex.parse_matrix();
         assert_eq!(5, read.len());
     }
@@ -155,10 +149,8 @@ mod test {
     #[test]
     fn nexus_reading_tabulated_test() {
         let sample = "test_files/tabulated.nex";
-        let input = File::open(sample).unwrap();
-        let buff = BufReader::new(input);
-        let mut nex = Nexus::new();
-        nex.read(buff).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         let read = nex.parse_matrix();
         assert_eq!(2, read.len());
     }
@@ -167,20 +159,16 @@ mod test {
     #[should_panic]
     fn check_invalid_nexus_test() {
         let sample = "test_files/simple.fas";
-        let input = File::open(sample).unwrap();
-        let buff = BufReader::new(input);
-        let mut nex = Nexus::new();
-        nex.read(buff).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
     }
 
     #[test]
     #[should_panic]
     fn nexus_duplicate_panic_test() {
         let sample = "test_files/duplicates.nex";
-        let input = File::open(sample).unwrap();
-        let buff = BufReader::new(input);
-        let mut nex = Nexus::new();
-        nex.read(buff).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         nex.parse_matrix();
     }
 
@@ -188,20 +176,16 @@ mod test {
     #[should_panic]
     fn nexus_space_panic_test() {
         let sample = "test_files/idspaces.nex";
-        let input = File::open(sample).unwrap();
-        let buff = BufReader::new(input);
-        let mut nex = Nexus::new();
-        nex.read(buff).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         nex.parse_matrix();
     }
 
     #[test]
     fn nexus_sequence_test() {
         let sample = "test_files/tabulated.nex";
-        let input = File::open(sample).unwrap();
-        let buff = BufReader::new(input);
-        let mut nex = Nexus::new();
-        nex.read(buff).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         let read = nex.parse_matrix();
         let key = String::from("ABEF");
         let res = String::from("GATATA---");
