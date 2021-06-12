@@ -70,7 +70,7 @@ impl Nexus {
         let mut header = String::new();
         buff.read_line(&mut header)?;
         self.check_nexus(&header.trim());
-        let mut commands = self.parse_nexus(buff);
+        let mut commands = self.parse_blocks(buff);
         self.parse_matrix(&mut commands.matrix);
         self.parse_dimensions(&mut commands.dimensions);
         self.parse_format(&mut commands.format);
@@ -83,19 +83,19 @@ impl Nexus {
         }
     }
 
-    fn parse_nexus<R: Read>(&self, buff: R) -> NexusCommands {
+    fn parse_blocks<R: Read>(&self, buff: R) -> NexusCommands {
         let reader = Reader::new(buff);
         let mut commands = NexusCommands::new();
         reader.into_iter().for_each(|read| {
             match read.to_lowercase() {
-                command if command.starts_with("matrix") => {
-                    commands.matrix.push_str(&read.trim().to_uppercase())
-                }
                 command if command.starts_with("dimensions") => {
                     commands.dimensions.push_str(&read.trim().to_lowercase())
                 }
                 command if command.starts_with("format") => {
                     commands.format.push_str(&read.trim().to_lowercase())
+                }
+                command if command.starts_with("matrix") => {
+                    commands.matrix.push_str(&read.trim().to_uppercase())
                 }
                 _ => (),
             };
