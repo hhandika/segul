@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -30,7 +30,7 @@ pub fn convert_phylip(path: &str, filetype: SeqFormat) {
 }
 
 struct Phylip {
-    matrix: BTreeMap<String, String>,
+    matrix: HashMap<String, String>,
     ntax: usize,
     nchar: usize,
 }
@@ -38,7 +38,7 @@ struct Phylip {
 impl Phylip {
     fn new() -> Self {
         Self {
-            matrix: BTreeMap::new(),
+            matrix: HashMap::new(),
             ntax: 0,
             nchar: 0,
         }

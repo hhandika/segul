@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{LineWriter, Result};
@@ -10,7 +10,7 @@ use crate::common::SeqFormat;
 pub struct SeqWriter<'m> {
     path: PathBuf,
     outname: PathBuf,
-    matrix: &'m BTreeMap<String, String>,
+    matrix: &'m HashMap<String, String>,
     id_len: usize,
     ntax: Option<usize>,
     nchar: Option<usize>,
@@ -22,7 +22,7 @@ pub struct SeqWriter<'m> {
 impl<'m> SeqWriter<'m> {
     pub fn new(
         path: &str,
-        matrix: &'m BTreeMap<String, String>,
+        matrix: &'m HashMap<String, String>,
         ntax: Option<usize>,
         nchar: Option<usize>,
         datatype: Option<String>,
@@ -203,7 +203,7 @@ mod test {
         let datatype = Some(String::from("dna"));
         let missing = Some('?');
         let gap = Some('-');
-        let matrix = BTreeMap::new();
+        let matrix = HashMap::new();
         let convert = SeqWriter::new(".", &matrix, ntax, nchar, datatype, missing, gap);
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }

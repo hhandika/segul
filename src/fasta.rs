@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, LineWriter, Lines};
@@ -36,9 +36,9 @@ pub fn get_stats(path: &str) {
     });
 }
 
-fn get_records<R: Read>(buff: R) -> BTreeMap<String, String> {
+fn get_records<R: Read>(buff: R) -> HashMap<String, String> {
     let fasta = FastaReader::new(buff);
-    let mut records: BTreeMap<String, String> = BTreeMap::new();
+    let mut records: HashMap<String, String> = HashMap::new();
     fasta.into_iter().for_each(|fas| {
         #[allow(clippy::all)]
         if records.contains_key(&fas.id) {

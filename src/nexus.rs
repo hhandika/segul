@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
@@ -29,7 +29,7 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
 }
 
 pub struct Nexus {
-    pub matrix: BTreeMap<String, String>,
+    pub matrix: HashMap<String, String>,
     pub ntax: usize,
     pub nchar: usize,
     pub datatype: String,
@@ -40,7 +40,7 @@ pub struct Nexus {
 impl Nexus {
     pub fn new() -> Self {
         Self {
-            matrix: BTreeMap::new(),
+            matrix: HashMap::new(),
             ntax: 0,
             nchar: 0,
             datatype: String::new(),
