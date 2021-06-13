@@ -77,6 +77,7 @@ fn get_args(version: &str) -> ArgMatches {
                         )
                         .arg(
                             Arg::with_name("format")
+                                .short("f")
                                 .long("format")
                                 .help("Inputs an output format. Choice: nexus, fasta, phylip.")
                                 .takes_value(true)
@@ -86,11 +87,12 @@ fn get_args(version: &str) -> ArgMatches {
                         )
                         .arg(
                             Arg::with_name("partition")
+                                .short("-p")
                                 .long("part")
                                 .help("Inputs a partition format. Choice: nexus, phylip, nexsep.")
                                 .takes_value(true)
                                 .required(true)
-                                .default_value("nexus")
+                                .default_value("nexsep")
                                 .value_name("FORMAT"),
                         ),
                 ),
