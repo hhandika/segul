@@ -1,5 +1,6 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
 
+use crate::alignment;
 use crate::common::SeqFormat;
 use crate::fasta;
 use crate::nexus;
@@ -31,25 +32,59 @@ fn get_args(version: &str) -> ArgMatches {
                 ),
         )
         .subcommand(
-            App::new("nexus").about("Nexus Tools").subcommand(
-                App::new("convert")
-                    .about("Convert nexus")
-                    .arg(
-                        Arg::with_name("input")
-                            .short("i")
-                            .long("input")
-                            .help("Inputs file path")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("INPUT FILE"),
-                    )
-                    .arg(
-                        Arg::with_name("phylip")
-                            .long("phylip")
-                            .help("Convert nexus to phylip")
-                            .takes_value(false),
-                    ),
-            ),
+            App::new("nexus")
+                .about("Nexus Tools")
+                .subcommand(
+                    App::new("convert")
+                        .about("Convert nexus")
+                        .arg(
+                            Arg::with_name("input")
+                                .short("i")
+                                .long("input")
+                                .help("Inputs file path")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("INPUT FILE"),
+                        )
+                        .arg(
+                            Arg::with_name("phylip")
+                                .long("phylip")
+                                .help("Convert nexus to phylip")
+                                .takes_value(false),
+                        ),
+                )
+                .subcommand(
+                    App::new("concat")
+                        .about("Concat nexus alignments")
+                        .arg(
+                            Arg::with_name("dir")
+                                .short("d")
+                                .long("dir")
+                                .help("Input a dir to the alignment path")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("DIR"),
+                        )
+                        .arg(
+                            Arg::with_name("output")
+                                .short("o")
+                                .long("output")
+                                .help("Input an output file name")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("concat")
+                                .value_name("OUTPUT"),
+                        )
+                        .arg(
+                            Arg::with_name("format")
+                                .long("format")
+                                .help("Inputs an output format. Choice: nexus, fasta, phylip.")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("nexus")
+                                .value_name("FORMAT"),
+                        ),
+                ),
         )
         .subcommand(
             App::new("phylip").about("Any phylip tools").subcommand(
@@ -88,6 +123,7 @@ pub fn parse_cli(version: &str) {
 fn parse_nexus_subcommand(args: &ArgMatches) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => convert_nexus(convert_matches),
+        ("concata", Some(concat_matches)) => concat_nexus(concat_matches),
         _ => unreachable!(),
     }
 }
@@ -107,6 +143,31 @@ fn convert_nexus(matches: &ArgMatches) {
         nexus::convert_nexus(input, SeqFormat::Phylip);
     } else {
         nexus::convert_nexus(input, SeqFormat::Fasta);
+    }
+}
+
+fn concat_nexus(matches: &ArgMatches) {
+    let dir = matches.value_of("dir").expect("CANNOT READ DIR PATH");
+    let output = matches.value_of("output").expect("CANNOT READ OUTPUT PATH");
+    let format = matches
+        .value_of("format")
+        .expect("CANNOT READ FORMAT INPUT");
+    let filetype = get_file_type(format);
+
+    alignment::concat_nexus(dir, output, filetype);
+}
+
+fn get_file_type(format: &str) -> SeqFormat {
+    match format {
+        "nexus" => SeqFormat::Nexus,
+        "phylip" => SeqFormat::Phylip,
+        "fasta" => SeqFormat::Fasta,
+        _ => panic!(
+            "UNSUPPORTED FORMAT. \
+        THE PROGRAM ONLY ACCEPT nexus, phylip, and fasta. All in lowercase.\
+        Your input: {} ",
+            format
+        ),
     }
 }
 
