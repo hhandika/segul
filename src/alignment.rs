@@ -5,11 +5,11 @@ use glob::glob;
 use linked_hash_map::LinkedHashMap;
 use linked_hash_set::LinkedHashSet;
 
-use crate::common::SeqFormat;
+use crate::common::{Partition, SeqFormat, SeqPartition};
 use crate::nexus::Nexus;
 use crate::writer::SeqWriter;
 
-pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat) {
+pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat, partition: SeqPartition) {
     let mut nex = ConcatNexus::new();
     let path = Path::new(dir).join(outname);
     nex.concat_from_nexus(dir);
@@ -21,6 +21,8 @@ pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat) {
         Some(nex.datatype),
         Some(nex.missing),
         Some(nex.gap),
+        Some(nex.partition),
+        partition,
     );
 
     match filetype {
@@ -32,8 +34,6 @@ pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat) {
 
 #[allow(dead_code)]
 struct ConcatNexus {
-    start: usize,
-    end: usize,
     genes_pos: LinkedHashMap<usize, usize>,
     alignment: LinkedHashMap<String, String>,
     ntax: usize,
@@ -41,7 +41,7 @@ struct ConcatNexus {
     datatype: String,
     missing: char,
     gap: char,
-    id: LinkedHashSet<String>,
+    partition: Vec<Partition>,
     files: Vec<PathBuf>,
 }
 
@@ -49,8 +49,6 @@ struct ConcatNexus {
 impl ConcatNexus {
     fn new() -> Self {
         Self {
-            start: 0,
-            end: 0,
             genes_pos: LinkedHashMap::new(),
             alignment: LinkedHashMap::new(),
             datatype: String::from("dna"),
@@ -58,7 +56,7 @@ impl ConcatNexus {
             nchar: 0,
             missing: '?',
             gap: '-',
-            id: LinkedHashSet::new(),
+            partition: Vec::new(),
             files: Vec::new(),
         }
     }
@@ -67,8 +65,8 @@ impl ConcatNexus {
         let pattern = format!("{}/*.nex*", dir);
         self.get_files(&pattern);
         self.files.sort();
-        self.id = self.get_id_from_nexus();
-        self.alignment = self.concat();
+        let id = self.get_id_from_nexus();
+        self.alignment = self.concat(&id);
         self.ntax = self.alignment.len();
     }
 
@@ -94,14 +92,24 @@ impl ConcatNexus {
         id
     }
 
-    fn concat(&mut self) -> LinkedHashMap<String, String> {
+    fn concat(&mut self, id: &LinkedHashSet<String>) -> LinkedHashMap<String, String> {
         let mut alignment = LinkedHashMap::new();
         let mut nchar = 0;
+        let mut gene_start = 0;
+        let mut gene_end = 0;
+        let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
             let mut nex = Nexus::new(file);
             nex.read().expect("CANNOT READ A NEXUS FILE");
             nchar += nex.nchar;
-            self.id.iter().for_each(|id| {
+            gene_end += nex.nchar;
+            let mut part = Partition::new();
+            part.gene = file.file_stem().unwrap().to_string_lossy().to_string();
+            part.start = gene_start;
+            part.end = gene_end;
+            partition.push(part);
+            gene_start = gene_end + 1;
+            id.iter().for_each(|id| {
                 if !nex.matrix.contains_key(id) {
                     let seq = self.get_gaps(nex.nchar);
                     self.insert_alignment(&mut alignment, id, seq)
@@ -112,6 +120,7 @@ impl ConcatNexus {
             })
         });
         self.nchar = nchar;
+        self.partition = partition;
         alignment
     }
 
@@ -151,8 +160,7 @@ mod test {
         let path = "test_files/concat/";
         let mut concat = ConcatNexus::new();
         concat.concat_from_nexus(path);
-        let alignment = concat.concat();
-        assert_eq!(3, alignment.len());
+        assert_eq!(3, concat.alignment.len());
     }
 
     #[test]
@@ -160,9 +168,23 @@ mod test {
         let path = "test_files/concat/";
         let mut concat = ConcatNexus::new();
         concat.concat_from_nexus(path);
-        let alignment = concat.concat();
-        let abce = alignment.get("ABCE").unwrap();
+        let abce = concat.alignment.get("ABCE").unwrap();
         let res = "--------------gatattagtata";
         assert_eq!(res, abce);
+    }
+
+    #[test]
+    fn concat_partition_test() {
+        let path = "test_files/concat/";
+        let mut concat = ConcatNexus::new();
+        concat.concat_from_nexus(path);
+        assert_eq!(0, concat.partition[0].start);
+        assert_eq!(6, concat.partition[0].end);
+        assert_eq!(7, concat.partition[1].start);
+        assert_eq!(14, concat.partition[1].end);
+        assert_eq!(15, concat.partition[2].start);
+        assert_eq!(20, concat.partition[2].end);
+        assert_eq!(21, concat.partition[3].start);
+        assert_eq!(26, concat.partition[3].end);
     }
 }

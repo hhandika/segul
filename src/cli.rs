@@ -1,7 +1,7 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
 
 use crate::alignment;
-use crate::common::SeqFormat;
+use crate::common::{SeqFormat, SeqPartition};
 use crate::fasta;
 use crate::nexus;
 use crate::phylip;
@@ -83,6 +83,15 @@ fn get_args(version: &str) -> ArgMatches {
                                 .required(true)
                                 .default_value("nexus")
                                 .value_name("FORMAT"),
+                        )
+                        .arg(
+                            Arg::with_name("partition")
+                                .long("part")
+                                .help("Inputs a partition format. Choice: nexus, phylip, nexsep.")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("nexus")
+                                .value_name("FORMAT"),
                         ),
                 ),
         )
@@ -152,9 +161,22 @@ fn concat_nexus(matches: &ArgMatches) {
     let format = matches
         .value_of("format")
         .expect("CANNOT READ FORMAT INPUT");
+    let part = matches
+        .value_of("partition")
+        .expect("CANNOT READ PARTITION FORMAT");
     let filetype = get_file_type(format);
+    let partition = get_partition_format(part);
 
-    alignment::concat_nexus(dir, output, filetype);
+    alignment::concat_nexus(dir, output, filetype, partition);
+}
+
+fn get_partition_format(partition: &str) -> SeqPartition {
+    match partition {
+        "nexus" => SeqPartition::Nexus,
+        "phylip" => SeqPartition::Phylip,
+        "nexsep" => SeqPartition::NexusSeparate,
+        _ => SeqPartition::Nexus,
+    }
 }
 
 fn get_file_type(format: &str) -> SeqFormat {

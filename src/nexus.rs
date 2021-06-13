@@ -6,7 +6,7 @@ use std::path::Path;
 use linked_hash_map::LinkedHashMap;
 use nom::{bytes::complete, character, sequence, IResult};
 
-use crate::common::{self, SeqFormat};
+use crate::common::{self, SeqFormat, SeqPartition};
 use crate::writer::SeqWriter;
 
 pub fn convert_nexus(path: &str, filetype: SeqFormat) {
@@ -21,6 +21,8 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
         Some(nex.datatype),
         Some(nex.missing),
         Some(nex.gap),
+        None,
+        SeqPartition::None,
     );
 
     match filetype {

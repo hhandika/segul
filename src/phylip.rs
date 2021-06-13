@@ -6,7 +6,7 @@ use std::path::Path;
 use linked_hash_map::LinkedHashMap;
 use nom::{character::complete, sequence, IResult};
 
-use crate::common::SeqFormat;
+use crate::common::{SeqFormat, SeqPartition};
 use crate::writer::SeqWriter;
 
 pub fn convert_phylip(path: &str, filetype: SeqFormat) {
@@ -21,6 +21,8 @@ pub fn convert_phylip(path: &str, filetype: SeqFormat) {
         Some(String::from("dna")),
         Some('?'),
         Some('-'),
+        None,
+        SeqPartition::None,
     );
 
     match filetype {

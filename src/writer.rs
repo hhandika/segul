@@ -4,7 +4,7 @@ use std::io::{LineWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use crate::common::SeqFormat;
+use crate::common::{Partition, SeqFormat, SeqPartition};
 use linked_hash_map::LinkedHashMap;
 
 pub struct SeqWriter<'a> {
@@ -17,6 +17,8 @@ pub struct SeqWriter<'a> {
     datatype: Option<String>,
     missing: Option<char>,
     gap: Option<char>,
+    partition: Option<Vec<Partition>>,
+    part_format: SeqPartition,
 }
 
 impl<'a> SeqWriter<'a> {
@@ -28,6 +30,8 @@ impl<'a> SeqWriter<'a> {
         datatype: Option<String>,
         missing: Option<char>,
         gap: Option<char>,
+        partition: Option<Vec<Partition>>,
+        part_format: SeqPartition,
     ) -> Self {
         Self {
             path,
@@ -39,6 +43,8 @@ impl<'a> SeqWriter<'a> {
             datatype,
             missing,
             gap,
+            partition,
+            part_format,
         }
     }
 
@@ -74,6 +80,9 @@ impl<'a> SeqWriter<'a> {
             self.nchar.as_ref().unwrap()
         )?;
         self.write_matrix(&mut writer);
+        if self.partition.is_some() {
+            self.write_partition_sep();
+        }
         self.display_save_path();
         Ok(())
     }
@@ -102,6 +111,14 @@ impl<'a> SeqWriter<'a> {
         self.write_matrix(&mut writer);
         writeln!(writer, ";")?;
         writeln!(writer, "end;")?;
+        if self.partition.is_some() {
+            match self.part_format {
+                SeqPartition::Nexus => self
+                    .write_part_nexus(&mut writer)
+                    .expect("CANNOT WRITER NEXUS PARTITION"),
+                _ => self.write_part_nexus_sep(),
+            }
+        }
         self.display_save_path();
         Ok(())
     }
@@ -115,6 +132,49 @@ impl<'a> SeqWriter<'a> {
         });
     }
 
+    fn write_partition_sep(&self) {
+        match self.part_format {
+            SeqPartition::NexusSeparate => self.write_part_nexus_sep(),
+            SeqPartition::Phylip => self.write_part_phylip(),
+            _ => eprintln!("UNKNOWN PARTITION FORMAT"),
+        }
+    }
+
+    fn write_part_phylip(&self) {
+        let fname = format!("{}_partition.txt", self.path.display());
+        let mut writer = self.create_output_file(Path::new(&fname));
+        match &self.partition {
+            Some(partition) => partition.iter().for_each(|part| {
+                writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
+            }),
+            None => eprintln!("CANNOT READ PARTITION DATA"),
+        }
+    }
+
+    fn write_part_nexus_sep(&self) {
+        let fname = format!("{}_partition.nex", self.path.display());
+        let mut writer = self.create_output_file(Path::new(&fname));
+        self.write_part_nexus(&mut writer)
+            .expect("CANNOT WRITE NEXUS PARTITION");
+    }
+
+    fn write_part_nexus<W: Write>(&self, writer: &mut W) -> Result<()> {
+        writeln!(writer, "begin sets;")?;
+        match &self.partition {
+            Some(partition) => partition.iter().for_each(|part| {
+                writeln!(
+                    writer,
+                    "charset {} = {}-{};",
+                    part.gene, part.start, part.end
+                )
+                .unwrap();
+            }),
+            None => panic!("CANNOT READ PARTITION DATA"),
+        }
+        writeln!(writer, "end;")?;
+        Ok(())
+    }
+
     fn check_sequence_len(&self, len: usize, taxa: &str) {
         if len != *self.nchar.as_ref().unwrap() {
             panic!(
@@ -124,6 +184,7 @@ impl<'a> SeqWriter<'a> {
             )
         }
     }
+
     fn display_save_path(&self) {
         println!("Save as {}", self.outname.display());
     }
@@ -204,7 +265,17 @@ mod test {
         let missing = Some('?');
         let gap = Some('-');
         let matrix = LinkedHashMap::new();
-        let convert = SeqWriter::new(Path::new("."), &matrix, ntax, nchar, datatype, missing, gap);
+        let convert = SeqWriter::new(
+            Path::new("."),
+            &matrix,
+            ntax,
+            nchar,
+            datatype,
+            missing,
+            gap,
+            None,
+            SeqPartition::None,
+        );
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 }

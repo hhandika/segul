@@ -4,6 +4,29 @@ pub enum SeqFormat {
     Phylip,
 }
 
+pub enum SeqPartition {
+    Nexus,
+    NexusSeparate,
+    Phylip,
+    None,
+}
+
+pub struct Partition {
+    pub gene: String,
+    pub start: usize,
+    pub end: usize,
+}
+
+impl Partition {
+    pub fn new() -> Self {
+        Self {
+            gene: String::new(),
+            start: 0,
+            end: 0,
+        }
+    }
+}
+
 // Alphabeth for dna.
 // Include IUPAC characters plus missing symbol (?)
 pub fn is_valid_dna(dna: &str) -> bool {
