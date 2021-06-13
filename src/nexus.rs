@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
 use std::path::Path;
 
+use linked_hash_map::LinkedHashMap;
 use nom::{bytes::complete, character, sequence, IResult};
 
 use crate::common::{self, SeqFormat};
@@ -31,7 +31,7 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
 }
 
 pub struct Nexus {
-    pub matrix: HashMap<String, String>,
+    pub matrix: LinkedHashMap<String, String>,
     pub ntax: usize,
     pub nchar: usize,
     pub datatype: String,
@@ -42,7 +42,7 @@ pub struct Nexus {
 impl Nexus {
     pub fn new() -> Self {
         Self {
-            matrix: HashMap::new(),
+            matrix: LinkedHashMap::new(),
             ntax: 0,
             nchar: 0,
             datatype: String::new(),

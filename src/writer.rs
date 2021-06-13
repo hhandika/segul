@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{LineWriter, Result};
@@ -6,11 +5,12 @@ use std::iter;
 use std::path::{Path, PathBuf};
 
 use crate::common::SeqFormat;
+use linked_hash_map::LinkedHashMap;
 
 pub struct SeqWriter<'a> {
     path: &'a Path,
     outname: PathBuf,
-    matrix: &'a HashMap<String, String>,
+    matrix: &'a LinkedHashMap<String, String>,
     id_len: usize,
     ntax: Option<usize>,
     nchar: Option<usize>,
@@ -22,7 +22,7 @@ pub struct SeqWriter<'a> {
 impl<'a> SeqWriter<'a> {
     pub fn new(
         path: &'a Path,
-        matrix: &'a HashMap<String, String>,
+        matrix: &'a LinkedHashMap<String, String>,
         ntax: Option<usize>,
         nchar: Option<usize>,
         datatype: Option<String>,
@@ -203,7 +203,7 @@ mod test {
         let datatype = Some(String::from("dna"));
         let missing = Some('?');
         let gap = Some('-');
-        let matrix = HashMap::new();
+        let matrix = LinkedHashMap::new();
         let convert = SeqWriter::new(Path::new("."), &matrix, ntax, nchar, datatype, missing, gap);
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }

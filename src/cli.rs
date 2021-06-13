@@ -123,7 +123,7 @@ pub fn parse_cli(version: &str) {
 fn parse_nexus_subcommand(args: &ArgMatches) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => convert_nexus(convert_matches),
-        ("concata", Some(concat_matches)) => concat_nexus(concat_matches),
+        ("concat", Some(concat_matches)) => concat_nexus(concat_matches),
         _ => unreachable!(),
     }
 }

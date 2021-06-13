@@ -1,8 +1,9 @@
-use std::collections::{HashMap, HashSet};
 use std::iter;
 use std::path::{Path, PathBuf};
 
 use glob::glob;
+use linked_hash_map::LinkedHashMap;
+use linked_hash_set::LinkedHashSet;
 
 use crate::common::SeqFormat;
 use crate::nexus::Nexus;
@@ -33,14 +34,14 @@ pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat) {
 struct ConcatNexus {
     start: usize,
     end: usize,
-    genes_pos: HashMap<usize, usize>,
-    alignment: HashMap<String, String>,
+    genes_pos: LinkedHashMap<usize, usize>,
+    alignment: LinkedHashMap<String, String>,
     ntax: usize,
     nchar: usize,
     datatype: String,
     missing: char,
     gap: char,
-    id: HashSet<String>,
+    id: LinkedHashSet<String>,
     files: Vec<PathBuf>,
 }
 
@@ -50,14 +51,14 @@ impl ConcatNexus {
         Self {
             start: 0,
             end: 0,
-            genes_pos: HashMap::new(),
-            alignment: HashMap::new(),
+            genes_pos: LinkedHashMap::new(),
+            alignment: LinkedHashMap::new(),
             datatype: String::from("dna"),
             ntax: 0,
             nchar: 0,
             missing: '?',
             gap: '-',
-            id: HashSet::new(),
+            id: LinkedHashSet::new(),
             files: Vec::new(),
         }
     }
@@ -78,8 +79,8 @@ impl ConcatNexus {
             .collect();
     }
 
-    fn get_id_from_nexus(&mut self) -> HashSet<String> {
-        let mut id = HashSet::new();
+    fn get_id_from_nexus(&mut self) -> LinkedHashSet<String> {
+        let mut id = LinkedHashSet::new();
         self.files.iter().for_each(|file| {
             let mut nex = Nexus::new();
             nex.read(file).expect("CANNOT READ A NEXUS FILE");
@@ -91,8 +92,8 @@ impl ConcatNexus {
         id
     }
 
-    fn concat(&mut self) -> HashMap<String, String> {
-        let mut alignment = HashMap::new();
+    fn concat(&mut self) -> LinkedHashMap<String, String> {
+        let mut alignment = LinkedHashMap::new();
         let mut nchar = 0;
         self.files.iter().for_each(|file| {
             let mut nex = Nexus::new();
@@ -112,7 +113,12 @@ impl ConcatNexus {
         alignment
     }
 
-    fn insert_alignment(&self, alignment: &mut HashMap<String, String>, id: &str, values: String) {
+    fn insert_alignment(
+        &self,
+        alignment: &mut LinkedHashMap<String, String>,
+        id: &str,
+        values: String,
+    ) {
         if !alignment.contains_key(id) {
             alignment.insert(id.to_string(), values);
         } else {
