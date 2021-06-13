@@ -95,7 +95,7 @@ impl ConcatNexus {
     fn concat(&mut self, id: &LinkedHashSet<String>) -> LinkedHashMap<String, String> {
         let mut alignment = LinkedHashMap::new();
         let mut nchar = 0;
-        let mut gene_start = 0;
+        let mut gene_start = 1;
         let mut gene_end = 0;
         let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
@@ -178,7 +178,7 @@ mod test {
         let path = "test_files/concat/";
         let mut concat = ConcatNexus::new();
         concat.concat_from_nexus(path);
-        assert_eq!(0, concat.partition[0].start);
+        assert_eq!(1, concat.partition[0].start);
         assert_eq!(6, concat.partition[0].end);
         assert_eq!(7, concat.partition[1].start);
         assert_eq!(14, concat.partition[1].end);

@@ -116,6 +116,7 @@ impl<'a> SeqWriter<'a> {
                 SeqPartition::Nexus => self
                     .write_part_nexus(&mut writer)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
+                SeqPartition::Phylip => self.write_part_phylip(),
                 _ => self.write_part_nexus_sep(),
             }
         }
@@ -141,7 +142,10 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_part_phylip(&self) {
-        let fname = format!("{}_partition.txt", self.path.display());
+        let fname = format!(
+            "{}_partition.txt",
+            self.path.file_stem().unwrap().to_string_lossy()
+        );
         let mut writer = self.create_output_file(Path::new(&fname));
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
@@ -152,8 +156,12 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_part_nexus_sep(&self) {
-        let fname = format!("{}_partition.nex", self.path.display());
+        let fname = format!(
+            "{}_partition.nex",
+            self.path.file_stem().unwrap().to_string_lossy()
+        );
         let mut writer = self.create_output_file(Path::new(&fname));
+        writeln!(writer, "#nexus").unwrap();
         self.write_part_nexus(&mut writer)
             .expect("CANNOT WRITE NEXUS PARTITION");
     }
