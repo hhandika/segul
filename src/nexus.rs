@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
+use std::path::Path;
 
 use nom::{bytes::complete, character, sequence, IResult};
 
@@ -10,7 +11,8 @@ use crate::writer::SeqWriter;
 
 pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     let mut nex = Nexus::new();
-    nex.read(path).expect("CANNOT READ NEXUS FILES");
+    let path = Path::new(path);
+    nex.read(&path).expect("CANNOT READ NEXUS FILES");
     let mut convert = SeqWriter::new(
         path,
         &nex.matrix,
@@ -49,7 +51,7 @@ impl Nexus {
         }
     }
 
-    pub fn read(&mut self, path: &str) -> Result<()> {
+    pub fn read<P: AsRef<Path>>(&mut self, path: &P) -> Result<()> {
         let input = File::open(path).expect("CANNOT OPEN THE INPUT FILE");
         let mut buff = BufReader::new(input);
         let mut header = String::new();
@@ -286,33 +288,33 @@ mod test {
 
     #[test]
     fn nexus_reading_simple_test() {
-        let sample = "test_files/simple.nex";
+        let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
         assert_eq!(1, nex.matrix.len());
     }
 
     #[test]
     fn nexus_reading_complete_test() {
-        let sample = "test_files/complete.nex";
+        let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
         assert_eq!(5, nex.matrix.len());
     }
 
     #[test]
     fn nexus_reading_tabulated_test() {
-        let sample = "test_files/tabulated.nex";
+        let sample = Path::new("test_files/tabulated.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
         assert_eq!(2, nex.matrix.len());
     }
 
     #[test]
     fn nexus_parsing_object_test() {
-        let sample = "test_files/complete.nex";
+        let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
         assert_eq!(5, nex.ntax);
         assert_eq!(802, nex.nchar);
         assert_eq!("dna", nex.datatype);
@@ -340,48 +342,48 @@ mod test {
     #[test]
     // #[should_panic]
     fn check_match_ntax_test() {
-        let sample = "test_files/simple.nex";
+        let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn check_match_ntax_panic_test() {
-        let sample = "test_files/unmatched_block.nex";
+        let sample = Path::new("test_files/unmatched_block.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn check_invalid_nexus_test() {
-        let sample = "test_files/simple.fas";
+        let sample = Path::new("test_files/simple.fas");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn nexus_duplicate_panic_test() {
-        let sample = "test_files/duplicates.nex";
+        let sample = Path::new("test_files/duplicates.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn nexus_space_panic_test() {
-        let sample = "test_files/idspaces.nex";
+        let sample = Path::new("test_files/idspaces.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
     }
 
     #[test]
     fn nexus_sequence_test() {
-        let sample = "test_files/tabulated.nex";
+        let sample = Path::new("test_files/tabulated.nex");
         let mut nex = Nexus::new();
-        nex.read(sample).unwrap();
+        nex.read(&sample).unwrap();
         let key = String::from("ABEF");
         let res = String::from("gatata---");
         assert_eq!(Some(&res), nex.matrix.get(&key));
