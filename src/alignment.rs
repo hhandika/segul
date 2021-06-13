@@ -82,8 +82,8 @@ impl ConcatNexus {
     fn get_id_from_nexus(&mut self) -> LinkedHashSet<String> {
         let mut id = LinkedHashSet::new();
         self.files.iter().for_each(|file| {
-            let mut nex = Nexus::new();
-            nex.read(file).expect("CANNOT READ A NEXUS FILE");
+            let mut nex = Nexus::new(file);
+            nex.read().expect("CANNOT READ A NEXUS FILE");
             nex.matrix.keys().for_each(|key| {
                 if !id.contains(key) {
                     id.insert(key.to_string());
@@ -98,8 +98,8 @@ impl ConcatNexus {
         let mut alignment = LinkedHashMap::new();
         let mut nchar = 0;
         self.files.iter().for_each(|file| {
-            let mut nex = Nexus::new();
-            nex.read(file).expect("CANNOT READ A NEXUS FILE");
+            let mut nex = Nexus::new(file);
+            nex.read().expect("CANNOT READ A NEXUS FILE");
             nchar += nex.nchar;
             self.id.iter().for_each(|id| {
                 if !nex.matrix.contains_key(id) {

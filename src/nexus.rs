@@ -10,9 +10,9 @@ use crate::common::{self, SeqFormat};
 use crate::writer::SeqWriter;
 
 pub fn convert_nexus(path: &str, filetype: SeqFormat) {
-    let mut nex = Nexus::new();
     let path = Path::new(path);
-    nex.read(&path).expect("CANNOT READ NEXUS FILES");
+    let mut nex = Nexus::new(path);
+    nex.read().expect("CANNOT READ NEXUS FILES");
     let mut convert = SeqWriter::new(
         path,
         &nex.matrix,
@@ -30,37 +30,45 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     }
 }
 
-pub struct Nexus {
+pub struct Nexus<'a> {
+    path: &'a Path,
     pub matrix: LinkedHashMap<String, String>,
     pub ntax: usize,
     pub nchar: usize,
     pub datatype: String,
     pub missing: char,
     pub gap: char,
+    pub interleave: bool,
 }
 
-impl Nexus {
-    pub fn new() -> Self {
+impl<'a> Nexus<'a> {
+    pub fn new(path: &'a Path) -> Self {
         Self {
+            path,
             matrix: LinkedHashMap::new(),
             ntax: 0,
             nchar: 0,
             datatype: String::new(),
             missing: '?',
             gap: '-',
+            interleave: false,
         }
     }
 
-    pub fn read<P: AsRef<Path>>(&mut self, path: &P) -> Result<()> {
-        let input = File::open(path).expect("CANNOT OPEN THE INPUT FILE");
+    pub fn read(&mut self) -> Result<()> {
+        let input = File::open(self.path).expect("CANNOT OPEN THE INPUT FILE");
         let mut buff = BufReader::new(input);
         let mut header = String::new();
         buff.read_line(&mut header)?;
         self.check_nexus(&header.trim());
         let mut commands = self.parse_blocks(buff);
-        self.parse_matrix(&mut commands.matrix);
         self.parse_dimensions(&mut commands.dimensions);
         self.parse_format(&mut commands.format);
+        if self.interleave {
+            self.parse_matrix_interleave(&mut commands.matrix);
+        } else {
+            self.parse_matrix(&mut commands.matrix);
+        }
         self.check_ntax_matches();
         Ok(())
     }
@@ -108,6 +116,7 @@ impl Nexus {
                 tag if tag.starts_with("datatype") => self.datatype = self.parse_datatype(&format),
                 tag if tag.starts_with("missing") => self.missing = self.parse_missing(&format),
                 tag if tag.starts_with("gap") => self.gap = self.parse_gap(&format),
+                "interleave" => self.interleave = true,
                 _ => (),
             });
     }
@@ -124,19 +133,48 @@ impl Nexus {
             .map(|l| l.trim())
             .filter(|l| !l.is_empty())
             .for_each(|line| {
-                let seq: Vec<&str> = line.split_whitespace().collect();
-                self.check_seq_len(seq.len());
-                let id = seq[0].to_string();
-                let dna = seq[1].to_string().to_lowercase();
-                self.check_valid_dna(&id, &dna);
+                let (id, dna) = self.parse_sequence(line);
                 #[allow(clippy::all)]
                 if self.matrix.contains_key(&id) {
-                    panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", id);
+                    panic!(
+                        "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
+                        self.path.display(),
+                        id
+                    );
                 } else {
                     self.matrix.insert(id, dna);
                 }
             });
         read.clear();
+    }
+
+    fn parse_matrix_interleave(&mut self, read: &mut String) {
+        read.pop();
+        let matrix: Vec<&str> = read.split('\n').collect();
+        matrix[1..]
+            .iter()
+            .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
+            .for_each(|line| {
+                let (id, dna) = self.parse_sequence(line);
+                if self.matrix.contains_key(&id) {
+                    if let Some(value) = self.matrix.get_mut(&id) {
+                        value.push_str(&dna);
+                    }
+                } else {
+                    self.matrix.insert(id, dna);
+                }
+            });
+        read.clear();
+    }
+
+    fn parse_sequence(&self, line: &str) -> (String, String) {
+        let seq: Vec<&str> = line.split_whitespace().collect();
+        self.check_seq_len(seq.len());
+        let id = seq[0].to_string();
+        let dna = seq[1].to_string().to_lowercase();
+        self.check_valid_dna(&id, &dna);
+        (id, dna)
     }
 
     fn parse_datatype(&self, input: &str) -> String {
@@ -193,17 +231,18 @@ impl Nexus {
 
     fn check_nexus(&self, line: &str) {
         if !line.to_lowercase().starts_with("#nexus") {
-            panic!("INVALID NEXUS FORMAT");
+            panic!("THE FILE {} IS INVALID NEXUS FORMAT", self.path.display());
         }
     }
 
     fn check_ntax_matches(&self) {
         if self.matrix.len() != self.ntax {
             panic!(
-                "ERROR READING NEXUS FILES. \
+                "ERROR READING NEXUS FILE: {}. \
             THE NUMBER OF TAXA IS NOT MATCH THE INFORMATION IN THE BLOCK.\
             IN THE BLOCK: {} \
             AND TAXA FOUND: {}",
+                self.path.display(),
                 self.ntax,
                 self.matrix.len()
             );
@@ -212,15 +251,20 @@ impl Nexus {
 
     fn check_valid_dna(&self, id: &str, dna: &str) {
         if !common::is_valid_dna(dna) {
-            panic!("INVALID DNA SEQUENCE FOUND FOR {}", id);
+            panic!(
+                "INVALID DNA SEQUENCE FOUND FOR {} IN FILE {}",
+                id,
+                self.path.display()
+            );
         }
     }
 
     fn check_seq_len(&self, len: usize) {
         if len != 2 {
             panic!(
-                "UNSUPPORTED NEXUS FORMAT. \
-            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs"
+                "THE FILE {} IS UNSUPPORTED NEXUS FORMAT. \
+            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs",
+                self.path.display()
             );
         }
     }
@@ -289,32 +333,32 @@ mod test {
     #[test]
     fn nexus_reading_simple_test() {
         let sample = Path::new("test_files/simple.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         assert_eq!(1, nex.matrix.len());
     }
 
     #[test]
     fn nexus_reading_complete_test() {
         let sample = Path::new("test_files/complete.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         assert_eq!(5, nex.matrix.len());
     }
 
     #[test]
     fn nexus_reading_tabulated_test() {
         let sample = Path::new("test_files/tabulated.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         assert_eq!(2, nex.matrix.len());
     }
 
     #[test]
     fn nexus_parsing_object_test() {
         let sample = Path::new("test_files/complete.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         assert_eq!(5, nex.ntax);
         assert_eq!(802, nex.nchar);
         assert_eq!("dna", nex.datatype);
@@ -324,8 +368,9 @@ mod test {
 
     #[test]
     fn nexus_parse_ntax_test() {
+        let sample = Path::new(".");
         let tax = "ntax=5";
-        let nex = Nexus::new();
+        let nex = Nexus::new(sample);
         let res = nex.parse_ntax(tax);
         assert_eq!(5, res);
     }
@@ -333,7 +378,8 @@ mod test {
     #[test]
     #[should_panic]
     fn check_invalid_dna_panic_test() {
-        let nex = Nexus::new();
+        let sample = Path::new(".");
+        let nex = Nexus::new(sample);
         let id = "ABCD";
         let dna = String::from("AGTC?-Z");
         nex.check_valid_dna(id, &dna);
@@ -343,49 +389,67 @@ mod test {
     // #[should_panic]
     fn check_match_ntax_test() {
         let sample = Path::new("test_files/simple.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
     }
 
     #[test]
     #[should_panic]
     fn check_match_ntax_panic_test() {
         let sample = Path::new("test_files/unmatched_block.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
     }
 
     #[test]
     #[should_panic]
     fn check_invalid_nexus_test() {
         let sample = Path::new("test_files/simple.fas");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
     }
 
     #[test]
     #[should_panic]
     fn nexus_duplicate_panic_test() {
         let sample = Path::new("test_files/duplicates.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
     }
 
     #[test]
     #[should_panic]
     fn nexus_space_panic_test() {
         let sample = Path::new("test_files/idspaces.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
     }
 
     #[test]
     fn nexus_sequence_test() {
         let sample = Path::new("test_files/tabulated.nex");
-        let mut nex = Nexus::new();
-        nex.read(&sample).unwrap();
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
         let key = String::from("ABEF");
         let res = String::from("gatata---");
+        assert_eq!(Some(&res), nex.matrix.get(&key));
+    }
+
+    #[test]
+    fn nexus_parse_interleave() {
+        let sample = Path::new("test_files/interleave.nex");
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
+        assert_eq!(3, nex.matrix.len());
+    }
+
+    #[test]
+    fn nexus_parse_interleave_res_test() {
+        let sample = Path::new("test_files/interleave.nex");
+        let mut nex = Nexus::new(sample);
+        nex.read().unwrap();
+        let key = String::from("ABCD");
+        let res = String::from("gatatagatatt");
         assert_eq!(Some(&res), nex.matrix.get(&key));
     }
 }
