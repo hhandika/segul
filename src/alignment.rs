@@ -29,6 +29,7 @@ pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat) {
     };
 }
 
+#[allow(dead_code)]
 struct ConcatNexus {
     start: usize,
     end: usize,
