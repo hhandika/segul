@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::path::Path;
 
 use nom::{character::complete, sequence, IResult};
 
@@ -10,10 +11,10 @@ use crate::writer::SeqWriter;
 
 pub fn convert_phylip(path: &str, filetype: SeqFormat) {
     let mut phylip = Phylip::new();
-    phylip.read(path);
+    phylip.read(&path);
 
     let mut convert = SeqWriter::new(
-        path,
+        Path::new(path),
         &phylip.matrix,
         Some(phylip.ntax),
         Some(phylip.nchar),
@@ -44,7 +45,7 @@ impl Phylip {
         }
     }
 
-    fn read(&mut self, path: &str) {
+    fn read<P: AsRef<Path>>(&mut self, path: &P) {
         let file = File::open(path).expect("CANNOT OPEN THE INPUT FILE.");
         let mut buff = BufReader::new(file);
 
@@ -96,7 +97,7 @@ mod test {
     fn read_phylip_simple_test() {
         let path = "test_files/simple.phy";
         let mut phylip = Phylip::new();
-        phylip.read(path);
+        phylip.read(&path);
 
         assert_eq!(2, phylip.ntax);
         assert_eq!(4, phylip.nchar);

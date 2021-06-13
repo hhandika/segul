@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 
 use crate::common::SeqFormat;
 
-pub struct SeqWriter<'m> {
-    path: PathBuf,
+pub struct SeqWriter<'a> {
+    path: &'a Path,
     outname: PathBuf,
-    matrix: &'m HashMap<String, String>,
+    matrix: &'a HashMap<String, String>,
     id_len: usize,
     ntax: Option<usize>,
     nchar: Option<usize>,
@@ -19,10 +19,10 @@ pub struct SeqWriter<'m> {
     gap: Option<char>,
 }
 
-impl<'m> SeqWriter<'m> {
+impl<'a> SeqWriter<'a> {
     pub fn new(
-        path: &str,
-        matrix: &'m HashMap<String, String>,
+        path: &'a Path,
+        matrix: &'a HashMap<String, String>,
         ntax: Option<usize>,
         nchar: Option<usize>,
         datatype: Option<String>,
@@ -30,7 +30,7 @@ impl<'m> SeqWriter<'m> {
         gap: Option<char>,
     ) -> Self {
         Self {
-            path: PathBuf::from(path),
+            path,
             outname: PathBuf::new(),
             id_len: 0,
             matrix,
@@ -183,9 +183,9 @@ impl<'m> SeqWriter<'m> {
         let spaces = 1;
         if len < max_len {
             let inserts = (max_len - len) + spaces;
-            iter::repeat(' ').take(inserts).collect::<String>()
+            iter::repeat(' ').take(inserts).collect()
         } else {
-            iter::repeat(' ').take(spaces).collect::<String>()
+            iter::repeat(' ').take(spaces).collect()
         }
     }
 }
@@ -204,7 +204,7 @@ mod test {
         let missing = Some('?');
         let gap = Some('-');
         let matrix = HashMap::new();
-        let convert = SeqWriter::new(".", &matrix, ntax, nchar, datatype, missing, gap);
+        let convert = SeqWriter::new(Path::new("."), &matrix, ntax, nchar, datatype, missing, gap);
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 }
