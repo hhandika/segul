@@ -85,7 +85,9 @@ impl ConcatNexus {
             let mut nex = Nexus::new();
             nex.read(file).expect("CANNOT READ A NEXUS FILE");
             nex.matrix.keys().for_each(|key| {
-                id.insert(key.to_string());
+                if !id.contains(key) {
+                    id.insert(key.to_string());
+                }
             });
         });
 
@@ -121,10 +123,8 @@ impl ConcatNexus {
     ) {
         if !alignment.contains_key(id) {
             alignment.insert(id.to_string(), values);
-        } else {
-            if let Some(value) = alignment.get_mut(id) {
-                value.push_str(&values);
-            }
+        } else if let Some(value) = alignment.get_mut(id) {
+            value.push_str(&values);
         }
     }
 
