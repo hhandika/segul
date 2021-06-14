@@ -10,7 +10,7 @@ use crate::nexus::Nexus;
 use crate::writer::SeqWriter;
 
 pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat, partition: SeqPartition) {
-    let mut nex = ConcatNexus::new();
+    let mut nex = Concat::new();
     let path = Path::new(dir).join(outname);
     nex.concat_from_nexus(dir);
     let mut save = SeqWriter::new(
@@ -32,7 +32,7 @@ pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat, partition: Se
     };
 }
 
-struct ConcatNexus {
+struct Concat {
     alignment: IndexMap<String, String>,
     ntax: usize,
     nchar: usize,
@@ -43,7 +43,7 @@ struct ConcatNexus {
     files: Vec<PathBuf>,
 }
 
-impl ConcatNexus {
+impl Concat {
     fn new() -> Self {
         Self {
             alignment: IndexMap::new(),
@@ -141,7 +141,7 @@ mod test {
     fn get_files_test() {
         let path = "test_files/concat/";
         let pattern = format!("{}/*.nex*", path);
-        let mut concat = ConcatNexus::new();
+        let mut concat = Concat::new();
         concat.get_files(&pattern);
         assert_eq!(4, concat.files.len());
     }
@@ -149,7 +149,7 @@ mod test {
     #[test]
     fn concat_nexus_test() {
         let path = "test_files/concat/";
-        let mut concat = ConcatNexus::new();
+        let mut concat = Concat::new();
         concat.concat_from_nexus(path);
         assert_eq!(3, concat.alignment.len());
     }
@@ -157,7 +157,7 @@ mod test {
     #[test]
     fn concat_check_result_test() {
         let path = "test_files/concat/";
-        let mut concat = ConcatNexus::new();
+        let mut concat = Concat::new();
         concat.concat_from_nexus(path);
         let abce = concat.alignment.get("ABCE").unwrap();
         let res = "--------------gatattagtata";
@@ -167,7 +167,7 @@ mod test {
     #[test]
     fn concat_partition_test() {
         let path = "test_files/concat/";
-        let mut concat = ConcatNexus::new();
+        let mut concat = Concat::new();
         concat.concat_from_nexus(path);
         assert_eq!(1, concat.partition[0].start);
         assert_eq!(6, concat.partition[0].end);
