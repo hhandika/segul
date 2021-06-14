@@ -1,17 +1,18 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::BufReader;
+use std::io::{BufReader, Result};
 use std::path::Path;
 
 use indexmap::IndexMap;
 use nom::{character::complete, sequence, IResult};
 
-use crate::common::{Header, SeqFormat, SeqPartition};
+use crate::common::{Header, SeqCheck, SeqFormat, SeqPartition};
 use crate::writer::SeqWriter;
 
 pub fn convert_phylip(path: &str, filetype: SeqFormat) {
-    let mut phylip = Phylip::new();
-    phylip.read(&path);
+    let input = Path::new(path);
+    let mut phylip = Phylip::new(input);
+    phylip.read().expect("CANNOT READ PHYLIP FILES");
     let header = phylip.get_header();
     let mut convert = SeqWriter::new(
         Path::new(path),
@@ -28,27 +29,33 @@ pub fn convert_phylip(path: &str, filetype: SeqFormat) {
     }
 }
 
-pub struct Phylip {
+pub struct Phylip<'a> {
+    input: &'a Path,
     pub matrix: IndexMap<String, String>,
     pub ntax: usize,
     pub nchar: usize,
+    pub is_alignment: bool,
 }
 
-impl Phylip {
-    pub fn new() -> Self {
+impl SeqCheck for Phylip<'_> {}
+
+impl<'a> Phylip<'a> {
+    pub fn new(input: &'a Path) -> Self {
         Self {
+            input,
             matrix: IndexMap::new(),
             ntax: 0,
             nchar: 0,
+            is_alignment: false,
         }
     }
 
-    pub fn read<P: AsRef<Path>>(&mut self, path: &P) {
-        let file = File::open(path).expect("CANNOT OPEN THE INPUT FILE.");
+    pub fn read(&mut self) -> Result<()> {
+        let file = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE.");
         let mut buff = BufReader::new(file);
 
         let mut header_line = String::new();
-        buff.read_line(&mut header_line).unwrap();
+        buff.read_line(&mut header_line)?;
         self.parse_header(&header_line.trim());
 
         buff.lines().filter_map(|ok| ok.ok()).for_each(|line| {
@@ -62,7 +69,9 @@ impl Phylip {
                     )
                 }
             };
-        })
+        });
+        self.check_is_alignment(&self.matrix);
+        Ok(())
     }
 
     fn get_header(&self) -> Header {
@@ -72,7 +81,7 @@ impl Phylip {
         header
     }
 
-    fn parse_header<'a>(&'a mut self, header_line: &'a str) {
+    fn parse_header(&mut self, header_line: &str) {
         let header: IResult<&str, (&str, &str)> =
             sequence::separated_pair(complete::digit0, complete::space0, complete::digit0)(
                 header_line,
@@ -100,9 +109,9 @@ mod test {
 
     #[test]
     fn read_phylip_simple_test() {
-        let path = "test_files/simple.phy";
-        let mut phylip = Phylip::new();
-        phylip.read(&path);
+        let path = Path::new("test_files/simple.phy");
+        let mut phylip = Phylip::new(path);
+        phylip.read().unwrap();
 
         assert_eq!(2, phylip.ntax);
         assert_eq!(4, phylip.nchar);
