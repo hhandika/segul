@@ -32,9 +32,7 @@ pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat, partition: Se
     };
 }
 
-#[allow(dead_code)]
 struct ConcatNexus {
-    genes_pos: IndexMap<usize, usize>,
     alignment: IndexMap<String, String>,
     ntax: usize,
     nchar: usize,
@@ -45,11 +43,9 @@ struct ConcatNexus {
     files: Vec<PathBuf>,
 }
 
-#[allow(dead_code)]
 impl ConcatNexus {
     fn new() -> Self {
         Self {
-            genes_pos: IndexMap::new(),
             alignment: IndexMap::new(),
             datatype: String::from("dna"),
             ntax: 0,
