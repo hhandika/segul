@@ -9,12 +9,12 @@ use nom::{bytes::complete, character, sequence, IResult};
 use crate::common::{self, Header, SeqFormat, SeqPartition};
 use crate::writer::SeqWriter;
 
-pub fn convert_nexus(path: &str, filetype: SeqFormat) {
-    let path = Path::new(path);
-    let mut nex = Nexus::new(path);
+pub fn convert_nexus(input: &str, filetype: SeqFormat) {
+    let input_path = Path::new(input);
+    let mut nex = Nexus::new(input_path);
     nex.read().expect("CANNOT READ NEXUS FILES");
     let header = nex.get_header();
-    let mut convert = SeqWriter::new(path, &nex.matrix, header, None, SeqPartition::None);
+    let mut convert = SeqWriter::new(input_path, &nex.matrix, header, None, SeqPartition::None);
     match filetype {
         SeqFormat::Phylip => convert.write_sequence(&filetype),
         SeqFormat::Fasta => convert.write_fasta(),
@@ -23,7 +23,7 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
 }
 
 pub struct Nexus<'a> {
-    path: &'a Path,
+    input: &'a Path,
     pub matrix: IndexMap<String, String>,
     pub ntax: usize,
     pub nchar: usize,
@@ -34,9 +34,9 @@ pub struct Nexus<'a> {
 }
 
 impl<'a> Nexus<'a> {
-    pub fn new(path: &'a Path) -> Self {
+    pub fn new(input: &'a Path) -> Self {
         Self {
-            path,
+            input,
             matrix: IndexMap::new(),
             ntax: 0,
             nchar: 0,
@@ -48,7 +48,7 @@ impl<'a> Nexus<'a> {
     }
 
     pub fn read(&mut self) -> Result<()> {
-        let input = File::open(self.path).expect("CANNOT OPEN THE INPUT FILE");
+        let input = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE");
         let mut buff = BufReader::new(input);
         let mut header = String::new();
         buff.read_line(&mut header)?;
@@ -147,7 +147,7 @@ impl<'a> Nexus<'a> {
         if self.matrix.contains_key(&id) {
             panic!(
                 "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
-                self.path.display(),
+                self.input.display(),
                 id
             );
         } else {
@@ -228,7 +228,7 @@ impl<'a> Nexus<'a> {
 
     fn check_nexus(&self, line: &str) {
         if !line.to_lowercase().starts_with("#nexus") {
-            panic!("THE FILE {} IS INVALID NEXUS FORMAT", self.path.display());
+            panic!("THE FILE {} IS INVALID NEXUS FORMAT", self.input.display());
         }
     }
 
@@ -239,7 +239,7 @@ impl<'a> Nexus<'a> {
             THE NUMBER OF TAXA IS NOT MATCH THE INFORMATION IN THE BLOCK.\
             IN THE BLOCK: {} \
             AND TAXA FOUND: {}",
-                self.path.display(),
+                self.input.display(),
                 self.ntax,
                 self.matrix.len()
             );
@@ -251,7 +251,7 @@ impl<'a> Nexus<'a> {
             panic!(
                 "INVALID DNA SEQUENCE FOUND FOR {} IN FILE {}",
                 id,
-                self.path.display()
+                self.input.display()
             );
         }
     }
@@ -261,7 +261,7 @@ impl<'a> Nexus<'a> {
             panic!(
                 "THE FILE {} IS UNSUPPORTED NEXUS FORMAT. \
             MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs",
-                self.path.display()
+                self.input.display()
             );
         }
     }

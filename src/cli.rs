@@ -29,6 +29,16 @@ fn get_args(version: &str) -> ArgMatches {
                         .long("id")
                         .takes_value(false)
                         .help("Gets IDs only"),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .short("o")
+                        .long("output")
+                        .help("Input an output file name")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("concat")
+                        .value_name("OUTPUT"),
                 ),
         )
         .subcommand(
@@ -199,13 +209,11 @@ fn parse_fasta(matches: &ArgMatches) {
     let input = matches
         .value_of("input")
         .expect("CANNOT FIND AN INPUT FILE");
-    let id = matches.is_present("id");
+    let output = matches
+        .value_of("output")
+        .expect("CANNOT RECOGNIZE OUTPUT NAME");
 
-    if id {
-        fasta::parse_fasta_id(input);
-    } else {
-        fasta::parse_fasta(input);
-    }
+    fasta::convert_fasta(input, output, SeqFormat::Nexus);
 }
 
 fn convert_phylip(matches: &ArgMatches) {

@@ -1,3 +1,5 @@
+use indexmap::IndexMap;
+
 pub enum SeqFormat {
     Fasta,
     Nexus,
@@ -44,6 +46,30 @@ impl Header {
             missing: None,
             gap: None,
         }
+    }
+}
+
+pub trait SeqCheck {
+    fn check_is_alignment(&self, matrix: &IndexMap<String, String>) -> bool {
+        let shortest = self.get_shortest_seq_len(matrix);
+        let longest = self.get_longest_seq_len(matrix);
+        longest == shortest
+    }
+
+    fn get_shortest_seq_len(&self, matrix: &IndexMap<String, String>) -> usize {
+        matrix
+            .values()
+            .min_by_key(|seq| seq.len())
+            .expect("CANNOT GET LONGEST ALIGNMENT LEN")
+            .len()
+    }
+
+    fn get_longest_seq_len(&self, matrix: &IndexMap<String, String>) -> usize {
+        matrix
+            .values()
+            .max_by_key(|seq| seq.len())
+            .expect("CANNOT GET SHORTEST ALIGNMENT LEN")
+            .len()
     }
 }
 
