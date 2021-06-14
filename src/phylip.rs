@@ -43,16 +43,6 @@ impl Phylip {
         }
     }
 
-    fn get_header(&self) -> Header {
-        let mut header = Header::new();
-        header.ntax = Some(self.ntax);
-        header.nchar = Some(self.nchar);
-        header.datatype = Some(String::from("dna"));
-        header.missing = Some('?');
-        header.gap = Some('-');
-        header
-    }
-
     fn read<P: AsRef<Path>>(&mut self, path: &P) {
         let file = File::open(path).expect("CANNOT OPEN THE INPUT FILE.");
         let mut buff = BufReader::new(file);
@@ -73,6 +63,16 @@ impl Phylip {
                 }
             };
         })
+    }
+
+    fn get_header(&self) -> Header {
+        let mut header = Header::new();
+        header.ntax = Some(self.ntax);
+        header.nchar = Some(self.nchar);
+        header.datatype = Some(String::from("dna"));
+        header.missing = Some('?');
+        header.gap = Some('-');
+        header
     }
 
     fn parse_header<'a>(&'a mut self, header_line: &'a str) {

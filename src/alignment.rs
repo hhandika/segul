@@ -54,6 +54,15 @@ impl Concat {
         }
     }
 
+    fn concat_from_nexus(&mut self, dir: &str) {
+        let pattern = format!("{}/*.nex*", dir);
+        self.get_files(&pattern);
+        self.files.sort();
+        let id = self.get_id_from_nexus();
+        self.alignment = self.concat(&id);
+        self.ntax = self.alignment.len();
+    }
+
     fn get_header(&self) -> Header {
         let mut header = Header::new();
         header.ntax = Some(self.ntax);
@@ -62,15 +71,6 @@ impl Concat {
         header.missing = Some(self.missing);
         header.gap = Some(self.gap);
         header
-    }
-
-    fn concat_from_nexus(&mut self, dir: &str) {
-        let pattern = format!("{}/*.nex*", dir);
-        self.get_files(&pattern);
-        self.files.sort();
-        let id = self.get_id_from_nexus();
-        self.alignment = self.concat(&id);
-        self.ntax = self.alignment.len();
     }
 
     fn get_files(&mut self, pattern: &str) {
