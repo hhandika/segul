@@ -66,11 +66,7 @@ impl<'a> Nexus<'a> {
         let mut commands = self.parse_blocks(buff);
         self.parse_dimensions(&mut commands.dimensions);
         self.parse_format(&mut commands.format);
-        if self.interleave {
-            self.parse_matrix_interleave(&mut commands.matrix);
-        } else {
-            self.parse_matrix(&mut commands.matrix);
-        }
+        self.parse_matrix(&mut commands.matrix);
         self.check_ntax_matches();
         Ok(())
     }
@@ -137,38 +133,36 @@ impl<'a> Nexus<'a> {
             .filter(|l| !l.is_empty())
             .for_each(|line| {
                 let (id, dna) = self.parse_sequence(line);
-                #[allow(clippy::all)]
-                if self.matrix.contains_key(&id) {
-                    panic!(
-                        "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
-                        self.path.display(),
-                        id
-                    );
+                if self.interleave {
+                    self.insert_matrix_interleave(id, dna);
                 } else {
-                    self.matrix.insert(id, dna);
+                    self.insert_matrix(id, dna);
                 }
             });
         read.clear();
     }
 
-    fn parse_matrix_interleave(&mut self, read: &mut String) {
-        read.pop();
-        let matrix: Vec<&str> = read.split('\n').collect();
-        matrix[1..]
-            .iter()
-            .map(|l| l.trim())
-            .filter(|l| !l.is_empty())
-            .for_each(|line| {
-                let (id, dna) = self.parse_sequence(line);
-                if self.matrix.contains_key(&id) {
-                    if let Some(value) = self.matrix.get_mut(&id) {
-                        value.push_str(&dna);
-                    }
-                } else {
-                    self.matrix.insert(id, dna);
-                }
-            });
-        read.clear();
+    fn insert_matrix(&mut self, id: String, dna: String) {
+        #[allow(clippy::all)]
+        if self.matrix.contains_key(&id) {
+            panic!(
+                "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
+                self.path.display(),
+                id
+            );
+        } else {
+            self.matrix.insert(id, dna);
+        }
+    }
+
+    fn insert_matrix_interleave(&mut self, id: String, dna: String) {
+        if self.matrix.contains_key(&id) {
+            if let Some(value) = self.matrix.get_mut(&id) {
+                value.push_str(&dna);
+            }
+        } else {
+            self.matrix.insert(id, dna);
+        }
     }
 
     fn parse_sequence(&self, line: &str) -> (String, String) {
