@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
 use std::path::Path;
 
-use linked_hash_map::LinkedHashMap;
+use indexmap::IndexMap;
 use nom::{bytes::complete, character, sequence, IResult};
 
 use crate::common::{self, SeqFormat, SeqPartition};
@@ -34,7 +34,7 @@ pub fn convert_nexus(path: &str, filetype: SeqFormat) {
 
 pub struct Nexus<'a> {
     path: &'a Path,
-    pub matrix: LinkedHashMap<String, String>,
+    pub matrix: IndexMap<String, String>,
     pub ntax: usize,
     pub nchar: usize,
     pub datatype: String,
@@ -47,7 +47,7 @@ impl<'a> Nexus<'a> {
     pub fn new(path: &'a Path) -> Self {
         Self {
             path,
-            matrix: LinkedHashMap::new(),
+            matrix: IndexMap::new(),
             ntax: 0,
             nchar: 0,
             datatype: String::new(),

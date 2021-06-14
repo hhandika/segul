@@ -5,12 +5,12 @@ use std::iter;
 use std::path::{Path, PathBuf};
 
 use crate::common::{Partition, SeqFormat, SeqPartition};
-use linked_hash_map::LinkedHashMap;
+use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {
     path: &'a Path,
     outname: PathBuf,
-    matrix: &'a LinkedHashMap<String, String>,
+    matrix: &'a IndexMap<String, String>,
     id_len: usize,
     ntax: Option<usize>,
     nchar: Option<usize>,
@@ -24,7 +24,7 @@ pub struct SeqWriter<'a> {
 impl<'a> SeqWriter<'a> {
     pub fn new(
         path: &'a Path,
-        matrix: &'a LinkedHashMap<String, String>,
+        matrix: &'a IndexMap<String, String>,
         ntax: Option<usize>,
         nchar: Option<usize>,
         datatype: Option<String>,
@@ -272,7 +272,7 @@ mod test {
         let datatype = Some(String::from("dna"));
         let missing = Some('?');
         let gap = Some('-');
-        let matrix = LinkedHashMap::new();
+        let matrix = IndexMap::new();
         let convert = SeqWriter::new(
             Path::new("."),
             &matrix,

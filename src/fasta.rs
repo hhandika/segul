@@ -1,8 +1,9 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, LineWriter, Lines};
 use std::path::Path;
+
+use indexmap::IndexMap;
 
 pub fn parse_fasta_id(path: &str) {
     let ids = get_ids(path);
@@ -36,9 +37,9 @@ pub fn get_stats(path: &str) {
     });
 }
 
-fn get_records<R: Read>(buff: R) -> HashMap<String, String> {
+fn get_records<R: Read>(buff: R) -> IndexMap<String, String> {
     let fasta = FastaReader::new(buff);
-    let mut records: HashMap<String, String> = HashMap::new();
+    let mut records: IndexMap<String, String> = IndexMap::new();
     fasta.into_iter().for_each(|fas| {
         #[allow(clippy::all)]
         if records.contains_key(&fas.id) {

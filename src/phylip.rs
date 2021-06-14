@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 
-use linked_hash_map::LinkedHashMap;
+use indexmap::IndexMap;
 use nom::{character::complete, sequence, IResult};
 
 use crate::common::{SeqFormat, SeqPartition};
@@ -33,7 +33,7 @@ pub fn convert_phylip(path: &str, filetype: SeqFormat) {
 }
 
 struct Phylip {
-    matrix: LinkedHashMap<String, String>,
+    matrix: IndexMap<String, String>,
     ntax: usize,
     nchar: usize,
 }
@@ -41,7 +41,7 @@ struct Phylip {
 impl Phylip {
     fn new() -> Self {
         Self {
-            matrix: LinkedHashMap::new(),
+            matrix: IndexMap::new(),
             ntax: 0,
             nchar: 0,
         }

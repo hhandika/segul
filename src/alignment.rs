@@ -2,8 +2,8 @@ use std::iter;
 use std::path::{Path, PathBuf};
 
 use glob::glob;
-use linked_hash_map::LinkedHashMap;
-use linked_hash_set::LinkedHashSet;
+use indexmap::IndexMap;
+use indexmap::IndexSet;
 
 use crate::common::{Partition, SeqFormat, SeqPartition};
 use crate::nexus::Nexus;
@@ -34,8 +34,8 @@ pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat, partition: Se
 
 #[allow(dead_code)]
 struct ConcatNexus {
-    genes_pos: LinkedHashMap<usize, usize>,
-    alignment: LinkedHashMap<String, String>,
+    genes_pos: IndexMap<usize, usize>,
+    alignment: IndexMap<String, String>,
     ntax: usize,
     nchar: usize,
     datatype: String,
@@ -49,8 +49,8 @@ struct ConcatNexus {
 impl ConcatNexus {
     fn new() -> Self {
         Self {
-            genes_pos: LinkedHashMap::new(),
-            alignment: LinkedHashMap::new(),
+            genes_pos: IndexMap::new(),
+            alignment: IndexMap::new(),
             datatype: String::from("dna"),
             ntax: 0,
             nchar: 0,
@@ -77,8 +77,8 @@ impl ConcatNexus {
             .collect();
     }
 
-    fn get_id_from_nexus(&mut self) -> LinkedHashSet<String> {
-        let mut id = LinkedHashSet::new();
+    fn get_id_from_nexus(&mut self) -> IndexSet<String> {
+        let mut id = IndexSet::new();
         self.files.iter().for_each(|file| {
             let mut nex = Nexus::new(file);
             nex.read().expect("CANNOT READ A NEXUS FILE");
@@ -92,8 +92,8 @@ impl ConcatNexus {
         id
     }
 
-    fn concat(&mut self, id: &LinkedHashSet<String>) -> LinkedHashMap<String, String> {
-        let mut alignment = LinkedHashMap::new();
+    fn concat(&mut self, id: &IndexSet<String>) -> IndexMap<String, String> {
+        let mut alignment = IndexMap::new();
         let mut nchar = 0;
         let mut gene_start = 1;
         let mut gene_end = 0;
@@ -124,12 +124,7 @@ impl ConcatNexus {
         alignment
     }
 
-    fn insert_alignment(
-        &self,
-        alignment: &mut LinkedHashMap<String, String>,
-        id: &str,
-        values: String,
-    ) {
+    fn insert_alignment(&self, alignment: &mut IndexMap<String, String>, id: &str, values: String) {
         if !alignment.contains_key(id) {
             alignment.insert(id.to_string(), values);
         } else if let Some(value) = alignment.get_mut(id) {
