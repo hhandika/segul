@@ -118,6 +118,7 @@ impl<'a> Nexus<'a> {
                 tag if tag.starts_with("datatype") => self.datatype = self.parse_datatype(&format),
                 tag if tag.starts_with("missing") => self.missing = self.parse_missing(&format),
                 tag if tag.starts_with("gap") => self.gap = self.parse_gap(&format),
+                "interleave=yes" => self.interleave = true,
                 "interleave" => self.interleave = true,
                 _ => (),
             });
