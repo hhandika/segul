@@ -4,7 +4,7 @@ use std::io::{LineWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use crate::common::{Partition, SeqFormat, SeqPartition};
+use crate::common::{Header, Partition, SeqFormat, SeqPartition};
 use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {
@@ -12,11 +12,7 @@ pub struct SeqWriter<'a> {
     outname: PathBuf,
     matrix: &'a IndexMap<String, String>,
     id_len: usize,
-    ntax: Option<usize>,
-    nchar: Option<usize>,
-    datatype: Option<String>,
-    missing: Option<char>,
-    gap: Option<char>,
+    header: Header,
     partition: Option<Vec<Partition>>,
     part_format: SeqPartition,
 }
@@ -25,11 +21,7 @@ impl<'a> SeqWriter<'a> {
     pub fn new(
         path: &'a Path,
         matrix: &'a IndexMap<String, String>,
-        ntax: Option<usize>,
-        nchar: Option<usize>,
-        datatype: Option<String>,
-        missing: Option<char>,
-        gap: Option<char>,
+        header: Header,
         partition: Option<Vec<Partition>>,
         part_format: SeqPartition,
     ) -> Self {
@@ -38,11 +30,7 @@ impl<'a> SeqWriter<'a> {
             outname: PathBuf::new(),
             id_len: 0,
             matrix,
-            ntax,
-            nchar,
-            datatype,
-            missing,
-            gap,
+            header,
             partition,
             part_format,
         }
@@ -76,8 +64,8 @@ impl<'a> SeqWriter<'a> {
         writeln!(
             writer,
             "{} {}",
-            self.ntax.as_ref().unwrap(),
-            self.nchar.as_ref().unwrap()
+            self.header.ntax.as_ref().unwrap(),
+            self.header.nchar.as_ref().unwrap()
         )?;
         self.write_matrix(&mut writer);
         if self.partition.is_some() {
@@ -97,15 +85,15 @@ impl<'a> SeqWriter<'a> {
         writeln!(
             writer,
             "dimensions ntax={} nchar={};",
-            self.ntax.as_ref().unwrap(),
-            self.nchar.as_ref().unwrap()
+            self.header.ntax.as_ref().unwrap(),
+            self.header.nchar.as_ref().unwrap()
         )?;
         writeln!(
             writer,
             "format datatype={} missing={} gap={};",
-            self.datatype.as_ref().unwrap(),
-            self.missing.as_ref().unwrap(),
-            self.gap.as_ref().unwrap()
+            self.header.datatype.as_ref().unwrap(),
+            self.header.missing.as_ref().unwrap(),
+            self.header.gap.as_ref().unwrap()
         )?;
         writeln!(writer, "matrix")?;
         self.write_matrix(&mut writer);
@@ -184,7 +172,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn check_sequence_len(&self, len: usize, taxa: &str) {
-        if len != *self.nchar.as_ref().unwrap() {
+        if len != *self.header.nchar.as_ref().unwrap() {
             panic!(
                 "DIFFERENT SEQUENCE LENGTH FOUND AT {}. \
                 MAKE SURE THE INPUT IS AN ALIGNMENT",
@@ -212,33 +200,33 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn get_ntax(&mut self) {
-        if self.ntax.is_none() {
-            self.ntax = Some(self.matrix.len());
+        if self.header.ntax.is_none() {
+            self.header.ntax = Some(self.matrix.len());
         }
     }
 
     fn get_nchar(&mut self) {
-        if self.nchar.is_none() {
+        if self.header.nchar.is_none() {
             let (_, chars) = self.matrix.iter().next().unwrap();
-            self.nchar = Some(chars.len())
+            self.header.nchar = Some(chars.len())
         }
     }
 
     fn get_datatype(&mut self) {
-        if self.datatype.is_none() {
-            self.datatype = Some(String::from("dna"));
+        if self.header.datatype.is_none() {
+            self.header.datatype = Some(String::from("dna"));
         }
     }
 
     fn get_missing(&mut self) {
-        if self.missing.is_none() {
-            self.missing = Some('?');
+        if self.header.missing.is_none() {
+            self.header.missing = Some('?');
         }
     }
 
     fn get_gap(&mut self) {
-        if self.gap.is_none() {
-            self.gap = Some('-');
+        if self.header.gap.is_none() {
+            self.header.gap = Some('-');
         }
     }
 
@@ -267,23 +255,14 @@ mod test {
     fn insert_whitespaces_test() {
         let max_len = 10;
         let id = "ABCDE";
-        let ntax = Some(2);
-        let nchar = Some(5);
-        let datatype = Some(String::from("dna"));
-        let missing = Some('?');
-        let gap = Some('-');
+        // let ntax = Some(2);
+        // let nchar = Some(5);
+        // let datatype = Some(String::from("dna"));
+        // let missing = Some('?');
+        // let gap = Some('-');
         let matrix = IndexMap::new();
-        let convert = SeqWriter::new(
-            Path::new("."),
-            &matrix,
-            ntax,
-            nchar,
-            datatype,
-            missing,
-            gap,
-            None,
-            SeqPartition::None,
-        );
+        let header = Header::new();
+        let convert = SeqWriter::new(Path::new("."), &matrix, header, None, SeqPartition::None);
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 }

@@ -6,25 +6,15 @@ use std::path::Path;
 use indexmap::IndexMap;
 use nom::{bytes::complete, character, sequence, IResult};
 
-use crate::common::{self, SeqFormat, SeqPartition};
+use crate::common::{self, Header, SeqFormat, SeqPartition};
 use crate::writer::SeqWriter;
 
 pub fn convert_nexus(path: &str, filetype: SeqFormat) {
     let path = Path::new(path);
     let mut nex = Nexus::new(path);
     nex.read().expect("CANNOT READ NEXUS FILES");
-    let mut convert = SeqWriter::new(
-        path,
-        &nex.matrix,
-        Some(nex.ntax),
-        Some(nex.nchar),
-        Some(nex.datatype),
-        Some(nex.missing),
-        Some(nex.gap),
-        None,
-        SeqPartition::None,
-    );
-
+    let header = nex.get_header();
+    let mut convert = SeqWriter::new(path, &nex.matrix, header, None, SeqPartition::None);
     match filetype {
         SeqFormat::Phylip => convert.write_sequence(&filetype),
         SeqFormat::Fasta => convert.write_fasta(),
@@ -69,6 +59,16 @@ impl<'a> Nexus<'a> {
         self.parse_matrix(&mut commands.matrix);
         self.check_ntax_matches();
         Ok(())
+    }
+
+    pub fn get_header(&self) -> Header {
+        let mut header = Header::new();
+        header.ntax = Some(self.ntax);
+        header.nchar = Some(self.nchar);
+        header.datatype = Some(self.datatype.clone());
+        header.missing = Some(self.missing);
+        header.gap = Some(self.gap);
+        header
     }
 
     fn parse_blocks<R: Read>(&self, buff: R) -> Commands {

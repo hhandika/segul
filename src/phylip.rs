@@ -6,21 +6,17 @@ use std::path::Path;
 use indexmap::IndexMap;
 use nom::{character::complete, sequence, IResult};
 
-use crate::common::{SeqFormat, SeqPartition};
+use crate::common::{Header, SeqFormat, SeqPartition};
 use crate::writer::SeqWriter;
 
 pub fn convert_phylip(path: &str, filetype: SeqFormat) {
     let mut phylip = Phylip::new();
     phylip.read(&path);
-
+    let header = phylip.get_header();
     let mut convert = SeqWriter::new(
         Path::new(path),
         &phylip.matrix,
-        Some(phylip.ntax),
-        Some(phylip.nchar),
-        Some(String::from("dna")),
-        Some('?'),
-        Some('-'),
+        header,
         None,
         SeqPartition::None,
     );
@@ -45,6 +41,16 @@ impl Phylip {
             ntax: 0,
             nchar: 0,
         }
+    }
+
+    fn get_header(&self) -> Header {
+        let mut header = Header::new();
+        header.ntax = Some(self.ntax);
+        header.nchar = Some(self.nchar);
+        header.datatype = Some(String::from("dna"));
+        header.missing = Some('?');
+        header.gap = Some('-');
+        header
     }
 
     fn read<P: AsRef<Path>>(&mut self, path: &P) {

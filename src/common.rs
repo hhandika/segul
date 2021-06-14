@@ -27,6 +27,26 @@ impl Partition {
     }
 }
 
+pub struct Header {
+    pub ntax: Option<usize>,
+    pub nchar: Option<usize>,
+    pub datatype: Option<String>,
+    pub missing: Option<char>,
+    pub gap: Option<char>,
+}
+
+impl Header {
+    pub fn new() -> Self {
+        Self {
+            ntax: None,
+            nchar: None,
+            datatype: None,
+            missing: None,
+            gap: None,
+        }
+    }
+}
+
 // Alphabeth for dna.
 // Include IUPAC characters plus missing symbol (?)
 pub fn is_valid_dna(dna: &str) -> bool {

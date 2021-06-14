@@ -5,7 +5,7 @@ use glob::glob;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
-use crate::common::{Partition, SeqFormat, SeqPartition};
+use crate::common::{Header, Partition, SeqFormat, SeqPartition};
 use crate::nexus::Nexus;
 use crate::writer::SeqWriter;
 
@@ -13,14 +13,11 @@ pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat, partition: Se
     let mut nex = Concat::new();
     let path = Path::new(dir).join(outname);
     nex.concat_from_nexus(dir);
+    let header = nex.get_header();
     let mut save = SeqWriter::new(
         &path,
         &nex.alignment,
-        Some(nex.ntax),
-        Some(nex.nchar),
-        Some(nex.datatype),
-        Some(nex.missing),
-        Some(nex.gap),
+        header,
         Some(nex.partition),
         partition,
     );
@@ -55,6 +52,16 @@ impl Concat {
             partition: Vec::new(),
             files: Vec::new(),
         }
+    }
+
+    fn get_header(&self) -> Header {
+        let mut header = Header::new();
+        header.ntax = Some(self.ntax);
+        header.nchar = Some(self.nchar);
+        header.datatype = Some(self.datatype.clone());
+        header.missing = Some(self.missing);
+        header.gap = Some(self.gap);
+        header
     }
 
     fn concat_from_nexus(&mut self, dir: &str) {
