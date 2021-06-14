@@ -69,9 +69,6 @@ impl Phylip {
         let mut header = Header::new();
         header.ntax = Some(self.ntax);
         header.nchar = Some(self.nchar);
-        header.datatype = Some(String::from("dna"));
-        header.missing = Some('?');
-        header.gap = Some('-');
         header
     }
 
