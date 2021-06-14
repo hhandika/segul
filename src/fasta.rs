@@ -22,13 +22,13 @@ pub fn convert_fasta(input: &str, output: &str, filetype: SeqFormat) {
     }
 }
 
-impl SeqCheck for Fasta<'_> {}
-
 pub struct Fasta<'a> {
     input: &'a Path,
     pub matrix: IndexMap<String, String>,
     is_alignment: bool,
 }
+
+impl SeqCheck for Fasta<'_> {}
 
 impl<'a> Fasta<'a> {
     pub fn new(input: &'a Path) -> Self {
@@ -147,5 +147,14 @@ mod test {
         fasta.read();
 
         assert_eq!(true, fasta.is_alignment);
+    }
+
+    #[test]
+    fn check_isnot_alignment() {
+        let path = Path::new("test_files/unaligned.fas");
+        let mut fasta = Fasta::new(path);
+        fasta.read();
+
+        assert_eq!(false, fasta.is_alignment);
     }
 }
