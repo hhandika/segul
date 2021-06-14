@@ -92,19 +92,17 @@ impl Concat {
         let mut alignment = IndexMap::new();
         let mut nchar = 0;
         let mut gene_start = 1;
-        let mut gene_end = 0;
         let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
             let mut nex = Nexus::new(file);
             nex.read().expect("CANNOT READ A NEXUS FILE");
             nchar += nex.nchar;
-            gene_end += nex.nchar;
             let mut part = Partition::new();
             part.gene = file.file_stem().unwrap().to_string_lossy().to_string();
             part.start = gene_start;
-            part.end = gene_end;
+            part.end = nchar;
             partition.push(part);
-            gene_start = gene_end + 1;
+            gene_start = nchar + 1;
             id.iter().for_each(|id| {
                 if !nex.matrix.contains_key(id) {
                     let seq = self.get_gaps(nex.nchar);
