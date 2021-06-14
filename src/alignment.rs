@@ -41,6 +41,7 @@ struct Concat {
     files: Vec<PathBuf>,
 }
 
+#[allow(dead_code)]
 impl Concat {
     fn new() -> Self {
         Self {
@@ -64,6 +65,15 @@ impl Concat {
         self.ntax = self.alignment.len();
     }
 
+    fn concat_from_phylip(&mut self, dir: &str) {
+        let pattern = format!("{}/*.phy*", dir);
+        self.get_files(&pattern);
+        self.files.sort();
+        let id = self.get_id_from_phylip();
+        self.alignment = self.concat_phylip(&id);
+        self.ntax = self.alignment.len();
+    }
+
     fn get_header(&self) -> Header {
         let mut header = Header::new();
         header.ntax = Some(self.ntax);
@@ -81,19 +91,34 @@ impl Concat {
             .collect();
     }
 
+    fn get_id_from_phylip(&mut self) -> IndexSet<String> {
+        let mut id = IndexSet::new();
+        self.files.iter().for_each(|file| {
+            let mut phy = Phylip::new(file);
+            phy.read().expect("CANNOT READ A NEXUS FILE");
+            self.get_id(&phy.matrix, &mut id);
+        });
+
+        id
+    }
+
     fn get_id_from_nexus(&mut self) -> IndexSet<String> {
         let mut id = IndexSet::new();
         self.files.iter().for_each(|file| {
             let mut nex = Nexus::new(file);
             nex.read().expect("CANNOT READ A NEXUS FILE");
-            nex.matrix.keys().for_each(|key| {
-                if !id.contains(key) {
-                    id.insert(key.to_string());
-                }
-            });
+            self.get_id(&nex.matrix, &mut id);
         });
 
         id
+    }
+
+    fn get_id(&self, matrix: &IndexMap<String, String>, id: &mut IndexSet<String>) {
+        matrix.keys().for_each(|key| {
+            if !id.contains(key) {
+                id.insert(key.to_string());
+            }
+        });
     }
 
     fn concat_nexus(&mut self, id: &IndexSet<String>) -> IndexMap<String, String> {
@@ -130,19 +155,19 @@ impl Concat {
         let mut gene_start = 1;
         let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
-            let mut nex = Phylip::new(file);
-            nex.read().expect("CANNOT READ A NEXUS FILE");
-            self.check_is_alignment(&file, nex.is_alignment);
-            nchar += nex.nchar; // increment sequence length using the value from parser
+            let mut phy = Phylip::new(file);
+            phy.read().expect("CANNOT READ A NEXUS FILE");
+            self.check_is_alignment(&file, phy.is_alignment);
+            nchar += phy.nchar; // increment sequence length using the value from parser
             let gene_name = file.file_stem().unwrap().to_string_lossy();
             self.get_partition(&mut partition, &gene_name, gene_start, nchar);
             gene_start = nchar + 1;
             id.iter().for_each(|id| {
-                if !nex.matrix.contains_key(id) {
-                    let seq = self.get_gaps(nex.nchar);
+                if !phy.matrix.contains_key(id) {
+                    let seq = self.get_gaps(phy.nchar);
                     self.insert_alignment(&mut alignment, id, seq)
                 } else {
-                    let seq = nex.matrix.get(id).unwrap().to_string();
+                    let seq = phy.matrix.get(id).unwrap().to_string();
                     self.insert_alignment(&mut alignment, id, seq)
                 }
             });
