@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {
     path: &'a Path,
-    outname: PathBuf,
+    output: PathBuf,
     matrix: &'a IndexMap<String, String>,
     id_len: usize,
     header: Header,
@@ -27,7 +27,7 @@ impl<'a> SeqWriter<'a> {
     ) -> Self {
         Self {
             path,
-            outname: PathBuf::new(),
+            output: PathBuf::new(),
             id_len: 0,
             matrix,
             header,
@@ -51,7 +51,7 @@ impl<'a> SeqWriter<'a> {
 
     pub fn write_fasta(&mut self) {
         self.get_output_name(&SeqFormat::Fasta);
-        let mut writer = self.create_output_file(&self.outname);
+        let mut writer = self.create_output_file(&self.output);
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
             writeln!(writer, "{}", seq).unwrap();
@@ -60,7 +60,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_phylip(&mut self) -> Result<()> {
-        let mut writer = self.create_output_file(&self.outname);
+        let mut writer = self.create_output_file(&self.output);
         writeln!(
             writer,
             "{} {}",
@@ -79,7 +79,7 @@ impl<'a> SeqWriter<'a> {
         self.get_datatype();
         self.get_missing();
         self.get_gap();
-        let mut writer = self.create_output_file(&self.outname);
+        let mut writer = self.create_output_file(&self.output);
         writeln!(writer, "#NEXUS")?;
         writeln!(writer, "begin data;")?;
         writeln!(
@@ -182,15 +182,15 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn display_save_path(&self) {
-        println!("Save as {}", self.outname.display());
+        println!("Save as {}", self.output.display());
     }
 
     fn get_output_name(&mut self, ext: &SeqFormat) {
         let name = Path::new(self.path.file_name().unwrap());
         match ext {
-            SeqFormat::Fasta => self.outname = name.with_extension("fas"),
-            SeqFormat::Nexus => self.outname = name.with_extension("nex"),
-            SeqFormat::Phylip => self.outname = name.with_extension("phy"),
+            SeqFormat::Fasta => self.output = name.with_extension("fas"),
+            SeqFormat::Nexus => self.output = name.with_extension("nex"),
+            SeqFormat::Phylip => self.output = name.with_extension("phy"),
         };
     }
 
