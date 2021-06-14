@@ -7,6 +7,7 @@ use indexmap::IndexSet;
 
 use crate::common::{Header, Partition, SeqFormat, SeqPartition};
 use crate::nexus::Nexus;
+use crate::phylip::Phylip;
 use crate::writer::SeqWriter;
 
 pub fn concat_nexus(dir: &str, outname: &str, filetype: SeqFormat, partition: SeqPartition) {
@@ -59,7 +60,7 @@ impl Concat {
         self.get_files(&pattern);
         self.files.sort();
         let id = self.get_id_from_nexus();
-        self.alignment = self.concat(&id);
+        self.alignment = self.concat_nexus(&id);
         self.ntax = self.alignment.len();
     }
 
@@ -95,7 +96,7 @@ impl Concat {
         id
     }
 
-    fn concat(&mut self, id: &IndexSet<String>) -> IndexMap<String, String> {
+    fn concat_nexus(&mut self, id: &IndexSet<String>) -> IndexMap<String, String> {
         let mut alignment = IndexMap::new();
         let mut nchar = 0;
         let mut gene_start = 1;
@@ -103,12 +104,10 @@ impl Concat {
         self.files.iter().for_each(|file| {
             let mut nex = Nexus::new(file);
             nex.read().expect("CANNOT READ A NEXUS FILE");
-            nchar += nex.nchar;
-            let mut part = Partition::new();
-            part.gene = file.file_stem().unwrap().to_string_lossy().to_string();
-            part.start = gene_start;
-            part.end = nchar;
-            partition.push(part);
+            self.check_is_alignment(&file, nex.is_alignment);
+            nchar += nex.nchar; // increment sequence length using the value from parser
+            let gene_name = file.file_stem().unwrap().to_string_lossy();
+            self.get_partition(&mut partition, &gene_name, gene_start, nchar);
             gene_start = nchar + 1;
             id.iter().for_each(|id| {
                 if !nex.matrix.contains_key(id) {
@@ -118,11 +117,62 @@ impl Concat {
                     let seq = nex.matrix.get(id).unwrap().to_string();
                     self.insert_alignment(&mut alignment, id, seq)
                 }
-            })
+            });
         });
         self.nchar = nchar;
         self.partition = partition;
         alignment
+    }
+
+    fn concat_phylip(&mut self, id: &IndexSet<String>) -> IndexMap<String, String> {
+        let mut alignment = IndexMap::new();
+        let mut nchar = 0;
+        let mut gene_start = 1;
+        let mut partition = Vec::new();
+        self.files.iter().for_each(|file| {
+            let mut nex = Phylip::new(file);
+            nex.read().expect("CANNOT READ A NEXUS FILE");
+            self.check_is_alignment(&file, nex.is_alignment);
+            nchar += nex.nchar; // increment sequence length using the value from parser
+            let gene_name = file.file_stem().unwrap().to_string_lossy();
+            self.get_partition(&mut partition, &gene_name, gene_start, nchar);
+            gene_start = nchar + 1;
+            id.iter().for_each(|id| {
+                if !nex.matrix.contains_key(id) {
+                    let seq = self.get_gaps(nex.nchar);
+                    self.insert_alignment(&mut alignment, id, seq)
+                } else {
+                    let seq = nex.matrix.get(id).unwrap().to_string();
+                    self.insert_alignment(&mut alignment, id, seq)
+                }
+            });
+        });
+        self.nchar = nchar;
+        self.partition = partition;
+        alignment
+    }
+
+    fn get_partition(
+        &self,
+        partition: &mut Vec<Partition>,
+        gene_name: &str,
+        start: usize,
+        end: usize,
+    ) {
+        let mut part = Partition::new();
+        part.gene = gene_name.to_string();
+        part.start = start;
+        part.end = end;
+        partition.push(part);
+    }
+
+    fn check_is_alignment(&self, file: &Path, aligned: bool) {
+        if !aligned {
+            panic!(
+                "INVALID INPUT FILES. {} IS NOT AN ALIGNMENT",
+                file.display()
+            );
+        }
     }
 
     fn insert_alignment(&self, alignment: &mut IndexMap<String, String>, id: &str, values: String) {

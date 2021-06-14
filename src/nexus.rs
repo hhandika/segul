@@ -6,7 +6,7 @@ use std::path::Path;
 use indexmap::IndexMap;
 use nom::{bytes::complete, character, sequence, IResult};
 
-use crate::common::{self, Header, SeqFormat, SeqPartition};
+use crate::common::{self, Header, SeqCheck, SeqFormat, SeqPartition};
 use crate::writer::SeqWriter;
 
 pub fn convert_nexus(input: &str, filetype: SeqFormat) {
@@ -31,7 +31,10 @@ pub struct Nexus<'a> {
     pub missing: char,
     pub gap: char,
     pub interleave: bool,
+    pub is_alignment: bool,
 }
+
+impl SeqCheck for Nexus<'_> {}
 
 impl<'a> Nexus<'a> {
     pub fn new(input: &'a Path) -> Self {
@@ -44,6 +47,7 @@ impl<'a> Nexus<'a> {
             missing: '?',
             gap: '-',
             interleave: false,
+            is_alignment: false,
         }
     }
 
@@ -58,6 +62,7 @@ impl<'a> Nexus<'a> {
         self.parse_format(&mut commands.format);
         self.parse_matrix(&mut commands.matrix);
         self.check_ntax_matches();
+        self.is_alignment = self.check_is_alignment(&self.matrix);
         Ok(())
     }
 

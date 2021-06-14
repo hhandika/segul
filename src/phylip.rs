@@ -28,14 +28,14 @@ pub fn convert_phylip(path: &str, filetype: SeqFormat) {
     }
 }
 
-struct Phylip {
-    matrix: IndexMap<String, String>,
-    ntax: usize,
-    nchar: usize,
+pub struct Phylip {
+    pub matrix: IndexMap<String, String>,
+    pub ntax: usize,
+    pub nchar: usize,
 }
 
 impl Phylip {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             matrix: IndexMap::new(),
             ntax: 0,
@@ -43,7 +43,7 @@ impl Phylip {
         }
     }
 
-    fn read<P: AsRef<Path>>(&mut self, path: &P) {
+    pub fn read<P: AsRef<Path>>(&mut self, path: &P) {
         let file = File::open(path).expect("CANNOT OPEN THE INPUT FILE.");
         let mut buff = BufReader::new(file);
 
