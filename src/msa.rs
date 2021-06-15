@@ -38,21 +38,21 @@ impl<'a> MSAlignment<'a> {
 
     pub fn concat_nexus(&mut self) {
         let mut nex = Concat::new(InputFormat::Nexus);
-        nex.concat_from_nexus(self.dir);
+        nex.concat_alignment(self.dir);
         let header = nex.get_header();
         self.write_alignment(&nex.alignment, &nex.partition, header);
     }
 
     pub fn concat_phylip(&mut self) {
         let mut phy = Concat::new(InputFormat::Phylip);
-        phy.concat_from_nexus(self.dir);
+        phy.concat_alignment(self.dir);
         let header = phy.get_header();
         self.write_alignment(&phy.alignment, &phy.partition, header);
     }
 
     pub fn concat_fasta(&mut self) {
         let mut fas = Concat::new(InputFormat::Fasta);
-        fas.concat_from_nexus(self.dir);
+        fas.concat_alignment(self.dir);
         let header = fas.get_header();
         self.write_alignment(&fas.alignment, &fas.partition, header);
     }
@@ -66,63 +66,6 @@ impl<'a> MSAlignment<'a> {
             OutputFormat::Phylip => save.write_sequence(&self.output_format),
             OutputFormat::Fasta => save.write_fasta(),
         };
-    }
-}
-
-struct Alignment {
-    alignment: IndexMap<String, String>,
-    nchar: usize,
-}
-
-impl Alignment {
-    fn new() -> Self {
-        Self {
-            alignment: IndexMap::new(),
-            nchar: 0,
-        }
-    }
-
-    fn get_aln_from_nexus(&mut self, file: &Path) {
-        let mut nex = Nexus::new(file);
-        nex.read().expect("CANNOT READ A NEXUS FILE");
-        self.check_is_alignment(&file, nex.is_alignment);
-        self.get_alignment(nex.matrix, nex.nchar)
-    }
-
-    fn get_aln_from_phylip(&mut self, file: &Path) {
-        let mut phy = Phylip::new(file);
-        phy.read().expect("CANNOT READ A PHYLIP FILE");
-        self.check_is_alignment(file, phy.is_alignment);
-        self.get_alignment(phy.matrix, phy.nchar);
-    }
-
-    fn get_aln_from_fasta(&mut self, file: &Path) {
-        let mut fas = Fasta::new(file);
-        fas.read();
-        self.check_is_alignment(file, fas.is_alignment);
-        let nchar = self.get_nchar(&fas.matrix);
-        self.get_alignment(fas.matrix, nchar);
-    }
-
-    fn get_alignment(&mut self, alignment: IndexMap<String, String>, nchar: usize) {
-        self.alignment = alignment;
-        self.nchar = nchar;
-    }
-
-    // Count char for Fasta. Get the char length from the first sequence.
-    // This is fine since Fasta struct check for the char
-    // is the same length.
-    fn get_nchar(&mut self, alignment: &IndexMap<String, String>) -> usize {
-        alignment.values().next().unwrap().len()
-    }
-
-    fn check_is_alignment(&self, file: &Path, aligned: bool) {
-        if !aligned {
-            panic!(
-                "INVALID INPUT FILES. {} IS NOT AN ALIGNMENT",
-                file.display()
-            );
-        }
     }
 }
 
@@ -159,13 +102,13 @@ impl Concat {
         }
     }
 
-    fn concat_from_nexus(&mut self, dir: &str) {
+    fn concat_alignment(&mut self, dir: &str) {
         let pattern = self.get_pattern(dir);
         self.get_files(&pattern);
         self.check_glob_results();
         self.files.sort();
         let id = self.get_id_all();
-        self.alignment = self.concat_nexus(&id);
+        self.alignment = self.concat(&id);
         self.ntax = self.alignment.len();
     }
 
@@ -242,7 +185,7 @@ impl Concat {
         });
     }
 
-    fn concat_nexus(&mut self, id: &IndexSet<String>) -> IndexMap<String, String> {
+    fn concat(&mut self, id: &IndexSet<String>) -> IndexMap<String, String> {
         let mut alignment = IndexMap::new();
         let mut nchar = 0;
         let mut gene_start = 1;
@@ -300,6 +243,63 @@ impl Concat {
     }
 }
 
+struct Alignment {
+    alignment: IndexMap<String, String>,
+    nchar: usize,
+}
+
+impl Alignment {
+    fn new() -> Self {
+        Self {
+            alignment: IndexMap::new(),
+            nchar: 0,
+        }
+    }
+
+    fn get_aln_from_nexus(&mut self, file: &Path) {
+        let mut nex = Nexus::new(file);
+        nex.read().expect("CANNOT READ A NEXUS FILE");
+        self.check_is_alignment(&file, nex.is_alignment);
+        self.get_alignment(nex.matrix, nex.nchar)
+    }
+
+    fn get_aln_from_phylip(&mut self, file: &Path) {
+        let mut phy = Phylip::new(file);
+        phy.read().expect("CANNOT READ A PHYLIP FILE");
+        self.check_is_alignment(file, phy.is_alignment);
+        self.get_alignment(phy.matrix, phy.nchar);
+    }
+
+    fn get_aln_from_fasta(&mut self, file: &Path) {
+        let mut fas = Fasta::new(file);
+        fas.read();
+        self.check_is_alignment(file, fas.is_alignment);
+        let nchar = self.get_nchar(&fas.matrix);
+        self.get_alignment(fas.matrix, nchar);
+    }
+
+    fn get_alignment(&mut self, alignment: IndexMap<String, String>, nchar: usize) {
+        self.alignment = alignment;
+        self.nchar = nchar;
+    }
+
+    // Count char for Fasta. Get the char length from the first sequence.
+    // This is fine since Fasta struct check for the char
+    // is the same length.
+    fn get_nchar(&mut self, alignment: &IndexMap<String, String>) -> usize {
+        alignment.values().next().unwrap().len()
+    }
+
+    fn check_is_alignment(&self, file: &Path, aligned: bool) {
+        if !aligned {
+            panic!(
+                "INVALID INPUT FILES. {} IS NOT AN ALIGNMENT",
+                file.display()
+            );
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -327,7 +327,7 @@ mod test {
     fn concat_nexus_test() {
         let path = "test_files/concat/";
         let mut concat = Concat::new(InputFormat::Nexus);
-        concat.concat_from_nexus(path);
+        concat.concat_alignment(path);
         assert_eq!(3, concat.alignment.len());
     }
 
@@ -335,7 +335,7 @@ mod test {
     fn concat_check_result_test() {
         let path = "test_files/concat/";
         let mut concat = Concat::new(InputFormat::Nexus);
-        concat.concat_from_nexus(path);
+        concat.concat_alignment(path);
         let abce = concat.alignment.get("ABCE").unwrap();
         let res = "--------------gatattagtata";
         assert_eq!(res, abce);
@@ -345,7 +345,7 @@ mod test {
     fn concat_partition_test() {
         let path = "test_files/concat/";
         let mut concat = Concat::new(InputFormat::Nexus);
-        concat.concat_from_nexus(path);
+        concat.concat_alignment(path);
         assert_eq!(1, concat.partition[0].start);
         assert_eq!(6, concat.partition[0].end);
         assert_eq!(7, concat.partition[1].start);
