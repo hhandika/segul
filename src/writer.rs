@@ -13,8 +13,8 @@ pub struct SeqWriter<'a> {
     matrix: &'a IndexMap<String, String>,
     id_len: usize,
     header: Header,
-    partition: Option<Vec<Partition>>,
-    part_format: SeqPartition,
+    partition: Option<&'a [Partition]>,
+    part_format: &'a SeqPartition,
 }
 
 impl<'a> SeqWriter<'a> {
@@ -22,8 +22,8 @@ impl<'a> SeqWriter<'a> {
         path: &'a Path,
         matrix: &'a IndexMap<String, String>,
         header: Header,
-        partition: Option<Vec<Partition>>,
-        part_format: SeqPartition,
+        partition: Option<&'a [Partition]>,
+        part_format: &'a SeqPartition,
     ) -> Self {
         Self {
             path,
@@ -262,7 +262,7 @@ mod test {
         // let gap = Some('-');
         let matrix = IndexMap::new();
         let header = Header::new();
-        let convert = SeqWriter::new(Path::new("."), &matrix, header, None, SeqPartition::None);
+        let convert = SeqWriter::new(Path::new("."), &matrix, header, None, &SeqPartition::None);
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 }

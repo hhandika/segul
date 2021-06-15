@@ -19,7 +19,7 @@ pub fn convert_phylip(path: &str, filetype: SeqFormat) {
         &phylip.matrix,
         header,
         None,
-        SeqPartition::None,
+        &SeqPartition::None,
     );
 
     match filetype {

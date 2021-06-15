@@ -14,7 +14,7 @@ pub fn convert_nexus(input: &str, filetype: SeqFormat) {
     let mut nex = Nexus::new(input_path);
     nex.read().expect("CANNOT READ NEXUS FILES");
     let header = nex.get_header();
-    let mut convert = SeqWriter::new(input_path, &nex.matrix, header, None, SeqPartition::None);
+    let mut convert = SeqWriter::new(input_path, &nex.matrix, header, None, &SeqPartition::None);
     match filetype {
         SeqFormat::Phylip => convert.write_sequence(&filetype),
         SeqFormat::Fasta => convert.write_fasta(),

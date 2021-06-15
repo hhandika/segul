@@ -14,7 +14,7 @@ pub fn convert_fasta(input: &str, output: &str, filetype: SeqFormat) {
     fasta.read();
     let header = fasta.get_header();
     let output = Path::new(output);
-    let mut convert = SeqWriter::new(output, &fasta.matrix, header, None, SeqPartition::None);
+    let mut convert = SeqWriter::new(output, &fasta.matrix, header, None, &SeqPartition::None);
     match filetype {
         SeqFormat::Nexus => convert.write_sequence(&filetype),
         SeqFormat::Phylip => convert.write_sequence(&filetype),
@@ -25,7 +25,7 @@ pub fn convert_fasta(input: &str, output: &str, filetype: SeqFormat) {
 pub struct Fasta<'a> {
     input: &'a Path,
     pub matrix: IndexMap<String, String>,
-    is_alignment: bool,
+    pub is_alignment: bool,
 }
 
 impl SeqCheck for Fasta<'_> {}
