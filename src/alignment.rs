@@ -59,6 +59,7 @@ impl Concat {
     fn concat_from_nexus(&mut self, dir: &str) {
         let pattern = format!("{}/*.nex*", dir);
         self.get_files(&pattern);
+        self.check_glob_results();
         self.files.sort();
         let id = self.get_id_from_nexus();
         self.alignment = self.concat_nexus(&id);
@@ -68,6 +69,7 @@ impl Concat {
     fn concat_from_phylip(&mut self, dir: &str) {
         let pattern = format!("{}/*.phy*", dir);
         self.get_files(&pattern);
+        self.check_glob_results();
         self.files.sort();
         let id = self.get_id_from_phylip();
         self.alignment = self.concat_phylip(&id);
@@ -89,6 +91,12 @@ impl Concat {
             .expect("COULD NOT FIND FILES")
             .filter_map(|ok| ok.ok())
             .collect();
+    }
+
+    fn check_glob_results(&self) {
+        if self.files.is_empty() {
+            panic!("NO VALID ALIGNMENT FILES FOUND.");
+        }
     }
 
     fn get_id_from_phylip(&mut self) -> IndexSet<String> {
@@ -224,6 +232,16 @@ mod test {
         let mut concat = Concat::new();
         concat.get_files(&pattern);
         assert_eq!(4, concat.files.len());
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_empty_files_test() {
+        let path = "test_files/empty/";
+        let pattern = format!("{}/*.nex*", path);
+        let mut concat = Concat::new();
+        concat.get_files(&pattern);
+        concat.check_glob_results();
     }
 
     #[test]
