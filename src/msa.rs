@@ -14,14 +14,14 @@ use crate::writer::SeqWriter;
 /// Multi-Sequence Alignment Module.
 /// Contains methods for working with multi-sequence alignments.
 
-pub struct MSA<'a> {
+pub struct MSAlignment<'a> {
     dir: &'a str,
     output: &'a str,
     output_format: SeqFormat,
     part_format: SeqPartition,
 }
 
-impl<'a> MSA<'a> {
+impl<'a> MSAlignment<'a> {
     pub fn new(
         dir: &'a str,
         output: &'a str,

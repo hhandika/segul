@@ -277,7 +277,7 @@ impl<'a> Fasta<'a> {
         let output_format = self.get_output_format(self.matches);
         let part_format = self.get_partition_format(self.matches);
 
-        msa::MSA::new(dir, output, output_format, part_format).concat_fasta();
+        msa::MSAlignment::new(dir, output, output_format, part_format).concat_fasta();
     }
 }
 
@@ -305,7 +305,7 @@ impl<'a> Nexus<'a> {
         let output_format = self.get_output_format(self.matches);
         let part_format = self.get_partition_format(self.matches);
 
-        msa::MSA::new(dir, output, output_format, part_format).concat_nexus();
+        msa::MSAlignment::new(dir, output, output_format, part_format).concat_nexus();
     }
 }
 
@@ -333,6 +333,6 @@ impl<'a> Phylip<'a> {
         let output_format = self.get_output_format(self.matches);
         let part_format = self.get_partition_format(self.matches);
 
-        msa::MSA::new(dir, output, output_format, part_format).concat_phylip();
+        msa::MSAlignment::new(dir, output, output_format, part_format).concat_phylip();
     }
 }
