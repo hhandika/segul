@@ -1,6 +1,6 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
 
-use crate::common::{SeqFormat, SeqPartition};
+use crate::common::{OutputFormat, PartitionFormat};
 use crate::fasta;
 use crate::msa;
 use crate::nexus;
@@ -127,7 +127,7 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("format")
                                 .short("f")
                                 .long("format")
-                                .help("Sets an output format. Default to nexus. Choices: nexus, fasta, phylip.")
+                                .help("Sets an output format. Default to nexus. Choices: nexus, fasta, phylip")
                                 .takes_value(true)
                                 .required(true)
                                 .default_value("nexus")
@@ -137,7 +137,7 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("partition")
                                 .short("-p")
                                 .long("part")
-                                .help("Sets a partition format. Default to nexus separate (nexsep). Choice: nexus, phylip, nexsep.")
+                                .help("Sets a partition format. Default to nexus separate (nexsep). Choice: nexus, phylip, nexsep")
                                 .takes_value(true)
                                 .required(true)
                                 .default_value("nexsep")
@@ -146,7 +146,8 @@ fn get_args(version: &str) -> ArgMatches {
                 ),
         )
         .subcommand(
-            App::new("phylip").about("Any phylip tools").subcommand(
+            App::new("phylip").about("Any phylip tools")
+            .subcommand(
                 App::new("convert")
                     .about("Convert phylip")
                     .arg(
@@ -164,7 +165,50 @@ fn get_args(version: &str) -> ArgMatches {
                             .help("Convert phylip to nexus")
                             .takes_value(false),
                     ),
-            ),
+            )
+            .subcommand(
+                    App::new("concat")
+                        .about("Concat phylip alignments")
+                        .arg(
+                            Arg::with_name("dir")
+                                .short("d")
+                                .long("dir")
+                                .help("Inputs a dir containing phylip files")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("DIR"),
+                        )
+                        .arg(
+                            Arg::with_name("output")
+                                .short("o")
+                                .long("output")
+                                .help("Uses a costume output filename")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("concat")
+                                .value_name("OUTPUT"),
+                        )
+                        .arg(
+                            Arg::with_name("format")
+                                .short("f")
+                                .long("format")
+                                .help("Sets an output format. Default to nexus. Choices: nexus, fasta, phylip")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("nexus")
+                                .value_name("FORMAT"),
+                        )
+                        .arg(
+                            Arg::with_name("partition")
+                                .short("-p")
+                                .long("part")
+                                .help("Sets a partition format. Default to nexus separate (nexsep). Choice: nexus, phylip, nexsep")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("nexsep")
+                                .value_name("FORMAT"),
+                        ),
+                ),
         )
         .get_matches()
 }
@@ -218,26 +262,26 @@ trait Cli {
         matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
     }
 
-    fn get_partition_format(&self, matches: &ArgMatches) -> SeqPartition {
+    fn get_partition_format(&self, matches: &ArgMatches) -> PartitionFormat {
         let part_format = matches
             .value_of("partition")
             .expect("CANNOT READ PARTITION FORMAT");
         match part_format {
-            "nexus" => SeqPartition::Nexus,
-            "phylip" => SeqPartition::Phylip,
-            "nexsep" => SeqPartition::NexusSeparate,
-            _ => SeqPartition::Nexus,
+            "nexus" => PartitionFormat::Nexus,
+            "phylip" => PartitionFormat::Phylip,
+            "nexsep" => PartitionFormat::NexusSeparate,
+            _ => PartitionFormat::Nexus,
         }
     }
 
-    fn get_output_format(&self, matches: &ArgMatches) -> SeqFormat {
+    fn get_output_format(&self, matches: &ArgMatches) -> OutputFormat {
         let format = matches
             .value_of("format")
             .expect("CANNOT READ FORMAT INPUT");
         match format {
-            "nexus" => SeqFormat::Nexus,
-            "phylip" => SeqFormat::Phylip,
-            "fasta" => SeqFormat::Fasta,
+            "nexus" => OutputFormat::Nexus,
+            "phylip" => OutputFormat::Phylip,
+            "fasta" => OutputFormat::Fasta,
             _ => panic!(
                 "UNSUPPORTED FORMAT. \
         THE PROGRAM ONLY ACCEPT nexus, phylip, and fasta. All in lowercase.\
@@ -265,9 +309,9 @@ impl<'a> Fasta<'a> {
         let input = self.get_file_input(self.matches);
         let output = self.get_output(self.matches);
         if self.matches.is_present("phylip") {
-            fasta::convert_fasta(input, output, SeqFormat::Phylip);
+            fasta::convert_fasta(input, output, OutputFormat::Phylip);
         } else {
-            fasta::convert_fasta(input, output, SeqFormat::Nexus);
+            fasta::convert_fasta(input, output, OutputFormat::Nexus);
         }
     }
 
@@ -293,9 +337,9 @@ impl<'a> Nexus<'a> {
     fn convert_nexus(&self) {
         let input = self.get_file_input(self.matches);
         if self.matches.is_present("phylip") {
-            nexus::convert_nexus(input, SeqFormat::Phylip);
+            nexus::convert_nexus(input, OutputFormat::Phylip);
         } else {
-            nexus::convert_nexus(input, SeqFormat::Fasta);
+            nexus::convert_nexus(input, OutputFormat::Fasta);
         }
     }
 
@@ -321,9 +365,9 @@ impl<'a> Phylip<'a> {
     fn convert_phylip(&self) {
         let input = self.get_file_input(self.matches);
         if self.matches.is_present("nexus") {
-            phylip::convert_phylip(input, SeqFormat::Nexus);
+            phylip::convert_phylip(input, OutputFormat::Nexus);
         } else {
-            phylip::convert_phylip(input, SeqFormat::Fasta);
+            phylip::convert_phylip(input, OutputFormat::Fasta);
         }
     }
 
