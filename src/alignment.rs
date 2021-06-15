@@ -156,7 +156,7 @@ impl Concat {
         let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
             let mut phy = Phylip::new(file);
-            phy.read().expect("CANNOT READ A NEXUS FILE");
+            phy.read().expect("CANNOT READ A PHYLIP FILE");
             self.check_is_alignment(&file, phy.is_alignment);
             nchar += phy.nchar; // increment sequence length using the value from parser
             let gene_name = file.file_stem().unwrap().to_string_lossy();
