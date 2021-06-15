@@ -255,11 +255,6 @@ mod test {
     fn insert_whitespaces_test() {
         let max_len = 10;
         let id = "ABCDE";
-        // let ntax = Some(2);
-        // let nchar = Some(5);
-        // let datatype = Some(String::from("dna"));
-        // let missing = Some('?');
-        // let gap = Some('-');
         let matrix = IndexMap::new();
         let header = Header::new();
         let convert = SeqWriter::new(
