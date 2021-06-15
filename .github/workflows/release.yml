@@ -11,13 +11,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [linux, macos]
+        name: [linux, macos, windows]
 
         include:
           - name: linux
             os: ubuntu-latest
             artifact_name: target/release/segul
             asset_name: segul-Linux-x86_64
+
+          - name: windows
+            os: windows-latest
+            artifact_name: target/release/segul.exe
+            asset_name: segul-Windows-x86_64
 
           - name: macos
             os: macos-latest
