@@ -320,7 +320,6 @@ impl<'a> Phylip<'a> {
 
     fn convert_phylip(&self) {
         let input = self.get_file_input(self.matches);
-        let output = self.get_output(self.matches);
         if self.matches.is_present("nexus") {
             phylip::convert_phylip(input, SeqFormat::Nexus);
         } else {

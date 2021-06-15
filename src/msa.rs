@@ -51,7 +51,7 @@ impl<'a> MSA<'a> {
     }
 
     pub fn concat_fasta(&mut self) {
-        let mut fas = Concat::new(InputFormat::Phylip);
+        let mut fas = Concat::new(InputFormat::Fasta);
         fas.concat_from_nexus(self.dir);
         let header = fas.get_header();
         self.write_alignment(&fas.alignment, &fas.partition, header);
