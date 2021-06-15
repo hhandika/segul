@@ -1,8 +1,8 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
 
-use crate::alignment;
 use crate::common::{SeqFormat, SeqPartition};
 use crate::fasta;
+use crate::msa;
 use crate::nexus;
 use crate::phylip;
 
@@ -179,7 +179,7 @@ fn concat_nexus(matches: &ArgMatches) {
     let filetype = get_file_type(format);
     let partition = get_partition_format(part);
 
-    alignment::concat_nexus(dir, output, filetype, partition);
+    msa::concat_nexus(dir, output, filetype, partition);
 }
 
 fn get_partition_format(partition: &str) -> SeqPartition {

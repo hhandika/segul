@@ -1,7 +1,7 @@
-mod alignment;
 mod cli;
 mod common;
 mod fasta;
+mod msa;
 mod nexus;
 mod phylip;
 mod writer;

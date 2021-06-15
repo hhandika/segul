@@ -95,7 +95,7 @@ impl Concat {
 
     fn check_glob_results(&self) {
         if self.files.is_empty() {
-            panic!("NO VALID ALIGNMENT FILES FOUND.");
+            panic!("NO VALID ALIGNMENT FILES FOUND");
         }
     }
 
