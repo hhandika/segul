@@ -108,8 +108,11 @@ impl Concat {
         self.check_glob_results();
         self.files.sort();
         let id = self.get_id_all();
-        self.alignment = self.concat(&id);
+        let (alignment, nchar, partition) = self.concat(&id);
+        self.alignment = alignment;
         self.ntax = self.alignment.len();
+        self.nchar = nchar;
+        self.partition = partition;
     }
 
     fn get_pattern(&self, dir: &str) -> String {
@@ -185,7 +188,10 @@ impl Concat {
         });
     }
 
-    fn concat(&mut self, id: &IndexSet<String>) -> IndexMap<String, String> {
+    fn concat(
+        &mut self,
+        id: &IndexSet<String>,
+    ) -> (IndexMap<String, String>, usize, Vec<Partition>) {
         let mut alignment = IndexMap::new();
         let mut nchar = 0;
         let mut gene_start = 1;
@@ -211,9 +217,7 @@ impl Concat {
                 }
             });
         });
-        self.nchar = nchar;
-        self.partition = partition;
-        alignment
+        (alignment, nchar, partition)
     }
 
     fn get_partition(
