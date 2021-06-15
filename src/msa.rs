@@ -355,4 +355,11 @@ mod test {
         assert_eq!(21, concat.partition[3].start);
         assert_eq!(26, concat.partition[3].end);
     }
+
+    #[test]
+    fn get_gaps_test() {
+        let len = 5;
+        let gaps = "-----";
+        assert_eq!(gaps, Concat::new(InputFormat::Fasta).get_gaps(len))
+    }
 }
