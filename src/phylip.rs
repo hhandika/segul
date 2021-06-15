@@ -6,10 +6,10 @@ use std::path::Path;
 use indexmap::IndexMap;
 use nom::{character::complete, sequence, IResult};
 
-use crate::common::{Header, SeqCheck, SeqFormat, SeqPartition};
+use crate::common::{Header, OutputFormat, PartitionFormat, SeqCheck};
 use crate::writer::SeqWriter;
 
-pub fn convert_phylip(path: &str, filetype: SeqFormat) {
+pub fn convert_phylip(path: &str, filetype: OutputFormat) {
     let input = Path::new(path);
     let mut phylip = Phylip::new(input);
     phylip.read().expect("CANNOT READ PHYLIP FILES");
@@ -19,12 +19,12 @@ pub fn convert_phylip(path: &str, filetype: SeqFormat) {
         &phylip.matrix,
         header,
         None,
-        &SeqPartition::None,
+        &PartitionFormat::None,
     );
 
     match filetype {
-        SeqFormat::Nexus => convert.write_sequence(&filetype),
-        SeqFormat::Fasta => convert.write_fasta(),
+        OutputFormat::Nexus => convert.write_sequence(&filetype),
+        OutputFormat::Fasta => convert.write_fasta(),
         _ => (),
     }
 }

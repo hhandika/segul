@@ -5,19 +5,19 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::common::{Header, SeqCheck, SeqFormat, SeqPartition};
+use crate::common::{Header, OutputFormat, PartitionFormat, SeqCheck};
 use crate::writer::SeqWriter;
 
-pub fn convert_fasta(input: &str, output: &str, filetype: SeqFormat) {
+pub fn convert_fasta(input: &str, output: &str, filetype: OutputFormat) {
     let input_path = Path::new(input);
     let mut fasta = Fasta::new(input_path);
     fasta.read();
     let header = fasta.get_header();
     let output = Path::new(output);
-    let mut convert = SeqWriter::new(output, &fasta.matrix, header, None, &SeqPartition::None);
+    let mut convert = SeqWriter::new(output, &fasta.matrix, header, None, &PartitionFormat::None);
     match filetype {
-        SeqFormat::Nexus => convert.write_sequence(&filetype),
-        SeqFormat::Phylip => convert.write_sequence(&filetype),
+        OutputFormat::Nexus => convert.write_sequence(&filetype),
+        OutputFormat::Phylip => convert.write_sequence(&filetype),
         _ => (),
     }
 }

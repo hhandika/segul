@@ -4,7 +4,7 @@ use std::io::{LineWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use crate::common::{Header, Partition, SeqFormat, SeqPartition};
+use crate::common::{Header, OutputFormat, Partition, PartitionFormat};
 use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {
@@ -14,7 +14,7 @@ pub struct SeqWriter<'a> {
     id_len: usize,
     header: Header,
     partition: Option<&'a [Partition]>,
-    part_format: &'a SeqPartition,
+    part_format: &'a PartitionFormat,
 }
 
 impl<'a> SeqWriter<'a> {
@@ -23,7 +23,7 @@ impl<'a> SeqWriter<'a> {
         matrix: &'a IndexMap<String, String>,
         header: Header,
         partition: Option<&'a [Partition]>,
-        part_format: &'a SeqPartition,
+        part_format: &'a PartitionFormat,
     ) -> Self {
         Self {
             path,
@@ -36,21 +36,21 @@ impl<'a> SeqWriter<'a> {
         }
     }
 
-    pub fn write_sequence(&mut self, filetype: &SeqFormat) {
+    pub fn write_sequence(&mut self, filetype: &OutputFormat) {
         self.get_output_name(filetype);
         self.get_ntax();
         self.get_nchar();
         self.get_max_id_len();
 
         match filetype {
-            SeqFormat::Nexus => self.write_nexus().expect("CANNOT WRITE A NEXUS FILE."),
-            SeqFormat::Phylip => self.write_phylip().expect("CANNOT WRITE A PHYLIP FILE."),
+            OutputFormat::Nexus => self.write_nexus().expect("CANNOT WRITE A NEXUS FILE."),
+            OutputFormat::Phylip => self.write_phylip().expect("CANNOT WRITE A PHYLIP FILE."),
             _ => self.write_fasta(),
         }
     }
 
     pub fn write_fasta(&mut self) {
-        self.get_output_name(&SeqFormat::Fasta);
+        self.get_output_name(&OutputFormat::Fasta);
         let mut writer = self.create_output_file(&self.output);
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
@@ -101,10 +101,10 @@ impl<'a> SeqWriter<'a> {
         writeln!(writer, "end;")?;
         if self.partition.is_some() {
             match self.part_format {
-                SeqPartition::Nexus => self
+                PartitionFormat::Nexus => self
                     .write_part_nexus(&mut writer)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
-                SeqPartition::Phylip => self.write_part_phylip(),
+                PartitionFormat::Phylip => self.write_part_phylip(),
                 _ => self.write_part_nexus_sep(),
             }
         }
@@ -123,8 +123,8 @@ impl<'a> SeqWriter<'a> {
 
     fn write_partition_sep(&self) {
         match self.part_format {
-            SeqPartition::NexusSeparate => self.write_part_nexus_sep(),
-            SeqPartition::Phylip => self.write_part_phylip(),
+            PartitionFormat::NexusSeparate => self.write_part_nexus_sep(),
+            PartitionFormat::Phylip => self.write_part_phylip(),
             _ => eprintln!("UNKNOWN PARTITION FORMAT"),
         }
     }
@@ -185,12 +185,12 @@ impl<'a> SeqWriter<'a> {
         println!("Save as {}", self.output.display());
     }
 
-    fn get_output_name(&mut self, ext: &SeqFormat) {
+    fn get_output_name(&mut self, ext: &OutputFormat) {
         let name = Path::new(self.path.file_name().unwrap());
         match ext {
-            SeqFormat::Fasta => self.output = name.with_extension("fas"),
-            SeqFormat::Nexus => self.output = name.with_extension("nex"),
-            SeqFormat::Phylip => self.output = name.with_extension("phy"),
+            OutputFormat::Fasta => self.output = name.with_extension("fas"),
+            OutputFormat::Nexus => self.output = name.with_extension("nex"),
+            OutputFormat::Phylip => self.output = name.with_extension("phy"),
         };
     }
 
@@ -262,7 +262,13 @@ mod test {
         // let gap = Some('-');
         let matrix = IndexMap::new();
         let header = Header::new();
-        let convert = SeqWriter::new(Path::new("."), &matrix, header, None, &SeqPartition::None);
+        let convert = SeqWriter::new(
+            Path::new("."),
+            &matrix,
+            header,
+            None,
+            &PartitionFormat::None,
+        );
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 }

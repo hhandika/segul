@@ -5,7 +5,7 @@ use glob::glob;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
-use crate::common::{Header, Partition, SeqFormat, SeqPartition};
+use crate::common::{Header, OutputFormat, Partition, PartitionFormat};
 use crate::fasta::Fasta;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
@@ -17,16 +17,16 @@ use crate::writer::SeqWriter;
 pub struct MSAlignment<'a> {
     dir: &'a str,
     output: &'a str,
-    output_format: SeqFormat,
-    part_format: SeqPartition,
+    output_format: OutputFormat,
+    part_format: PartitionFormat,
 }
 
 impl<'a> MSAlignment<'a> {
     pub fn new(
         dir: &'a str,
         output: &'a str,
-        output_format: SeqFormat,
-        part_format: SeqPartition,
+        output_format: OutputFormat,
+        part_format: PartitionFormat,
     ) -> Self {
         Self {
             dir,
@@ -62,9 +62,9 @@ impl<'a> MSAlignment<'a> {
         let mut save = SeqWriter::new(&path, aln, header, Some(part), &self.part_format);
 
         match self.output_format {
-            SeqFormat::Nexus => save.write_sequence(&self.output_format),
-            SeqFormat::Phylip => save.write_sequence(&self.output_format),
-            SeqFormat::Fasta => save.write_fasta(),
+            OutputFormat::Nexus => save.write_sequence(&self.output_format),
+            OutputFormat::Phylip => save.write_sequence(&self.output_format),
+            OutputFormat::Fasta => save.write_fasta(),
         };
     }
 }

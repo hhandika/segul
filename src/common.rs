@@ -1,12 +1,12 @@
 use indexmap::IndexMap;
 
-pub enum SeqFormat {
+pub enum OutputFormat {
     Fasta,
     Nexus,
     Phylip,
 }
 
-pub enum SeqPartition {
+pub enum PartitionFormat {
     Nexus,
     NexusSeparate,
     Phylip,
