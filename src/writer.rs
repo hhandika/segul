@@ -1,6 +1,6 @@
 use std::fs::{self, File};
 use std::io::prelude::*;
-use std::io::{LineWriter, Result};
+use std::io::{self, BufWriter, LineWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
 
@@ -59,7 +59,9 @@ impl<'a> SeqWriter<'a> {
     }
 
     pub fn display_save_path(&self) {
-        println!("Save as {}", self.output.display());
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "Output\t: {}\n", self.output.display()).unwrap();
     }
 
     fn write_phylip(&mut self) -> Result<()> {
