@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use indexmap::IndexMap;
 
 pub enum OutputFormat {
@@ -73,9 +75,19 @@ pub trait SeqCheck {
     }
 }
 
+pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
+    if !is_valid_dna(dna) {
+        panic!(
+            "INVALID DNA SEQUENCE FOUND FOR {} IN FILE {}",
+            id,
+            input.display()
+        );
+    }
+}
+
 // Alphabeth for dna.
 // Include IUPAC characters plus missing symbol (?)
-pub fn is_valid_dna(dna: &str) -> bool {
+fn is_valid_dna(dna: &str) -> bool {
     let valid_chars = String::from("ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?");
     dna.chars().all(|char| valid_chars.contains(char))
 }
@@ -94,5 +106,14 @@ mod test {
     fn check_invalid_dna_test() {
         let dna = String::from("AGTC?-Z");
         assert_eq!(false, is_valid_dna(&dna));
+    }
+
+    #[test]
+    #[should_panic]
+    fn check_invalid_dna_panic_test() {
+        let sample = Path::new(".");
+        let id = "ABCD";
+        let dna = String::from("AGTC?-Z");
+        check_valid_dna(sample, id, &dna);
     }
 }

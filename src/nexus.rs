@@ -181,7 +181,7 @@ impl<'a> Nexus<'a> {
         self.check_seq_len(seq.len());
         let id = seq[0].to_string();
         let dna = seq[1].to_string().to_lowercase();
-        self.check_valid_dna(&id, &dna);
+        common::check_valid_dna(&self.input, &id, &dna);
         (id, dna)
     }
 
@@ -253,16 +253,6 @@ impl<'a> Nexus<'a> {
                 self.input.display(),
                 self.ntax,
                 self.matrix.len()
-            );
-        }
-    }
-
-    fn check_valid_dna(&self, id: &str, dna: &str) {
-        if !common::is_valid_dna(dna) {
-            panic!(
-                "INVALID DNA SEQUENCE FOUND FOR {} IN FILE {}",
-                id,
-                self.input.display()
             );
         }
     }
@@ -381,16 +371,6 @@ mod test {
         let nex = Nexus::new(sample);
         let res = nex.parse_ntax(tax);
         assert_eq!(5, res);
-    }
-
-    #[test]
-    #[should_panic]
-    fn check_invalid_dna_panic_test() {
-        let sample = Path::new(".");
-        let nex = Nexus::new(sample);
-        let id = "ABCD";
-        let dna = String::from("AGTC?-Z");
-        nex.check_valid_dna(id, &dna);
     }
 
     #[test]
