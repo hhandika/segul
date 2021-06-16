@@ -5,6 +5,7 @@ mod fasta;
 mod msa;
 mod nexus;
 mod phylip;
+mod utils;
 mod writer;
 
 use std::time::Instant;
