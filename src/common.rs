@@ -2,6 +2,12 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
+pub enum InputFormat {
+    Nexus,
+    Phylip,
+    Fasta,
+}
+
 pub enum OutputFormat {
     Fasta,
     Nexus,

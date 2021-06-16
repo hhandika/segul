@@ -5,7 +5,7 @@ use glob::glob;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
-use crate::common::{Header, OutputFormat, Partition, PartitionFormat};
+use crate::common::{Header, InputFormat, OutputFormat, Partition, PartitionFormat};
 use crate::fasta::Fasta;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
@@ -67,12 +67,6 @@ impl<'a> MSAlignment<'a> {
             OutputFormat::Fasta => save.write_fasta(),
         };
     }
-}
-
-enum InputFormat {
-    Nexus,
-    Phylip,
-    Fasta,
 }
 
 struct Concat {
