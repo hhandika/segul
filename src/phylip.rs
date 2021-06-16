@@ -6,28 +6,7 @@ use std::path::Path;
 use indexmap::IndexMap;
 use nom::{character::complete, sequence, IResult};
 
-use crate::common::{self, Header, OutputFormat, PartitionFormat, SeqCheck};
-use crate::writer::SeqWriter;
-
-pub fn convert_phylip(path: &str, filetype: OutputFormat) {
-    let input = Path::new(path);
-    let mut phylip = Phylip::new(input);
-    phylip.read().expect("CANNOT READ PHYLIP FILES");
-    let header = phylip.get_header();
-    let mut convert = SeqWriter::new(
-        Path::new(path),
-        &phylip.matrix,
-        header,
-        None,
-        &PartitionFormat::None,
-    );
-
-    match filetype {
-        OutputFormat::Nexus => convert.write_sequence(&filetype),
-        OutputFormat::Fasta => convert.write_fasta(),
-        _ => (),
-    }
-}
+use crate::common::{self, Header, SeqCheck};
 
 pub struct Phylip<'a> {
     input: &'a Path,
@@ -66,6 +45,13 @@ impl<'a> Phylip<'a> {
         Ok(())
     }
 
+    pub fn get_header(&self) -> Header {
+        let mut header = Header::new();
+        header.ntax = Some(self.ntax);
+        header.nchar = Some(self.nchar);
+        header
+    }
+
     fn parse_sequence(&self, line: &str) -> (String, String) {
         let seq: Vec<&str> = line.split_whitespace().collect();
         self.check_seq_len(seq.len());
@@ -96,13 +82,6 @@ impl<'a> Phylip<'a> {
                 self.input.display()
             );
         }
-    }
-
-    fn get_header(&self) -> Header {
-        let mut header = Header::new();
-        header.ntax = Some(self.ntax);
-        header.nchar = Some(self.nchar);
-        header
     }
 
     fn parse_header(&mut self, header_line: &str) {

@@ -6,21 +6,7 @@ use std::path::Path;
 use indexmap::IndexMap;
 use nom::{bytes::complete, character, sequence, IResult};
 
-use crate::common::{self, Header, OutputFormat, PartitionFormat, SeqCheck};
-use crate::writer::SeqWriter;
-
-pub fn convert_nexus(input: &Path, output: &Path, filetype: OutputFormat) {
-    let mut nex = Nexus::new(input);
-    nex.read().expect("CANNOT READ NEXUS FILES");
-    let header = nex.get_header();
-    let outpath = output.join(input.file_stem().unwrap());
-    let mut convert = SeqWriter::new(&outpath, &nex.matrix, header, None, &PartitionFormat::None);
-    match filetype {
-        OutputFormat::Phylip => convert.write_sequence(&filetype),
-        OutputFormat::Fasta => convert.write_fasta(),
-        _ => (),
-    }
-}
+use crate::common::{self, Header, SeqCheck};
 
 pub struct Nexus<'a> {
     input: &'a Path,

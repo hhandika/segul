@@ -6,8 +6,6 @@ use glob::glob;
 use crate::common::{OutputFormat, PartitionFormat};
 use crate::converter::Converter;
 use crate::msa;
-use crate::nexus;
-use crate::phylip;
 
 fn get_args(version: &str) -> ArgMatches {
     App::new("segul")
@@ -448,9 +446,9 @@ impl<'a> Nexus<'a> {
 
     fn convert(&self, input: &Path) {
         if self.matches.is_present("phylip") {
-            nexus::convert_nexus(input, &self.output, OutputFormat::Phylip);
+            Converter::new(input, &self.output, &OutputFormat::Phylip).convert_nexus();
         } else {
-            nexus::convert_nexus(input, &self.output, OutputFormat::Fasta);
+            Converter::new(input, &self.output, &OutputFormat::Fasta).convert_nexus();
         }
     }
 
@@ -466,19 +464,23 @@ impl<'a> Nexus<'a> {
 
 struct Phylip<'a> {
     matches: &'a ArgMatches<'a>,
+    output: PathBuf,
 }
 
 impl<'a> Phylip<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
-        Self { matches }
+        Self {
+            matches,
+            output: PathBuf::new(),
+        }
     }
 
     fn convert_phylip(&self) {
-        let input = self.get_file_input(self.matches);
+        let input = Path::new(self.get_file_input(self.matches));
         if self.matches.is_present("nexus") {
-            phylip::convert_phylip(input, OutputFormat::Nexus);
+            Converter::new(&input, &self.output, &OutputFormat::Nexus).convert_phylip();
         } else {
-            phylip::convert_phylip(input, OutputFormat::Fasta);
+            Converter::new(&input, &self.output, &OutputFormat::Fasta).convert_phylip();
         }
     }
 
