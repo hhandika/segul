@@ -17,7 +17,7 @@ pub enum OutputFormat {
 pub enum PartitionFormat {
     Nexus,
     NexusSeparate,
-    Phylip,
+    Raxml,
     None,
 }
 

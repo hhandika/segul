@@ -56,7 +56,10 @@ impl<'a> SeqWriter<'a> {
             writeln!(writer, ">{}", id).unwrap();
             writeln!(writer, "{}", seq).unwrap();
         });
-        self.display_save_path();
+    }
+
+    pub fn display_save_path(&self) {
+        println!("Save as {}", self.output.display());
     }
 
     fn write_phylip(&mut self) -> Result<()> {
@@ -71,7 +74,6 @@ impl<'a> SeqWriter<'a> {
         if self.partition.is_some() {
             self.write_partition_sep();
         }
-        self.display_save_path();
         Ok(())
     }
 
@@ -104,11 +106,10 @@ impl<'a> SeqWriter<'a> {
                 PartitionFormat::Nexus => self
                     .write_part_nexus(&mut writer)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
-                PartitionFormat::Phylip => self.write_part_phylip(),
+                PartitionFormat::Raxml => self.write_part_phylip(),
                 _ => self.write_part_nexus_sep(),
             }
         }
-        self.display_save_path();
         Ok(())
     }
 
@@ -124,7 +125,7 @@ impl<'a> SeqWriter<'a> {
     fn write_partition_sep(&self) {
         match self.part_format {
             PartitionFormat::NexusSeparate => self.write_part_nexus_sep(),
-            PartitionFormat::Phylip => self.write_part_phylip(),
+            PartitionFormat::Raxml => self.write_part_phylip(),
             _ => eprintln!("UNKNOWN PARTITION FORMAT"),
         }
     }
@@ -179,10 +180,6 @@ impl<'a> SeqWriter<'a> {
                 taxa
             )
         }
-    }
-
-    fn display_save_path(&self) {
-        println!("Save as {}", self.output.display());
     }
 
     fn get_output_name(&mut self, ext: &OutputFormat) {
