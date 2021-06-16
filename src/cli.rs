@@ -4,7 +4,7 @@ use clap::{App, AppSettings, Arg, ArgMatches};
 use glob::glob;
 
 use crate::common::{OutputFormat, PartitionFormat};
-use crate::fasta;
+use crate::converter;
 use crate::msa;
 use crate::nexus;
 use crate::phylip;
@@ -392,9 +392,9 @@ impl<'a> Fasta<'a> {
 
     fn convert(&self, input: &Path) {
         if self.matches.is_present("phylip") {
-            fasta::convert_fasta(input, &self.output, OutputFormat::Phylip);
+            converter::convert_fasta(input, &self.output, OutputFormat::Phylip);
         } else {
-            fasta::convert_fasta(input, &self.output, OutputFormat::Nexus);
+            converter::convert_fasta(input, &self.output, OutputFormat::Nexus);
         }
     }
 

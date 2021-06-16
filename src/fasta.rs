@@ -5,27 +5,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::common::{Header, OutputFormat, PartitionFormat, SeqCheck};
-use crate::writer::SeqWriter;
-
-pub fn convert_fasta(input: &Path, output: &Path, filetype: OutputFormat) {
-    let mut fasta = Fasta::new(input);
-    fasta.read();
-    let header = fasta.get_header();
-    let outpath = output.join(input.file_stem().unwrap());
-    let mut convert = SeqWriter::new(
-        &outpath,
-        &fasta.matrix,
-        header,
-        None,
-        &PartitionFormat::None,
-    );
-    match filetype {
-        OutputFormat::Nexus => convert.write_sequence(&filetype),
-        OutputFormat::Phylip => convert.write_sequence(&filetype),
-        _ => (),
-    }
-}
+use crate::common::{Header, SeqCheck};
 
 pub struct Fasta<'a> {
     input: &'a Path,
@@ -51,7 +31,7 @@ impl<'a> Fasta<'a> {
         self.is_alignment = self.check_is_alignment(&self.matrix);
     }
 
-    fn get_header(&self) -> Header {
+    pub fn get_header(&self) -> Header {
         Header::new()
     }
 
