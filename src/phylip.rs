@@ -6,7 +6,7 @@ use std::path::Path;
 use indexmap::IndexMap;
 use nom::{character::complete, sequence, IResult};
 
-use crate::common::{Header, OutputFormat, PartitionFormat, SeqCheck};
+use crate::common::{self, Header, OutputFormat, PartitionFormat, SeqCheck};
 use crate::writer::SeqWriter;
 
 pub fn convert_phylip(path: &str, filetype: OutputFormat) {
@@ -59,19 +59,43 @@ impl<'a> Phylip<'a> {
         self.parse_header(&header_line.trim());
 
         buff.lines().filter_map(|ok| ok.ok()).for_each(|line| {
-            let seq: Vec<&str> = line.split_whitespace().collect();
-            match seq.len() {
-                2 => self.matrix.insert(seq[0].to_string(), seq[1].to_string()),
-                _ => {
-                    panic!(
-                        "UNSUPPORTED PHYLIP. \
-                    THE PROGRAM ONLY WORK WITH NON-INTERLEAVED PHYLIP."
-                    )
-                }
-            };
+            let (id, dna) = self.parse_sequence(line.trim());
+            self.insert_matrix(id, dna);
         });
         self.check_is_alignment(&self.matrix);
         Ok(())
+    }
+
+    fn parse_sequence(&self, line: &str) -> (String, String) {
+        let seq: Vec<&str> = line.split_whitespace().collect();
+        self.check_seq_len(seq.len());
+        let id = seq[0].to_string();
+        let dna = seq[1].to_string().to_lowercase();
+        common::check_valid_dna(&self.input, &id, &dna);
+        (id, dna)
+    }
+
+    fn insert_matrix(&mut self, id: String, dna: String) {
+        #[allow(clippy::all)]
+        if self.matrix.contains_key(&id) {
+            panic!(
+                "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
+                self.input.display(),
+                id
+            );
+        } else {
+            self.matrix.insert(id, dna);
+        }
+    }
+
+    fn check_seq_len(&self, len: usize) {
+        if len != 2 {
+            panic!(
+                "THE FILE {} IS UNSUPPORTED PHYLIP FORMAT. \
+            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs",
+                self.input.display()
+            );
+        }
     }
 
     fn get_header(&self) -> Header {
@@ -116,5 +140,33 @@ mod test {
         assert_eq!(2, phylip.ntax);
         assert_eq!(4, phylip.nchar);
         assert_eq!(2, phylip.matrix.len());
+    }
+
+    #[test]
+    #[should_panic]
+    fn read_phylip_invalid_test() {
+        let path = Path::new("test_files/invalid.phy");
+        let mut phylip = Phylip::new(path);
+        phylip.read().unwrap();
+    }
+
+    #[test]
+    fn read_phylip_whitespace_test() {
+        let path = Path::new("test_files/whitespaces.phy");
+        let mut phylip = Phylip::new(path);
+        phylip.read().unwrap();
+        assert_eq!(2, phylip.ntax);
+        assert_eq!(4, phylip.nchar);
+        assert_eq!(2, phylip.matrix.len());
+    }
+
+    #[test]
+    fn parse_phylip_header_test() {
+        let header = "2 24";
+        let mut phy = Phylip::new(Path::new("."));
+        phy.parse_header(header);
+
+        assert_eq!(2, phy.ntax);
+        assert_eq!(24, phy.nchar);
     }
 }
