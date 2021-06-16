@@ -13,14 +13,21 @@ pub struct Converter<'a> {
     input: &'a Path,
     output: &'a Path,
     output_format: &'a OutputFormat,
+    is_dir: bool,
 }
 
 impl<'a> Converter<'a> {
-    pub fn new(input: &'a Path, output: &'a Path, output_format: &'a OutputFormat) -> Self {
+    pub fn new(
+        input: &'a Path,
+        output: &'a Path,
+        output_format: &'a OutputFormat,
+        is_dir: bool,
+    ) -> Self {
         Self {
             input,
             output,
             output_format,
+            is_dir,
         }
     }
 
@@ -53,6 +60,10 @@ impl<'a> Converter<'a> {
             OutputFormat::Nexus => convert.write_sequence(self.output_format),
             OutputFormat::Phylip => convert.write_sequence(self.output_format),
             OutputFormat::Fasta => convert.write_fasta(),
+        }
+
+        if !self.is_dir {
+            convert.display_save_path();
         }
     }
 }
