@@ -13,22 +13,11 @@ fn get_args(version: &str) -> ArgMatches {
         .author("Heru Handika")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
-            App::new("fasta")
-                .about("Fasta tools")
-                .arg(
-                    Arg::with_name("output")
-                        .short("o")
-                        .long("output")
-                        .help("Uses a costume output filename")
-                        .takes_value(true)
-                        .required(true)
-                        .global(true)
-                        .default_value("concat")
-                        .value_name("OUTPUT"),
-                )
+            App::new("convert")
+                .about("Convert sequence formats")
                 .subcommand(
-                    App::new("convert")
-                        .about("Convert fasta")
+                    App::new("fasta")
+                        .about("Convert fasta files")
                         .arg(
                             Arg::with_name("input")
                                 .short("i")
@@ -41,50 +30,13 @@ fn get_args(version: &str) -> ArgMatches {
                         .arg(
                             Arg::with_name("phylip")
                                 .long("phylip")
-                                .help("Convert fasta to phylip")
+                                .help("Convert fasta to phylip. Default: nexus.")
                                 .takes_value(false),
                         ),
                 )
                 .subcommand(
-                    App::new("concat")
-                        .about("Concat fasta alignments")
-                        .arg(
-                            Arg::with_name("dir")
-                                .short("d")
-                                .long("dir")
-                                .help("Inputs dir containing fasta files")
-                                .takes_value(true)
-                                .required(true)
-                                .value_name("DIR"),
-                        )
-                        .arg(
-                            Arg::with_name("format")
-                                .short("f")
-                                .long("format")
-                                .help("Sets output format. Choices: nexus, fasta, phylip")
-                                .takes_value(true)
-                                .required(true)
-                                .default_value("nexus")
-                                .value_name("FORMAT"),
-                        )
-                        .arg(
-                            Arg::with_name("partition")
-                                .short("-p")
-                                .long("part")
-                                .help("Sets partition format. Choice: nexus, phylip, nexsep")
-                                .takes_value(true)
-                                .required(true)
-                                .default_value("nexsep")
-                                .value_name("FORMAT"),
-                        ),
-                ),
-        )
-        .subcommand(
-            App::new("nexus")
-                .about("Nexus Tools")
-                .subcommand(
-                    App::new("convert")
-                        .about("Convert nexus")
+                    App::new("nexus")
+                        .about("Convert nexus files")
                         .arg(
                             Arg::with_name("input")
                                 .short("i")
@@ -97,104 +49,51 @@ fn get_args(version: &str) -> ArgMatches {
                         .arg(
                             Arg::with_name("phylip")
                                 .long("phylip")
-                                .help("Convert nexus to phylip")
+                                .help("Convert nexus to phylip. Default: fasta")
                                 .takes_value(false),
                         ),
                 )
                 .subcommand(
-                    App::new("concat")
-                        .about("Concat nexus alignments")
+                    App::new("nexus")
+                        .about("Convert nexus files")
                         .arg(
-                            Arg::with_name("dir")
-                                .short("d")
-                                .long("dir")
-                                .help("Inputs a dir containing nexus files")
+                            Arg::with_name("input")
+                                .short("i")
+                                .long("input")
+                                .help("Inputs a nexus file path")
                                 .takes_value(true)
                                 .required(true)
-                                .value_name("DIR"),
+                                .value_name("INPUT FILE"),
                         )
                         .arg(
-                            Arg::with_name("output")
-                                .short("o")
-                                .long("output")
-                                .help("Uses a costume output filename")
-                                .takes_value(true)
-                                .required(true)
-                                .default_value("concat")
-                                .value_name("OUTPUT"),
-                        )
-                        .arg(
-                            Arg::with_name("format")
-                                .short("f")
-                                .long("format")
-                                .help("Sets an output format. Default to nexus. Choices: nexus, fasta, phylip")
-                                .takes_value(true)
-                                .required(true)
-                                .default_value("nexus")
-                                .value_name("FORMAT"),
-                        )
-                        .arg(
-                            Arg::with_name("partition")
-                                .short("-p")
-                                .long("part")
-                                .help("Sets a partition format. Default to nexus separate (nexsep). Choice: nexus, phylip, nexsep")
-                                .takes_value(true)
-                                .required(true)
-                                .default_value("nexsep")
-                                .value_name("FORMAT"),
+                            Arg::with_name("nexus")
+                                .long("phylip")
+                                .help("Convert nexus to phylip. Default: fasta")
+                                .takes_value(false),
                         ),
                 ),
         )
         .subcommand(
-            App::new("phylip").about("Any phylip tools")
-            .subcommand(
-                App::new("convert")
-                    .about("Convert phylip")
-                    .arg(
-                        Arg::with_name("input")
-                            .short("i")
-                            .long("input")
-                            .help("Inputs file path")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("INPUT FILE"),
-                    )
-                    .arg(
-                        Arg::with_name("nexus")
-                            .long("nexus")
-                            .help("Convert phylip to nexus")
-                            .takes_value(false),
-                    ),
-            )
-            .subcommand(
-                    App::new("concat")
-                        .about("Concat phylip alignments")
+            App::new("concat")
+                .about("Concat alignments")
+                .subcommand(
+                    App::new("fasta")
+                        .about("Concats fasta alignments")
                         .arg(
                             Arg::with_name("dir")
                                 .short("d")
                                 .long("dir")
-                                .help("Inputs a dir containing phylip files")
+                                .help("Inputs alignment dir")
                                 .takes_value(true)
                                 .required(true)
                                 .value_name("DIR"),
                         )
                         .arg(
-                            Arg::with_name("output")
-                                .short("o")
-                                .long("output")
-                                .help("Uses a costume output filename")
-                                .takes_value(true)
-                                .required(true)
-                                .default_value("concat")
-                                .value_name("OUTPUT"),
-                        )
-                        .arg(
                             Arg::with_name("format")
                                 .short("f")
                                 .long("format")
-                                .help("Sets an output format. Default to nexus. Choices: nexus, fasta, phylip")
+                                .help("Sets output format. Choices: nexus, fasta, phylip")
                                 .takes_value(true)
-                                .required(true)
                                 .default_value("nexus")
                                 .value_name("FORMAT"),
                         )
@@ -202,11 +101,105 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("partition")
                                 .short("-p")
                                 .long("part")
-                                .help("Sets a partition format. Default to nexus separate (nexsep). Choice: nexus, phylip, nexsep")
+                                .help("Sets partition format. Choice: nexus, phylip, nexsep")
                                 .takes_value(true)
                                 .required(true)
                                 .default_value("nexsep")
                                 .value_name("FORMAT"),
+                        )
+                        .arg(
+                            Arg::with_name("output")
+                                .short("o")
+                                .long("output")
+                                .help("Uses a costume output filename. Default: concat.")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("concat")
+                                .value_name("OUTPUT"),
+                        ),
+                )
+                .subcommand(
+                    App::new("nexus")
+                        .about("Concats nexus alignments")
+                        .arg(
+                            Arg::with_name("dir")
+                                .short("d")
+                                .long("dir")
+                                .help("Inputs alignment dir")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("DIR"),
+                        )
+                        .arg(
+                            Arg::with_name("format")
+                                .short("f")
+                                .long("format")
+                                .help("Sets output format. Choices: nexus, fasta, phylip")
+                                .takes_value(true)
+                                .default_value("nexus")
+                                .value_name("FORMAT"),
+                        )
+                        .arg(
+                            Arg::with_name("partition")
+                                .short("-p")
+                                .long("part")
+                                .help("Sets partition format. Choice: nexus, phylip, nexsep")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("nexsep")
+                                .value_name("FORMAT"),
+                        )
+                        .arg(
+                            Arg::with_name("output")
+                                .short("o")
+                                .long("output")
+                                .help("Uses a costume output filename. Default: concat.")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("concat")
+                                .value_name("OUTPUT"),
+                        ),
+                )
+                .subcommand(
+                    App::new("phylip")
+                        .about("Concats phylip alignments")
+                        .arg(
+                            Arg::with_name("dir")
+                                .short("d")
+                                .long("dir")
+                                .help("Inputs alignment dir")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("DIR"),
+                        )
+                        .arg(
+                            Arg::with_name("format")
+                                .short("f")
+                                .long("format")
+                                .help("Sets output format. Choices: nexus, fasta, phylip")
+                                .takes_value(true)
+                                .default_value("nexus")
+                                .value_name("FORMAT"),
+                        )
+                        .arg(
+                            Arg::with_name("partition")
+                                .short("-p")
+                                .long("part")
+                                .help("Sets partition format. Choice: nexus, phylip, nexsep")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("nexsep")
+                                .value_name("FORMAT"),
+                        )
+                        .arg(
+                            Arg::with_name("output")
+                                .short("o")
+                                .long("output")
+                                .help("Uses a costume output filename. Default: concat.")
+                                .takes_value(true)
+                                .required(true)
+                                .default_value("concat")
+                                .value_name("OUTPUT"),
                         ),
                 ),
         )
@@ -216,33 +209,26 @@ fn get_args(version: &str) -> ArgMatches {
 pub fn parse_cli(version: &str) {
     let args = get_args(version);
     match args.subcommand() {
-        ("fasta", Some(fasta_matches)) => parse_fasta_subcommand(fasta_matches),
-        ("nexus", Some(nexus_matches)) => parse_nexus_subcommand(nexus_matches),
-        ("phylip", Some(phylip_matches)) => parse_phylip_subcommand(phylip_matches),
+        ("convert", Some(convert_matches)) => parse_convert_subcommand(convert_matches),
+        ("concat", Some(concat_matches)) => parse_concat_subcommand(concat_matches),
         _ => unreachable!(),
     }
 }
 
-fn parse_fasta_subcommand(args: &ArgMatches) {
+fn parse_convert_subcommand(args: &ArgMatches) {
     match args.subcommand() {
-        ("convert", Some(convert_matches)) => Fasta::new(convert_matches).convert_fasta(),
-        ("concat", Some(concat_matches)) => Fasta::new(concat_matches).concat_fasta(),
+        ("fasta", Some(fasta_matches)) => Fasta::new(fasta_matches).convert_fasta(),
+        ("nexus", Some(nexus_matches)) => Nexus::new(nexus_matches).convert_nexus(),
+        ("phylip", Some(phylip_matches)) => Phylip::new(phylip_matches).convert_phylip(),
         _ => unreachable!(),
     }
 }
 
-fn parse_nexus_subcommand(args: &ArgMatches) {
+fn parse_concat_subcommand(args: &ArgMatches) {
     match args.subcommand() {
-        ("convert", Some(convert_matches)) => Nexus::new(convert_matches).convert_nexus(),
-        ("concat", Some(concat_matches)) => Nexus::new(concat_matches).concat_nexus(),
-        _ => unreachable!(),
-    }
-}
-
-fn parse_phylip_subcommand(args: &ArgMatches) {
-    match args.subcommand() {
-        ("convert", Some(convert_matches)) => Phylip::new(convert_matches).convert_phylip(),
-        ("concat", Some(concat_matches)) => Phylip::new(concat_matches).concat_phylip(),
+        ("fasta", Some(fasta_matches)) => Fasta::new(fasta_matches).concat_fasta(),
+        ("nexus", Some(nexus_matches)) => Nexus::new(nexus_matches).concat_nexus(),
+        ("phylip", Some(phylip_matches)) => Phylip::new(phylip_matches).concat_phylip(),
         _ => unreachable!(),
     }
 }
