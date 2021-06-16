@@ -1,4 +1,7 @@
+use std::path::{Path, PathBuf};
+
 use clap::{App, AppSettings, Arg, ArgMatches};
+use glob::glob;
 
 use crate::common::{OutputFormat, PartitionFormat};
 use crate::fasta;
@@ -22,10 +25,30 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("input")
                                 .short("i")
                                 .long("input")
-                                .help("Inputs a fasta file path")
+                                .help("Convert a fasta file")
                                 .takes_value(true)
-                                .required(true)
+                                .required_unless("dir")
+                                .conflicts_with("dir")
                                 .value_name("INPUT FILE"),
+                        )
+                        .arg(
+                            Arg::with_name("dir")
+                                .short("d")
+                                .long("dir")
+                                .help("Convert multiple fasta files inside a dir")
+                                .takes_value(true)
+                                .required_unless("input")
+                                .conflicts_with("input")
+                                .value_name("DIR"),
+                        )
+                        .arg(
+                            Arg::with_name("output")
+                                .short("o")
+                                .long("output")
+                                .help("Sets target directory or use a costume file name for a single input")
+                                .takes_value(true)
+                                .required_unless("input")
+                                .value_name("OUTPUT"),
                         )
                         .arg(
                             Arg::with_name("phylip")
@@ -41,29 +64,60 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("input")
                                 .short("i")
                                 .long("input")
-                                .help("Inputs a nexus file path")
+                                .help("Convert a nexus file")
                                 .takes_value(true)
-                                .required(true)
+                                .required_unless("dir")
+                                .conflicts_with("dir")
                                 .value_name("INPUT FILE"),
+                        )
+                        .arg(
+                            Arg::with_name("dir")
+                                .short("d")
+                                .long("dir")
+                                .help("Convert multiple nexus files inside a dir")
+                                .takes_value(true)
+                                .required_unless("input")
+                                .conflicts_with("input")
+                                .value_name("DIR"),
                         )
                         .arg(
                             Arg::with_name("phylip")
                                 .long("phylip")
                                 .help("Convert nexus to phylip. Default: fasta")
                                 .takes_value(false),
+                        )
+                        .arg(
+                            Arg::with_name("output")
+                                .short("o")
+                                .long("output")
+                                .help("Uses a costume output filename")
+                                .takes_value(true)
+                                .required_unless("input")
+                                .value_name("OUTPUT"),
                         ),
                 )
                 .subcommand(
-                    App::new("nexus")
-                        .about("Convert nexus files")
+                    App::new("phylip")
+                        .about("Convert phylip files")
                         .arg(
                             Arg::with_name("input")
                                 .short("i")
                                 .long("input")
-                                .help("Inputs a nexus file path")
+                                .help("Convert a phylip file")
                                 .takes_value(true)
-                                .required(true)
+                                .required_unless("dir")
+                                .conflicts_with("dir")
                                 .value_name("INPUT FILE"),
+                        )
+                        .arg(
+                            Arg::with_name("dir")
+                                .short("d")
+                                .long("dir")
+                                .help("Convert multiple phylip files inside a dir")
+                                .takes_value(true)
+                                .required_unless("input")
+                                .conflicts_with("input")
+                                .value_name("DIR"),
                         )
                         .arg(
                             Arg::with_name("nexus")
@@ -244,8 +298,24 @@ trait Cli {
         matches.value_of("dir").expect("CANNOT READ DIR PATH")
     }
 
+    fn get_files(&self, pattern: &str) -> Vec<PathBuf> {
+        glob(pattern)
+            .expect("COULD NOT FIND FILES")
+            .filter_map(|ok| ok.ok())
+            .collect()
+    }
+
     fn get_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
         matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
+    }
+
+    fn set_output(&self, matches: &ArgMatches) -> PathBuf {
+        if matches.is_present("output") {
+            let output = self.get_output(matches);
+            PathBuf::from(output)
+        } else {
+            PathBuf::from(".")
+        }
     }
 
     fn get_partition_format(&self, matches: &ArgMatches) -> PartitionFormat {
@@ -284,20 +354,47 @@ impl Cli for Phylip<'_> {}
 
 struct Fasta<'a> {
     matches: &'a ArgMatches<'a>,
+    output: PathBuf,
 }
 
 impl<'a> Fasta<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
-        Self { matches }
+        Self {
+            matches,
+            output: PathBuf::new(),
+        }
     }
 
-    fn convert_fasta(&self) {
-        let input = self.get_file_input(self.matches);
-        let output = self.get_output(self.matches);
-        if self.matches.is_present("phylip") {
-            fasta::convert_fasta(input, output, OutputFormat::Phylip);
+    fn convert_fasta(&mut self) {
+        if self.matches.is_present("input") {
+            self.convert_single_fasta();
         } else {
-            fasta::convert_fasta(input, output, OutputFormat::Nexus);
+            self.convert_multiple_fasta();
+        }
+    }
+
+    fn convert_single_fasta(&mut self) {
+        let input = Path::new(self.get_file_input(self.matches));
+        self.output = self.set_output(self.matches);
+        self.convert(input);
+    }
+
+    fn convert_multiple_fasta(&mut self) {
+        let dir = self.get_dir_input(self.matches);
+        let pattern = format!("{}/*.fa*", dir);
+        let files = self.get_files(&pattern);
+
+        files.iter().for_each(|file| {
+            self.output = self.set_output(&self.matches);
+            self.convert(file);
+        })
+    }
+
+    fn convert(&self, input: &Path) {
+        if self.matches.is_present("phylip") {
+            fasta::convert_fasta(input, &self.output, OutputFormat::Phylip);
+        } else {
+            fasta::convert_fasta(input, &self.output, OutputFormat::Nexus);
         }
     }
 
@@ -313,19 +410,47 @@ impl<'a> Fasta<'a> {
 
 struct Nexus<'a> {
     matches: &'a ArgMatches<'a>,
+    output: PathBuf,
 }
 
 impl<'a> Nexus<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
-        Self { matches }
+        Self {
+            matches,
+            output: PathBuf::new(),
+        }
     }
 
-    fn convert_nexus(&self) {
-        let input = self.get_file_input(self.matches);
-        if self.matches.is_present("phylip") {
-            nexus::convert_nexus(input, OutputFormat::Phylip);
+    fn convert_nexus(&mut self) {
+        if self.matches.is_present("input") {
+            self.convert_single_nexus();
         } else {
-            nexus::convert_nexus(input, OutputFormat::Fasta);
+            self.convert_multiple_nexus();
+        }
+    }
+
+    fn convert_single_nexus(&mut self) {
+        let input = Path::new(self.get_file_input(self.matches));
+        self.output = self.set_output(&self.matches);
+        self.convert(input);
+    }
+
+    fn convert_multiple_nexus(&mut self) {
+        let dir = self.get_dir_input(self.matches);
+        let pattern = format!("{}/*.nex*", dir);
+        let files = self.get_files(&pattern);
+
+        files.iter().for_each(|file| {
+            self.output = self.set_output(&self.matches);
+            self.convert(file);
+        })
+    }
+
+    fn convert(&self, input: &Path) {
+        if self.matches.is_present("phylip") {
+            nexus::convert_nexus(input, &self.output, OutputFormat::Phylip);
+        } else {
+            nexus::convert_nexus(input, &self.output, OutputFormat::Fasta);
         }
     }
 

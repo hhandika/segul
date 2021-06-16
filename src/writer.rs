@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::{LineWriter, Result};
 use std::iter;
@@ -132,7 +132,7 @@ impl<'a> SeqWriter<'a> {
     fn write_part_phylip(&self) {
         let fname = format!(
             "{}_partition.txt",
-            self.path.file_stem().unwrap().to_string_lossy()
+            self.output.file_stem().unwrap().to_string_lossy()
         );
         let mut writer = self.create_output_file(Path::new(&fname));
         match &self.partition {
@@ -146,7 +146,7 @@ impl<'a> SeqWriter<'a> {
     fn write_part_nexus_sep(&self) {
         let fname = format!(
             "{}_partition.nex",
-            self.path.file_stem().unwrap().to_string_lossy()
+            self.output.file_stem().unwrap().to_string_lossy()
         );
         let mut writer = self.create_output_file(Path::new(&fname));
         writeln!(writer, "#nexus").unwrap();
@@ -186,15 +186,15 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn get_output_name(&mut self, ext: &OutputFormat) {
-        let name = Path::new(self.path.file_name().unwrap());
-        match ext {
-            OutputFormat::Fasta => self.output = name.with_extension("fas"),
-            OutputFormat::Nexus => self.output = name.with_extension("nex"),
-            OutputFormat::Phylip => self.output = name.with_extension("phy"),
+        self.output = match ext {
+            OutputFormat::Fasta => self.path.with_extension("fas"),
+            OutputFormat::Nexus => self.path.with_extension("nex"),
+            OutputFormat::Phylip => self.path.with_extension("phy"),
         };
     }
 
     fn create_output_file(&self, fname: &Path) -> LineWriter<File> {
+        fs::create_dir_all(fname.parent().unwrap()).expect("CANNOT CREATE A TARGET DIRECTORY");
         let file = File::create(&fname).expect("CANNOT CREATE OUTPUT FILE");
         LineWriter::new(file)
     }
@@ -265,5 +265,16 @@ mod test {
             &PartitionFormat::None,
         );
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
+    }
+
+    #[test]
+    fn get_output_name_test() {
+        let path = Path::new("sanger/cytb");
+        let matrix = IndexMap::new();
+        let header = Header::new();
+        let mut convert = SeqWriter::new(path, &matrix, header, None, &PartitionFormat::None);
+        let output = PathBuf::from("sanger/cytb.fas");
+        convert.get_output_name(&OutputFormat::Fasta);
+        assert_eq!(output, convert.output);
     }
 }

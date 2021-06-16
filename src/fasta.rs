@@ -8,13 +8,18 @@ use indexmap::IndexMap;
 use crate::common::{Header, OutputFormat, PartitionFormat, SeqCheck};
 use crate::writer::SeqWriter;
 
-pub fn convert_fasta(input: &str, output: &str, filetype: OutputFormat) {
-    let input_path = Path::new(input);
-    let mut fasta = Fasta::new(input_path);
+pub fn convert_fasta(input: &Path, output: &Path, filetype: OutputFormat) {
+    let mut fasta = Fasta::new(input);
     fasta.read();
     let header = fasta.get_header();
-    let output = Path::new(output);
-    let mut convert = SeqWriter::new(output, &fasta.matrix, header, None, &PartitionFormat::None);
+    let outpath = output.join(input.file_stem().unwrap());
+    let mut convert = SeqWriter::new(
+        &outpath,
+        &fasta.matrix,
+        header,
+        None,
+        &PartitionFormat::None,
+    );
     match filetype {
         OutputFormat::Nexus => convert.write_sequence(&filetype),
         OutputFormat::Phylip => convert.write_sequence(&filetype),
