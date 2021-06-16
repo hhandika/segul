@@ -237,7 +237,7 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("partition")
                                 .short("-p")
                                 .long("part")
-                                .help("Sets partition format. Choice: nexus, phylip, nexsep")
+                                .help("Sets partition format. Choice: nexus, raxml, nexsep")
                                 .takes_value(true)
                                 .required(true)
                                 .default_value("nexsep")
@@ -322,7 +322,7 @@ trait Cli {
             .expect("CANNOT READ PARTITION FORMAT");
         match part_format {
             "nexus" => PartitionFormat::Nexus,
-            "phylip" => PartitionFormat::Phylip,
+            "raxml" => PartitionFormat::Raxml,
             "nexsep" => PartitionFormat::NexusSeparate,
             _ => PartitionFormat::Nexus,
         }
@@ -353,6 +353,7 @@ impl Cli for Phylip<'_> {}
 struct Fasta<'a> {
     matches: &'a ArgMatches<'a>,
     output: PathBuf,
+    is_dir: bool,
 }
 
 impl<'a> Fasta<'a> {
@@ -360,6 +361,7 @@ impl<'a> Fasta<'a> {
         Self {
             matches,
             output: PathBuf::new(),
+            is_dir: false,
         }
     }
 
@@ -381,7 +383,7 @@ impl<'a> Fasta<'a> {
         let dir = self.get_dir_input(self.matches);
         let pattern = format!("{}/*.fa*", dir);
         let files = self.get_files(&pattern);
-
+        self.is_dir = true;
         files.iter().for_each(|file| {
             self.output = self.set_output(&self.matches);
             self.convert(file);
@@ -390,9 +392,9 @@ impl<'a> Fasta<'a> {
 
     fn convert(&self, input: &Path) {
         if self.matches.is_present("phylip") {
-            Converter::new(input, &self.output, &OutputFormat::Phylip).convert_fasta();
+            Converter::new(input, &self.output, &OutputFormat::Phylip, self.is_dir).convert_fasta();
         } else {
-            Converter::new(input, &self.output, &OutputFormat::Nexus).convert_fasta();
+            Converter::new(input, &self.output, &OutputFormat::Nexus, self.is_dir).convert_fasta();
         }
     }
 
@@ -409,6 +411,7 @@ impl<'a> Fasta<'a> {
 struct Nexus<'a> {
     matches: &'a ArgMatches<'a>,
     output: PathBuf,
+    is_dir: bool,
 }
 
 impl<'a> Nexus<'a> {
@@ -416,6 +419,7 @@ impl<'a> Nexus<'a> {
         Self {
             matches,
             output: PathBuf::new(),
+            is_dir: false,
         }
     }
 
@@ -437,7 +441,7 @@ impl<'a> Nexus<'a> {
         let dir = self.get_dir_input(self.matches);
         let pattern = format!("{}/*.nex*", dir);
         let files = self.get_files(&pattern);
-
+        self.is_dir = true;
         files.iter().for_each(|file| {
             self.output = self.set_output(&self.matches);
             self.convert(file);
@@ -446,9 +450,9 @@ impl<'a> Nexus<'a> {
 
     fn convert(&self, input: &Path) {
         if self.matches.is_present("phylip") {
-            Converter::new(input, &self.output, &OutputFormat::Phylip).convert_nexus();
+            Converter::new(input, &self.output, &OutputFormat::Phylip, self.is_dir).convert_nexus();
         } else {
-            Converter::new(input, &self.output, &OutputFormat::Fasta).convert_nexus();
+            Converter::new(input, &self.output, &OutputFormat::Fasta, self.is_dir).convert_nexus();
         }
     }
 
@@ -478,9 +482,9 @@ impl<'a> Phylip<'a> {
     fn convert_phylip(&self) {
         let input = Path::new(self.get_file_input(self.matches));
         if self.matches.is_present("nexus") {
-            Converter::new(&input, &self.output, &OutputFormat::Nexus).convert_phylip();
+            Converter::new(&input, &self.output, &OutputFormat::Nexus, false).convert_phylip();
         } else {
-            Converter::new(&input, &self.output, &OutputFormat::Fasta).convert_phylip();
+            Converter::new(&input, &self.output, &OutputFormat::Fasta, false).convert_phylip();
         }
     }
 
