@@ -461,10 +461,10 @@ impl<'a> ConvertParser<'a> {
     fn display_input_dir(&self, input: &Path, nfile: usize) -> Result<()> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
-        writeln!(writer, "Command\t: segul convert")?;
+        writeln!(writer, "Command\t\t: segul convert")?;
         writeln!(writer, "Input dir\t: {}", &input.display())?;
         writeln!(writer, "Total files\t: {}", nfile)?;
-        writeln!(writer, "Output dir\t: {}", self.output.display())?;
+        writeln!(writer, "Output dir\t: {}\n", self.output.display())?;
         Ok(())
     }
 }
