@@ -178,7 +178,7 @@ impl Concat {
     fn get_id_from_phylip(&self, id: &mut IndexSet<String>) {
         self.files.iter().for_each(|file| {
             let mut phy = Phylip::new(file);
-            phy.read().expect("CANNOT READ A NEXUS FILE");
+            phy.read().expect("CANNOT READ A PHYLIP FILE");
             self.get_id(&phy.matrix, id);
         });
     }
