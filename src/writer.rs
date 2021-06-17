@@ -121,7 +121,6 @@ impl<'a> SeqWriter<'a> {
 
     fn write_matrix<W: Write>(&self, writer: &mut W) {
         self.matrix.iter().for_each(|(taxa, seq)| {
-            self.check_sequence_len(seq.len(), taxa);
             write!(writer, "{}", taxa).unwrap();
             write!(writer, "{}", self.insert_whitespaces(taxa, self.id_len)).unwrap();
             writeln!(writer, "{}", seq).unwrap();
@@ -199,16 +198,6 @@ impl<'a> SeqWriter<'a> {
         );
 
         PathBuf::from(fname)
-    }
-
-    fn check_sequence_len(&self, len: usize, taxa: &str) {
-        if len != self.header.nchar {
-            panic!(
-                "DIFFERENT SEQUENCE LENGTH FOUND AT {}. \
-                MAKE SURE THE INPUT IS AN ALIGNMENT",
-                taxa
-            )
-        }
     }
 
     fn get_output_name(&mut self, ext: &OutputFormat) {
