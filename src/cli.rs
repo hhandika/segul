@@ -91,7 +91,7 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("output")
                                 .short("o")
                                 .long("output")
-                                .help("Uses a costume output filename")
+                                .help("Sets target directory or use a costume file name for a single input")
                                 .takes_value(true)
                                 .required_unless("input")
                                 .value_name("OUTPUT"),
@@ -121,8 +121,17 @@ fn get_args(version: &str) -> ArgMatches {
                                 .value_name("DIR"),
                         )
                         .arg(
+                            Arg::with_name("output")
+                                .short("o")
+                                .long("output")
+                                .help("Sets target directory or use a costume file name for a single input")
+                                .takes_value(true)
+                                .required_unless("input")
+                                .value_name("OUTPUT"),
+                        )
+                        .arg(
                             Arg::with_name("nexus")
-                                .long("phylip")
+                                .long("nexus")
                                 .help("Convert nexus to phylip. Default: fasta")
                                 .takes_value(false),
                         ),
