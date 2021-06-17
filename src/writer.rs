@@ -61,7 +61,7 @@ impl<'a> SeqWriter<'a> {
     pub fn display_save_path(&self) {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
-        writeln!(writer, "Output\t: {}\n", self.output.display()).unwrap();
+        writeln!(writer, "Output\t\t: {}\n", self.output.display()).unwrap();
     }
 
     fn write_phylip(&mut self) -> Result<()> {
