@@ -47,8 +47,11 @@ impl<'a> Nexus<'a> {
         self.parse_dimensions(&mut commands.dimensions);
         self.parse_format(&mut commands.format);
         self.parse_matrix(&mut commands.matrix);
+        let (shortest, longest) = self.get_sequence_len(&self.matrix);
+        self.is_alignment = self.check_is_alignment(&shortest, &longest);
         self.check_ntax_matches();
-        self.is_alignment = self.check_is_alignment(&self.matrix);
+        self.check_nchar_matches(longest);
+
         Ok(())
     }
 
@@ -223,11 +226,21 @@ impl<'a> Nexus<'a> {
         }
     }
 
+    fn check_seq_len(&self, len: usize) {
+        if len != 2 {
+            panic!(
+                "THE FILE {} IS UNSUPPORTED NEXUS FORMAT. \
+            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs",
+                self.input.display()
+            );
+        }
+    }
+
     fn check_ntax_matches(&self) {
         if self.matrix.len() != self.ntax {
             panic!(
                 "ERROR READING NEXUS FILE: {}. \
-            THE NUMBER OF TAXA IS NOT MATCH THE INFORMATION IN THE BLOCK.\
+            THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE BLOCK.\
             IN THE BLOCK: {} \
             AND TAXA FOUND: {}",
                 self.input.display(),
@@ -237,12 +250,16 @@ impl<'a> Nexus<'a> {
         }
     }
 
-    fn check_seq_len(&self, len: usize) {
-        if len != 2 {
+    fn check_nchar_matches(&self, longest: usize) {
+        if self.nchar != longest {
             panic!(
-                "THE FILE {} IS UNSUPPORTED NEXUS FORMAT. \
-            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs",
-                self.input.display()
+                "ERROR READING NEXUS FILE {}, \
+            THE NCHAR VALUE IN THE BLOCK DOES NOT MATCH THE SEQUENCE LENGTH. \
+            THE VALUE IN THE BLOCK {}. \
+            THE SEQUENCE LENGTH {}.",
+                self.input.display(),
+                self.nchar,
+                longest
             );
         }
     }
