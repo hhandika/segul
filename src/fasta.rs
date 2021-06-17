@@ -34,6 +34,8 @@ impl<'a> Fasta<'a> {
         self.parse_fasta(buff);
         let (shortest, longest) = self.get_sequence_len(&self.matrix);
         self.is_alignment = self.check_is_alignment(&shortest, &longest);
+        self.nchar = longest;
+        self.ntax = self.matrix.len();
     }
 
     pub fn get_header(&self) -> Header {
