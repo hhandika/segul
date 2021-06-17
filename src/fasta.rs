@@ -39,7 +39,10 @@ impl<'a> Fasta<'a> {
     }
 
     pub fn get_header(&self) -> Header {
-        Header::new()
+        let mut header = Header::new();
+        header.ntax = self.ntax;
+        header.nchar = self.nchar;
+        header
     }
 
     fn parse_fasta<R: Read>(&mut self, buff: R) {

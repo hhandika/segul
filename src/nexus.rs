@@ -57,8 +57,8 @@ impl<'a> Nexus<'a> {
 
     pub fn get_header(&self) -> Header {
         let mut header = Header::new();
-        header.ntax = Some(self.ntax);
-        header.nchar = Some(self.nchar);
+        header.ntax = self.ntax;
+        header.nchar = self.nchar;
         header.datatype = Some(self.datatype.clone());
         header.missing = Some(self.missing);
         header.gap = Some(self.gap);

@@ -82,12 +82,12 @@ impl<'a> MSAlignment<'a> {
         writeln!(
             writer,
             "#Taxa\t\t: {}",
-            utils::format_thousand_sep(header.ntax.as_ref().unwrap())
+            utils::format_thousand_sep(&header.ntax)
         )?;
         writeln!(
             writer,
             "#Chars\t\t: {} bp",
-            utils::format_thousand_sep(header.nchar.as_ref().unwrap())
+            utils::format_thousand_sep(&header.nchar)
         )?;
 
         Ok(())
@@ -144,8 +144,8 @@ impl Concat {
 
     fn get_header(&self) -> Header {
         let mut header = Header::new();
-        header.ntax = Some(self.ntax);
-        header.nchar = Some(self.nchar);
+        header.ntax = self.ntax;
+        header.nchar = self.nchar;
         header.datatype = Some(self.datatype.clone());
         header.missing = Some(self.missing);
         header.gap = Some(self.gap);

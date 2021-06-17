@@ -40,8 +40,6 @@ impl<'a> SeqWriter<'a> {
 
     pub fn write_sequence(&mut self, filetype: &OutputFormat) {
         self.get_output_name(filetype);
-        self.get_ntax();
-        self.get_nchar();
         self.get_max_id_len();
 
         if self.partition.is_some() {
@@ -78,12 +76,7 @@ impl<'a> SeqWriter<'a> {
 
     fn write_phylip(&mut self) -> Result<()> {
         let mut writer = self.create_output_file(&self.output);
-        writeln!(
-            writer,
-            "{} {}",
-            self.header.ntax.as_ref().unwrap(),
-            self.header.nchar.as_ref().unwrap()
-        )?;
+        writeln!(writer, "{} {}", self.header.ntax, self.header.nchar)?;
         self.write_matrix(&mut writer);
         if self.partition.is_some() {
             self.write_partition_sep();
@@ -101,8 +94,7 @@ impl<'a> SeqWriter<'a> {
         writeln!(
             writer,
             "dimensions ntax={} nchar={};",
-            self.header.ntax.as_ref().unwrap(),
-            self.header.nchar.as_ref().unwrap()
+            self.header.ntax, self.header.nchar
         )?;
         writeln!(
             writer,
@@ -210,7 +202,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn check_sequence_len(&self, len: usize, taxa: &str) {
-        if len != *self.header.nchar.as_ref().unwrap() {
+        if len != self.header.nchar {
             panic!(
                 "DIFFERENT SEQUENCE LENGTH FOUND AT {}. \
                 MAKE SURE THE INPUT IS AN ALIGNMENT",
@@ -231,19 +223,6 @@ impl<'a> SeqWriter<'a> {
         fs::create_dir_all(fname.parent().unwrap()).expect("CANNOT CREATE A TARGET DIRECTORY");
         let file = File::create(&fname).expect("CANNOT CREATE OUTPUT FILE");
         LineWriter::new(file)
-    }
-
-    fn get_ntax(&mut self) {
-        if self.header.ntax.is_none() {
-            self.header.ntax = Some(self.matrix.len());
-        }
-    }
-
-    fn get_nchar(&mut self) {
-        if self.header.nchar.is_none() {
-            let (_, chars) = self.matrix.iter().next().unwrap();
-            self.header.nchar = Some(chars.len())
-        }
     }
 
     fn get_datatype(&mut self) {

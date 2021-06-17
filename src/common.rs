@@ -38,8 +38,8 @@ impl Partition {
 }
 
 pub struct Header {
-    pub ntax: Option<usize>,
-    pub nchar: Option<usize>,
+    pub ntax: usize,
+    pub nchar: usize,
     pub datatype: Option<String>,
     pub missing: Option<char>,
     pub gap: Option<char>,
@@ -48,8 +48,8 @@ pub struct Header {
 impl Header {
     pub fn new() -> Self {
         Self {
-            ntax: None,
-            nchar: None,
+            ntax: 0,
+            nchar: 0,
             datatype: None,
             missing: None,
             gap: None,

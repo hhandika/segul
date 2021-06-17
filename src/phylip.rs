@@ -51,8 +51,8 @@ impl<'a> Phylip<'a> {
 
     pub fn get_header(&self) -> Header {
         let mut header = Header::new();
-        header.ntax = Some(self.ntax);
-        header.nchar = Some(self.nchar);
+        header.ntax = self.ntax;
+        header.nchar = self.nchar;
         header
     }
 
