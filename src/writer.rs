@@ -181,21 +181,32 @@ impl<'a> SeqWriter<'a> {
     fn get_partition_path(&mut self) {
         match self.part_format {
             PartitionFormat::NexusSeparate => {
-                self.part_file = PathBuf::from(&self.get_partition_name("nex"));
+                self.part_file = self
+                    .output
+                    .parent()
+                    .unwrap()
+                    .join(&self.get_partition_name("nex"));
             }
             PartitionFormat::Raxml => {
-                self.part_file = PathBuf::from(&self.get_partition_name("txt"));
+                self.part_file = self
+                    .output
+                    .parent()
+                    .unwrap()
+                    .join(&self.get_partition_name("txt"));
             }
+            PartitionFormat::Nexus => self.part_file = PathBuf::from("in-file"),
             _ => (),
         }
     }
 
-    fn get_partition_name(&self, ext: &str) -> String {
-        format!(
+    fn get_partition_name(&self, ext: &str) -> PathBuf {
+        let fname = format!(
             "{}_partition.{}",
             self.output.file_stem().unwrap().to_string_lossy(),
             ext
-        )
+        );
+
+        PathBuf::from(fname)
     }
 
     fn check_sequence_len(&self, len: usize, taxa: &str) {
