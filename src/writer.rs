@@ -15,6 +15,7 @@ pub struct SeqWriter<'a> {
     header: Header,
     partition: Option<&'a [Partition]>,
     part_format: &'a PartitionFormat,
+    part_file: PathBuf,
 }
 
 impl<'a> SeqWriter<'a> {
@@ -33,6 +34,7 @@ impl<'a> SeqWriter<'a> {
             header,
             partition,
             part_format,
+            part_file: PathBuf::new(),
         }
     }
 
@@ -41,6 +43,10 @@ impl<'a> SeqWriter<'a> {
         self.get_ntax();
         self.get_nchar();
         self.get_max_id_len();
+
+        if self.partition.is_some() {
+            self.get_partition_path();
+        }
 
         match filetype {
             OutputFormat::Nexus => self.write_nexus().expect("CANNOT WRITE A NEXUS FILE."),
@@ -61,7 +67,13 @@ impl<'a> SeqWriter<'a> {
     pub fn display_save_path(&self) {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
-        writeln!(writer, "Output\t\t: {}\n", self.output.display()).unwrap();
+        writeln!(writer, "Output\t\t: {}", self.output.display()).unwrap();
+    }
+
+    pub fn display_partition_path(&self) {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "Partition\t: {}\n", &self.part_file.display()).unwrap();
     }
 
     fn write_phylip(&mut self) -> Result<()> {
@@ -133,11 +145,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_part_phylip(&self) {
-        let fname = format!(
-            "{}_partition.txt",
-            self.output.file_stem().unwrap().to_string_lossy()
-        );
-        let mut writer = self.create_output_file(Path::new(&fname));
+        let mut writer = self.create_output_file(Path::new(&self.part_file));
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
                 writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
@@ -147,11 +155,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_part_nexus_sep(&self) {
-        let fname = format!(
-            "{}_partition.nex",
-            self.output.file_stem().unwrap().to_string_lossy()
-        );
-        let mut writer = self.create_output_file(Path::new(&fname));
+        let mut writer = self.create_output_file(&self.part_file);
         writeln!(writer, "#nexus").unwrap();
         self.write_part_nexus(&mut writer)
             .expect("CANNOT WRITE NEXUS PARTITION");
@@ -172,6 +176,26 @@ impl<'a> SeqWriter<'a> {
         }
         writeln!(writer, "end;")?;
         Ok(())
+    }
+
+    fn get_partition_path(&mut self) {
+        match self.part_format {
+            PartitionFormat::NexusSeparate => {
+                self.part_file = PathBuf::from(&self.get_partition_name("nex"));
+            }
+            PartitionFormat::Raxml => {
+                self.part_file = PathBuf::from(&self.get_partition_name("txt"));
+            }
+            _ => (),
+        }
+    }
+
+    fn get_partition_name(&self, ext: &str) -> String {
+        format!(
+            "{}_partition.{}",
+            self.output.file_stem().unwrap().to_string_lossy(),
+            ext
+        )
     }
 
     fn check_sequence_len(&self, len: usize, taxa: &str) {

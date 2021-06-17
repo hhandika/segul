@@ -71,6 +71,7 @@ impl<'a> MSAlignment<'a> {
         };
 
         save.display_save_path();
+        save.display_partition_path();
     }
 
     fn display_alignment_stats(&self, count: usize, header: &Header) -> Result<()> {
