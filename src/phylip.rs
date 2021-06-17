@@ -41,7 +41,11 @@ impl<'a> Phylip<'a> {
             let (id, dna) = self.parse_sequence(line.trim());
             self.insert_matrix(id, dna);
         });
-        self.check_is_alignment(&self.matrix);
+
+        let (shortest, longest) = self.get_sequence_len(&self.matrix);
+        self.is_alignment = self.check_is_alignment(&shortest, &longest);
+        self.check_ntax_matches();
+        self.check_nchar_matches(longest);
         Ok(())
     }
 
@@ -103,6 +107,34 @@ impl<'a> Phylip<'a> {
         self.nchar = seq
             .parse::<usize>()
             .expect("HEADER CHARS LENGTH IS NOT A NUMBER");
+    }
+
+    fn check_ntax_matches(&self) {
+        if self.matrix.len() != self.ntax {
+            panic!(
+                "ERROR READING PHYLIP FILE: {}. \
+            THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE HEADER.\
+            IN THE HEADER: {} \
+            AND TAXA FOUND: {}",
+                self.input.display(),
+                self.ntax,
+                self.matrix.len()
+            );
+        }
+    }
+
+    fn check_nchar_matches(&self, longest: usize) {
+        if self.nchar != longest {
+            panic!(
+                "ERROR READING PHYLIP FILE {}, \
+            THE NCHAR VALUE IN THE HEADER DOES NOT MATCH THE SEQUENCE LENGTH. \
+            THE VALUE IN THE HEADER {}. \
+            THE SEQUENCE LENGTH {}.",
+                self.input.display(),
+                self.nchar,
+                longest
+            );
+        }
     }
 }
 
