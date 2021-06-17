@@ -11,6 +11,8 @@ pub struct Fasta<'a> {
     input: &'a Path,
     pub matrix: IndexMap<String, String>,
     pub is_alignment: bool,
+    pub ntax: usize,
+    pub nchar: usize,
 }
 
 impl SeqCheck for Fasta<'_> {}
@@ -21,6 +23,8 @@ impl<'a> Fasta<'a> {
             input,
             matrix: IndexMap::new(),
             is_alignment: false,
+            ntax: 0,
+            nchar: 0,
         }
     }
 
@@ -28,7 +32,8 @@ impl<'a> Fasta<'a> {
         let file = File::open(self.input).expect("CANNOT OPEN THE FILE");
         let buff = BufReader::new(file);
         self.parse_fasta(buff);
-        self.is_alignment = self.check_is_alignment(&self.matrix);
+        let (shortest, longest) = self.get_sequence_len(&self.matrix);
+        self.is_alignment = self.check_is_alignment(&shortest, &longest);
     }
 
     pub fn get_header(&self) -> Header {
