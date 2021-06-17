@@ -1,3 +1,4 @@
+use std::io::{self, Result, Write};
 use std::iter;
 use std::path::{Path, PathBuf};
 
@@ -9,6 +10,7 @@ use crate::common::{Header, InputFormat, OutputFormat, Partition, PartitionForma
 use crate::fasta::Fasta;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
+use crate::utils;
 use crate::writer::SeqWriter;
 
 /// Multi-Sequence Alignment Module.
@@ -58,14 +60,36 @@ impl<'a> MSAlignment<'a> {
     }
 
     fn write_alignment(&self, aln: &IndexMap<String, String>, part: &[Partition], header: Header) {
-        let path = Path::new(self.dir).join(self.output);
-        let mut save = SeqWriter::new(&path, aln, header, Some(part), &self.part_format);
+        let output = Path::new(self.output);
+        self.display_alignment_stats(part.len(), &header).unwrap();
+        let mut save = SeqWriter::new(output, aln, header, Some(part), &self.part_format);
 
         match self.output_format {
             OutputFormat::Nexus => save.write_sequence(&self.output_format),
             OutputFormat::Phylip => save.write_sequence(&self.output_format),
             OutputFormat::Fasta => save.write_fasta(),
         };
+
+        save.display_save_path();
+    }
+
+    fn display_alignment_stats(&self, count: usize, header: &Header) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = io::BufWriter::new(io);
+        writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
+        writeln!(writer, "#Loci\t\t: {}", utils::format_thousand_sep(&count))?;
+        writeln!(
+            writer,
+            "#Taxa\t\t: {}",
+            utils::format_thousand_sep(header.ntax.as_ref().unwrap())
+        )?;
+        writeln!(
+            writer,
+            "#Chars\t\t: {} bp",
+            utils::format_thousand_sep(header.nchar.as_ref().unwrap())
+        )?;
+
+        Ok(())
     }
 }
 
