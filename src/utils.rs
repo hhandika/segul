@@ -1,5 +1,11 @@
 use std::io::{self, Result, Write};
 
+use num_format::{Locale, ToFormattedString};
+
+pub fn format_thousand_sep(num: &usize) -> String {
+    num.to_formatted_string(&Locale::en)
+}
+
 pub fn print_divider(text: &str, len: usize) {
     let sym = '=';
     let mut header = PrettyDivider::new(text, sym, len);
