@@ -373,7 +373,16 @@ trait Cli {
 }
 
 impl Cli for ConvertParser<'_> {}
-impl Cli for ConcatParser<'_> {}
+impl Cli for ConcatParser<'_> {
+    fn set_output(&self, matches: &ArgMatches) -> PathBuf {
+        if matches.is_present("output") {
+            let output = self.get_output(matches);
+            PathBuf::from(output)
+        } else {
+            PathBuf::from(".")
+        }
+    }
+}
 
 struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -462,8 +471,8 @@ impl<'a> ConvertParser<'a> {
     fn display_input_file(&self, input: &Path) -> Result<()> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
-        writeln!(writer, "Command\t: segul convert")?;
-        writeln!(writer, "Input\t: {}", &input.display())?;
+        writeln!(writer, "Command\t\t: segul convert")?;
+        writeln!(writer, "Input\t\t: {}", &input.display())?;
         Ok(())
     }
 
@@ -472,7 +481,11 @@ impl<'a> ConvertParser<'a> {
         let mut writer = io::BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul convert")?;
         writeln!(writer, "Input dir\t: {}", &input.display())?;
-        writeln!(writer, "Total files\t: {}", nfile)?;
+        writeln!(
+            writer,
+            "Total files\t: {}",
+            utils::format_thousand_sep(&nfile)
+        )?;
         writeln!(writer, "Output dir\t: {}\n", self.output.display())?;
         Ok(())
     }
@@ -497,6 +510,7 @@ impl<'a> ConcatParser<'a> {
         let output_format = self.get_output_format(self.matches);
         let part_format = self.get_partition_format(self.matches);
         let mut concat = msa::MSAlignment::new(dir, output, output_format, part_format);
+        self.display_input_dir(&dir).unwrap();
         self.concat_any(&mut concat)
     }
 
@@ -506,5 +520,13 @@ impl<'a> ConcatParser<'a> {
             InputFormat::Nexus => concat.concat_nexus(),
             InputFormat::Phylip => concat.concat_phylip(),
         }
+    }
+
+    fn display_input_dir(&self, input: &str) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = io::BufWriter::new(io);
+        writeln!(writer, "Command\t\t: segul concat")?;
+        writeln!(writer, "Input dir\t: {}\n", input)?;
+        Ok(())
     }
 }
