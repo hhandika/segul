@@ -58,10 +58,14 @@ impl Header {
 }
 
 pub trait SeqCheck {
-    fn check_is_alignment(&self, matrix: &IndexMap<String, String>) -> bool {
+    fn check_is_alignment(&self, shortest: &usize, longest: &usize) -> bool {
+        shortest == longest
+    }
+
+    fn get_sequence_len(&self, matrix: &IndexMap<String, String>) -> (usize, usize) {
         let shortest = self.get_shortest_seq_len(matrix);
         let longest = self.get_longest_seq_len(matrix);
-        longest == shortest
+        (shortest, longest)
     }
 
     fn get_shortest_seq_len(&self, matrix: &IndexMap<String, String>) -> usize {
