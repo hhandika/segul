@@ -297,20 +297,12 @@ impl Alignment {
         let mut fas = Fasta::new(file);
         fas.read();
         self.check_is_alignment(file, fas.is_alignment);
-        let nchar = self.get_nchar(&fas.matrix);
-        self.get_alignment(fas.matrix, nchar);
+        self.get_alignment(fas.matrix, fas.nchar);
     }
 
     fn get_alignment(&mut self, alignment: IndexMap<String, String>, nchar: usize) {
         self.alignment = alignment;
         self.nchar = nchar;
-    }
-
-    // Count char for Fasta. Get the char length from the first sequence.
-    // This is fine since Fasta struct check for the char
-    // is the same length.
-    fn get_nchar(&mut self, alignment: &IndexMap<String, String>) -> usize {
-        alignment.values().next().unwrap().len()
     }
 
     fn check_is_alignment(&self, file: &Path, aligned: bool) {
