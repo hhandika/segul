@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-pub fn index_sites(mat: BTreeMap<String, String>) -> BTreeMap<usize, String> {
+pub fn index_sites(matrix: BTreeMap<String, String>) -> BTreeMap<usize, String> {
     let mut index: BTreeMap<usize, String> = BTreeMap::new();
-    mat.values().for_each(|seq| {
+    matrix.values().for_each(|seq| {
         seq.chars().enumerate().for_each(|(idx, dna)| {
             #[allow(clippy::map_entry)]
             if index.contains_key(&idx) {
