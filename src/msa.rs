@@ -2,12 +2,12 @@ use std::io::{self, Result, Write};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use glob::glob;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
 use crate::common::{Header, InputFormat, OutputFormat, Partition, PartitionFormat};
 use crate::fasta::Fasta;
+use crate::finder::Files;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
 use crate::utils;
@@ -122,9 +122,7 @@ impl Concat {
     }
 
     fn concat_alignment(&mut self, dir: &str) {
-        let pattern = self.get_pattern(dir);
-        self.get_files(&pattern);
-        self.check_glob_results();
+        self.files = Files::new(dir, &self.input).get_files();
         self.files.sort();
         let id = self.get_id_all();
         let (alignment, nchar, partition) = self.concat(&id);
@@ -132,14 +130,6 @@ impl Concat {
         self.ntax = self.alignment.len();
         self.nchar = nchar;
         self.partition = partition;
-    }
-
-    fn get_pattern(&self, dir: &str) -> String {
-        match self.input {
-            InputFormat::Nexus => format!("{}/*.nex*", dir),
-            InputFormat::Phylip => format!("{}/*.phy*", dir),
-            InputFormat::Fasta => format!("{}/*.fa*", dir),
-        }
     }
 
     fn get_header(&self) -> Header {
@@ -150,19 +140,6 @@ impl Concat {
         header.missing = Some(self.missing);
         header.gap = Some(self.gap);
         header
-    }
-
-    fn get_files(&mut self, pattern: &str) {
-        self.files = glob(pattern)
-            .expect("COULD NOT FIND FILES")
-            .filter_map(|ok| ok.ok())
-            .collect();
-    }
-
-    fn check_glob_results(&self) {
-        if self.files.is_empty() {
-            panic!("NO VALID ALIGNMENT FILES FOUND");
-        }
     }
 
     fn get_id_all(&self) -> IndexSet<String> {
@@ -318,25 +295,6 @@ impl Alignment {
 #[cfg(test)]
 mod test {
     use super::*;
-
-    #[test]
-    fn get_files_test() {
-        let path = "test_files/concat/";
-        let pattern = format!("{}/*.nex*", path);
-        let mut concat = Concat::new(InputFormat::Nexus);
-        concat.get_files(&pattern);
-        assert_eq!(4, concat.files.len());
-    }
-
-    #[test]
-    #[should_panic]
-    fn check_empty_files_test() {
-        let path = "test_files/empty/";
-        let pattern = format!("{}/*.nex*", path);
-        let mut concat = Concat::new(InputFormat::Nexus);
-        concat.get_files(&pattern);
-        concat.check_glob_results();
-    }
 
     #[test]
     fn concat_nexus_test() {

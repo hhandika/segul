@@ -2,6 +2,7 @@ mod cli;
 mod common;
 mod converter;
 mod fasta;
+mod finder;
 mod msa;
 mod nexus;
 mod phylip;
