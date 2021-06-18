@@ -2,11 +2,11 @@ use std::io::{self, Result, Write};
 use std::path::{Path, PathBuf};
 
 use clap::{App, AppSettings, Arg, ArgMatches};
-use glob::glob;
 use rayon::prelude::*;
 
 use crate::common::{InputFormat, OutputFormat, PartitionFormat};
 use crate::converter::Converter;
+use crate::finder::Files;
 use crate::msa;
 use crate::utils;
 
@@ -322,13 +322,6 @@ trait Cli {
         matches.value_of("dir").expect("CANNOT READ DIR PATH")
     }
 
-    fn get_files(&self, pattern: &str) -> Vec<PathBuf> {
-        glob(pattern)
-            .expect("COULD NOT FIND FILES")
-            .filter_map(|ok| ok.ok())
-            .collect()
-    }
-
     fn get_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
         matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
     }
@@ -418,8 +411,7 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_multiple_fasta(&mut self) {
         let dir = self.get_dir_input(self.matches);
-        let pattern = self.get_pattern(dir);
-        let files = self.get_files(&pattern);
+        let files = Files::new(dir, &self.input_format).get_files();
         self.output = self.set_output(&self.matches);
         self.is_dir = true;
         self.display_input_dir(Path::new(dir), files.len()).unwrap();
@@ -457,14 +449,6 @@ impl<'a> ConvertParser<'a> {
             Converter::new(input, &self.output, &OutputFormat::Nexus, self.is_dir).convert_phylip();
         } else {
             Converter::new(input, &self.output, &OutputFormat::Fasta, self.is_dir).convert_phylip();
-        }
-    }
-
-    fn get_pattern(&self, dir: &str) -> String {
-        match self.input_format {
-            InputFormat::Fasta => format!("{}/*.fa*", dir),
-            InputFormat::Nexus => format!("{}/*.nex*", dir),
-            InputFormat::Phylip => format!("{}/*.phy*", dir),
         }
     }
 
