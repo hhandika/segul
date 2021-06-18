@@ -1,3 +1,6 @@
+//!Multi-Sequence Alignment Module.
+//! Contains methods for working with multi-sequence alignments.
+
 use std::io::{self, Result, Write};
 use std::iter;
 use std::path::{Path, PathBuf};
@@ -12,9 +15,6 @@ use crate::nexus::Nexus;
 use crate::phylip::Phylip;
 use crate::utils;
 use crate::writer::SeqWriter;
-
-/// Multi-Sequence Alignment Module.
-/// Contains methods for working with multi-sequence alignments.
 
 pub struct MSAlignment<'a> {
     dir: &'a str,
