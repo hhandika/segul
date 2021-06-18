@@ -8,13 +8,13 @@ pub fn index_sites(matrix: BTreeMap<String, String>) -> BTreeMap<usize, String> 
             if index.contains_key(&idx) {
                 if let Some(value) = index.get_mut(&idx) {
                     match dna {
-                        '-' | 'N' | '?' => (),
+                        '-' | 'N' | '?' | '.' => (),
                         _ => value.push(dna),
                     }
                 }
             } else {
                 match dna {
-                    '-' | 'N' | '?' => (),
+                    '-' | 'N' | '?' | '.' => (),
                     _ => {
                         index.insert(idx, dna.to_string());
                     }
@@ -85,6 +85,15 @@ mod test {
     fn count_parsimony_test() {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
+        let mat = get_matrix(&id, &seq);
+        let dna = index_sites(mat);
+        assert_eq!(1, count_parsimony_informative(&dna));
+    }
+
+    #[test]
+    fn count_parsimony_gap_test() {
+        let id = ["ABC", "ABE", "ABF", "ABD"];
+        let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
         let dna = index_sites(mat);
         assert_eq!(1, count_parsimony_informative(&dna));
