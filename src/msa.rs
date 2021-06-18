@@ -7,7 +7,7 @@ use indexmap::IndexSet;
 
 use crate::common::{Header, InputFormat, OutputFormat, Partition, PartitionFormat};
 use crate::fasta::Fasta;
-use crate::finder::Files;
+use crate::finder::{Files, IDs};
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
 use crate::utils;
@@ -124,7 +124,7 @@ impl Concat {
     fn concat_alignment(&mut self, dir: &str) {
         self.files = Files::new(dir, &self.input).get_files();
         self.files.sort();
-        let id = self.get_id_all();
+        let id = IDs::new(&self.files, &self.input).get_id_all();
         let (alignment, nchar, partition) = self.concat(&id);
         self.alignment = alignment;
         self.ntax = self.alignment.len();
@@ -140,48 +140,6 @@ impl Concat {
         header.missing = Some(self.missing);
         header.gap = Some(self.gap);
         header
-    }
-
-    fn get_id_all(&self) -> IndexSet<String> {
-        let mut id = IndexSet::new();
-        match self.input {
-            InputFormat::Nexus => self.get_id_from_nexus(&mut id),
-            InputFormat::Phylip => self.get_id_from_phylip(&mut id),
-            InputFormat::Fasta => self.get_id_from_fasta(&mut id),
-        };
-        id
-    }
-
-    fn get_id_from_phylip(&self, id: &mut IndexSet<String>) {
-        self.files.iter().for_each(|file| {
-            let mut phy = Phylip::new(file);
-            phy.read().expect("CANNOT READ A PHYLIP FILE");
-            self.get_id(&phy.matrix, id);
-        });
-    }
-
-    fn get_id_from_nexus(&self, id: &mut IndexSet<String>) {
-        self.files.iter().for_each(|file| {
-            let mut nex = Nexus::new(file);
-            nex.read().expect("CANNOT READ A NEXUS FILE");
-            self.get_id(&nex.matrix, id);
-        });
-    }
-
-    fn get_id_from_fasta(&self, id: &mut IndexSet<String>) {
-        self.files.iter().for_each(|file| {
-            let mut fas = Fasta::new(file);
-            fas.read();
-            self.get_id(&fas.matrix, id);
-        });
-    }
-
-    fn get_id(&self, matrix: &IndexMap<String, String>, id: &mut IndexSet<String>) {
-        matrix.keys().for_each(|key| {
-            if !id.contains(key) {
-                id.insert(key.to_string());
-            }
-        });
     }
 
     fn concat(
