@@ -11,11 +11,7 @@ use crate::common::{self, Header, SeqCheck};
 pub struct Nexus<'a> {
     input: &'a Path,
     pub matrix: IndexMap<String, String>,
-    pub ntax: usize,
-    pub nchar: usize,
-    pub datatype: String,
-    pub missing: char,
-    pub gap: char,
+    pub header: Header,
     pub interleave: bool,
     pub is_alignment: bool,
 }
@@ -27,11 +23,7 @@ impl<'a> Nexus<'a> {
         Self {
             input,
             matrix: IndexMap::new(),
-            ntax: 0,
-            nchar: 0,
-            datatype: String::new(),
-            missing: '?',
-            gap: '-',
+            header: Header::new(),
             interleave: false,
             is_alignment: false,
         }
@@ -53,16 +45,6 @@ impl<'a> Nexus<'a> {
         self.check_nchar_matches(longest);
 
         Ok(())
-    }
-
-    pub fn get_header(&self) -> Header {
-        let mut header = Header::new();
-        header.ntax = self.ntax;
-        header.nchar = self.nchar;
-        header.datatype = Some(self.datatype.clone());
-        header.missing = Some(self.missing);
-        header.gap = Some(self.gap);
-        header
     }
 
     fn parse_blocks<R: Read>(&self, buff: R) -> Commands {
@@ -91,8 +73,10 @@ impl<'a> Nexus<'a> {
             .iter()
             .map(|d| d.trim())
             .for_each(|dimension| match dimension {
-                tag if tag.starts_with("ntax") => self.ntax = self.parse_ntax(&dimension),
-                tag if tag.starts_with("nchar") => self.nchar = self.parse_characters(&dimension),
+                tag if tag.starts_with("ntax") => self.header.ntax = self.parse_ntax(&dimension),
+                tag if tag.starts_with("nchar") => {
+                    self.header.nchar = self.parse_characters(&dimension)
+                }
                 _ => (),
             });
     }
@@ -105,9 +89,13 @@ impl<'a> Nexus<'a> {
             .map(|f| f.trim())
             .filter(|f| !f.is_empty())
             .for_each(|format| match format {
-                tag if tag.starts_with("datatype") => self.datatype = self.parse_datatype(&format),
-                tag if tag.starts_with("missing") => self.missing = self.parse_missing(&format),
-                tag if tag.starts_with("gap") => self.gap = self.parse_gap(&format),
+                tag if tag.starts_with("datatype") => {
+                    self.header.datatype = self.parse_datatype(&format)
+                }
+                tag if tag.starts_with("missing") => {
+                    self.header.missing = self.parse_missing(&format)
+                }
+                tag if tag.starts_with("gap") => self.header.gap = self.parse_gap(&format),
                 "interleave=yes" => self.interleave = true,
                 "interleave" => self.interleave = true,
                 _ => (),
@@ -237,28 +225,28 @@ impl<'a> Nexus<'a> {
     }
 
     fn check_ntax_matches(&self) {
-        if self.matrix.len() != self.ntax {
+        if self.matrix.len() != self.header.ntax {
             panic!(
                 "ERROR READING NEXUS FILE: {}. \
             THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE BLOCK.\
             IN THE BLOCK: {} \
             AND TAXA FOUND: {}",
                 self.input.display(),
-                self.ntax,
+                self.header.ntax,
                 self.matrix.len()
             );
         }
     }
 
     fn check_nchar_matches(&self, longest: usize) {
-        if self.nchar != longest {
+        if self.header.nchar != longest {
             panic!(
                 "ERROR READING NEXUS FILE {}, \
             THE NCHAR VALUE IN THE BLOCK DOES NOT MATCH THE SEQUENCE LENGTH. \
             THE VALUE IN THE BLOCK {}. \
             THE SEQUENCE LENGTH {}.",
                 self.input.display(),
-                self.nchar,
+                self.header.nchar,
                 longest
             );
         }
@@ -354,11 +342,11 @@ mod test {
         let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new(sample);
         nex.read().unwrap();
-        assert_eq!(5, nex.ntax);
-        assert_eq!(802, nex.nchar);
-        assert_eq!("dna", nex.datatype);
-        assert_eq!('-', nex.gap);
-        assert_eq!('?', nex.missing);
+        assert_eq!(5, nex.header.ntax);
+        assert_eq!(802, nex.header.nchar);
+        assert_eq!("dna", nex.header.datatype);
+        assert_eq!('-', nex.header.gap);
+        assert_eq!('?', nex.header.missing);
     }
 
     #[test]

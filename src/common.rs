@@ -40,9 +40,9 @@ impl Partition {
 pub struct Header {
     pub ntax: usize,
     pub nchar: usize,
-    pub datatype: Option<String>,
-    pub missing: Option<char>,
-    pub gap: Option<char>,
+    pub datatype: String,
+    pub missing: char,
+    pub gap: char,
 }
 
 impl Header {
@@ -50,9 +50,9 @@ impl Header {
         Self {
             ntax: 0,
             nchar: 0,
-            datatype: None,
-            missing: None,
-            gap: None,
+            datatype: String::from("dna"),
+            missing: '?',
+            gap: '-',
         }
     }
 }

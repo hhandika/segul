@@ -2,21 +2,21 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::common::InputFormat;
+use crate::common::{Header, InputFormat};
 use crate::fasta::Fasta;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
 
 pub struct Alignment {
     pub alignment: IndexMap<String, String>,
-    pub nchar: usize,
+    pub header: Header,
 }
 
 impl Alignment {
     pub fn new() -> Self {
         Self {
             alignment: IndexMap::new(),
-            nchar: 0,
+            header: Header::new(),
         }
     }
 
@@ -32,26 +32,26 @@ impl Alignment {
         let mut nex = Nexus::new(file);
         nex.read().expect("CANNOT READ A NEXUS FILE");
         self.check_is_alignment(&file, nex.is_alignment);
-        self.get_alignment(nex.matrix, nex.nchar)
+        self.get_alignment(nex.matrix, nex.header)
     }
 
     fn get_aln_from_phylip(&mut self, file: &Path) {
         let mut phy = Phylip::new(file);
         phy.read().expect("CANNOT READ A PHYLIP FILE");
         self.check_is_alignment(file, phy.is_alignment);
-        self.get_alignment(phy.matrix, phy.nchar);
+        self.get_alignment(phy.matrix, phy.header);
     }
 
     fn get_aln_from_fasta(&mut self, file: &Path) {
         let mut fas = Fasta::new(file);
         fas.read();
         self.check_is_alignment(file, fas.is_alignment);
-        self.get_alignment(fas.matrix, fas.nchar);
+        self.get_alignment(fas.matrix, fas.header);
     }
 
-    fn get_alignment(&mut self, alignment: IndexMap<String, String>, nchar: usize) {
+    fn get_alignment(&mut self, alignment: IndexMap<String, String>, header: Header) {
         self.alignment = alignment;
-        self.nchar = nchar;
+        self.header = header;
     }
 
     fn check_is_alignment(&self, file: &Path, aligned: bool) {

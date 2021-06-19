@@ -11,8 +11,7 @@ use crate::common::{self, Header, SeqCheck};
 pub struct Phylip<'a> {
     input: &'a Path,
     pub matrix: IndexMap<String, String>,
-    pub ntax: usize,
-    pub nchar: usize,
+    pub header: Header,
     pub is_alignment: bool,
 }
 
@@ -23,8 +22,7 @@ impl<'a> Phylip<'a> {
         Self {
             input,
             matrix: IndexMap::new(),
-            ntax: 0,
-            nchar: 0,
+            header: Header::new(),
             is_alignment: false,
         }
     }
@@ -47,13 +45,6 @@ impl<'a> Phylip<'a> {
         self.check_ntax_matches();
         self.check_nchar_matches(longest);
         Ok(())
-    }
-
-    pub fn get_header(&self) -> Header {
-        let mut header = Header::new();
-        header.ntax = self.ntax;
-        header.nchar = self.nchar;
-        header
     }
 
     fn parse_sequence(&self, line: &str) -> (String, String) {
@@ -101,37 +92,37 @@ impl<'a> Phylip<'a> {
     }
 
     fn parse_num(&mut self, tax: &str, seq: &str) {
-        self.ntax = tax
+        self.header.ntax = tax
             .parse::<usize>()
             .expect("HEADER TAXA NUMBER IS NOT A NUMBER");
-        self.nchar = seq
+        self.header.nchar = seq
             .parse::<usize>()
             .expect("HEADER CHARS LENGTH IS NOT A NUMBER");
     }
 
     fn check_ntax_matches(&self) {
-        if self.matrix.len() != self.ntax {
+        if self.matrix.len() != self.header.ntax {
             panic!(
                 "ERROR READING PHYLIP FILE: {}. \
             THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE HEADER.\
             IN THE HEADER: {} \
             AND TAXA FOUND: {}",
                 self.input.display(),
-                self.ntax,
+                self.header.ntax,
                 self.matrix.len()
             );
         }
     }
 
     fn check_nchar_matches(&self, longest: usize) {
-        if self.nchar != longest {
+        if self.header.nchar != longest {
             panic!(
                 "ERROR READING PHYLIP FILE {}, \
             THE NCHAR VALUE IN THE HEADER DOES NOT MATCH THE SEQUENCE LENGTH. \
             THE VALUE IN THE HEADER {}. \
             THE SEQUENCE LENGTH {}.",
                 self.input.display(),
-                self.nchar,
+                self.header.nchar,
                 longest
             );
         }
@@ -148,8 +139,8 @@ mod test {
         let mut phylip = Phylip::new(path);
         phylip.read().unwrap();
 
-        assert_eq!(2, phylip.ntax);
-        assert_eq!(4, phylip.nchar);
+        assert_eq!(2, phylip.header.ntax);
+        assert_eq!(4, phylip.header.nchar);
         assert_eq!(2, phylip.matrix.len());
     }
 
@@ -166,8 +157,8 @@ mod test {
         let path = Path::new("test_files/whitespaces.phy");
         let mut phylip = Phylip::new(path);
         phylip.read().unwrap();
-        assert_eq!(2, phylip.ntax);
-        assert_eq!(4, phylip.nchar);
+        assert_eq!(2, phylip.header.ntax);
+        assert_eq!(4, phylip.header.nchar);
         assert_eq!(2, phylip.matrix.len());
     }
 
@@ -177,7 +168,7 @@ mod test {
         let mut phy = Phylip::new(Path::new("."));
         phy.parse_header(header);
 
-        assert_eq!(2, phy.ntax);
-        assert_eq!(24, phy.nchar);
+        assert_eq!(2, phy.header.ntax);
+        assert_eq!(24, phy.header.nchar);
     }
 }

@@ -11,8 +11,7 @@ pub struct Fasta<'a> {
     input: &'a Path,
     pub matrix: IndexMap<String, String>,
     pub is_alignment: bool,
-    pub ntax: usize,
-    pub nchar: usize,
+    pub header: Header,
 }
 
 impl SeqCheck for Fasta<'_> {}
@@ -23,8 +22,7 @@ impl<'a> Fasta<'a> {
             input,
             matrix: IndexMap::new(),
             is_alignment: false,
-            ntax: 0,
-            nchar: 0,
+            header: Header::new(),
         }
     }
 
@@ -34,15 +32,8 @@ impl<'a> Fasta<'a> {
         self.parse_fasta(buff);
         let (shortest, longest) = self.get_sequence_len(&self.matrix);
         self.is_alignment = self.check_is_alignment(&shortest, &longest);
-        self.nchar = longest;
-        self.ntax = self.matrix.len();
-    }
-
-    pub fn get_header(&self) -> Header {
-        let mut header = Header::new();
-        header.ntax = self.ntax;
-        header.nchar = self.nchar;
-        header
+        self.header.nchar = longest;
+        self.header.ntax = self.matrix.len();
     }
 
     fn parse_fasta<R: Read>(&mut self, buff: R) {

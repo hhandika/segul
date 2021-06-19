@@ -32,25 +32,22 @@ impl<'a> Converter<'a> {
     }
 
     pub fn convert_fasta(&mut self) {
-        let mut fasta = Fasta::new(self.input);
-        fasta.read();
-        let header = fasta.get_header();
-        self.convert(&fasta.matrix, header)
+        let mut fas = Fasta::new(self.input);
+        fas.read();
+        self.convert(&fas.matrix, fas.header)
     }
 
     pub fn convert_nexus(&mut self) {
         let mut nex = Nexus::new(self.input);
         nex.read().expect("CANNOT READ NEXUS FILES");
-        let header = nex.get_header();
-        self.convert(&nex.matrix, header);
+        self.convert(&nex.matrix, nex.header);
     }
 
     pub fn convert_phylip(&mut self) {
         let input = Path::new(self.input);
         let mut phy = Phylip::new(input);
         phy.read().expect("CANNOT READ PHYLIP FILES");
-        let header = phy.get_header();
-        self.convert(&phy.matrix, header);
+        self.convert(&phy.matrix, phy.header);
     }
 
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {

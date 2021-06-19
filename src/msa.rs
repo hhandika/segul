@@ -39,22 +39,19 @@ impl<'a> MSAlignment<'a> {
     pub fn concat_nexus(&mut self) {
         let mut nex = Concat::new(InputFormat::Nexus);
         nex.concat_alignment(self.dir);
-        let header = nex.get_header();
-        self.write_alignment(&nex.alignment, &nex.partition, header);
+        self.write_alignment(&nex.alignment, &nex.partition, nex.header);
     }
 
     pub fn concat_phylip(&mut self) {
         let mut phy = Concat::new(InputFormat::Phylip);
         phy.concat_alignment(self.dir);
-        let header = phy.get_header();
-        self.write_alignment(&phy.alignment, &phy.partition, header);
+        self.write_alignment(&phy.alignment, &phy.partition, phy.header);
     }
 
     pub fn concat_fasta(&mut self) {
         let mut fas = Concat::new(InputFormat::Fasta);
         fas.concat_alignment(self.dir);
-        let header = fas.get_header();
-        self.write_alignment(&fas.alignment, &fas.partition, header);
+        self.write_alignment(&fas.alignment, &fas.partition, fas.header);
     }
 
     fn write_alignment(&self, aln: &IndexMap<String, String>, part: &[Partition], header: Header) {
@@ -95,11 +92,7 @@ impl<'a> MSAlignment<'a> {
 struct Concat {
     input: InputFormat,
     alignment: IndexMap<String, String>,
-    ntax: usize,
-    nchar: usize,
-    datatype: String,
-    missing: char,
-    gap: char,
+    header: Header,
     partition: Vec<Partition>,
     files: Vec<PathBuf>,
 }
@@ -109,11 +102,7 @@ impl Concat {
         Self {
             input,
             alignment: IndexMap::new(),
-            datatype: String::from("dna"),
-            ntax: 0,
-            nchar: 0,
-            missing: '?',
-            gap: '-',
+            header: Header::new(),
             partition: Vec::new(),
             files: Vec::new(),
         }
@@ -125,19 +114,9 @@ impl Concat {
         let id = IDs::new(&self.files, &self.input).get_id_all();
         let (alignment, nchar, partition) = self.concat(&id);
         self.alignment = alignment;
-        self.ntax = self.alignment.len();
-        self.nchar = nchar;
+        self.header.ntax = self.alignment.len();
+        self.header.nchar = nchar;
         self.partition = partition;
-    }
-
-    fn get_header(&self) -> Header {
-        let mut header = Header::new();
-        header.ntax = self.ntax;
-        header.nchar = self.nchar;
-        header.datatype = Some(self.datatype.clone());
-        header.missing = Some(self.missing);
-        header.gap = Some(self.gap);
-        header
     }
 
     fn concat(
@@ -151,13 +130,13 @@ impl Concat {
         self.files.iter().for_each(|file| {
             let mut aln = Alignment::new();
             aln.get_aln_any(file, &self.input);
-            nchar += aln.nchar; // increment sequence length using the value from parser
+            nchar += aln.header.nchar; // increment sequence length using the value from parser
             let gene_name = file.file_stem().unwrap().to_string_lossy();
             self.get_partition(&mut partition, &gene_name, gene_start, nchar);
             gene_start = nchar + 1;
             id.iter().for_each(|id| {
                 if !aln.alignment.contains_key(id) {
-                    let seq = self.get_gaps(aln.nchar);
+                    let seq = self.get_gaps(aln.header.nchar);
                     self.insert_alignment(&mut alignment, id, seq)
                 } else {
                     let seq = aln.alignment.get(id).unwrap().to_string();

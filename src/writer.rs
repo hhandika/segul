@@ -85,9 +85,6 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_nexus(&mut self) -> Result<()> {
-        self.get_datatype();
-        self.get_missing();
-        self.get_gap();
         let mut writer = self.create_output_file(&self.output);
         writeln!(writer, "#NEXUS")?;
         writeln!(writer, "begin data;")?;
@@ -99,9 +96,7 @@ impl<'a> SeqWriter<'a> {
         writeln!(
             writer,
             "format datatype={} missing={} gap={};",
-            self.header.datatype.as_ref().unwrap(),
-            self.header.missing.as_ref().unwrap(),
-            self.header.gap.as_ref().unwrap()
+            self.header.datatype, self.header.missing, self.header.gap,
         )?;
         writeln!(writer, "matrix")?;
         self.write_matrix(&mut writer);
@@ -212,24 +207,6 @@ impl<'a> SeqWriter<'a> {
         fs::create_dir_all(fname.parent().unwrap()).expect("CANNOT CREATE A TARGET DIRECTORY");
         let file = File::create(&fname).expect("CANNOT CREATE OUTPUT FILE");
         LineWriter::new(file)
-    }
-
-    fn get_datatype(&mut self) {
-        if self.header.datatype.is_none() {
-            self.header.datatype = Some(String::from("dna"));
-        }
-    }
-
-    fn get_missing(&mut self) {
-        if self.header.missing.is_none() {
-            self.header.missing = Some('?');
-        }
-    }
-
-    fn get_gap(&mut self) {
-        if self.header.gap.is_none() {
-            self.header.gap = Some('-');
-        }
     }
 
     fn get_max_id_len(&mut self) {
