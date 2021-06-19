@@ -1,3 +1,4 @@
+mod alignment;
 mod cli;
 mod common;
 mod converter;

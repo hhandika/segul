@@ -8,11 +8,9 @@ use std::path::{Path, PathBuf};
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
+use crate::alignment::Alignment;
 use crate::common::{Header, InputFormat, OutputFormat, Partition, PartitionFormat};
-use crate::fasta::Fasta;
 use crate::finder::{Files, IDs};
-use crate::nexus::Nexus;
-use crate::phylip::Phylip;
 use crate::utils;
 use crate::writer::SeqWriter;
 
@@ -152,11 +150,7 @@ impl Concat {
         let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
             let mut aln = Alignment::new();
-            match self.input {
-                InputFormat::Nexus => aln.get_aln_from_nexus(file),
-                InputFormat::Phylip => aln.get_aln_from_phylip(file),
-                InputFormat::Fasta => aln.get_aln_from_fasta(file),
-            }
+            aln.get_aln_any(file, &self.input);
             nchar += aln.nchar; // increment sequence length using the value from parser
             let gene_name = file.file_stem().unwrap().to_string_lossy();
             self.get_partition(&mut partition, &gene_name, gene_start, nchar);
@@ -198,55 +192,6 @@ impl Concat {
 
     fn get_gaps(&self, len: usize) -> String {
         iter::repeat('-').take(len).collect()
-    }
-}
-
-struct Alignment {
-    alignment: IndexMap<String, String>,
-    nchar: usize,
-}
-
-impl Alignment {
-    fn new() -> Self {
-        Self {
-            alignment: IndexMap::new(),
-            nchar: 0,
-        }
-    }
-
-    fn get_aln_from_nexus(&mut self, file: &Path) {
-        let mut nex = Nexus::new(file);
-        nex.read().expect("CANNOT READ A NEXUS FILE");
-        self.check_is_alignment(&file, nex.is_alignment);
-        self.get_alignment(nex.matrix, nex.nchar)
-    }
-
-    fn get_aln_from_phylip(&mut self, file: &Path) {
-        let mut phy = Phylip::new(file);
-        phy.read().expect("CANNOT READ A PHYLIP FILE");
-        self.check_is_alignment(file, phy.is_alignment);
-        self.get_alignment(phy.matrix, phy.nchar);
-    }
-
-    fn get_aln_from_fasta(&mut self, file: &Path) {
-        let mut fas = Fasta::new(file);
-        fas.read();
-        self.check_is_alignment(file, fas.is_alignment);
-        self.get_alignment(fas.matrix, fas.nchar);
-    }
-
-    fn get_alignment(&mut self, alignment: IndexMap<String, String>, nchar: usize) {
-        self.alignment = alignment;
-        self.nchar = nchar;
-    }
-
-    fn check_is_alignment(&self, file: &Path, aligned: bool) {
-        if !aligned {
-            panic!(
-                "INVALID INPUT FILES. {} IS NOT AN ALIGNMENT",
-                file.display()
-            );
-        }
     }
 }
 
