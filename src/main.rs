@@ -6,6 +6,7 @@ mod finder;
 mod msa;
 mod nexus;
 mod phylip;
+mod stats;
 mod utils;
 mod writer;
 
