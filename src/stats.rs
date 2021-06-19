@@ -1,63 +1,85 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
-pub fn index_sites(matrix: BTreeMap<String, String>) -> BTreeMap<usize, String> {
-    let mut index: BTreeMap<usize, String> = BTreeMap::new();
-    matrix.values().for_each(|seq| {
-        seq.chars().enumerate().for_each(|(idx, dna)| {
-            #[allow(clippy::map_entry)]
-            if index.contains_key(&idx) {
-                if let Some(value) = index.get_mut(&idx) {
+use indexmap::IndexMap;
+
+#[allow(dead_code)]
+struct AlnStats {
+    parsimony_inf: usize,
+    site_matrix: HashMap<usize, String>,
+}
+
+#[allow(dead_code)]
+impl AlnStats {
+    pub fn new() -> Self {
+        Self {
+            parsimony_inf: 0,
+            site_matrix: HashMap::new(),
+        }
+    }
+
+    fn get_stats(&mut self, matrix: &IndexMap<String, String>) {
+        self.index_sites(matrix);
+        self.parsimony_inf = self.count_parsimony_informative();
+        println!("Parsimony informative sites: {}", self.parsimony_inf);
+    }
+
+    fn index_sites(&mut self, matrix: &IndexMap<String, String>) {
+        matrix.values().for_each(|seq| {
+            seq.chars().enumerate().for_each(|(idx, dna)| {
+                #[allow(clippy::map_entry)]
+                if self.site_matrix.contains_key(&idx) {
+                    if let Some(value) = self.site_matrix.get_mut(&idx) {
+                        match dna {
+                            '-' | 'N' | '?' | '.' => (),
+                            _ => value.push(dna),
+                        }
+                    }
+                } else {
                     match dna {
                         '-' | 'N' | '?' | '.' => (),
-                        _ => value.push(dna),
+                        _ => {
+                            self.site_matrix.insert(idx, dna.to_string());
+                        }
                     }
                 }
-            } else {
-                match dna {
-                    '-' | 'N' | '?' | '.' => (),
-                    _ => {
-                        index.insert(idx, dna.to_string());
-                    }
-                }
+            })
+        });
+    }
+
+    fn count_parsimony_informative(&self) -> usize {
+        let mut parsim: usize = 0;
+        self.site_matrix.values().for_each(|site| {
+            let n_patterns = self.get_pattern(&site);
+            if n_patterns >= 2 {
+                parsim += 1
             }
-        })
-    });
+        });
 
-    index
-}
+        parsim
+    }
 
-pub fn count_parsimony_informative(matrix: &BTreeMap<usize, String>) -> usize {
-    let mut parsim: usize = 0;
-    matrix.values().for_each(|site| {
-        let n_pattern = get_pattern(&site);
-        if n_pattern >= 2 {
-            parsim += 1
-        }
-    });
-    parsim
-}
+    fn get_pattern(&self, site: &str) -> usize {
+        let mut uniques: Vec<char> = site.chars().collect();
+        uniques.sort_unstable();
+        uniques.dedup();
+        let mut n_patterns = 0;
+        uniques.iter().for_each(|c| {
+            let patterns = site.matches(&c.to_string()).count();
+            if patterns >= 2 {
+                n_patterns += 1;
+            }
+        });
 
-pub fn get_pattern(site: &str) -> usize {
-    let mut uniques: Vec<char> = site.chars().collect();
-    uniques.sort_unstable();
-    uniques.dedup();
-    let mut pattern = 0;
-    uniques.iter().for_each(|c| {
-        let n_pattern = site.matches(&c.to_string()).count();
-        if n_pattern >= 2 {
-            pattern += 1;
-        }
-    });
-
-    pattern
+        n_patterns
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    fn get_matrix(id: &[&str], seq: &[&str]) -> BTreeMap<String, String> {
-        let mut matrix = BTreeMap::new();
+    fn get_matrix(id: &[&str], seq: &[&str]) -> IndexMap<String, String> {
+        let mut matrix = IndexMap::new();
         id.iter().zip(seq.iter()).for_each(|(i, s)| {
             matrix.insert(i.to_string(), s.to_string());
         });
@@ -68,16 +90,16 @@ mod test {
     #[test]
     fn pattern_count_test() {
         let site = "AATT";
-        let site_1 = "AATTGG";
-        let pattern = get_pattern(&site);
+        let site_2 = "AATTGG";
+        let pattern = AlnStats::new().get_pattern(&site);
         assert_eq!(2, pattern);
-        assert_eq!(3, get_pattern(site_1));
+        assert_eq!(3, AlnStats::new().get_pattern(site_2));
     }
 
     #[test]
     fn pattern_count_all_test() {
         let site = "AAAA";
-        let pattern = get_pattern(&site);
+        let pattern = AlnStats::new().get_pattern(&site);
         assert_eq!(1, pattern);
     }
 
@@ -86,8 +108,9 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let dna = index_sites(mat);
-        assert_eq!(1, count_parsimony_informative(&dna));
+        let mut dna = AlnStats::new();
+        dna.get_stats(&mat);
+        assert_eq!(1, dna.parsimony_inf);
     }
 
     #[test]
@@ -95,7 +118,8 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
-        let dna = index_sites(mat);
-        assert_eq!(1, count_parsimony_informative(&dna));
+        let mut dna = AlnStats::new();
+        dna.get_stats(&mat);
+        assert_eq!(1, dna.parsimony_inf);
     }
 }
