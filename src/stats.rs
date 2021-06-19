@@ -1,3 +1,5 @@
+//! A module for sequence statistics.
+
 use std::collections::HashMap;
 
 use indexmap::IndexMap;
@@ -46,7 +48,7 @@ impl AlnStats {
         });
     }
 
-    fn count_parsimony_informative(&self) -> usize {
+    fn count_parsimony_informative(&mut self) -> usize {
         let mut parsim: usize = 0;
         self.site_matrix.values().for_each(|site| {
             let n_patterns = self.get_pattern(&site);

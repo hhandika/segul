@@ -1,3 +1,5 @@
+//! A module for parsing fasta files.
+
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Lines};
