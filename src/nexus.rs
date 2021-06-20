@@ -102,10 +102,6 @@ impl<'a> Nexus<'a> {
             });
     }
 
-    // Iterate each matrix. Convert dna to lowercase for
-    // consistency with the other blocks lettercase.
-    // This also matches biopython format.
-    // The ID text is left intact.
     fn parse_matrix(&mut self, read: &mut String) {
         read.pop(); // remove terminated semicolon.
         let matrix: Vec<&str> = read.split('\n').collect();
