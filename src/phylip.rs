@@ -176,7 +176,6 @@ impl<'a> Phylip<'a> {
 struct Reader<R> {
     reader: Lines<BufReader<R>>,
     buffer: String,
-    // content: String,
 }
 
 impl<R: Read> Reader<R> {
@@ -184,7 +183,6 @@ impl<R: Read> Reader<R> {
         Self {
             reader: BufReader::new(file).lines(),
             buffer: String::new(),
-            // content: String::new(),
         }
     }
 }
@@ -268,6 +266,15 @@ mod test {
         phy.read().unwrap();
         let res = phy.matrix.get("ABCD");
         assert_eq!(Some(&String::from("agccatggaa")), res);
+    }
+
+    #[test]
+    fn reade_int_phylip_whitespaces_test() {
+        let path = Path::new("test_files/interleave_whitespaces.phy");
+        let mut phy = Phylip::new(path, true);
+        phy.read().unwrap();
+        let res = phy.matrix.get("ABCD");
+        assert_eq!(Some(&String::from("agccatggcc")), res);
     }
 
     #[test]
