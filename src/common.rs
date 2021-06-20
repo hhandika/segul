@@ -91,8 +91,10 @@ pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
 
 // Alphabeth for dna.
 // Include IUPAC characters plus missing symbol (?)
+// We only check lowercase since all the parser
+// change the case to lowercase.
 fn is_valid_dna(dna: &str) -> bool {
-    let valid_chars = String::from("ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?");
+    let valid_chars = String::from("acgtryswkmbdhvn.-?");
     dna.chars().all(|char| valid_chars.contains(char))
 }
 
@@ -102,13 +104,13 @@ mod test {
 
     #[test]
     fn check_valid_dna_test() {
-        let dna = String::from("AGTC?-");
+        let dna = String::from("agtc?-");
         assert_eq!(true, is_valid_dna(&dna));
     }
 
     #[test]
     fn check_invalid_dna_test() {
-        let dna = String::from("AGTC?-Z");
+        let dna = String::from("agtc?-z");
         assert_eq!(false, is_valid_dna(&dna));
     }
 
@@ -117,7 +119,7 @@ mod test {
     fn check_invalid_dna_panic_test() {
         let sample = Path::new(".");
         let id = "ABCD";
-        let dna = String::from("AGTC?-Z");
+        let dna = String::from("agta?-z");
         check_valid_dna(sample, id, &dna);
     }
 }
