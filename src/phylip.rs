@@ -30,7 +30,17 @@ impl<'a> Phylip<'a> {
     }
 
     pub fn read(&mut self) -> Result<()> {
+        self.read_file();
+        let (shortest, longest) = self.get_sequence_len(&self.matrix);
+        self.is_alignment = self.check_is_alignment(&shortest, &longest);
+        self.check_ntax_matches();
+        self.check_nchar_matches(longest);
+        Ok(())
+    }
+
+    fn read_file(&mut self) {
         let file = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE.");
+
         if self.interleave {
             self.read_interleave(file)
                 .expect("FAILED READING AN INTERLEAVE PHYLIP FILE");
@@ -38,12 +48,6 @@ impl<'a> Phylip<'a> {
             self.read_sequential(file)
                 .expect("FAILED READING A SEQUENTIAL PHYLIP FILE");
         }
-
-        let (shortest, longest) = self.get_sequence_len(&self.matrix);
-        self.is_alignment = self.check_is_alignment(&shortest, &longest);
-        self.check_ntax_matches();
-        self.check_nchar_matches(longest);
-        Ok(())
     }
 
     fn read_sequential<R: Read>(&mut self, file: R) -> Result<()> {
@@ -193,8 +197,6 @@ impl<R: Read> Reader<R> {
     }
 }
 
-// Iterate over the file.
-// Collect each of the nexus block terminated by semi-colon.
 impl<R: Read> Iterator for Reader<R> {
     type Item = String;
 
