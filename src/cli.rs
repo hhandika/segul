@@ -528,6 +528,7 @@ impl<'a> ConcatParser<'a> {
         let output = self.get_output(self.matches);
         let output_format = self.get_output_format(self.matches);
         let part_format = self.get_partition_format(self.matches);
+        self.check_partition_format(&part_format);
         let mut concat = msa::MSAlignment::new(dir, output, output_format, part_format);
         self.display_input_dir(&dir).unwrap();
         self.concat_any(&mut concat)
@@ -548,6 +549,20 @@ impl<'a> ConcatParser<'a> {
         writeln!(writer, "Command\t\t: segul concat")?;
         writeln!(writer, "Input dir\t: {}\n", input)?;
         Ok(())
+    }
+
+    fn check_partition_format(&self, part_format: &PartitionFormat) {
+        match self.input_format {
+            SeqFormat::Nexus => (),
+            _ => {
+                if let PartitionFormat::Nexus = part_format {
+                    panic!(
+                        "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
+                MAYBE YOU MEAN TO WRITE THE PARTITION TO 'nexsep' INSTEAD."
+                    )
+                }
+            }
+        }
     }
 }
 
