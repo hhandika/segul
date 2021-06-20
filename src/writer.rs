@@ -4,7 +4,7 @@ use std::io::{self, BufWriter, LineWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use crate::common::{Header, OutputFormat, Partition, PartitionFormat};
+use crate::common::{Header, Partition, PartitionFormat, SeqFormat};
 use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {
@@ -38,23 +38,23 @@ impl<'a> SeqWriter<'a> {
         }
     }
 
-    pub fn write_sequence(&mut self, filetype: &OutputFormat) {
-        self.get_output_name(filetype);
+    pub fn write_sequence(&mut self, output_format: &SeqFormat) {
+        self.get_output_name(output_format);
         self.get_max_id_len();
 
         if self.partition.is_some() {
             self.get_partition_path();
         }
 
-        match filetype {
-            OutputFormat::Nexus => self.write_nexus().expect("CANNOT WRITE A NEXUS FILE."),
-            OutputFormat::Phylip => self.write_phylip().expect("CANNOT WRITE A PHYLIP FILE."),
+        match output_format {
+            SeqFormat::Nexus => self.write_nexus().expect("CANNOT WRITE A NEXUS FILE."),
+            SeqFormat::Phylip => self.write_phylip().expect("CANNOT WRITE A PHYLIP FILE."),
             _ => self.write_fasta(),
         }
     }
 
     pub fn write_fasta(&mut self) {
-        self.get_output_name(&OutputFormat::Fasta);
+        self.get_output_name(&SeqFormat::Fasta);
         let mut writer = self.create_output_file(&self.output);
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
@@ -195,11 +195,11 @@ impl<'a> SeqWriter<'a> {
         PathBuf::from(fname)
     }
 
-    fn get_output_name(&mut self, ext: &OutputFormat) {
+    fn get_output_name(&mut self, ext: &SeqFormat) {
         self.output = match ext {
-            OutputFormat::Fasta => self.path.with_extension("fas"),
-            OutputFormat::Nexus => self.path.with_extension("nex"),
-            OutputFormat::Phylip => self.path.with_extension("phy"),
+            SeqFormat::Fasta => self.path.with_extension("fas"),
+            SeqFormat::Nexus => self.path.with_extension("nex"),
+            SeqFormat::Phylip => self.path.with_extension("phy"),
         };
     }
 
@@ -253,7 +253,7 @@ mod test {
         let header = Header::new();
         let mut convert = SeqWriter::new(path, &matrix, header, None, &PartitionFormat::None);
         let output = PathBuf::from("sanger/cytb.fas");
-        convert.get_output_name(&OutputFormat::Fasta);
+        convert.get_output_name(&SeqFormat::Fasta);
         assert_eq!(output, convert.output);
     }
 }

@@ -2,7 +2,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::common::{Header, InputFormat};
+use crate::common::{Header, SeqFormat};
 use crate::fasta::Fasta;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
@@ -20,11 +20,11 @@ impl Alignment {
         }
     }
 
-    pub fn get_aln_any(&mut self, file: &Path, input_format: &InputFormat) {
+    pub fn get_aln_any(&mut self, file: &Path, input_format: &SeqFormat) {
         match input_format {
-            InputFormat::Nexus => self.get_aln_from_nexus(file),
-            InputFormat::Phylip => self.get_aln_from_phylip(file),
-            InputFormat::Fasta => self.get_aln_from_fasta(file),
+            SeqFormat::Nexus => self.get_aln_from_nexus(file),
+            SeqFormat::Phylip => self.get_aln_from_phylip(file),
+            SeqFormat::Fasta => self.get_aln_from_fasta(file),
         }
     }
 

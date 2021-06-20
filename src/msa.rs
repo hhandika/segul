@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use indexmap::IndexSet;
 
 use crate::alignment::Alignment;
-use crate::common::{Header, InputFormat, OutputFormat, Partition, PartitionFormat};
+use crate::common::{Header, Partition, PartitionFormat, SeqFormat};
 use crate::finder::{Files, IDs};
 use crate::utils;
 use crate::writer::SeqWriter;
@@ -17,7 +17,7 @@ use crate::writer::SeqWriter;
 pub struct MSAlignment<'a> {
     dir: &'a str,
     output: &'a str,
-    output_format: OutputFormat,
+    output_format: SeqFormat,
     part_format: PartitionFormat,
 }
 
@@ -25,7 +25,7 @@ impl<'a> MSAlignment<'a> {
     pub fn new(
         dir: &'a str,
         output: &'a str,
-        output_format: OutputFormat,
+        output_format: SeqFormat,
         part_format: PartitionFormat,
     ) -> Self {
         Self {
@@ -37,19 +37,19 @@ impl<'a> MSAlignment<'a> {
     }
 
     pub fn concat_nexus(&mut self) {
-        let mut nex = Concat::new(InputFormat::Nexus);
+        let mut nex = Concat::new(SeqFormat::Nexus);
         nex.concat_alignment(self.dir);
         self.write_alignment(&nex.alignment, &nex.partition, nex.header);
     }
 
     pub fn concat_phylip(&mut self) {
-        let mut phy = Concat::new(InputFormat::Phylip);
+        let mut phy = Concat::new(SeqFormat::Phylip);
         phy.concat_alignment(self.dir);
         self.write_alignment(&phy.alignment, &phy.partition, phy.header);
     }
 
     pub fn concat_fasta(&mut self) {
-        let mut fas = Concat::new(InputFormat::Fasta);
+        let mut fas = Concat::new(SeqFormat::Fasta);
         fas.concat_alignment(self.dir);
         self.write_alignment(&fas.alignment, &fas.partition, fas.header);
     }
@@ -60,9 +60,9 @@ impl<'a> MSAlignment<'a> {
         let mut save = SeqWriter::new(output, aln, header, Some(part), &self.part_format);
 
         match self.output_format {
-            OutputFormat::Nexus => save.write_sequence(&self.output_format),
-            OutputFormat::Phylip => save.write_sequence(&self.output_format),
-            OutputFormat::Fasta => save.write_fasta(),
+            SeqFormat::Nexus => save.write_sequence(&self.output_format),
+            SeqFormat::Phylip => save.write_sequence(&self.output_format),
+            SeqFormat::Fasta => save.write_fasta(),
         };
 
         save.display_save_path();
@@ -90,7 +90,7 @@ impl<'a> MSAlignment<'a> {
 }
 
 struct Concat {
-    input: InputFormat,
+    input_format: SeqFormat,
     alignment: IndexMap<String, String>,
     header: Header,
     partition: Vec<Partition>,
@@ -98,9 +98,9 @@ struct Concat {
 }
 
 impl Concat {
-    fn new(input: InputFormat) -> Self {
+    fn new(input_format: SeqFormat) -> Self {
         Self {
-            input,
+            input_format,
             alignment: IndexMap::new(),
             header: Header::new(),
             partition: Vec::new(),
@@ -109,9 +109,9 @@ impl Concat {
     }
 
     fn concat_alignment(&mut self, dir: &str) {
-        self.files = Files::new(dir, &self.input).get_files();
+        self.files = Files::new(dir, &self.input_format).get_files();
         self.files.sort();
-        let id = IDs::new(&self.files, &self.input).get_id_all();
+        let id = IDs::new(&self.files, &self.input_format).get_id_all();
         let (alignment, nchar, partition) = self.concat(&id);
         self.alignment = alignment;
         self.header.ntax = self.alignment.len();
@@ -129,7 +129,7 @@ impl Concat {
         let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
             let mut aln = Alignment::new();
-            aln.get_aln_any(file, &self.input);
+            aln.get_aln_any(file, &self.input_format);
             nchar += aln.header.nchar; // increment sequence length using the value from parser
             let gene_name = file.file_stem().unwrap().to_string_lossy();
             self.get_partition(&mut partition, &gene_name, gene_start, nchar);
@@ -181,7 +181,7 @@ mod test {
     #[test]
     fn concat_nexus_test() {
         let path = "test_files/concat/";
-        let mut concat = Concat::new(InputFormat::Nexus);
+        let mut concat = Concat::new(SeqFormat::Nexus);
         concat.concat_alignment(path);
         assert_eq!(3, concat.alignment.len());
     }
@@ -189,7 +189,7 @@ mod test {
     #[test]
     fn concat_check_result_test() {
         let path = "test_files/concat/";
-        let mut concat = Concat::new(InputFormat::Nexus);
+        let mut concat = Concat::new(SeqFormat::Nexus);
         concat.concat_alignment(path);
         let abce = concat.alignment.get("ABCE").unwrap();
         let res = "--------------gatattagtata";
@@ -199,7 +199,7 @@ mod test {
     #[test]
     fn concat_partition_test() {
         let path = "test_files/concat/";
-        let mut concat = Concat::new(InputFormat::Nexus);
+        let mut concat = Concat::new(SeqFormat::Nexus);
         concat.concat_alignment(path);
         assert_eq!(1, concat.partition[0].start);
         assert_eq!(6, concat.partition[0].end);
@@ -215,6 +215,6 @@ mod test {
     fn get_gaps_test() {
         let len = 5;
         let gaps = "-----";
-        assert_eq!(gaps, Concat::new(InputFormat::Fasta).get_gaps(len))
+        assert_eq!(gaps, Concat::new(SeqFormat::Fasta).get_gaps(len))
     }
 }

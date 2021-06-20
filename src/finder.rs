@@ -6,19 +6,19 @@ use glob::glob;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
-use crate::common::InputFormat;
+use crate::common::SeqFormat;
 use crate::fasta::Fasta;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
 
 pub struct Files<'a> {
     dir: &'a str,
-    input_format: &'a InputFormat,
+    input_format: &'a SeqFormat,
     pattern: String,
 }
 
 impl<'a> Files<'a> {
-    pub fn new(dir: &'a str, input_format: &'a InputFormat) -> Self {
+    pub fn new(dir: &'a str, input_format: &'a SeqFormat) -> Self {
         Self {
             dir,
             input_format,
@@ -45,20 +45,20 @@ impl<'a> Files<'a> {
 
     fn get_pattern(&mut self) {
         self.pattern = match self.input_format {
-            InputFormat::Nexus => format!("{}/*.nex*", self.dir),
-            InputFormat::Phylip => format!("{}/*.phy*", self.dir),
-            InputFormat::Fasta => format!("{}/*.fa*", self.dir),
+            SeqFormat::Nexus => format!("{}/*.nex*", self.dir),
+            SeqFormat::Phylip => format!("{}/*.phy*", self.dir),
+            SeqFormat::Fasta => format!("{}/*.fa*", self.dir),
         };
     }
 }
 
 pub struct IDs<'a> {
     files: &'a [PathBuf],
-    input_format: &'a InputFormat,
+    input_format: &'a SeqFormat,
 }
 
 impl<'a> IDs<'a> {
-    pub fn new(files: &'a [PathBuf], input_format: &'a InputFormat) -> Self {
+    pub fn new(files: &'a [PathBuf], input_format: &'a SeqFormat) -> Self {
         Self {
             files,
             input_format,
@@ -68,9 +68,9 @@ impl<'a> IDs<'a> {
     pub fn get_id_all(&self) -> IndexSet<String> {
         let mut id = IndexSet::new();
         match self.input_format {
-            InputFormat::Nexus => self.get_id_from_nexus(&mut id),
-            InputFormat::Phylip => self.get_id_from_phylip(&mut id),
-            InputFormat::Fasta => self.get_id_from_fasta(&mut id),
+            SeqFormat::Nexus => self.get_id_from_nexus(&mut id),
+            SeqFormat::Phylip => self.get_id_from_phylip(&mut id),
+            SeqFormat::Fasta => self.get_id_from_fasta(&mut id),
         };
         id
     }
@@ -115,7 +115,7 @@ mod test {
     #[test]
     fn get_files_test() {
         let path = "test_files/concat/";
-        let mut finder = Files::new(path, &InputFormat::Nexus);
+        let mut finder = Files::new(path, &SeqFormat::Nexus);
         let files = finder.get_files();
         assert_eq!(4, files.len());
     }
@@ -124,7 +124,7 @@ mod test {
     #[should_panic]
     fn check_empty_files_test() {
         let path = "test_files/empty/";
-        let mut finder = Files::new(path, &InputFormat::Nexus);
+        let mut finder = Files::new(path, &SeqFormat::Nexus);
         let files = finder.get_files();
         finder.check_glob_results(&files);
     }

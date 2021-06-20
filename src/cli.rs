@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use clap::{App, AppSettings, Arg, ArgMatches};
 use rayon::prelude::*;
 
-use crate::common::{InputFormat, OutputFormat, PartitionFormat};
+use crate::common::{PartitionFormat, SeqFormat};
 use crate::converter::Converter;
 use crate::finder::Files;
 use crate::msa;
@@ -289,7 +289,7 @@ pub fn parse_cli(version: &str) {
         ("convert", Some(convert_matches)) => parse_convert_subcommand(convert_matches),
         ("concat", Some(concat_matches)) => parse_concat_subcommand(concat_matches),
         ("stats", Some(stats_matches)) => {
-            StatsParser::new(stats_matches, InputFormat::Nexus).show_stats()
+            StatsParser::new(stats_matches, SeqFormat::Nexus).show_stats()
         }
         _ => unreachable!(),
     }
@@ -298,13 +298,13 @@ pub fn parse_cli(version: &str) {
 fn parse_convert_subcommand(args: &ArgMatches) {
     match args.subcommand() {
         ("fasta", Some(fasta_matches)) => {
-            ConvertParser::new(fasta_matches, InputFormat::Fasta).convert()
+            ConvertParser::new(fasta_matches, SeqFormat::Fasta).convert()
         }
         ("nexus", Some(nexus_matches)) => {
-            ConvertParser::new(nexus_matches, InputFormat::Nexus).convert()
+            ConvertParser::new(nexus_matches, SeqFormat::Nexus).convert()
         }
         ("phylip", Some(phylip_matches)) => {
-            ConvertParser::new(phylip_matches, InputFormat::Phylip).convert()
+            ConvertParser::new(phylip_matches, SeqFormat::Phylip).convert()
         }
         _ => unreachable!(),
     }
@@ -313,13 +313,13 @@ fn parse_convert_subcommand(args: &ArgMatches) {
 fn parse_concat_subcommand(args: &ArgMatches) {
     match args.subcommand() {
         ("fasta", Some(fasta_matches)) => {
-            ConcatParser::new(fasta_matches, InputFormat::Fasta).concat()
+            ConcatParser::new(fasta_matches, SeqFormat::Fasta).concat()
         }
         ("nexus", Some(nexus_matches)) => {
-            ConcatParser::new(nexus_matches, InputFormat::Nexus).concat()
+            ConcatParser::new(nexus_matches, SeqFormat::Nexus).concat()
         }
         ("phylip", Some(phylip_matches)) => {
-            ConcatParser::new(phylip_matches, InputFormat::Phylip).concat()
+            ConcatParser::new(phylip_matches, SeqFormat::Phylip).concat()
         }
         _ => unreachable!(),
     }
@@ -361,19 +361,19 @@ trait Cli {
         }
     }
 
-    fn get_output_format(&self, matches: &ArgMatches) -> OutputFormat {
-        let format = matches
+    fn get_output_format(&self, matches: &ArgMatches) -> SeqFormat {
+        let output_format = matches
             .value_of("format")
             .expect("CANNOT READ FORMAT INPUT");
-        match format {
-            "nexus" => OutputFormat::Nexus,
-            "phylip" => OutputFormat::Phylip,
-            "fasta" => OutputFormat::Fasta,
+        match output_format {
+            "nexus" => SeqFormat::Nexus,
+            "phylip" => SeqFormat::Phylip,
+            "fasta" => SeqFormat::Fasta,
             _ => panic!(
                 "UNSUPPORTED FORMAT. \
         THE PROGRAM ONLY ACCEPT nexus, phylip, and fasta. All in lowercase.\
         Your input: {} ",
-                format
+                output_format
             ),
         }
     }
@@ -395,13 +395,13 @@ impl Cli for StatsParser<'_> {}
 
 struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_format: InputFormat,
+    input_format: SeqFormat,
     output: PathBuf,
     is_dir: bool,
 }
 
 impl<'a> ConvertParser<'a> {
-    fn new(matches: &'a ArgMatches<'a>, input_format: InputFormat) -> Self {
+    fn new(matches: &'a ArgMatches<'a>, input_format: SeqFormat) -> Self {
         Self {
             matches,
             input_format,
@@ -438,33 +438,33 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_any(&self, input: &Path) {
         match self.input_format {
-            InputFormat::Fasta => self.convert_fasta(input),
-            InputFormat::Nexus => self.convert_nexus(input),
-            InputFormat::Phylip => self.convert_phylip(input),
+            SeqFormat::Fasta => self.convert_fasta(input),
+            SeqFormat::Nexus => self.convert_nexus(input),
+            SeqFormat::Phylip => self.convert_phylip(input),
         }
     }
 
     fn convert_fasta(&self, input: &Path) {
         if self.matches.is_present("phylip") {
-            Converter::new(input, &self.output, &OutputFormat::Phylip, self.is_dir).convert_fasta();
+            Converter::new(input, &self.output, &SeqFormat::Phylip, self.is_dir).convert_fasta();
         } else {
-            Converter::new(input, &self.output, &OutputFormat::Nexus, self.is_dir).convert_fasta();
+            Converter::new(input, &self.output, &SeqFormat::Nexus, self.is_dir).convert_fasta();
         }
     }
 
     fn convert_nexus(&self, input: &Path) {
         if self.matches.is_present("phylip") {
-            Converter::new(input, &self.output, &OutputFormat::Phylip, self.is_dir).convert_nexus();
+            Converter::new(input, &self.output, &SeqFormat::Phylip, self.is_dir).convert_nexus();
         } else {
-            Converter::new(input, &self.output, &OutputFormat::Fasta, self.is_dir).convert_nexus();
+            Converter::new(input, &self.output, &SeqFormat::Fasta, self.is_dir).convert_nexus();
         }
     }
 
     fn convert_phylip(&self, input: &Path) {
         if self.matches.is_present("nexus") {
-            Converter::new(input, &self.output, &OutputFormat::Nexus, self.is_dir).convert_phylip();
+            Converter::new(input, &self.output, &SeqFormat::Nexus, self.is_dir).convert_phylip();
         } else {
-            Converter::new(input, &self.output, &OutputFormat::Fasta, self.is_dir).convert_phylip();
+            Converter::new(input, &self.output, &SeqFormat::Fasta, self.is_dir).convert_phylip();
         }
     }
 
@@ -493,11 +493,11 @@ impl<'a> ConvertParser<'a> {
 
 struct ConcatParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_format: InputFormat,
+    input_format: SeqFormat,
 }
 
 impl<'a> ConcatParser<'a> {
-    fn new(matches: &'a ArgMatches<'a>, input_format: InputFormat) -> Self {
+    fn new(matches: &'a ArgMatches<'a>, input_format: SeqFormat) -> Self {
         Self {
             matches,
             input_format,
@@ -516,9 +516,9 @@ impl<'a> ConcatParser<'a> {
 
     fn concat_any(&self, concat: &mut msa::MSAlignment) {
         match self.input_format {
-            InputFormat::Fasta => concat.concat_fasta(),
-            InputFormat::Nexus => concat.concat_nexus(),
-            InputFormat::Phylip => concat.concat_phylip(),
+            SeqFormat::Fasta => concat.concat_fasta(),
+            SeqFormat::Nexus => concat.concat_nexus(),
+            SeqFormat::Phylip => concat.concat_phylip(),
         }
     }
 
@@ -533,11 +533,11 @@ impl<'a> ConcatParser<'a> {
 
 struct StatsParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_format: InputFormat,
+    input_format: SeqFormat,
 }
 
 impl<'a> StatsParser<'a> {
-    fn new(matches: &'a ArgMatches<'a>, input_format: InputFormat) -> Self {
+    fn new(matches: &'a ArgMatches<'a>, input_format: SeqFormat) -> Self {
         Self {
             matches,
             input_format,

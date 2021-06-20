@@ -6,7 +6,7 @@ use std::path::Path;
 use indexmap::IndexMap;
 
 use crate::alignment::Alignment;
-use crate::common::InputFormat;
+use crate::common::SeqFormat;
 
 #[allow(dead_code)]
 pub struct AlnStats {
@@ -23,7 +23,7 @@ impl AlnStats {
         }
     }
 
-    pub fn get_stats(&mut self, path: &Path, input_format: &InputFormat) {
+    pub fn get_stats(&mut self, path: &Path, input_format: &SeqFormat) {
         let mut aln = Alignment::new();
         aln.get_aln_any(path, input_format);
         self.index_sites(&aln.alignment);
