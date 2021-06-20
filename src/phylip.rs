@@ -65,12 +65,13 @@ impl<'a> Phylip<'a> {
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
         self.parse_header(&header_line.trim());
-        let mut pos: usize = 1;
+        let mut pos: usize = 0;
         let mut ids: IndexMap<usize, String> = IndexMap::new();
         let mut seq = false;
         let read = Reader::new(buff);
         read.into_iter().filter(|l| !l.is_empty()).for_each(|line| {
             if !seq {
+                // then, the line contains the sequence id.
                 let (id, dna) = self.parse_sequence(line.trim());
                 ids.insert(pos, id.clone());
                 self.insert_matrix(id, dna);
@@ -82,8 +83,13 @@ impl<'a> Phylip<'a> {
                     pos += 1;
                 }
             }
-            if pos == self.header.ntax + 1 {
-                pos = 1;
+
+            // We reset the pos position after reaching the end of the id lines.
+            // This can also be written as `self.header.ntax + 1`
+            // if we start the pos number from 1.
+            // But, this is cleaner.
+            if pos == self.header.ntax {
+                pos = 0;
                 seq = true;
             }
         });
