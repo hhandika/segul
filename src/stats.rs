@@ -1,11 +1,15 @@
 //! A module for sequence statistics.
 
 use std::collections::HashMap;
+use std::path::Path;
 
 use indexmap::IndexMap;
 
+use crate::alignment::Alignment;
+use crate::common::InputFormat;
+
 #[allow(dead_code)]
-struct AlnStats {
+pub struct AlnStats {
     parsimony_inf: usize,
     site_matrix: HashMap<usize, String>,
 }
@@ -19,8 +23,10 @@ impl AlnStats {
         }
     }
 
-    fn get_stats(&mut self, matrix: &IndexMap<String, String>) {
-        self.index_sites(matrix);
+    pub fn get_stats(&mut self, path: &Path, input_format: &InputFormat) {
+        let mut aln = Alignment::new();
+        aln.get_aln_any(path, input_format);
+        self.index_sites(&aln.alignment);
         self.parsimony_inf = self.count_parsimony_informative();
         println!("Parsimony informative sites: {}", self.parsimony_inf);
     }
@@ -111,8 +117,9 @@ mod test {
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
         let mut dna = AlnStats::new();
-        dna.get_stats(&mat);
-        assert_eq!(1, dna.parsimony_inf);
+        dna.index_sites(&mat);
+        let parsim = dna.count_parsimony_informative();
+        assert_eq!(1, parsim);
     }
 
     #[test]
@@ -121,7 +128,8 @@ mod test {
         let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
         let mut dna = AlnStats::new();
-        dna.get_stats(&mat);
-        assert_eq!(1, dna.parsimony_inf);
+        dna.index_sites(&mat);
+        let parsim = dna.count_parsimony_informative();
+        assert_eq!(1, parsim);
     }
 }

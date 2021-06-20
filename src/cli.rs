@@ -8,6 +8,7 @@ use crate::common::{InputFormat, OutputFormat, PartitionFormat};
 use crate::converter::Converter;
 use crate::finder::Files;
 use crate::msa;
+use crate::stats::AlnStats;
 use crate::utils;
 
 fn get_args(version: &str) -> ArgMatches {
@@ -267,6 +268,16 @@ fn get_args(version: &str) -> ArgMatches {
                         ),
                 ),
         )
+        .subcommand(App::new("stats").about("Gets alignment statistics").arg(
+                            Arg::with_name("input")
+                                .short("i")
+                                .long("input")
+                                .help("Inputs alignment file")
+                                .takes_value(true)
+                                .required_unless("dir")
+                                .conflicts_with("dir")
+                                .value_name("INPUT FILE"),
+                        ))
         .get_matches()
 }
 
@@ -277,6 +288,9 @@ pub fn parse_cli(version: &str) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => parse_convert_subcommand(convert_matches),
         ("concat", Some(concat_matches)) => parse_concat_subcommand(concat_matches),
+        ("stats", Some(stats_matches)) => {
+            StatsParser::new(stats_matches, InputFormat::Nexus).show_stats()
+        }
         _ => unreachable!(),
     }
 }
@@ -376,6 +390,8 @@ impl Cli for ConcatParser<'_> {
         }
     }
 }
+
+impl Cli for StatsParser<'_> {}
 
 struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -512,5 +528,24 @@ impl<'a> ConcatParser<'a> {
         writeln!(writer, "Command\t\t: segul concat")?;
         writeln!(writer, "Input dir\t: {}\n", input)?;
         Ok(())
+    }
+}
+
+struct StatsParser<'a> {
+    matches: &'a ArgMatches<'a>,
+    input_format: InputFormat,
+}
+
+impl<'a> StatsParser<'a> {
+    fn new(matches: &'a ArgMatches<'a>, input_format: InputFormat) -> Self {
+        Self {
+            matches,
+            input_format,
+        }
+    }
+
+    fn show_stats(&self) {
+        let input = Path::new(self.get_file_input(self.matches));
+        AlnStats::new().get_stats(input, &self.input_format);
     }
 }
