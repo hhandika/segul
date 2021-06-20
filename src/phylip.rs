@@ -80,12 +80,10 @@ impl<'a> Phylip<'a> {
                 ids.insert(pos, id.clone());
                 self.insert_matrix(id, dna);
                 pos += 1;
-            } else {
-                if let Some(id) = ids.get(&pos) {
-                    if let Some(value) = self.matrix.get_mut(id) {
-                        value.push_str(line.trim());
-                        pos += 1;
-                    }
+            } else if let Some(id) = ids.get(&pos) {
+                if let Some(value) = self.matrix.get_mut(id) {
+                    value.push_str(line.trim());
+                    pos += 1;
                 }
             }
 
