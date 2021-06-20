@@ -78,7 +78,7 @@ impl<'a> Phylip<'a> {
             } else {
                 let id = ids.get(&pos);
                 if let Some(value) = self.matrix.get_mut(&id.as_ref().unwrap().to_string()) {
-                    value.push_str(line.to_lowercase().trim());
+                    value.push_str(line.trim());
                     pos += 1;
                 }
             }
@@ -95,7 +95,7 @@ impl<'a> Phylip<'a> {
         let seq: Vec<&str> = line.split_whitespace().collect();
         self.check_seq_len(seq.len());
         let id = seq[0].to_string();
-        let dna = seq[1].to_string().to_lowercase();
+        let dna = seq[1].to_string();
         common::check_valid_dna(&self.input, &id, &dna);
         (id, dna)
     }

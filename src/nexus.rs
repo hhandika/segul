@@ -151,7 +151,7 @@ impl<'a> Nexus<'a> {
         let seq: Vec<&str> = line.split_whitespace().collect();
         self.check_seq_len(seq.len());
         let id = seq[0].to_string();
-        let dna = seq[1].to_string().to_lowercase();
+        let dna = seq[1].to_string();
         common::check_valid_dna(&self.input, &id, &dna);
         (id, dna)
     }

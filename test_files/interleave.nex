@@ -5,12 +5,12 @@ dimensions ntax=3 nchar=12;
 format datatype=dna missing=? gap=- interleave;
 MATRIX
 
-ABCD GATATA
-ABCE GATATG
-ABCF GATATT
+ABCD gatata
+ABCE gatatg
+ABCF gatatt
 
-ABCD GATATT
-ABCE GATATT
-ABCF GATATT
+ABCD gatatt
+ABCE gatatt
+ABCF gatatt
 ;
 END;

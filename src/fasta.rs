@@ -45,7 +45,7 @@ impl<'a> Fasta<'a> {
             if self.matrix.contains_key(&fas.id) {
                 panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", fas.id);
             } else {
-                self.matrix.insert(fas.id, fas.seq.to_lowercase());
+                self.matrix.insert(fas.id, fas.seq);
             }
         });
     }
