@@ -49,7 +49,7 @@ impl<'a> SeqWriter<'a> {
         match output_format {
             SeqFormat::Nexus => self.write_nexus().expect("CANNOT WRITE A NEXUS FILE."),
             SeqFormat::Phylip => self.write_phylip().expect("CANNOT WRITE A PHYLIP FILE."),
-            _ => self.write_fasta(),
+            SeqFormat::Fasta => self.write_fasta(),
         }
     }
 
@@ -60,6 +60,10 @@ impl<'a> SeqWriter<'a> {
             writeln!(writer, ">{}", id).unwrap();
             writeln!(writer, "{}", seq).unwrap();
         });
+
+        if self.partition.is_some() {
+            self.write_partition_sep();
+        }
     }
 
     pub fn display_save_path(&self) {

@@ -58,13 +58,7 @@ impl<'a> MSAlignment<'a> {
         let output = Path::new(self.output);
         self.display_alignment_stats(part.len(), &header).unwrap();
         let mut save = SeqWriter::new(output, aln, header, Some(part), &self.part_format);
-
-        match self.output_format {
-            SeqFormat::Nexus => save.write_sequence(&self.output_format),
-            SeqFormat::Phylip => save.write_sequence(&self.output_format),
-            SeqFormat::Fasta => save.write_fasta(),
-        };
-
+        save.write_sequence(&self.output_format);
         save.display_save_path();
         save.display_partition_path();
     }
