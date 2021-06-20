@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Result};
+use std::io::{BufReader, Lines, Result};
 use std::path::Path;
 
 use indexmap::IndexMap;
@@ -10,6 +10,7 @@ use crate::common::{self, Header, SeqCheck};
 
 pub struct Phylip<'a> {
     input: &'a Path,
+    interleave: bool,
     pub matrix: IndexMap<String, String>,
     pub header: Header,
     pub is_alignment: bool,
@@ -18,9 +19,10 @@ pub struct Phylip<'a> {
 impl SeqCheck for Phylip<'_> {}
 
 impl<'a> Phylip<'a> {
-    pub fn new(input: &'a Path) -> Self {
+    pub fn new(input: &'a Path, interleave: bool) -> Self {
         Self {
             input,
+            interleave,
             matrix: IndexMap::new(),
             header: Header::new(),
             is_alignment: false,
@@ -29,8 +31,23 @@ impl<'a> Phylip<'a> {
 
     pub fn read(&mut self) -> Result<()> {
         let file = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE.");
-        let mut buff = BufReader::new(file);
+        if self.interleave {
+            self.read_interleave(file)
+                .expect("FAILED READING AN INTERLEAVE PHYLIP FILE");
+        } else {
+            self.read_sequential(file)
+                .expect("FAILED READING A SEQUENTIAL PHYLIP FILE");
+        }
 
+        let (shortest, longest) = self.get_sequence_len(&self.matrix);
+        self.is_alignment = self.check_is_alignment(&shortest, &longest);
+        self.check_ntax_matches();
+        self.check_nchar_matches(longest);
+        Ok(())
+    }
+
+    fn read_sequential<R: Read>(&mut self, file: R) -> Result<()> {
+        let mut buff = BufReader::new(file);
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
         self.parse_header(&header_line.trim());
@@ -40,10 +57,37 @@ impl<'a> Phylip<'a> {
             self.insert_matrix(id, dna);
         });
 
-        let (shortest, longest) = self.get_sequence_len(&self.matrix);
-        self.is_alignment = self.check_is_alignment(&shortest, &longest);
-        self.check_ntax_matches();
-        self.check_nchar_matches(longest);
+        Ok(())
+    }
+
+    fn read_interleave<R: Read>(&mut self, file: R) -> Result<()> {
+        let mut buff = BufReader::new(file);
+        let mut header_line = String::new();
+        buff.read_line(&mut header_line)?;
+        self.parse_header(&header_line.trim());
+        let mut pos: usize = 1;
+        let mut ids: IndexMap<usize, String> = IndexMap::new();
+        let mut seq = false;
+        let read = Reader::new(buff);
+        read.into_iter().filter(|l| !l.is_empty()).for_each(|line| {
+            if !seq {
+                let (id, dna) = self.parse_sequence(line.trim());
+                ids.insert(pos, id.clone());
+                self.insert_matrix(id, dna);
+                pos += 1;
+            } else {
+                let id = ids.get(&pos);
+                if let Some(value) = self.matrix.get_mut(&id.as_ref().unwrap().to_string()) {
+                    value.push_str(line.to_lowercase().trim());
+                    pos += 1;
+                }
+            }
+            if pos == self.header.ntax + 1 {
+                pos = 1;
+                seq = true;
+            }
+        });
+
         Ok(())
     }
 
@@ -129,6 +173,41 @@ impl<'a> Phylip<'a> {
     }
 }
 
+struct Reader<R> {
+    reader: Lines<BufReader<R>>,
+    buffer: String,
+    // content: String,
+}
+
+impl<R: Read> Reader<R> {
+    fn new(file: R) -> Self {
+        Self {
+            reader: BufReader::new(file).lines(),
+            buffer: String::new(),
+            // content: String::new(),
+        }
+    }
+}
+
+// Iterate over the file.
+// Collect each of the nexus block terminated by semi-colon.
+impl<R: Read> Iterator for Reader<R> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(Ok(line)) = self.reader.next() {
+            if !line.is_empty() {
+                self.buffer.push_str(&line);
+            }
+            let content = self.buffer.trim().to_string();
+            self.buffer.clear();
+            Some(content)
+        } else {
+            None
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -136,7 +215,7 @@ mod test {
     #[test]
     fn read_phylip_simple_test() {
         let path = Path::new("test_files/simple.phy");
-        let mut phylip = Phylip::new(path);
+        let mut phylip = Phylip::new(path, false);
         phylip.read().unwrap();
 
         assert_eq!(2, phylip.header.ntax);
@@ -148,14 +227,14 @@ mod test {
     #[should_panic]
     fn read_phylip_invalid_test() {
         let path = Path::new("test_files/invalid.phy");
-        let mut phylip = Phylip::new(path);
+        let mut phylip = Phylip::new(path, false);
         phylip.read().unwrap();
     }
 
     #[test]
     fn read_phylip_whitespace_test() {
         let path = Path::new("test_files/whitespaces.phy");
-        let mut phylip = Phylip::new(path);
+        let mut phylip = Phylip::new(path, false);
         phylip.read().unwrap();
         assert_eq!(2, phylip.header.ntax);
         assert_eq!(4, phylip.header.nchar);
@@ -165,10 +244,38 @@ mod test {
     #[test]
     fn parse_phylip_header_test() {
         let header = "2 24";
-        let mut phy = Phylip::new(Path::new("."));
+        let mut phy = Phylip::new(Path::new("."), false);
         phy.parse_header(header);
 
         assert_eq!(2, phy.header.ntax);
         assert_eq!(24, phy.header.nchar);
+    }
+
+    #[test]
+    fn parse_interleave_phylip_test() {
+        let path = Path::new("test_files/interleave.phy");
+        let file = File::open(path).unwrap();
+        let mut phy = Phylip::new(path, true);
+        phy.read_interleave(file).unwrap();
+        let res = phy.matrix.get("ABCD");
+        assert_eq!(Some(&String::from("agccatggaa")), res);
+    }
+
+    #[test]
+    fn read_interleave_phylip_test() {
+        let path = Path::new("test_files/interleave.phy");
+        let mut phy = Phylip::new(path, true);
+        phy.read().unwrap();
+        let res = phy.matrix.get("ABCD");
+        assert_eq!(Some(&String::from("agccatggaa")), res);
+    }
+
+    #[test]
+    #[should_panic]
+    fn read_interleave_phylip_panic_test() {
+        // The header does not matches the character length.
+        let path = Path::new("test_files/invalid_interleave.phy");
+        let mut phy = Phylip::new(path, true);
+        phy.read().unwrap();
     }
 }

@@ -65,19 +65,19 @@ impl<'a> IDs<'a> {
         }
     }
 
-    pub fn get_id_all(&self) -> IndexSet<String> {
+    pub fn get_id_all(&self, interleave: bool) -> IndexSet<String> {
         let mut id = IndexSet::new();
         match self.input_format {
             SeqFormat::Nexus => self.get_id_from_nexus(&mut id),
-            SeqFormat::Phylip => self.get_id_from_phylip(&mut id),
+            SeqFormat::Phylip => self.get_id_from_phylip(&mut id, interleave),
             SeqFormat::Fasta => self.get_id_from_fasta(&mut id),
         };
         id
     }
 
-    fn get_id_from_phylip(&self, id: &mut IndexSet<String>) {
+    fn get_id_from_phylip(&self, id: &mut IndexSet<String>, interleave: bool) {
         self.files.iter().for_each(|file| {
-            let mut phy = Phylip::new(file);
+            let mut phy = Phylip::new(file, interleave);
             phy.read().expect("CANNOT READ A PHYLIP FILE");
             self.get_id(&phy.matrix, id);
         });

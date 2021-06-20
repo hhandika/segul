@@ -43,9 +43,9 @@ impl<'a> Converter<'a> {
         self.convert(&nex.matrix, nex.header);
     }
 
-    pub fn convert_phylip(&mut self) {
+    pub fn convert_phylip(&mut self, interleave: bool) {
         let input = Path::new(self.input);
-        let mut phy = Phylip::new(input);
+        let mut phy = Phylip::new(input, interleave);
         phy.read().expect("CANNOT READ PHYLIP FILES");
         self.convert(&phy.matrix, phy.header);
     }

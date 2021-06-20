@@ -20,10 +20,10 @@ impl Alignment {
         }
     }
 
-    pub fn get_aln_any(&mut self, file: &Path, input_format: &SeqFormat) {
+    pub fn get_aln_any(&mut self, file: &Path, input_format: &SeqFormat, interleave: bool) {
         match input_format {
             SeqFormat::Nexus => self.get_aln_from_nexus(file),
-            SeqFormat::Phylip => self.get_aln_from_phylip(file),
+            SeqFormat::Phylip => self.get_aln_from_phylip(file, interleave),
             SeqFormat::Fasta => self.get_aln_from_fasta(file),
         }
     }
@@ -35,8 +35,8 @@ impl Alignment {
         self.get_alignment(nex.matrix, nex.header)
     }
 
-    fn get_aln_from_phylip(&mut self, file: &Path) {
-        let mut phy = Phylip::new(file);
+    fn get_aln_from_phylip(&mut self, file: &Path, interleave: bool) {
+        let mut phy = Phylip::new(file, interleave);
         phy.read().expect("CANNOT READ A PHYLIP FILE");
         self.check_is_alignment(file, phy.is_alignment);
         self.get_alignment(phy.matrix, phy.header);

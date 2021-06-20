@@ -131,6 +131,12 @@ fn get_args(version: &str) -> ArgMatches {
                                 .value_name("OUTPUT"),
                         )
                         .arg(
+                            Arg::with_name("interleave")
+                            .long("interleave")
+                            .help("Is interleave phylip")
+                            .takes_value(false)
+                        )
+                        .arg(
                             Arg::with_name("nexus")
                                 .long("nexus")
                                 .help("Convert nexus to phylip. Default: fasta")
@@ -257,6 +263,12 @@ fn get_args(version: &str) -> ArgMatches {
                                 .value_name("FORMAT"),
                         )
                         .arg(
+                            Arg::with_name("interleave")
+                            .long("interleave")
+                            .help("Is interleave phylip")
+                            .takes_value(false)
+                        )
+                        .arg(
                             Arg::with_name("output")
                                 .short("o")
                                 .long("output")
@@ -347,6 +359,10 @@ trait Cli {
         } else {
             PathBuf::from(".")
         }
+    }
+
+    fn check_phylip_interleave(&self, matches: &ArgMatches) -> bool {
+        matches.is_present("interleave")
     }
 
     fn get_partition_format(&self, matches: &ArgMatches) -> PartitionFormat {
@@ -461,10 +477,13 @@ impl<'a> ConvertParser<'a> {
     }
 
     fn convert_phylip(&self, input: &Path) {
+        let interleave = self.check_phylip_interleave(&self.matches);
         if self.matches.is_present("nexus") {
-            Converter::new(input, &self.output, &SeqFormat::Nexus, self.is_dir).convert_phylip();
+            Converter::new(input, &self.output, &SeqFormat::Nexus, self.is_dir)
+                .convert_phylip(interleave);
         } else {
-            Converter::new(input, &self.output, &SeqFormat::Fasta, self.is_dir).convert_phylip();
+            Converter::new(input, &self.output, &SeqFormat::Fasta, self.is_dir)
+                .convert_phylip(interleave);
         }
     }
 
@@ -515,10 +534,11 @@ impl<'a> ConcatParser<'a> {
     }
 
     fn concat_any(&self, concat: &mut msa::MSAlignment) {
+        let interleave = self.check_phylip_interleave(&self.matches);
         match self.input_format {
             SeqFormat::Fasta => concat.concat_fasta(),
             SeqFormat::Nexus => concat.concat_nexus(),
-            SeqFormat::Phylip => concat.concat_phylip(),
+            SeqFormat::Phylip => concat.concat_phylip(interleave),
         }
     }
 
@@ -546,6 +566,7 @@ impl<'a> StatsParser<'a> {
 
     fn show_stats(&self) {
         let input = Path::new(self.get_file_input(self.matches));
-        AlnStats::new().get_stats(input, &self.input_format);
+        let interleave = self.check_phylip_interleave(&self.matches);
+        AlnStats::new().get_stats(input, &self.input_format, interleave);
     }
 }
