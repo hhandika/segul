@@ -30,7 +30,7 @@ impl<'a> Phylip<'a> {
     }
 
     pub fn read(&mut self) -> Result<()> {
-        self.read_file();
+        self.read_file()?;
         let (shortest, longest) = self.get_sequence_len(&self.matrix);
         self.is_alignment = self.check_is_alignment(&shortest, &longest);
         self.check_ntax_matches();
@@ -38,16 +38,16 @@ impl<'a> Phylip<'a> {
         Ok(())
     }
 
-    fn read_file(&mut self) {
-        let file = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE.");
+    fn read_file(&mut self) -> Result<()> {
+        let file = File::open(self.input)?;
 
         if self.interleave {
-            self.read_interleave(file)
-                .expect("FAILED READING AN INTERLEAVE PHYLIP FILE");
+            self.read_interleave(file)?;
         } else {
-            self.read_sequential(file)
-                .expect("FAILED READING A SEQUENTIAL PHYLIP FILE");
+            self.read_sequential(file)?;
         }
+
+        Ok(())
     }
 
     fn read_sequential<R: Read>(&mut self, file: R) -> Result<()> {
