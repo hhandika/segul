@@ -91,8 +91,6 @@ pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
 
 // Alphabeth for dna.
 // Include IUPAC characters plus missing symbol (?)
-// We only check lowercase since all the parser
-// change the case to lowercase.
 fn is_valid_dna(dna: &str) -> bool {
     let valid_chars = String::from("ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?");
     dna.chars().all(|char| valid_chars.contains(char))
