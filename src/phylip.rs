@@ -69,7 +69,7 @@ impl<'a> Phylip<'a> {
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
         self.parse_header(&header_line.trim());
-        let mut pos: usize = 0;
+        let mut pos: usize = 1;
         let mut ids: IndexMap<usize, String> = IndexMap::new();
         let mut seq = false;
         let read = Reader::new(buff);
@@ -81,19 +81,18 @@ impl<'a> Phylip<'a> {
                 self.insert_matrix(id, dna);
                 pos += 1;
             } else {
-                let id = ids.get(&pos);
-                if let Some(value) = self.matrix.get_mut(&id.as_ref().unwrap().to_string()) {
-                    value.push_str(line.trim());
-                    pos += 1;
+                if let Some(id) = ids.get(&pos) {
+                    if let Some(value) = self.matrix.get_mut(id) {
+                        value.push_str(line.trim());
+                        pos += 1;
+                    }
                 }
             }
 
-            // We reset the pos position after reaching the end of the id lines.
-            // This can also be written as `self.header.ntax + 1`
-            // if we start the pos number from 1.
-            // But, this is cleaner.
-            if pos == self.header.ntax {
-                pos = 0;
+            // We reset the pos position after reaching
+            // the end of the id lines.
+            if pos == self.header.ntax + 1 {
+                pos = 1;
                 seq = true;
             }
         });
