@@ -398,12 +398,8 @@ trait Cli {
 impl Cli for ConvertParser<'_> {}
 impl Cli for ConcatParser<'_> {
     fn set_output(&self, matches: &ArgMatches) -> PathBuf {
-        if matches.is_present("output") {
-            let output = self.get_output(matches);
-            PathBuf::from(output)
-        } else {
-            PathBuf::from(".")
-        }
+        let output = self.get_output(matches);
+        PathBuf::from(output)
     }
 }
 
