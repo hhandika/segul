@@ -58,10 +58,7 @@ impl<'a> MSAlignment<'a> {
         let output = Path::new(self.output);
         self.display_alignment_stats(part.len(), &header).unwrap();
         let mut save = SeqWriter::new(output, aln, header, Some(part), &self.part_format);
-        let spin = utils::set_spinner();
-        spin.set_message("Processing...");
         save.write_sequence(&self.output_format);
-        spin.abandon_with_message("DONE!");
         save.display_save_path();
         save.display_partition_path();
     }
@@ -108,14 +105,18 @@ impl Concat {
     }
 
     fn concat_alignment(&mut self, dir: &str) {
+        let spin = utils::set_spinner();
         self.files = Files::new(dir, &self.input_format).get_files();
         self.files.sort();
+        spin.set_message("Indexing alignments...");
         let id = IDs::new(&self.files, &self.input_format).get_id_all(self.interleave);
+        spin.set_message("Concatenating alignments...");
         let (alignment, nchar, partition) = self.concat(&id);
         self.alignment = alignment;
         self.header.ntax = self.alignment.len();
         self.header.nchar = nchar;
         self.partition = partition;
+        spin.finish_with_message("DONE!\n");
     }
 
     fn concat(
