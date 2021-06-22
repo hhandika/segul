@@ -1,9 +1,17 @@
 use std::io::{self, Result, Write};
 
+use indicatif::{ProgressBar, ProgressStyle};
 use num_format::{Locale, ToFormattedString};
 
 pub fn format_thousand_sep(num: &usize) -> String {
     num.to_formatted_string(&Locale::en)
+}
+
+pub fn set_spinner() -> ProgressBar {
+    let spin = ProgressBar::new_spinner();
+    spin.enable_steady_tick(150);
+    spin.set_style(ProgressStyle::default_spinner().template("{spinner:.simpleDots} {msg}"));
+    spin
 }
 
 pub fn print_divider(text: &str, len: usize) {
