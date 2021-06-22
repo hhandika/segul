@@ -75,7 +75,7 @@ impl<'a> SeqWriter<'a> {
     pub fn display_partition_path(&self) {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
-        writeln!(writer, "Partition\t: {}\n", &self.part_file.display()).unwrap();
+        writeln!(writer, "Partition\t: {}", &self.part_file.display()).unwrap();
     }
 
     fn write_phylip(&mut self) -> Result<()> {

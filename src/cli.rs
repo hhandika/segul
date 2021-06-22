@@ -501,7 +501,7 @@ impl<'a> ConvertParser<'a> {
             "Total files\t: {}",
             utils::format_thousand_sep(&nfile)
         )?;
-        writeln!(writer, "Output dir\t: {}\n", self.output.display())?;
+        writeln!(writer, "Output dir\t: {}", self.output.display())?;
         Ok(())
     }
 }

@@ -11,6 +11,7 @@ mod stats;
 mod utils;
 mod writer;
 
+use std::io::{BufWriter, Write};
 use std::time::Instant;
 
 use clap::crate_version;
@@ -20,5 +21,8 @@ fn main() {
     let time = Instant::now();
     cli::parse_cli(&version);
     let duration = time.elapsed();
-    println!("Execution time {:?}", duration);
+    let io = std::io::stdout();
+    let mut writer = BufWriter::new(io);
+    writeln!(writer).unwrap();
+    writeln!(writer, "Execution time {:?}", duration).unwrap();
 }
