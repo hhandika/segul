@@ -77,7 +77,7 @@ impl<'a> IDs<'a> {
 
     fn get_id_from_phylip(&self, interleave: bool) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
-        self.files.into_par_iter().for_each_with(sender, |s, file| {
+        self.files.par_iter().for_each_with(sender, |s, file| {
             s.send(Phylip::new(file, interleave).read_only_id())
                 .unwrap();
         });
@@ -86,7 +86,7 @@ impl<'a> IDs<'a> {
 
     fn get_id_from_nexus(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
-        self.files.into_par_iter().for_each_with(sender, |s, file| {
+        self.files.par_iter().for_each_with(sender, |s, file| {
             s.send(Nexus::new(file).read_only_id()).unwrap();
         });
         receiver.iter().collect()
@@ -94,7 +94,7 @@ impl<'a> IDs<'a> {
 
     fn get_id_from_fasta(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
-        self.files.into_par_iter().for_each_with(sender, |s, file| {
+        self.files.par_iter().for_each_with(sender, |s, file| {
             s.send(fasta::read_only_id(file)).unwrap();
         });
         receiver.iter().collect()
