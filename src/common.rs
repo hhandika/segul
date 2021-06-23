@@ -76,24 +76,20 @@ impl SeqCheck {
         self.is_alignment = self.shortest == self.longest;
     }
 
-    // fn get_shortest_longest_seq(&mut self, matrix: &IndexMap<String, String>) {
-    //     let (short, long) = matrix.values().fold((matrix[0], matrix[0]), |acc, &seq| (acc.0.min_by(seq.len()), acc.1.max_by(seq.len())));
-    // }
-
     fn get_shortest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
         self.shortest = matrix
             .values()
-            .min_by(|a, b| a.len().cmp(&b.len()))
-            .expect("CANNOT GET LONGEST ALIGNMENT LEN")
-            .len();
+            .map(|s| s.len())
+            .min()
+            .expect("CANNOT GET THE SHORTEST SEQUENCE LENGTH");
     }
 
     fn get_longest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
         self.longest = matrix
             .values()
-            .max_by(|a, b| a.len().cmp(&b.len()))
-            .expect("CANNOT GET SHORTEST ALIGNMENT LEN")
-            .len();
+            .map(|s| s.len())
+            .max()
+            .expect("CANNOT GET THE LONGEST SEQUENCE LENGTH");
     }
 }
 
