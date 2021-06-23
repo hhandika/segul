@@ -1,11 +1,11 @@
 //! Module for files finding and IDs indexing.
 
 use std::path::PathBuf;
+use std::sync::mpsc::channel;
 
 use glob::glob;
-// use indexmap::IndexMap;
 use indexmap::IndexSet;
-// use rayon::prelude::*;
+use rayon::prelude::*;
 
 use crate::common::SeqFormat;
 use crate::fasta;
@@ -77,25 +77,36 @@ impl<'a> IDs<'a> {
     }
 
     fn get_id_from_phylip(&self, id: &mut IndexSet<String>, interleave: bool) {
-        self.files.iter().for_each(|file| {
-            let mut phy = Phylip::new(file, interleave);
-            let ids = phy.read_only_id();
+        let (sender, receiver) = channel();
+        self.files.into_par_iter().for_each_with(sender, |s, file| {
+            s.send(Phylip::new(file, interleave).read_only_id())
+                .unwrap();
+        });
+        let all_ids: Vec<IndexSet<String>> = receiver.iter().collect();
+        all_ids.iter().for_each(|ids| {
             self.get_id(&ids, id);
         });
     }
 
     fn get_id_from_nexus(&self, id: &mut IndexSet<String>) {
-        self.files.iter().for_each(|file| {
-            let mut nex = Nexus::new(file);
-            let ids = nex.read_only_id();
+        let (sender, receiver) = channel();
+        self.files.into_par_iter().for_each_with(sender, |s, file| {
+            s.send(Nexus::new(file).read_only_id()).unwrap();
+        });
+        let all_ids: Vec<IndexSet<String>> = receiver.iter().collect();
+        all_ids.iter().for_each(|ids| {
             self.get_id(&ids, id);
         });
     }
 
     fn get_id_from_fasta(&self, id: &mut IndexSet<String>) {
-        self.files.iter().for_each(|file| {
-            let ids = fasta::read_only_id(file);
-            self.get_id(&ids, id)
+        let (sender, receiver) = channel();
+        self.files.into_par_iter().for_each_with(sender, |s, file| {
+            s.send(fasta::read_only_id(file)).unwrap();
+        });
+        let all_ids: Vec<IndexSet<String>> = receiver.iter().collect();
+        all_ids.iter().for_each(|ids| {
+            self.get_id(&ids, id);
         });
     }
 
