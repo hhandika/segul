@@ -137,9 +137,8 @@ impl Concat {
             id.iter().for_each(|id| {
                 if !aln.alignment.contains_key(id) {
                     let seq = self.get_gaps(aln.header.nchar);
-                    self.insert_alignment(&mut alignment, id, seq)
-                } else {
-                    let seq = aln.alignment.get(id).unwrap().to_string();
+                    self.insert_alignment(&mut alignment, id, &seq)
+                } else if let Some(seq) = aln.alignment.get(id) {
                     self.insert_alignment(&mut alignment, id, seq)
                 }
             });
@@ -161,11 +160,11 @@ impl Concat {
         partition.push(part);
     }
 
-    fn insert_alignment(&self, alignment: &mut IndexMap<String, String>, id: &str, values: String) {
+    fn insert_alignment(&self, alignment: &mut IndexMap<String, String>, id: &str, values: &str) {
         if !alignment.contains_key(id) {
-            alignment.insert(id.to_string(), values);
+            alignment.insert(id.to_string(), values.to_string());
         } else if let Some(value) = alignment.get_mut(id) {
-            value.push_str(&values);
+            value.push_str(values);
         }
     }
 

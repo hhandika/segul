@@ -135,10 +135,8 @@ impl<'a> Nexus<'a> {
             .filter(|l| !l.is_empty())
             .for_each(|line| {
                 let seq: Vec<&str> = line.split_whitespace().collect();
-                if seq.len() == 2 {
-                    if !ids.contains(seq[0]) {
-                        ids.insert(seq[0].to_string());
-                    }
+                if seq.len() == 2 && !ids.contains(seq[0]) {
+                    ids.insert(seq[0].to_string());
                 }
             });
         read.clear();

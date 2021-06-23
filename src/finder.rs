@@ -67,55 +67,50 @@ impl<'a> IDs<'a> {
     }
 
     pub fn get_id_all(&self, interleave: bool) -> IndexSet<String> {
-        let mut id = IndexSet::new();
-        match self.input_format {
-            SeqFormat::Nexus => self.get_id_from_nexus(&mut id),
-            SeqFormat::Phylip => self.get_id_from_phylip(&mut id, interleave),
-            SeqFormat::Fasta => self.get_id_from_fasta(&mut id),
+        let all_ids = match self.input_format {
+            SeqFormat::Nexus => self.get_id_from_nexus(),
+            SeqFormat::Phylip => self.get_id_from_phylip(interleave),
+            SeqFormat::Fasta => self.get_id_from_fasta(),
         };
-        id
+        self.get_id(&all_ids)
     }
 
-    fn get_id_from_phylip(&self, id: &mut IndexSet<String>, interleave: bool) {
+    fn get_id_from_phylip(&self, interleave: bool) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.into_par_iter().for_each_with(sender, |s, file| {
             s.send(Phylip::new(file, interleave).read_only_id())
                 .unwrap();
         });
-        let all_ids: Vec<IndexSet<String>> = receiver.iter().collect();
-        all_ids.iter().for_each(|ids| {
-            self.get_id(&ids, id);
-        });
+        receiver.iter().collect()
     }
 
-    fn get_id_from_nexus(&self, id: &mut IndexSet<String>) {
+    fn get_id_from_nexus(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.into_par_iter().for_each_with(sender, |s, file| {
             s.send(Nexus::new(file).read_only_id()).unwrap();
         });
-        let all_ids: Vec<IndexSet<String>> = receiver.iter().collect();
-        all_ids.iter().for_each(|ids| {
-            self.get_id(&ids, id);
-        });
+        receiver.iter().collect()
     }
 
-    fn get_id_from_fasta(&self, id: &mut IndexSet<String>) {
+    fn get_id_from_fasta(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.into_par_iter().for_each_with(sender, |s, file| {
             s.send(fasta::read_only_id(file)).unwrap();
         });
-        let all_ids: Vec<IndexSet<String>> = receiver.iter().collect();
-        all_ids.iter().for_each(|ids| {
-            self.get_id(&ids, id);
-        });
+        receiver.iter().collect()
     }
 
-    fn get_id(&self, ids: &IndexSet<String>, id: &mut IndexSet<String>) {
-        ids.iter().for_each(|val| {
-            if !id.contains(val) {
-                id.insert(val.to_string());
-            }
+    fn get_id(&self, all_ids: &[IndexSet<String>]) -> IndexSet<String> {
+        let mut id = IndexSet::new();
+        all_ids.iter().for_each(|ids| {
+            ids.iter().for_each(|val| {
+                if !id.contains(val) {
+                    id.insert(val.to_string());
+                }
+            });
         });
+
+        id
     }
 }
 
