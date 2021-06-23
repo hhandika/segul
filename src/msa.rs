@@ -5,8 +5,7 @@ use std::io::{self, Result, Write};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use indexmap::IndexMap;
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 
 use crate::alignment::Alignment;
 use crate::common::{Header, Partition, PartitionFormat, SeqFormat};
@@ -119,6 +118,12 @@ impl Concat {
         spin.finish_with_message("DONE!\n");
     }
 
+    fn get_alignment(&self, file: &Path) -> Alignment {
+        let mut aln = Alignment::new();
+        aln.get_aln_any(file, &self.input_format, self.interleave);
+        aln
+    }
+
     fn concat(
         &mut self,
         id: &IndexSet<String>,
@@ -128,11 +133,9 @@ impl Concat {
         let mut gene_start = 1;
         let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
-            let mut aln = Alignment::new();
-            aln.get_aln_any(file, &self.input_format, self.interleave);
+            let aln = self.get_alignment(file);
             nchar += aln.header.nchar; // increment sequence length using the value from parser
-            let gene_name = file.file_stem().unwrap().to_string_lossy();
-            self.get_partition(&mut partition, &gene_name, gene_start, nchar);
+            self.get_partition(&mut partition, &aln.name, gene_start, nchar);
             gene_start = nchar + 1;
             id.iter().for_each(|id| {
                 if !aln.alignment.contains_key(id) {
