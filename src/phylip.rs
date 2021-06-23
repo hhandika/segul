@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Lines, Result};
 use std::path::Path;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 
 use crate::common::{self, Header, SeqCheck};
@@ -36,6 +36,33 @@ impl<'a> Phylip<'a> {
         self.check_ntax_matches();
         self.check_nchar_matches(longest);
         Ok(())
+    }
+
+    pub fn read_only_id(&mut self) -> IndexSet<String> {
+        let file = File::open(self.input).expect("CANNOT READ THE FILE");
+        let mut buff = BufReader::new(file);
+        let mut header_line = String::new();
+        buff.read_line(&mut header_line).unwrap();
+        self.parse_header(&header_line.trim());
+        let mut ids = IndexSet::new();
+        buff.lines().filter_map(|ok| ok.ok()).for_each(|line| {
+            let seq: Vec<&str> = line.split_whitespace().collect();
+            if seq.len() == 2 {
+                ids.insert(seq[0].to_string());
+            }
+        });
+        assert!(
+            ids.len() == self.header.ntax,
+            "FAILED PARSING {}. \
+        THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE HEADER.\
+            IN THE HEADER: {} \
+            AND TAXA FOUND: {}
+        ",
+            self.input.display(),
+            self.header.ntax,
+            ids.len()
+        );
+        ids
     }
 
     fn read_file(&mut self) -> Result<()> {

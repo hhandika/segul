@@ -6,6 +6,7 @@ use std::io::{BufReader, Lines};
 use std::path::Path;
 
 use indexmap::IndexMap;
+use indexmap::IndexSet;
 
 use crate::common::{Header, SeqCheck};
 
@@ -17,6 +18,21 @@ pub struct Fasta<'a> {
 }
 
 impl SeqCheck for Fasta<'_> {}
+
+pub fn read_only_id(input: &Path) -> IndexSet<String> {
+    let file = File::open(input).expect("CANNOT READ A FASTA FILE");
+    let buff = BufReader::new(file);
+    let mut ids: IndexSet<String> = IndexSet::new();
+    buff.lines()
+        .filter_map(|ok| ok.ok())
+        .filter(|line| line.starts_with('>'))
+        .for_each(|line| {
+            if let Some(id) = line.strip_prefix('>') {
+                ids.insert(id.trim().to_string());
+            }
+        });
+    ids
+}
 
 impl<'a> Fasta<'a> {
     pub fn new(input: &'a Path) -> Self {

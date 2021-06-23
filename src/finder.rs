@@ -3,11 +3,12 @@
 use std::path::PathBuf;
 
 use glob::glob;
-use indexmap::IndexMap;
+// use indexmap::IndexMap;
 use indexmap::IndexSet;
+// use rayon::prelude::*;
 
 use crate::common::SeqFormat;
-use crate::fasta::Fasta;
+use crate::fasta;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
 
@@ -78,31 +79,30 @@ impl<'a> IDs<'a> {
     fn get_id_from_phylip(&self, id: &mut IndexSet<String>, interleave: bool) {
         self.files.iter().for_each(|file| {
             let mut phy = Phylip::new(file, interleave);
-            phy.read().expect("CANNOT READ A PHYLIP FILE");
-            self.get_id(&phy.matrix, id);
+            let ids = phy.read_only_id();
+            self.get_id(&ids, id);
         });
     }
 
     fn get_id_from_nexus(&self, id: &mut IndexSet<String>) {
         self.files.iter().for_each(|file| {
             let mut nex = Nexus::new(file);
-            nex.read().expect("CANNOT READ A NEXUS FILE");
-            self.get_id(&nex.matrix, id);
+            let ids = nex.read_only_id();
+            self.get_id(&ids, id);
         });
     }
 
     fn get_id_from_fasta(&self, id: &mut IndexSet<String>) {
         self.files.iter().for_each(|file| {
-            let mut fas = Fasta::new(file);
-            fas.read();
-            self.get_id(&fas.matrix, id);
+            let ids = fasta::read_only_id(file);
+            self.get_id(&ids, id)
         });
     }
 
-    fn get_id(&self, matrix: &IndexMap<String, String>, id: &mut IndexSet<String>) {
-        matrix.keys().for_each(|key| {
-            if !id.contains(key) {
-                id.insert(key.to_string());
+    fn get_id(&self, ids: &IndexSet<String>, id: &mut IndexSet<String>) {
+        ids.iter().for_each(|val| {
+            if !id.contains(val) {
+                id.insert(val.to_string());
             }
         });
     }

@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Lines, Read, Result};
 use std::path::Path;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use nom::{bytes::complete, character, sequence, IResult};
 
 use crate::common::{self, Header, SeqCheck};
@@ -30,12 +30,7 @@ impl<'a> Nexus<'a> {
     }
 
     pub fn read(&mut self) -> Result<()> {
-        let input = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE");
-        let mut buff = BufReader::new(input);
-        let mut header = String::new();
-        buff.read_line(&mut header)?;
-        self.check_nexus(&header.trim());
-        let mut commands = self.parse_blocks(buff);
+        let mut commands = self.get_commands();
         self.parse_dimensions(&mut commands.dimensions);
         self.parse_format(&mut commands.format);
         self.parse_matrix(&mut commands.matrix);
@@ -45,6 +40,34 @@ impl<'a> Nexus<'a> {
         self.check_nchar_matches(longest);
 
         Ok(())
+    }
+
+    pub fn read_only_id(&mut self) -> IndexSet<String> {
+        let mut commands = self.get_commands();
+        self.parse_dimensions(&mut commands.dimensions);
+        let ids = self.parse_matrix_id(&mut commands.matrix);
+        assert!(
+            ids.len() == self.header.ntax,
+            "FAILED PARSING {}. \
+        THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE HEADER.\
+            IN THE HEADER: {} \
+            AND TAXA FOUND: {}
+        ",
+            self.input.display(),
+            self.header.ntax,
+            ids.len()
+        );
+        ids
+    }
+
+    fn get_commands(&mut self) -> Commands {
+        let input = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE");
+        let mut buff = BufReader::new(input);
+        let mut header = String::new();
+        buff.read_line(&mut header)
+            .expect("CANNOT READ THE HEADER FILE");
+        self.check_nexus(&header.trim());
+        self.parse_blocks(buff)
     }
 
     fn parse_blocks<R: Read>(&self, buff: R) -> Commands {
@@ -100,6 +123,26 @@ impl<'a> Nexus<'a> {
                 "interleave" => self.interleave = true,
                 _ => (),
             });
+    }
+
+    fn parse_matrix_id(&mut self, read: &mut String) -> IndexSet<String> {
+        read.pop(); // remove terminated semicolon.
+        let matrix: Vec<&str> = read.split('\n').collect();
+        let mut ids = IndexSet::new();
+        matrix[1..]
+            .iter()
+            .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
+            .for_each(|line| {
+                let seq: Vec<&str> = line.split_whitespace().collect();
+                if seq.len() == 2 {
+                    if !ids.contains(seq[0]) {
+                        ids.insert(seq[0].to_string());
+                    }
+                }
+            });
+        read.clear();
+        ids
     }
 
     fn parse_matrix(&mut self, read: &mut String) {
