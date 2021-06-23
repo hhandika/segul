@@ -10,6 +10,7 @@ use crate::phylip::Phylip;
 pub struct Alignment {
     pub alignment: IndexMap<String, String>,
     pub header: Header,
+    pub name: String,
 }
 
 impl Alignment {
@@ -17,10 +18,13 @@ impl Alignment {
         Self {
             alignment: IndexMap::new(),
             header: Header::new(),
+            name: String::new(),
         }
     }
 
     pub fn get_aln_any(&mut self, file: &Path, input_format: &SeqFormat, interleave: bool) {
+        self.name
+            .push_str(&file.file_stem().unwrap().to_string_lossy());
         match input_format {
             SeqFormat::Nexus => self.get_aln_from_nexus(file),
             SeqFormat::Phylip => self.get_aln_from_phylip(file, interleave),

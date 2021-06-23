@@ -527,7 +527,7 @@ impl<'a> ConcatParser<'a> {
         self.check_partition_format(&part_format);
         let mut concat = msa::MSAlignment::new(dir, output, output_format, part_format);
         self.display_input_dir(&dir).unwrap();
-        self.concat_any(&mut concat)
+        self.concat_any(&mut concat);
     }
 
     fn concat_any(&self, concat: &mut msa::MSAlignment) {
