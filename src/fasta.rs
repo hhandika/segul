@@ -17,8 +17,6 @@ pub struct Fasta<'a> {
     pub header: Header,
 }
 
-impl SeqCheck for Fasta<'_> {}
-
 pub fn read_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("CANNOT READ A FASTA FILE");
     let buff = BufReader::new(file);
@@ -48,9 +46,10 @@ impl<'a> Fasta<'a> {
         let file = File::open(self.input).expect("CANNOT OPEN THE FILE");
         let buff = BufReader::new(file);
         self.parse_fasta(buff);
-        let (shortest, longest) = self.get_sequence_len(&self.matrix);
-        self.is_alignment = self.check_is_alignment(&shortest, &longest);
-        self.header.nchar = longest;
+        let mut seq_info = SeqCheck::new();
+        seq_info.get_sequence_info(&self.matrix);
+        self.is_alignment = seq_info.is_alignment;
+        self.header.nchar = seq_info.longest;
         self.header.ntax = self.matrix.len();
     }
 

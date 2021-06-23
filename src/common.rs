@@ -51,31 +51,45 @@ impl Header {
     }
 }
 
-pub trait SeqCheck {
-    fn check_is_alignment(&self, shortest: &usize, longest: &usize) -> bool {
-        shortest == longest
+pub struct SeqCheck {
+    pub shortest: usize,
+    pub longest: usize,
+    pub is_alignment: bool,
+}
+
+impl SeqCheck {
+    pub fn new() -> Self {
+        Self {
+            shortest: 0,
+            longest: 0,
+            is_alignment: false,
+        }
     }
 
-    fn get_sequence_len(&self, matrix: &IndexMap<String, String>) -> (usize, usize) {
-        let shortest = self.get_shortest_seq_len(matrix);
-        let longest = self.get_longest_seq_len(matrix);
-        (shortest, longest)
+    pub fn get_sequence_info(&mut self, matrix: &IndexMap<String, String>) {
+        self.get_shortest_seq_len(matrix);
+        self.get_longest_seq_len(matrix);
+        self.check_is_alignment();
     }
 
-    fn get_shortest_seq_len(&self, matrix: &IndexMap<String, String>) -> usize {
-        matrix
+    fn check_is_alignment(&mut self) {
+        self.is_alignment = self.shortest == self.longest;
+    }
+
+    fn get_shortest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
+        self.shortest = matrix
             .values()
             .min_by_key(|seq| seq.len())
             .expect("CANNOT GET LONGEST ALIGNMENT LEN")
-            .len()
+            .len();
     }
 
-    fn get_longest_seq_len(&self, matrix: &IndexMap<String, String>) -> usize {
-        matrix
+    fn get_longest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
+        self.longest = matrix
             .values()
             .max_by_key(|seq| seq.len())
             .expect("CANNOT GET SHORTEST ALIGNMENT LEN")
-            .len()
+            .len();
     }
 }
 

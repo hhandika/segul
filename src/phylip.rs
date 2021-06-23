@@ -16,8 +16,6 @@ pub struct Phylip<'a> {
     pub is_alignment: bool,
 }
 
-impl SeqCheck for Phylip<'_> {}
-
 impl<'a> Phylip<'a> {
     pub fn new(input: &'a Path, interleave: bool) -> Self {
         Self {
@@ -31,10 +29,11 @@ impl<'a> Phylip<'a> {
 
     pub fn read(&mut self) -> Result<()> {
         self.read_file()?;
-        let (shortest, longest) = self.get_sequence_len(&self.matrix);
-        self.is_alignment = self.check_is_alignment(&shortest, &longest);
+        let mut seq_info = SeqCheck::new();
+        seq_info.get_sequence_info(&self.matrix);
+        self.is_alignment = seq_info.is_alignment;
         self.check_ntax_matches();
-        self.check_nchar_matches(longest);
+        self.check_nchar_matches(seq_info.longest);
         Ok(())
     }
 

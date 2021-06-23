@@ -1,4 +1,4 @@
-//!Multi-Sequence Alignment Module.
+//! Multi-Sequence Alignment Module.
 //! Contains methods for working with multi-sequence alignments.
 
 use std::io::{self, Result, Write};
