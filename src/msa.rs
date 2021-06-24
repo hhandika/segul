@@ -6,6 +6,7 @@ use std::iter;
 use std::path::{Path, PathBuf};
 
 use indexmap::{IndexMap, IndexSet};
+use indicatif::ProgressBar;
 
 use crate::alignment::Alignment;
 use crate::common::{Header, Partition, PartitionFormat, SeqFormat};
@@ -16,6 +17,7 @@ use crate::writer::SeqWriter;
 pub struct MSAlignment<'a> {
     dir: &'a str,
     output: &'a str,
+    input_format: &'a SeqFormat,
     output_format: SeqFormat,
     part_format: PartitionFormat,
 }
@@ -24,45 +26,46 @@ impl<'a> MSAlignment<'a> {
     pub fn new(
         dir: &'a str,
         output: &'a str,
+        input_format: &'a SeqFormat,
         output_format: SeqFormat,
         part_format: PartitionFormat,
     ) -> Self {
         Self {
             dir,
             output,
+            input_format,
             output_format,
             part_format,
         }
     }
 
-    pub fn concat_nexus(&mut self) {
-        let mut nex = Concat::new(SeqFormat::Nexus, false);
-        nex.concat_alignment(self.dir);
-        self.write_alignment(&nex.alignment, &nex.partition, nex.header);
-    }
-
-    pub fn concat_phylip(&mut self, interleave: bool) {
-        let mut phy = Concat::new(SeqFormat::Phylip, interleave);
-        phy.concat_alignment(self.dir);
-        self.write_alignment(&phy.alignment, &phy.partition, phy.header);
-    }
-
-    pub fn concat_fasta(&mut self) {
-        let mut fas = Concat::new(SeqFormat::Fasta, false);
-        fas.concat_alignment(self.dir);
-        self.write_alignment(&fas.alignment, &fas.partition, fas.header);
-    }
-
-    fn write_alignment(&self, aln: &IndexMap<String, String>, part: &[Partition], header: Header) {
+    pub fn concat_alignment(&self) {
+        let mut concat = self.get_aln_format();
+        let spin = concat.concat_alignment(self.dir);
         let output = Path::new(self.output);
-        self.display_alignment_stats(part.len(), &header).unwrap();
-        let mut save = SeqWriter::new(output, aln, header, Some(part), &self.part_format);
-        let spin = utils::set_spinner();
+        let mut save = SeqWriter::new(
+            output,
+            &concat.alignment,
+            concat.header.clone(),
+            Some(&concat.partition),
+            &self.part_format,
+        );
         spin.set_message("Writing output files...");
         save.write_sequence(&self.output_format);
         spin.finish_with_message("DONE!\n");
+        self.display_alignment_stats(concat.partition.len(), &concat.header)
+            .unwrap();
         save.display_save_path();
         save.display_partition_path();
+    }
+
+    fn get_aln_format(&self) -> Concat {
+        match self.input_format {
+            SeqFormat::Fasta | SeqFormat::FastaInt => Concat::new(SeqFormat::Fasta, false),
+            SeqFormat::Nexus | SeqFormat::NexusInt => Concat::new(SeqFormat::Nexus, false),
+            SeqFormat::Phylip => Concat::new(SeqFormat::Phylip, false),
+            SeqFormat::PhylipInt => Concat::new(SeqFormat::Phylip, true),
+        }
     }
 
     fn display_alignment_stats(&self, count: usize, header: &Header) -> Result<()> {
@@ -77,7 +80,7 @@ impl<'a> MSAlignment<'a> {
         )?;
         writeln!(
             writer,
-            "#Chars\t\t: {} bp\n",
+            "#Chars\t\t: {} bp",
             utils::format_thousand_sep(&header.nchar)
         )?;
 
@@ -106,7 +109,7 @@ impl Concat {
         }
     }
 
-    fn concat_alignment(&mut self, dir: &str) {
+    fn concat_alignment(&mut self, dir: &str) -> ProgressBar {
         let spin = utils::set_spinner();
         self.files = Files::new(dir, &self.input_format).get_files();
         self.files.sort();
@@ -118,7 +121,7 @@ impl Concat {
         self.header.ntax = self.alignment.len();
         self.header.nchar = nchar;
         self.partition = partition;
-        spin.finish_with_message("DONE!\n");
+        spin
     }
 
     fn get_alignment(&self, file: &Path) -> Alignment {

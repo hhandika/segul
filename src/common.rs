@@ -34,6 +34,7 @@ impl Partition {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Header {
     pub ntax: usize,
     pub nchar: usize,

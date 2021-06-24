@@ -511,25 +511,19 @@ impl<'a> ConcatParser<'a> {
         }
     }
 
-    fn concat(&self) {
+    fn concat(&mut self) {
         let dir = self.get_dir_input(self.matches);
         let output = self.get_output(self.matches);
         let output_format = self.get_output_format(self.matches);
         let part_format = self.get_partition_format(self.matches);
-        self.check_partition_format(&part_format);
-        let mut concat = msa::MSAlignment::new(dir, output, output_format, part_format);
-        self.display_input_dir(&dir).unwrap();
-        self.concat_any(&mut concat);
-    }
-
-    fn concat_any(&self, concat: &mut msa::MSAlignment) {
         let interleave = self.check_phylip_interleave(&self.matches);
-        match self.input_format {
-            SeqFormat::Fasta => concat.concat_fasta(),
-            SeqFormat::Nexus => concat.concat_nexus(),
-            SeqFormat::Phylip => concat.concat_phylip(interleave),
-            _ => (),
+        if interleave {
+            self.input_format = SeqFormat::PhylipInt;
         }
+        self.check_partition_format(&part_format);
+        self.display_input_dir(&dir).unwrap();
+        msa::MSAlignment::new(dir, output, &self.input_format, output_format, part_format)
+            .concat_alignment();
     }
 
     fn display_input_dir(&self, input: &str) -> Result<()> {
