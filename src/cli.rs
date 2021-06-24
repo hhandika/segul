@@ -53,10 +53,13 @@ fn get_args(version: &str) -> ArgMatches {
                                 .value_name("OUTPUT"),
                         )
                         .arg(
-                            Arg::with_name("phylip")
-                                .long("phylip")
-                                .help("Convert fasta to phylip. Default: nexus.")
-                                .takes_value(false),
+                            Arg::with_name("format")
+                                .short("f")
+                                .long("format")
+                                .help("Sets output format. Default to nexus. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
+                                .takes_value(true)
+                                .default_value("nexus")
+                                .value_name("FORMAT"),
                         ),
                 )
                 .subcommand(
@@ -83,10 +86,13 @@ fn get_args(version: &str) -> ArgMatches {
                                 .value_name("DIR"),
                         )
                         .arg(
-                            Arg::with_name("phylip")
-                                .long("phylip")
-                                .help("Convert nexus to phylip. Default: fasta")
-                                .takes_value(false),
+                            Arg::with_name("format")
+                                .short("f")
+                                .long("format")
+                                .help("Sets output format. Default to fasta. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
+                                .takes_value(true)
+                                .default_value("fasta")
+                                .value_name("FORMAT"),
                         )
                         .arg(
                             Arg::with_name("output")
@@ -137,10 +143,13 @@ fn get_args(version: &str) -> ArgMatches {
                             .takes_value(false)
                         )
                         .arg(
-                            Arg::with_name("nexus")
-                                .long("nexus")
-                                .help("Convert nexus to phylip. Default: fasta")
-                                .takes_value(false),
+                            Arg::with_name("format")
+                                .short("f")
+                                .long("format")
+                                .help("Sets output format. Default to fasta. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
+                                .takes_value(true)
+                                .default_value("fasta")
+                                .value_name("FORMAT"),
                         ),
                 ),
         )
@@ -163,7 +172,7 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("format")
                                 .short("f")
                                 .long("format")
-                                .help("Sets output format. Choices: nexus, fasta, phylip")
+                                .help("Sets output format. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
                                 .takes_value(true)
                                 .default_value("nexus")
                                 .value_name("FORMAT"),
@@ -205,7 +214,7 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("format")
                                 .short("f")
                                 .long("format")
-                                .help("Sets output format. Choices: nexus, fasta, phylip")
+                                .help("Sets output format. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
                                 .takes_value(true)
                                 .default_value("nexus")
                                 .value_name("FORMAT"),
@@ -247,7 +256,7 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("format")
                                 .short("f")
                                 .long("format")
-                                .help("Sets output format. Choices: nexus, fasta, phylip")
+                                .help("Sets output format. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
                                 .takes_value(true)
                                 .default_value("nexus")
                                 .value_name("FORMAT"),
@@ -385,6 +394,9 @@ trait Cli {
             "nexus" => SeqFormat::Nexus,
             "phylip" => SeqFormat::Phylip,
             "fasta" => SeqFormat::Fasta,
+            "nexus-int" => SeqFormat::NexusInt,
+            "fasta-int" => SeqFormat::FastaInt,
+            "phylip-int" => SeqFormat::PhylipInt,
             _ => panic!(
                 "UNSUPPORTED FORMAT. \
         THE PROGRAM ONLY ACCEPT nexus, phylip, and fasta. All in lowercase.\
@@ -432,54 +444,34 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_file(&mut self) {
         let input = Path::new(self.get_file_input(self.matches));
+        let output_format = self.get_output_format(self.matches);
         self.output = self.set_output(self.matches);
         self.display_input_file(input).unwrap();
-        self.convert_any(input);
+        self.convert_any(input, &output_format);
     }
 
     fn convert_multiple_fasta(&mut self) {
         let dir = self.get_dir_input(self.matches);
         let files = Files::new(dir, &self.input_format).get_files();
+        let output_format = self.get_output_format(self.matches);
         self.output = self.set_output(&self.matches);
         self.is_dir = true;
         self.display_input_dir(Path::new(dir), files.len()).unwrap();
         files.par_iter().for_each(|file| {
-            self.convert_any(file);
+            self.convert_any(file, &output_format);
         });
     }
 
-    fn convert_any(&self, input: &Path) {
+    fn convert_any(&self, input: &Path, output_format: &SeqFormat) {
+        let mut convert = Converter::new(input, &self.output, output_format, self.is_dir);
         match self.input_format {
-            SeqFormat::Fasta => self.convert_fasta(input),
-            SeqFormat::Nexus => self.convert_nexus(input),
-            SeqFormat::Phylip => self.convert_phylip(input),
-        }
-    }
-
-    fn convert_fasta(&self, input: &Path) {
-        if self.matches.is_present("phylip") {
-            Converter::new(input, &self.output, &SeqFormat::Phylip, self.is_dir).convert_fasta();
-        } else {
-            Converter::new(input, &self.output, &SeqFormat::Nexus, self.is_dir).convert_fasta();
-        }
-    }
-
-    fn convert_nexus(&self, input: &Path) {
-        if self.matches.is_present("phylip") {
-            Converter::new(input, &self.output, &SeqFormat::Phylip, self.is_dir).convert_nexus();
-        } else {
-            Converter::new(input, &self.output, &SeqFormat::Fasta, self.is_dir).convert_nexus();
-        }
-    }
-
-    fn convert_phylip(&self, input: &Path) {
-        let interleave = self.check_phylip_interleave(&self.matches);
-        if self.matches.is_present("nexus") {
-            Converter::new(input, &self.output, &SeqFormat::Nexus, self.is_dir)
-                .convert_phylip(interleave);
-        } else {
-            Converter::new(input, &self.output, &SeqFormat::Fasta, self.is_dir)
-                .convert_phylip(interleave);
+            SeqFormat::Fasta => convert.convert_fasta(),
+            SeqFormat::Nexus => convert.convert_nexus(),
+            SeqFormat::Phylip => {
+                let interleave = self.check_phylip_interleave(&self.matches);
+                convert.convert_phylip(interleave)
+            }
+            _ => (),
         }
     }
 
@@ -536,6 +528,7 @@ impl<'a> ConcatParser<'a> {
             SeqFormat::Fasta => concat.concat_fasta(),
             SeqFormat::Nexus => concat.concat_nexus(),
             SeqFormat::Phylip => concat.concat_phylip(interleave),
+            _ => (),
         }
     }
 

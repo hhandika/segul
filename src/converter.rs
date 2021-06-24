@@ -53,11 +53,7 @@ impl<'a> Converter<'a> {
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
         let save_path = self.output.join(self.input.file_stem().unwrap());
         let mut convert = SeqWriter::new(&save_path, matrix, header, None, &PartitionFormat::None);
-        match self.output_format {
-            SeqFormat::Nexus => convert.write_sequence(self.output_format),
-            SeqFormat::Phylip => convert.write_sequence(self.output_format),
-            SeqFormat::Fasta => convert.write_fasta(),
-        }
+        convert.write_sequence(self.output_format);
 
         if !self.is_dir {
             convert.display_save_path();

@@ -29,6 +29,7 @@ impl Alignment {
             SeqFormat::Nexus => self.get_aln_from_nexus(file),
             SeqFormat::Phylip => self.get_aln_from_phylip(file, interleave),
             SeqFormat::Fasta => self.get_aln_from_fasta(file),
+            _ => (),
         }
     }
 

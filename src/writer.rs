@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::{self, BufWriter, LineWriter, Result};
@@ -47,18 +48,34 @@ impl<'a> SeqWriter<'a> {
         }
 
         match output_format {
-            SeqFormat::Nexus => self.write_nexus().expect("CANNOT WRITE A NEXUS FILE."),
-            SeqFormat::Phylip => self.write_phylip().expect("CANNOT WRITE A PHYLIP FILE."),
-            SeqFormat::Fasta => self.write_fasta(),
+            SeqFormat::Nexus => self.write_nexus(false).expect("CANNOT WRITE A NEXUS FILE."),
+            SeqFormat::NexusInt => self
+                .write_nexus(true)
+                .expect("CANNOT WRITE A NEXUS INTERLEAVE FILE."),
+            SeqFormat::Phylip => self
+                .write_phylip(false)
+                .expect("CANNOT WRITE A PHYLIP FILE."),
+            SeqFormat::PhylipInt => self
+                .write_phylip(true)
+                .expect("CANNOT WRITE A PHYLIP FILE."),
+            SeqFormat::Fasta => self.write_fasta(false),
+            SeqFormat::FastaInt => self.write_fasta(true),
         }
     }
 
-    pub fn write_fasta(&mut self) {
-        self.get_output_name(&SeqFormat::Fasta);
+    fn write_fasta(&mut self, interleave: bool) {
         let mut writer = self.create_output_file(&self.output);
+        let n = 80;
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
-            writeln!(writer, "{}", seq).unwrap();
+            if !interleave {
+                writeln!(writer, "{}", seq).unwrap();
+            } else {
+                let chunks = self.chunk_seq(seq, n);
+                chunks.iter().for_each(|chunk| {
+                    writeln!(writer, "{}", chunk).unwrap();
+                })
+            }
         });
 
         if self.partition.is_some() {
@@ -78,34 +95,38 @@ impl<'a> SeqWriter<'a> {
         writeln!(writer, "Partition\t: {}", &self.part_file.display()).unwrap();
     }
 
-    fn write_phylip(&mut self) -> Result<()> {
+    fn write_phylip(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self.create_output_file(&self.output);
         writeln!(writer, "{} {}", self.header.ntax, self.header.nchar)?;
-        self.write_matrix(&mut writer);
+
+        if !interleave {
+            self.write_matrix(&mut writer);
+        } else {
+            self.write_matrix_phy_int(&mut writer)?;
+        }
+
         if self.partition.is_some() {
             self.write_partition_sep();
         }
+
         Ok(())
     }
 
-    fn write_nexus(&mut self) -> Result<()> {
+    fn write_nexus(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self.create_output_file(&self.output);
-        writeln!(writer, "#NEXUS")?;
-        writeln!(writer, "begin data;")?;
-        writeln!(
-            writer,
-            "dimensions ntax={} nchar={};",
-            self.header.ntax, self.header.nchar
-        )?;
-        writeln!(
-            writer,
-            "format datatype={} missing={} gap={};",
-            self.header.datatype, self.header.missing, self.header.gap,
-        )?;
+        self.write_nex_header(&mut writer)?;
+        self.write_nex_format(&mut writer, interleave)?;
         writeln!(writer, "matrix")?;
-        self.write_matrix(&mut writer);
+
+        if !interleave {
+            self.write_matrix(&mut writer);
+        } else {
+            self.write_matrix_nex_int(&mut writer)?;
+        }
+
         writeln!(writer, ";")?;
         writeln!(writer, "end;")?;
+
         if self.partition.is_some() {
             match self.part_format {
                 PartitionFormat::Nexus => self
@@ -115,15 +136,77 @@ impl<'a> SeqWriter<'a> {
                 _ => self.write_part_nexus_sep(),
             }
         }
+
+        Ok(())
+    }
+
+    fn write_nex_header<W: Write>(&self, writer: &mut W) -> Result<()> {
+        writeln!(writer, "#NEXUS")?;
+        writeln!(writer, "begin data;")?;
+        writeln!(
+            writer,
+            "dimensions ntax={} nchar={};",
+            self.header.ntax, self.header.nchar
+        )?;
+
+        Ok(())
+    }
+
+    fn write_nex_format<W: Write>(&self, writer: &mut W, interleave: bool) -> Result<()> {
+        write!(
+            writer,
+            "format datatype={} missing={} gap={}",
+            self.header.datatype, self.header.missing, self.header.gap,
+        )?;
+
+        if interleave {
+            write!(writer, "interleave")?;
+        }
+
+        writeln!(writer, ";")?;
         Ok(())
     }
 
     fn write_matrix<W: Write>(&self, writer: &mut W) {
         self.matrix.iter().for_each(|(taxa, seq)| {
-            write!(writer, "{}", taxa).unwrap();
-            write!(writer, "{}", self.insert_whitespaces(taxa, self.id_len)).unwrap();
-            writeln!(writer, "{}", seq).unwrap();
+            self.write_padded_seq(writer, taxa, seq)
+                .expect("CANNOT WRITE SEQ MATRIX")
         });
+    }
+
+    fn write_matrix_phy_int<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let mat_int = self.get_matrix_int();
+        mat_int.iter().for_each(|(idx, seq)| {
+            seq.iter().for_each(|s| match idx {
+                1 => self
+                    .write_padded_seq(writer, &s.id, &s.seq)
+                    .expect("CANNOT WRITE PADDED SEQ MATRIX"),
+                _ => writeln!(writer, "{}", s.seq).unwrap(),
+            })
+        });
+
+        writeln!(writer)?;
+        Ok(())
+    }
+
+    fn write_matrix_nex_int<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let mat_int = self.get_matrix_int();
+        mat_int.values().for_each(|seq| {
+            seq.iter().for_each(|s| {
+                self.write_padded_seq(writer, &s.id, &s.seq)
+                    .expect("CANNOT WRITE PADDED SEQ MATRIX");
+            })
+        });
+        writeln!(writer)?;
+
+        Ok(())
+    }
+
+    fn write_padded_seq<W: Write>(&self, writer: &mut W, taxa: &str, seq: &str) -> Result<()> {
+        write!(writer, "{}", taxa)?;
+        write!(writer, "{}", self.insert_whitespaces(taxa, self.id_len))?;
+        writeln!(writer, "{}", seq)?;
+        Ok(())
     }
 
     fn write_partition_sep(&self) {
@@ -201,9 +284,9 @@ impl<'a> SeqWriter<'a> {
 
     fn get_output_name(&mut self, ext: &SeqFormat) {
         self.output = match ext {
-            SeqFormat::Fasta => self.path.with_extension("fas"),
-            SeqFormat::Nexus => self.path.with_extension("nex"),
-            SeqFormat::Phylip => self.path.with_extension("phy"),
+            SeqFormat::Fasta | SeqFormat::FastaInt => self.path.with_extension("fas"),
+            SeqFormat::Nexus | SeqFormat::NexusInt => self.path.with_extension("nex"),
+            SeqFormat::Phylip | SeqFormat::PhylipInt => self.path.with_extension("phy"),
         };
     }
 
@@ -211,6 +294,37 @@ impl<'a> SeqWriter<'a> {
         fs::create_dir_all(fname.parent().unwrap()).expect("CANNOT CREATE A TARGET DIRECTORY");
         let file = File::create(&fname).expect("CANNOT CREATE OUTPUT FILE");
         LineWriter::new(file)
+    }
+
+    fn get_matrix_int(&self) -> BTreeMap<usize, Vec<Sequence>> {
+        let mut vec: BTreeMap<usize, Vec<Sequence>> = BTreeMap::new();
+        let n = 500;
+        self.matrix.iter().for_each(|(id, seq)| {
+            let chunks = self.chunk_seq(seq, n);
+            chunks.iter().enumerate().for_each(|(idx, seqs)| {
+                let mat = Sequence::new(id, seqs);
+                if vec.contains_key(&idx) {
+                    if let Some(value) = vec.get_mut(&idx) {
+                        value.push(mat);
+                    }
+                } else {
+                    vec.insert(idx, vec![mat]);
+                }
+            })
+        });
+
+        vec
+    }
+
+    fn chunk_seq(&self, seq: &str, n: usize) -> Vec<String> {
+        seq.as_bytes()
+            .chunks(n)
+            .map(|chunk| {
+                std::str::from_utf8(chunk)
+                    .expect("FAILED CHUNKING THE SEQ OUTPUT")
+                    .to_string()
+            })
+            .collect()
     }
 
     fn get_max_id_len(&mut self) {
@@ -225,6 +339,20 @@ impl<'a> SeqWriter<'a> {
             iter::repeat(' ').take(inserts).collect()
         } else {
             iter::repeat(' ').take(spaces).collect()
+        }
+    }
+}
+
+struct Sequence {
+    id: String,
+    seq: String,
+}
+
+impl Sequence {
+    fn new(id: &str, seq: &str) -> Self {
+        Self {
+            id: String::from(id),
+            seq: String::from(seq),
         }
     }
 }

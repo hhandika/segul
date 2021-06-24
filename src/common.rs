@@ -6,6 +6,9 @@ pub enum SeqFormat {
     Fasta,
     Nexus,
     Phylip,
+    FastaInt,
+    NexusInt,
+    PhylipInt,
 }
 
 pub enum PartitionFormat {

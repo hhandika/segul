@@ -49,6 +49,7 @@ impl<'a> Files<'a> {
             SeqFormat::Nexus => format!("{}/*.nex*", self.dir),
             SeqFormat::Phylip => format!("{}/*.phy*", self.dir),
             SeqFormat::Fasta => format!("{}/*.fa*", self.dir),
+            _ => panic!("USE FASTA, NEXUS, OR PHYLIP ONLY"),
         };
     }
 }
@@ -71,6 +72,7 @@ impl<'a> IDs<'a> {
             SeqFormat::Nexus => self.get_id_from_nexus(),
             SeqFormat::Phylip => self.get_id_from_phylip(interleave),
             SeqFormat::Fasta => self.get_id_from_fasta(),
+            _ => panic!("USE FASTA, NEXUS, OR PHYLIP ONLY"),
         };
         self.get_id(&all_ids)
     }
