@@ -97,10 +97,10 @@ impl<'a> SeqWriter<'a> {
 
     fn write_phylip(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self.create_output_file(&self.output);
-        writeln!(writer, "{} {}", self.header.ntax, self.header.nchar)?;
+        write!(writer, "{} {}", self.header.ntax, self.header.nchar)?;
 
         if !interleave {
-            self.write_matrix(&mut writer);
+            self.write_matrix(&mut writer)?;
         } else {
             self.write_matrix_phy_int(&mut writer);
         }
@@ -116,10 +116,14 @@ impl<'a> SeqWriter<'a> {
         let mut writer = self.create_output_file(&self.output);
         self.write_nex_header(&mut writer)?;
         self.write_nex_format(&mut writer, interleave)?;
-        writeln!(writer, "matrix")?;
+
+        // We write only instead of write line.
+        // This allow for no whitespace
+        // before semicolon before the end of matrix.
+        write!(writer, "matrix")?;
 
         if !interleave {
-            self.write_matrix(&mut writer);
+            self.write_matrix(&mut writer)?;
         } else {
             self.write_matrix_nex_int(&mut writer);
         }
@@ -167,35 +171,39 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    fn write_matrix<W: Write>(&self, writer: &mut W) {
+    fn write_matrix<W: Write>(&self, writer: &mut W) -> Result<()> {
+        // we insert newline for
+        // the non-terminated new line matrix commmand.
+        writeln!(writer)?;
         self.matrix.iter().for_each(|(taxa, seq)| {
             self.write_padded_seq(writer, taxa, seq)
                 .expect("CANNOT WRITE SEQ MATRIX")
         });
+
+        Ok(())
     }
 
     fn write_matrix_phy_int<W: Write>(&self, writer: &mut W) {
         let mat_int = self.get_matrix_int();
         mat_int.iter().for_each(|(idx, seq)| {
+            writeln!(writer).unwrap(); // insert newline before each group.
             seq.iter().for_each(|s| match idx {
                 0 => self
                     .write_padded_seq(writer, &s.id, &s.seq)
                     .expect("CANNOT WRITE PADDED SEQ MATRIX"),
                 _ => writeln!(writer, "{}", s.seq).unwrap(),
             });
-
-            writeln!(writer).unwrap();
         });
     }
 
     fn write_matrix_nex_int<W: Write>(&self, writer: &mut W) {
         let mat_int = self.get_matrix_int();
         mat_int.values().for_each(|seq| {
+            writeln!(writer).unwrap(); // insert newline before each group.
             seq.iter().for_each(|s| {
                 self.write_padded_seq(writer, &s.id, &s.seq)
                     .expect("CANNOT WRITE PADDED SEQ MATRIX");
             });
-            writeln!(writer).unwrap();
         });
     }
 
