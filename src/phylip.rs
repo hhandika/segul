@@ -134,15 +134,15 @@ impl<'a> Phylip<'a> {
     }
 
     fn insert_matrix(&mut self, id: String, dna: String) {
-        #[allow(clippy::all)]
-        if self.matrix.contains_key(&id) {
-            panic!(
+        match self.matrix.get(&id) {
+            Some(_) => panic!(
                 "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
                 self.input.display(),
                 id
-            );
-        } else {
-            self.matrix.insert(id, dna);
+            ),
+            None => {
+                self.matrix.insert(id, dna);
+            }
         }
     }
 

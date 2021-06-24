@@ -300,13 +300,19 @@ impl<'a> SeqWriter<'a> {
             let chunks = self.chunk_seq(seq, n);
             chunks.iter().enumerate().for_each(|(idx, seqs)| {
                 let mat = Sequence::new(id, seqs);
-                if vec.contains_key(&idx) {
-                    if let Some(value) = vec.get_mut(&idx) {
-                        value.push(mat);
+                match vec.get_mut(&idx) {
+                    Some(value) => value.push(mat),
+                    None => {
+                        vec.insert(idx, vec![mat]);
                     }
-                } else {
-                    vec.insert(idx, vec![mat]);
                 }
+                // if vec.contains_key(&idx) {
+                //     if let Some(value) = vec.get_mut(&idx) {
+                //         value.push(mat);
+                //     }
+                // } else {
+                //     vec.insert(idx, vec![mat]);
+                // }
             })
         });
 

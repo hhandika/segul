@@ -33,24 +33,20 @@ impl AlnStats {
 
     fn index_sites(&mut self, matrix: &IndexMap<String, String>) {
         matrix.values().for_each(|seq| {
-            seq.chars().enumerate().for_each(|(idx, dna)| {
-                #[allow(clippy::map_entry)]
-                if self.site_matrix.contains_key(&idx) {
-                    if let Some(value) = self.site_matrix.get_mut(&idx) {
-                        match dna {
-                            '-' | 'N' | '?' | '.' => (),
-                            _ => value.push(dna),
-                        }
-                    }
-                } else {
-                    match dna {
+            seq.chars()
+                .enumerate()
+                .for_each(|(idx, dna)| match self.site_matrix.get_mut(&idx) {
+                    Some(value) => match dna {
+                        '-' | 'N' | '?' | '.' => (),
+                        _ => value.push(dna),
+                    },
+                    None => match dna {
                         '-' | 'N' | '?' | '.' => (),
                         _ => {
                             self.site_matrix.insert(idx, dna.to_string());
                         }
-                    }
-                }
-            })
+                    },
+                })
         });
     }
 

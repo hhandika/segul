@@ -55,14 +55,18 @@ impl<'a> Fasta<'a> {
 
     fn parse_fasta<R: Read>(&mut self, buff: R) {
         let fasta = FastaReader::new(buff);
-        fasta.into_iter().for_each(|fas| {
-            #[allow(clippy::all)]
-            if self.matrix.contains_key(&fas.id) {
-                panic!("DUPLICATE SAMPLES. FIRST DUPLICATE FOUND: {}", fas.id);
-            } else {
-                self.matrix.insert(fas.id, fas.seq);
-            }
-        });
+        fasta
+            .into_iter()
+            .for_each(|fas| match self.matrix.get(&fas.id) {
+                Some(_) => panic!(
+                    "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
+                    self.input.display(),
+                    fas.id
+                ),
+                None => {
+                    self.matrix.insert(fas.id, fas.seq);
+                }
+            });
     }
 }
 
