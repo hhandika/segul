@@ -65,7 +65,7 @@ impl<'a> SeqWriter<'a> {
 
     fn write_fasta(&mut self, interleave: bool) {
         let mut writer = self.create_output_file(&self.output);
-        let n = 500;
+        let n = self.get_interleave_len();
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
             if !interleave {
@@ -295,7 +295,7 @@ impl<'a> SeqWriter<'a> {
 
     fn get_matrix_int(&self) -> BTreeMap<usize, Vec<Sequence>> {
         let mut vec: BTreeMap<usize, Vec<Sequence>> = BTreeMap::new();
-        let n = 500;
+        let n = self.get_interleave_len();
         self.matrix.iter().for_each(|(id, seq)| {
             let chunks = self.chunk_seq(seq, n);
             chunks.iter().enumerate().for_each(|(idx, seqs)| {
@@ -322,6 +322,14 @@ impl<'a> SeqWriter<'a> {
                     .to_string()
             })
             .collect()
+    }
+
+    fn get_interleave_len(&self) -> usize {
+        if self.header.nchar < 1000 {
+            80
+        } else {
+            500
+        }
     }
 
     fn get_max_id_len(&mut self) {
