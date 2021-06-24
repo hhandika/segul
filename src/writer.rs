@@ -306,13 +306,6 @@ impl<'a> SeqWriter<'a> {
                         vec.insert(idx, vec![mat]);
                     }
                 }
-                // if vec.contains_key(&idx) {
-                //     if let Some(value) = vec.get_mut(&idx) {
-                //         value.push(mat);
-                //     }
-                // } else {
-                //     vec.insert(idx, vec![mat]);
-                // }
             })
         });
 
