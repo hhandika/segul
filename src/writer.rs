@@ -211,7 +211,7 @@ impl<'a> SeqWriter<'a> {
 
     fn write_partition_sep(&self) {
         match self.part_format {
-            PartitionFormat::NexusSeparate => self.write_part_nexus_sep(),
+            PartitionFormat::Charset => self.write_part_nexus_sep(),
             PartitionFormat::Raxml => self.write_part_phylip(),
             _ => eprintln!("UNKNOWN PARTITION FORMAT"),
         }
@@ -253,7 +253,7 @@ impl<'a> SeqWriter<'a> {
 
     fn get_partition_path(&mut self) {
         match self.part_format {
-            PartitionFormat::NexusSeparate => {
+            PartitionFormat::Charset => {
                 self.part_file = self
                     .output
                     .parent()

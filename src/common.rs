@@ -13,7 +13,7 @@ pub enum SeqFormat {
 
 pub enum PartitionFormat {
     Nexus,
-    NexusSeparate,
+    Charset,
     Raxml,
     None,
 }

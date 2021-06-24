@@ -181,10 +181,10 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("partition")
                                 .short("-p")
                                 .long("part")
-                                .help("Sets partition format. Choice: nexus, phylip, nexsep")
+                                .help("Sets partition format. Choices: nexus, phylip, charset")
                                 .takes_value(true)
                                 .required(true)
-                                .default_value("nexsep")
+                                .default_value("charset")
                                 .value_name("FORMAT"),
                         )
                         .arg(
@@ -223,10 +223,10 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("partition")
                                 .short("-p")
                                 .long("part")
-                                .help("Sets partition format. Choice: nexus, phylip, nexsep")
+                                .help("Sets partition format. Choices: nexus, phylip, charset")
                                 .takes_value(true)
                                 .required(true)
-                                .default_value("nexsep")
+                                .default_value("charset")
                                 .value_name("FORMAT"),
                         )
                         .arg(
@@ -265,10 +265,10 @@ fn get_args(version: &str) -> ArgMatches {
                             Arg::with_name("partition")
                                 .short("-p")
                                 .long("part")
-                                .help("Sets partition format. Choice: nexus, raxml, nexsep")
+                                .help("Sets partition format. Choices: nexus, raxml, charset")
                                 .takes_value(true)
                                 .required(true)
-                                .default_value("nexsep") 
+                                .default_value("charset") 
                                 .value_name("FORMAT"),
                         )
                         .arg(
@@ -381,7 +381,7 @@ trait Cli {
         match part_format {
             "nexus" => PartitionFormat::Nexus,
             "raxml" => PartitionFormat::Raxml,
-            "nexsep" => PartitionFormat::NexusSeparate,
+            "charset" => PartitionFormat::Charset,
             _ => PartitionFormat::Nexus,
         }
     }
@@ -547,7 +547,7 @@ impl<'a> ConcatParser<'a> {
                 if let PartitionFormat::Nexus = part_format {
                     panic!(
                         "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
-                MAYBE YOU MEAN TO WRITE THE PARTITION TO 'nexsep' INSTEAD."
+                MAYBE YOU MEAN TO WRITE THE PARTITION TO 'charset' INSTEAD."
                     )
                 }
             }
