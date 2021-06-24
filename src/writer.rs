@@ -65,7 +65,7 @@ impl<'a> SeqWriter<'a> {
 
     fn write_fasta(&mut self, interleave: bool) {
         let mut writer = self.create_output_file(&self.output);
-        let n = 80;
+        let n = 500;
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
             if !interleave {
@@ -102,7 +102,7 @@ impl<'a> SeqWriter<'a> {
         if !interleave {
             self.write_matrix(&mut writer);
         } else {
-            self.write_matrix_phy_int(&mut writer)?;
+            self.write_matrix_phy_int(&mut writer);
         }
 
         if self.partition.is_some() {
@@ -121,7 +121,7 @@ impl<'a> SeqWriter<'a> {
         if !interleave {
             self.write_matrix(&mut writer);
         } else {
-            self.write_matrix_nex_int(&mut writer)?;
+            self.write_matrix_nex_int(&mut writer);
         }
 
         writeln!(writer, ";")?;
@@ -160,7 +160,7 @@ impl<'a> SeqWriter<'a> {
         )?;
 
         if interleave {
-            write!(writer, "interleave")?;
+            write!(writer, " interleave")?;
         }
 
         writeln!(writer, ";")?;
@@ -174,32 +174,29 @@ impl<'a> SeqWriter<'a> {
         });
     }
 
-    fn write_matrix_phy_int<W: Write>(&self, writer: &mut W) -> Result<()> {
+    fn write_matrix_phy_int<W: Write>(&self, writer: &mut W) {
         let mat_int = self.get_matrix_int();
         mat_int.iter().for_each(|(idx, seq)| {
             seq.iter().for_each(|s| match idx {
-                1 => self
+                0 => self
                     .write_padded_seq(writer, &s.id, &s.seq)
                     .expect("CANNOT WRITE PADDED SEQ MATRIX"),
                 _ => writeln!(writer, "{}", s.seq).unwrap(),
-            })
-        });
+            });
 
-        writeln!(writer)?;
-        Ok(())
+            writeln!(writer).unwrap();
+        });
     }
 
-    fn write_matrix_nex_int<W: Write>(&self, writer: &mut W) -> Result<()> {
+    fn write_matrix_nex_int<W: Write>(&self, writer: &mut W) {
         let mat_int = self.get_matrix_int();
         mat_int.values().for_each(|seq| {
             seq.iter().for_each(|s| {
                 self.write_padded_seq(writer, &s.id, &s.seq)
                     .expect("CANNOT WRITE PADDED SEQ MATRIX");
-            })
+            });
+            writeln!(writer).unwrap();
         });
-        writeln!(writer)?;
-
-        Ok(())
     }
 
     fn write_padded_seq<W: Write>(&self, writer: &mut W, taxa: &str, seq: &str) -> Result<()> {

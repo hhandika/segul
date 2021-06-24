@@ -399,7 +399,7 @@ trait Cli {
             "phylip-int" => SeqFormat::PhylipInt,
             _ => panic!(
                 "UNSUPPORTED FORMAT. \
-        THE PROGRAM ONLY ACCEPT nexus, phylip, and fasta. All in lowercase.\
+        THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, phylip, and phylip-int. All in lowercase. \
         Your input: {} ",
                 output_format
             ),
