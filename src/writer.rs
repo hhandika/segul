@@ -214,8 +214,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn get_max_id_len(&mut self) {
-        let longest = self.matrix.keys().max_by_key(|id| id.len()).unwrap();
-        self.id_len = longest.len();
+        self.id_len = self.matrix.keys().map(|id| id.len()).max().unwrap();
     }
 
     fn insert_whitespaces(&self, id: &str, max_len: usize) -> String {
