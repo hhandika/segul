@@ -173,12 +173,11 @@ impl<'a> Nexus<'a> {
     }
 
     fn insert_matrix_interleave(&mut self, id: String, dna: String) {
-        if self.matrix.contains_key(&id) {
-            if let Some(value) = self.matrix.get_mut(&id) {
-                value.push_str(&dna);
+        match self.matrix.get_mut(&id) {
+            Some(value) => value.push_str(&dna),
+            None => {
+                self.matrix.insert(id, dna);
             }
-        } else {
-            self.matrix.insert(id, dna);
         }
     }
 
