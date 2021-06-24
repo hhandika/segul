@@ -145,7 +145,7 @@ impl Concat {
             gene_start = nchar + 1;
             id.iter().for_each(|id| {
                 if !aln.alignment.contains_key(id) {
-                    let seq = self.get_gaps(aln.header.nchar);
+                    let seq = self.get_missings(aln.header.nchar);
                     self.insert_alignment(&mut alignment, id, &seq)
                 } else if let Some(seq) = aln.alignment.get(id) {
                     self.insert_alignment(&mut alignment, id, seq)
@@ -177,8 +177,8 @@ impl Concat {
         }
     }
 
-    fn get_gaps(&self, len: usize) -> String {
-        iter::repeat('-').take(len).collect()
+    fn get_missings(&self, len: usize) -> String {
+        iter::repeat('?').take(len).collect()
     }
 }
 
@@ -200,7 +200,7 @@ mod test {
         let mut concat = Concat::new(SeqFormat::Nexus, false);
         concat.concat_alignment(path);
         let abce = concat.alignment.get("ABCE").unwrap();
-        let res = "--------------gatattagtata";
+        let res = "??????????????gatattagtata";
         assert_eq!(res, abce);
     }
 
@@ -222,7 +222,7 @@ mod test {
     #[test]
     fn get_gaps_test() {
         let len = 5;
-        let gaps = "-----";
-        assert_eq!(gaps, Concat::new(SeqFormat::Fasta, false).get_gaps(len))
+        let gaps = "?????";
+        assert_eq!(gaps, Concat::new(SeqFormat::Fasta, false).get_missings(len))
     }
 }
