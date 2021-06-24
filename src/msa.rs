@@ -57,7 +57,10 @@ impl<'a> MSAlignment<'a> {
         let output = Path::new(self.output);
         self.display_alignment_stats(part.len(), &header).unwrap();
         let mut save = SeqWriter::new(output, aln, header, Some(part), &self.part_format);
+        let spin = utils::set_spinner();
+        spin.set_message("Writing output files...");
         save.write_sequence(&self.output_format);
+        spin.finish_with_message("DONE!\n");
         save.display_save_path();
         save.display_partition_path();
     }
@@ -74,7 +77,7 @@ impl<'a> MSAlignment<'a> {
         )?;
         writeln!(
             writer,
-            "#Chars\t\t: {} bp",
+            "#Chars\t\t: {} bp\n",
             utils::format_thousand_sep(&header.nchar)
         )?;
 
