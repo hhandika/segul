@@ -54,7 +54,8 @@ impl<'a> MSAlignment<'a> {
             &self.part_format,
         );
         spin.set_message("Writing output files...");
-        save.write_sequence(&self.output_format);
+        save.write_sequence(&self.output_format)
+            .expect("CANNOT WRITE OUTPUT FILES");
         spin.finish_with_message("DONE!\n");
         self.display_alignment_stats(concat.partition.len(), &concat.header)
             .unwrap();

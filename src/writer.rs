@@ -39,7 +39,7 @@ impl<'a> SeqWriter<'a> {
         }
     }
 
-    pub fn write_sequence(&mut self, output_format: &SeqFormat) {
+    pub fn write_sequence(&mut self, output_format: &SeqFormat) -> Result<()> {
         self.get_output_name(output_format);
 
         if self.partition.is_some() {
@@ -47,19 +47,15 @@ impl<'a> SeqWriter<'a> {
         }
 
         match output_format {
-            SeqFormat::Nexus => self.write_nexus(false).expect("CANNOT WRITE A NEXUS FILE."),
-            SeqFormat::NexusInt => self
-                .write_nexus(true)
-                .expect("CANNOT WRITE A NEXUS INTERLEAVE FILE."),
-            SeqFormat::Phylip => self
-                .write_phylip(false)
-                .expect("CANNOT WRITE A PHYLIP FILE."),
-            SeqFormat::PhylipInt => self
-                .write_phylip(true)
-                .expect("CANNOT WRITE A PHYLIP FILE."),
+            SeqFormat::Nexus => self.write_nexus(false)?,
+            SeqFormat::NexusInt => self.write_nexus(true)?,
+            SeqFormat::Phylip => self.write_phylip(false)?,
+            SeqFormat::PhylipInt => self.write_phylip(true)?,
             SeqFormat::Fasta => self.write_fasta(false),
             SeqFormat::FastaInt => self.write_fasta(true),
         }
+
+        Ok(())
     }
 
     pub fn display_save_path(&self) {

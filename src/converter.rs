@@ -53,7 +53,9 @@ impl<'a> Converter<'a> {
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
         let save_path = self.output.join(self.input.file_stem().unwrap());
         let mut convert = SeqWriter::new(&save_path, matrix, header, None, &PartitionFormat::None);
-        convert.write_sequence(self.output_format);
+        convert
+            .write_sequence(self.output_format)
+            .expect("CANNOT WRITE OUTPUT FILES");
 
         if !self.is_dir {
             convert.display_save_path();
