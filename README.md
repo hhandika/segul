@@ -3,6 +3,8 @@
 
 A genomic sequence utility
 
+Under development. More coming soon!
+
 ## Usages
 
 ### Available command options
