@@ -119,6 +119,11 @@ impl<'a> Concat<'a> {
     fn get_alignment(&self, file: &Path) -> Alignment {
         let mut aln = Alignment::new();
         aln.get_aln_any(file, &self.input_format);
+        assert!(
+            aln.header.ntax != 0,
+            "ZERO TAXON FOUND IN ALIGNMENT FILES {}",
+            file.display()
+        );
         aln
     }
 
