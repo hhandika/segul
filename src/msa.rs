@@ -11,38 +11,34 @@ use indicatif::ProgressBar;
 
 use crate::alignment::Alignment;
 use crate::common::{Header, Partition, PartitionFormat, SeqFormat};
-use crate::finder::{Files, IDs};
+use crate::finder::IDs;
 use crate::utils;
 use crate::writer::SeqWriter;
 
 pub struct MSAlignment<'a> {
-    dir: &'a str,
-    output: &'a str,
     input_format: &'a SeqFormat,
+    output: &'a str,
     output_format: SeqFormat,
     part_format: PartitionFormat,
 }
 
 impl<'a> MSAlignment<'a> {
     pub fn new(
-        dir: &'a str,
-        output: &'a str,
         input_format: &'a SeqFormat,
+        output: &'a str,
         output_format: SeqFormat,
         part_format: PartitionFormat,
     ) -> Self {
         Self {
-            dir,
-            output,
             input_format,
+            output,
             output_format,
             part_format,
         }
     }
 
-    pub fn concat_alignment(&self) {
-        let mut files = Files::new(self.dir, &self.input_format).get_files();
-        let mut concat = Concat::new(&mut files, &self.input_format);
+    pub fn concat_alignment(&self, files: &mut [PathBuf]) {
+        let mut concat = Concat::new(files, &self.input_format);
         let spin = utils::set_spinner();
         self.write_alignment(&mut concat, &spin);
     }
@@ -185,6 +181,7 @@ impl<'a> Concat<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::finder::Files;
 
     #[test]
     fn concat_nexus_test() {

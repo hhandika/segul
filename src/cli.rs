@@ -535,8 +535,9 @@ impl<'a> ConcatParser<'a> {
         }
         self.check_partition_format(&part_format);
         self.display_input_dir(&dir).unwrap();
-        msa::MSAlignment::new(dir, output, &self.input_format, output_format, part_format)
-            .concat_alignment();
+        let concat = msa::MSAlignment::new(&self.input_format, output, output_format, part_format);
+        let mut files = Files::new(dir, &self.input_format).get_files();
+        concat.concat_alignment(&mut files);
     }
 
     fn display_input_dir(&self, input: &str) -> Result<()> {
