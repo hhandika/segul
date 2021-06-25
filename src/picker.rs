@@ -1,6 +1,6 @@
 use std::fs;
 use std::io::Result;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use rayon::prelude::*;
@@ -20,13 +20,7 @@ pub fn get_min_taxa(dir: &str, input_format: &SeqFormat, percent: f32, output_di
     fs::create_dir_all(output_dir).expect("CANNOT CREATE A TARGET DIRECTORY");
     files.par_iter().for_each(|file| {
         let min_taxa = count_min_tax(ntax, percent);
-        let header = match input_format {
-            SeqFormat::Fasta | SeqFormat::FastaInt => get_fas_header(file),
-            SeqFormat::Nexus | SeqFormat::NexusInt => get_nex_header(file),
-            SeqFormat::Phylip => get_phy_header(file, false),
-            SeqFormat::PhylipInt => get_phy_header(file, true),
-        };
-
+        let header = get_header(input_format, file);
         if header.ntax >= min_taxa {
             copy_files(file, output_dir).expect("CANNOT COPY FILES");
             let mut count = count.lock().unwrap();
@@ -36,6 +30,15 @@ pub fn get_min_taxa(dir: &str, input_format: &SeqFormat, percent: f32, output_di
 
     println!("File origin: {}", file_counts);
     println!("File final: {}", *count.lock().unwrap());
+}
+
+fn get_header(input_format: &SeqFormat, file: &Path) -> Header {
+    match input_format {
+        SeqFormat::Fasta | SeqFormat::FastaInt => get_fas_header(file),
+        SeqFormat::Nexus | SeqFormat::NexusInt => get_nex_header(file),
+        SeqFormat::Phylip => get_phy_header(file, false),
+        SeqFormat::PhylipInt => get_phy_header(file, true),
+    }
 }
 
 fn copy_files(origin: &Path, output_dir: &Path) -> Result<()> {
