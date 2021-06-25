@@ -8,7 +8,7 @@ use crate::common::{PartitionFormat, SeqFormat};
 use crate::converter::Converter;
 use crate::finder::Files;
 use crate::msa;
-use crate::picker;
+use crate::picker::Picker;
 use crate::stats::AlnStats;
 use crate::utils;
 
@@ -387,6 +387,10 @@ trait Cli {
         matches.value_of("dir").expect("CANNOT READ DIR PATH")
     }
 
+    fn get_files(&self, dir: &str, input_format: &SeqFormat) -> Vec<PathBuf> {
+        Files::new(dir, input_format).get_files()
+    }
+
     fn get_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
         matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
     }
@@ -471,7 +475,7 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_multiple_fasta(&mut self) {
         let dir = self.get_dir_input(self.matches);
-        let files = Files::new(dir, &self.input_format).get_files();
+        let files = self.get_files(dir, &self.input_format);
         let output_format = self.get_output_format(self.matches);
         self.output = self.set_output(&self.matches);
         self.is_dir = true;
@@ -546,7 +550,7 @@ impl<'a> ConcatParser<'a> {
         self.display_input_dir(&dir).unwrap();
         let concat =
             msa::MSAlignment::new(&self.input_format, output, output_format, &self.part_format);
-        let mut files = Files::new(dir, &self.input_format).get_files();
+        let mut files = self.get_files(dir, &self.input_format);
         concat.concat_alignment(&mut files);
     }
 
@@ -608,7 +612,7 @@ impl<'a> ConcatParser<'a> {
 struct PickParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_format: SeqFormat,
-    percent: f32,
+    percent: f64,
     output_dir: PathBuf,
 }
 
@@ -624,7 +628,14 @@ impl<'a> PickParser<'a> {
 
     fn get_min_taxa(&self) {
         let dir = self.get_dir_input(self.matches);
-        picker::get_min_taxa(dir, &self.input_format, self.percent, &self.output_dir);
+        let mut files = self.get_files(dir, &self.input_format);
+        let pick = Picker::new(
+            &mut files,
+            &self.input_format,
+            &self.output_dir,
+            self.percent,
+        );
+        pick.get_min_taxa();
     }
 }
 
