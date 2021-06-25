@@ -41,7 +41,6 @@ impl<'a> SeqWriter<'a> {
 
     pub fn write_sequence(&mut self, output_format: &SeqFormat) {
         self.get_output_name(output_format);
-        self.get_max_id_len();
 
         if self.partition.is_some() {
             self.get_partition_path();
@@ -63,6 +62,18 @@ impl<'a> SeqWriter<'a> {
         }
     }
 
+    pub fn display_save_path(&self) {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "Output\t\t: {}", self.output.display()).unwrap();
+    }
+
+    pub fn display_partition_path(&self) {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "Partition\t: {}", &self.part_file.display()).unwrap();
+    }
+
     fn write_fasta(&mut self, interleave: bool) {
         let mut writer = self.create_output_file(&self.output);
         let n = self.get_interleave_len();
@@ -81,35 +92,6 @@ impl<'a> SeqWriter<'a> {
         if self.partition.is_some() {
             self.write_partition_sep();
         }
-    }
-
-    pub fn display_save_path(&self) {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "Output\t\t: {}", self.output.display()).unwrap();
-    }
-
-    pub fn display_partition_path(&self) {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "Partition\t: {}", &self.part_file.display()).unwrap();
-    }
-
-    fn write_phylip(&mut self, interleave: bool) -> Result<()> {
-        let mut writer = self.create_output_file(&self.output);
-        write!(writer, "{} {}", self.header.ntax, self.header.nchar)?;
-
-        if !interleave {
-            self.write_matrix(&mut writer)?;
-        } else {
-            self.write_matrix_phy_int(&mut writer);
-        }
-
-        if self.partition.is_some() {
-            self.write_partition_sep();
-        }
-
-        Ok(())
     }
 
     fn write_nexus(&mut self, interleave: bool) -> Result<()> {
@@ -146,6 +128,23 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
+    fn write_phylip(&mut self, interleave: bool) -> Result<()> {
+        let mut writer = self.create_output_file(&self.output);
+        write!(writer, "{} {}", self.header.ntax, self.header.nchar)?;
+
+        if !interleave {
+            self.write_matrix(&mut writer)?;
+        } else {
+            self.write_matrix_phy_int(&mut writer);
+        }
+
+        if self.partition.is_some() {
+            self.write_partition_sep();
+        }
+
+        Ok(())
+    }
+
     fn write_nex_header<W: Write>(&self, writer: &mut W) -> Result<()> {
         writeln!(writer, "#NEXUS")?;
         writeln!(writer, "begin data;")?;
@@ -173,7 +172,7 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    fn write_matrix<W: Write>(&self, writer: &mut W) -> Result<()> {
+    fn write_matrix<W: Write>(&mut self, writer: &mut W) -> Result<()> {
         // we insert newline for
         // the non-terminated new line matrix commmand.
         writeln!(writer)?;
@@ -185,7 +184,7 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    fn write_matrix_phy_int<W: Write>(&self, writer: &mut W) {
+    fn write_matrix_phy_int<W: Write>(&mut self, writer: &mut W) {
         let mat_int = self.get_matrix_int();
         mat_int.iter().for_each(|(idx, seq)| {
             writeln!(writer).unwrap(); // insert newline before each group.
@@ -198,7 +197,7 @@ impl<'a> SeqWriter<'a> {
         });
     }
 
-    fn write_matrix_nex_int<W: Write>(&self, writer: &mut W) {
+    fn write_matrix_nex_int<W: Write>(&mut self, writer: &mut W) {
         let mat_int = self.get_matrix_int();
         mat_int.values().for_each(|seq| {
             writeln!(writer).unwrap(); // insert newline before each group.
@@ -209,7 +208,27 @@ impl<'a> SeqWriter<'a> {
         });
     }
 
-    fn write_padded_seq<W: Write>(&self, writer: &mut W, taxa: &str, seq: &str) -> Result<()> {
+    fn get_matrix_int(&self) -> BTreeMap<usize, Vec<Sequence>> {
+        let mut vec: BTreeMap<usize, Vec<Sequence>> = BTreeMap::new();
+        let n = self.get_interleave_len();
+        self.matrix.iter().for_each(|(id, seq)| {
+            let chunks = self.chunk_seq(seq, n);
+            chunks.iter().enumerate().for_each(|(idx, seqs)| {
+                let mat = Sequence::new(id, seqs);
+                match vec.get_mut(&idx) {
+                    Some(value) => value.push(mat),
+                    None => {
+                        vec.insert(idx, vec![mat]);
+                    }
+                }
+            })
+        });
+
+        vec
+    }
+
+    fn write_padded_seq<W: Write>(&mut self, writer: &mut W, taxa: &str, seq: &str) -> Result<()> {
+        self.get_max_id_len();
         write!(writer, "{}", taxa)?;
         write!(writer, "{}", self.insert_whitespaces(taxa, self.id_len))?;
         writeln!(writer, "{}", seq)?;
@@ -240,31 +259,6 @@ impl<'a> SeqWriter<'a> {
         }
     }
 
-    fn write_phy_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
-        writeln!(
-            writer,
-            "DNA, {}-Subset1 = {}-{}\\3",
-            part.gene, part.start, part.end
-        )
-        .unwrap();
-        writeln!(
-            writer,
-            "DNA, {}-Subset2 = {}-{}\\3",
-            part.gene,
-            part.start + 1,
-            part.end
-        )
-        .unwrap();
-        writeln!(
-            writer,
-            "DNA, {}-Subset3 = {}-{}\\3",
-            part.gene,
-            part.start + 2,
-            part.end
-        )
-        .unwrap();
-    }
-
     fn write_part_nexus_sep(&self, codon: bool) {
         let mut writer = self.create_output_file(&self.part_file);
         writeln!(writer, "#nexus").unwrap();
@@ -291,6 +285,31 @@ impl<'a> SeqWriter<'a> {
         }
         writeln!(writer, "end;")?;
         Ok(())
+    }
+
+    fn write_phy_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
+        writeln!(
+            writer,
+            "DNA, {}-Subset1 = {}-{}\\3",
+            part.gene, part.start, part.end
+        )
+        .unwrap();
+        writeln!(
+            writer,
+            "DNA, {}-Subset2 = {}-{}\\3",
+            part.gene,
+            part.start + 1,
+            part.end
+        )
+        .unwrap();
+        writeln!(
+            writer,
+            "DNA, {}-Subset3 = {}-{}\\3",
+            part.gene,
+            part.start + 2,
+            part.end
+        )
+        .unwrap();
     }
 
     fn write_nex_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
@@ -334,7 +353,9 @@ impl<'a> SeqWriter<'a> {
                     .unwrap()
                     .join(&self.get_partition_name("txt"));
             }
-            PartitionFormat::Nexus => self.part_file = PathBuf::from("in-file"),
+            PartitionFormat::Nexus | PartitionFormat::NexusCodon => {
+                self.part_file = PathBuf::from("in-file")
+            }
             _ => (),
         }
     }
@@ -361,25 +382,6 @@ impl<'a> SeqWriter<'a> {
         fs::create_dir_all(fname.parent().unwrap()).expect("CANNOT CREATE A TARGET DIRECTORY");
         let file = File::create(&fname).expect("CANNOT CREATE OUTPUT FILE");
         LineWriter::new(file)
-    }
-
-    fn get_matrix_int(&self) -> BTreeMap<usize, Vec<Sequence>> {
-        let mut vec: BTreeMap<usize, Vec<Sequence>> = BTreeMap::new();
-        let n = self.get_interleave_len();
-        self.matrix.iter().for_each(|(id, seq)| {
-            let chunks = self.chunk_seq(seq, n);
-            chunks.iter().enumerate().for_each(|(idx, seqs)| {
-                let mat = Sequence::new(id, seqs);
-                match vec.get_mut(&idx) {
-                    Some(value) => value.push(mat),
-                    None => {
-                        vec.insert(idx, vec![mat]);
-                    }
-                }
-            })
-        });
-
-        vec
     }
 
     fn chunk_seq(&self, seq: &str, n: usize) -> Vec<String> {
