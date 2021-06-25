@@ -196,6 +196,15 @@ mod test {
     }
 
     #[test]
+    #[should_panic]
+    fn get_alignment_panic_test() {
+        let path = "test_files/concat/";
+        let mut files = Files::new(path, &SeqFormat::Nexus).get_files();
+        let concat = Concat::new(&mut files, &SeqFormat::Nexus);
+        concat.get_alignment(Path::new("."));
+    }
+
+    #[test]
     fn concat_check_result_test() {
         let path = "test_files/concat/";
         let mut files = Files::new(path, &SeqFormat::Nexus).get_files();
