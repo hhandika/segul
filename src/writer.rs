@@ -235,18 +235,18 @@ impl<'a> SeqWriter<'a> {
         match self.part_format {
             PartitionFormat::Charset => self.write_part_nexus_sep(false),
             PartitionFormat::CharsetCodon => self.write_part_nexus_sep(true),
-            PartitionFormat::Raxml => self.write_part_phylip(false),
-            PartitionFormat::RaxmlCodon => self.write_part_phylip(true),
+            PartitionFormat::Raxml => self.write_part_raxml(false),
+            PartitionFormat::RaxmlCodon => self.write_part_raxml(true),
             _ => eprintln!("UNKNOWN PARTITION FORMAT"),
         }
     }
 
-    fn write_part_phylip(&self, codon: bool) {
+    fn write_part_raxml(&self, codon: bool) {
         let mut writer = self.create_output_file(Path::new(&self.part_file));
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
                 if codon {
-                    self.write_phy_codon(&mut writer, part).unwrap();
+                    self.write_raxml_codon(&mut writer, part).unwrap();
                 } else {
                     writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
                 }
@@ -283,7 +283,7 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    fn write_phy_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
+    fn write_raxml_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
         writeln!(
             writer,
             "DNA, {}-Subset1 = {}-{}\\3",
