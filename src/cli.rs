@@ -197,6 +197,12 @@ fn get_args(version: &str) -> ArgMatches {
                                 .required(true)
                                 .default_value("concat")
                                 .value_name("OUTPUT"),
+                        )
+                        .arg(
+                            Arg::with_name("codon")
+                            .long("codon")
+                            .help("Sets codon model partition format")
+                            .takes_value(false)
                         ),
                 )
                 .subcommand(
@@ -239,6 +245,12 @@ fn get_args(version: &str) -> ArgMatches {
                                 .required(true)
                                 .default_value("concat")
                                 .value_name("OUTPUT"),
+                        )
+                        .arg(
+                            Arg::with_name("codon")
+                            .long("codon")
+                            .help("Sets codon model partition format")
+                            .takes_value(false)
                         ),
                 )
                 .subcommand(
@@ -287,6 +299,12 @@ fn get_args(version: &str) -> ArgMatches {
                                 .required(true)
                                 .default_value("concat")
                                 .value_name("OUTPUT"),
+                        )
+                        .arg(
+                            Arg::with_name("codon")
+                            .long("codon")
+                            .help("Sets codon model partition format")
+                            .takes_value(false)
                         ),
                 ),
         )
@@ -384,18 +402,6 @@ trait Cli {
 
     fn check_phylip_interleave(&self, matches: &ArgMatches) -> bool {
         matches.is_present("interleave")
-    }
-
-    fn get_partition_format(&self, matches: &ArgMatches) -> PartitionFormat {
-        let part_format = matches
-            .value_of("partition")
-            .expect("CANNOT READ PARTITION FORMAT");
-        match part_format {
-            "nexus" => PartitionFormat::Nexus,
-            "raxml" => PartitionFormat::Raxml,
-            "charset" => PartitionFormat::Charset,
-            _ => PartitionFormat::Nexus,
-        }
     }
 
     fn get_output_format(&self, matches: &ArgMatches) -> SeqFormat {
@@ -514,6 +520,8 @@ impl<'a> ConvertParser<'a> {
 struct ConcatParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_format: SeqFormat,
+    part_format: PartitionFormat,
+    codon: bool,
 }
 
 impl<'a> ConcatParser<'a> {
@@ -521,6 +529,8 @@ impl<'a> ConcatParser<'a> {
         Self {
             matches,
             input_format,
+            part_format: PartitionFormat::Charset,
+            codon: false,
         }
     }
 
@@ -528,16 +538,48 @@ impl<'a> ConcatParser<'a> {
         let dir = self.get_dir_input(self.matches);
         let output = self.get_output(self.matches);
         let output_format = self.get_output_format(self.matches);
-        let part_format = self.get_partition_format(self.matches);
+        self.get_partition_format();
         let interleave = self.check_phylip_interleave(&self.matches);
         if interleave {
             self.input_format = SeqFormat::PhylipInt;
         }
-        self.check_partition_format(&part_format);
         self.display_input_dir(&dir).unwrap();
-        let concat = msa::MSAlignment::new(&self.input_format, output, output_format, part_format);
+        let concat =
+            msa::MSAlignment::new(&self.input_format, output, output_format, &self.part_format);
         let mut files = Files::new(dir, &self.input_format).get_files();
         concat.concat_alignment(&mut files);
+    }
+
+    fn get_partition_format(&mut self) {
+        let part_format = self
+            .matches
+            .value_of("partition")
+            .expect("CANNOT READ PARTITION FORMAT");
+        if self.matches.is_present("codon") {
+            self.codon = true;
+            self.get_partition_format_codon(part_format);
+        } else {
+            self.get_partition_format_std(part_format);
+        }
+        self.check_partition_format();
+    }
+
+    fn get_partition_format_std(&mut self, part_format: &str) {
+        self.part_format = match part_format {
+            "nexus" => PartitionFormat::Nexus,
+            "raxml" => PartitionFormat::Raxml,
+            "charset" => PartitionFormat::Charset,
+            _ => PartitionFormat::Nexus,
+        };
+    }
+
+    fn get_partition_format_codon(&mut self, part_format: &str) {
+        self.part_format = match part_format {
+            "charset" => PartitionFormat::CharsetCodon,
+            "nexus" => PartitionFormat::NexusCodon,
+            "raxml" => PartitionFormat::RaxmlCodon,
+            _ => PartitionFormat::NexusCodon,
+        };
     }
 
     fn display_input_dir(&self, input: &str) -> Result<()> {
@@ -548,11 +590,11 @@ impl<'a> ConcatParser<'a> {
         Ok(())
     }
 
-    fn check_partition_format(&self, part_format: &PartitionFormat) {
+    fn check_partition_format(&self) {
         match self.input_format {
             SeqFormat::Nexus => (),
             _ => {
-                if let PartitionFormat::Nexus = part_format {
+                if let PartitionFormat::Nexus | PartitionFormat::NexusCodon = self.part_format {
                     panic!(
                         "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
                 MAYBE YOU MEAN TO WRITE THE PARTITION TO 'charset' INSTEAD."

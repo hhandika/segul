@@ -19,7 +19,7 @@ pub struct MSAlignment<'a> {
     input_format: &'a SeqFormat,
     output: &'a str,
     output_format: SeqFormat,
-    part_format: PartitionFormat,
+    part_format: &'a PartitionFormat,
 }
 
 impl<'a> MSAlignment<'a> {
@@ -27,7 +27,7 @@ impl<'a> MSAlignment<'a> {
         input_format: &'a SeqFormat,
         output: &'a str,
         output_format: SeqFormat,
-        part_format: PartitionFormat,
+        part_format: &'a PartitionFormat,
     ) -> Self {
         Self {
             input_format,

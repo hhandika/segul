@@ -12,9 +12,12 @@ pub enum SeqFormat {
 }
 
 pub enum PartitionFormat {
-    Nexus,
     Charset,
+    CharsetCodon,
+    Nexus,
+    NexusCodon,
     Raxml,
+    RaxmlCodon,
     None,
 }
 

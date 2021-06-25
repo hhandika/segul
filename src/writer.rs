@@ -134,10 +134,12 @@ impl<'a> SeqWriter<'a> {
         if self.partition.is_some() {
             match self.part_format {
                 PartitionFormat::Nexus => self
-                    .write_part_nexus(&mut writer)
+                    .write_part_nexus(&mut writer, false)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
-                PartitionFormat::Raxml => self.write_part_phylip(),
-                _ => self.write_part_nexus_sep(),
+                PartitionFormat::NexusCodon => self
+                    .write_part_nexus(&mut writer, true)
+                    .expect("CANNOT WRITER NEXUS PARTITION"),
+                _ => self.write_partition_sep(),
             }
         }
 
@@ -216,44 +218,104 @@ impl<'a> SeqWriter<'a> {
 
     fn write_partition_sep(&self) {
         match self.part_format {
-            PartitionFormat::Charset => self.write_part_nexus_sep(),
-            PartitionFormat::Raxml => self.write_part_phylip(),
+            PartitionFormat::Charset => self.write_part_nexus_sep(false),
+            PartitionFormat::CharsetCodon => self.write_part_nexus_sep(true),
+            PartitionFormat::Raxml => self.write_part_phylip(false),
+            PartitionFormat::RaxmlCodon => self.write_part_phylip(true),
             _ => eprintln!("UNKNOWN PARTITION FORMAT"),
         }
     }
 
-    fn write_part_phylip(&self) {
+    fn write_part_phylip(&self, codon: bool) {
         let mut writer = self.create_output_file(Path::new(&self.part_file));
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
-                writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
+                if codon {
+                    self.write_phy_codon(&mut writer, part);
+                } else {
+                    writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
+                }
             }),
-            None => eprintln!("CANNOT READ PARTITION DATA"),
+            None => eprintln!("CANNOT FIND PARTITION DATA"),
         }
     }
 
-    fn write_part_nexus_sep(&self) {
+    fn write_phy_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
+        writeln!(
+            writer,
+            "DNA, {}-Subset1 = {}-{}",
+            part.gene, part.start, part.end
+        )
+        .unwrap();
+        writeln!(
+            writer,
+            "DNA, {}-Subset2 = {}-{}",
+            part.gene,
+            part.start + 1,
+            part.end
+        )
+        .unwrap();
+        writeln!(
+            writer,
+            "DNA, {}-Subset3 = {}-{}",
+            part.gene,
+            part.start + 2,
+            part.end
+        )
+        .unwrap();
+    }
+
+    fn write_part_nexus_sep(&self, codon: bool) {
         let mut writer = self.create_output_file(&self.part_file);
         writeln!(writer, "#nexus").unwrap();
-        self.write_part_nexus(&mut writer)
+        self.write_part_nexus(&mut writer, codon)
             .expect("CANNOT WRITE NEXUS PARTITION");
     }
 
-    fn write_part_nexus<W: Write>(&self, writer: &mut W) -> Result<()> {
+    fn write_part_nexus<W: Write>(&self, writer: &mut W, codon: bool) -> Result<()> {
         writeln!(writer, "begin sets;")?;
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
-                writeln!(
-                    writer,
-                    "charset {} = {}-{};",
-                    part.gene, part.start, part.end
-                )
-                .unwrap();
+                if codon {
+                    self.write_nex_codon(writer, &part);
+                } else {
+                    writeln!(
+                        writer,
+                        "charset {} = {}-{};",
+                        part.gene, part.start, part.end
+                    )
+                    .unwrap();
+                }
             }),
             None => panic!("CANNOT READ PARTITION DATA"),
         }
         writeln!(writer, "end;")?;
         Ok(())
+    }
+
+    fn write_nex_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
+        writeln!(
+            writer,
+            "charset {}-Subset1 = {}-{}",
+            part.gene, part.start, part.end
+        )
+        .unwrap();
+        writeln!(
+            writer,
+            "charset {}-Subset2 = {}-{}",
+            part.gene,
+            part.start + 1,
+            part.end
+        )
+        .unwrap();
+        writeln!(
+            writer,
+            "charset {}-Subset3 = {}-{}",
+            part.gene,
+            part.start + 2,
+            part.end
+        )
+        .unwrap();
     }
 
     fn get_partition_path(&mut self) {
