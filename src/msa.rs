@@ -143,12 +143,13 @@ impl Concat {
             nchar += aln.header.nchar; // increment sequence length using the value from parser
             self.get_partition(&mut partition, &aln.name, gene_start, nchar);
             gene_start = nchar + 1;
-            id.iter().for_each(|id| {
-                if !aln.alignment.contains_key(id) {
+            id.iter().for_each(|id| match aln.alignment.get(id) {
+                Some(seq) => {
+                    self.insert_alignment(&mut alignment, id, seq);
+                }
+                None => {
                     let seq = self.get_missings(aln.header.nchar);
-                    self.insert_alignment(&mut alignment, id, &seq)
-                } else if let Some(seq) = aln.alignment.get(id) {
-                    self.insert_alignment(&mut alignment, id, seq)
+                    self.insert_alignment(&mut alignment, id, &seq);
                 }
             });
         });
@@ -169,11 +170,12 @@ impl Concat {
         partition.push(part);
     }
 
-    fn insert_alignment(&self, alignment: &mut IndexMap<String, String>, id: &str, values: &str) {
-        if !alignment.contains_key(id) {
-            alignment.insert(id.to_string(), values.to_string());
-        } else if let Some(value) = alignment.get_mut(id) {
-            value.push_str(values);
+    fn insert_alignment(&self, alignment: &mut IndexMap<String, String>, id: &str, seq: &str) {
+        match alignment.get_mut(id) {
+            Some(seqs) => seqs.push_str(seq),
+            None => {
+                alignment.insert(id.to_string(), seq.to_string());
+            }
         }
     }
 
