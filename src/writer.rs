@@ -246,7 +246,7 @@ impl<'a> SeqWriter<'a> {
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
                 if codon {
-                    self.write_phy_codon(&mut writer, part);
+                    self.write_phy_codon(&mut writer, part).unwrap();
                 } else {
                     writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
                 }
@@ -267,7 +267,7 @@ impl<'a> SeqWriter<'a> {
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
                 if codon {
-                    self.write_nex_codon(writer, &part);
+                    self.write_nex_codon(writer, &part).unwrap();
                 } else {
                     writeln!(
                         writer,
@@ -283,54 +283,52 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    fn write_phy_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
+    fn write_phy_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
         writeln!(
             writer,
             "DNA, {}-Subset1 = {}-{}\\3",
             part.gene, part.start, part.end
-        )
-        .unwrap();
+        )?;
         writeln!(
             writer,
             "DNA, {}-Subset2 = {}-{}\\3",
             part.gene,
             part.start + 1,
             part.end
-        )
-        .unwrap();
+        )?;
         writeln!(
             writer,
             "DNA, {}-Subset3 = {}-{}\\3",
             part.gene,
             part.start + 2,
             part.end
-        )
-        .unwrap();
+        )?;
+
+        Ok(())
     }
 
-    fn write_nex_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
+    fn write_nex_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
         writeln!(
             writer,
             "charset {}-Subset1 = {}-{}\\3;",
             part.gene, part.start, part.end
-        )
-        .unwrap();
+        )?;
         writeln!(
             writer,
             "charset {}-Subset2 = {}-{}\\3;",
             part.gene,
             part.start + 1,
             part.end
-        )
-        .unwrap();
+        )?;
         writeln!(
             writer,
             "charset {}-Subset3 = {}-{}\\3;",
             part.gene,
             part.start + 2,
             part.end
-        )
-        .unwrap();
+        )?;
+
+        Ok(())
     }
 
     fn get_partition_path(&mut self) {
