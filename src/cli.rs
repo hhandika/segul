@@ -8,6 +8,7 @@ use crate::common::{PartitionFormat, SeqFormat};
 use crate::converter::Converter;
 use crate::finder::Files;
 use crate::msa;
+use crate::picker;
 use crate::stats::AlnStats;
 use crate::utils;
 
@@ -289,6 +290,14 @@ fn get_args(version: &str) -> ArgMatches {
                         ),
                 ),
         )
+        .subcommand(App::new("pick").about("Gets alignment statistics").arg(
+                            Arg::with_name("dir")
+                                .short("d")
+                                .long("dir")
+                                .help("Inputs dir with alignment files")
+                                .takes_value(true)
+                                .value_name("INPUT FILE"),
+                        ))
         .subcommand(App::new("stats").about("Gets alignment statistics").arg(
                             Arg::with_name("input")
                                 .short("i")
@@ -309,6 +318,9 @@ pub fn parse_cli(version: &str) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => parse_convert_subcommand(convert_matches),
         ("concat", Some(concat_matches)) => parse_concat_subcommand(concat_matches),
+        ("pick", Some(pick_matches)) => {
+            PickParser::new(pick_matches, SeqFormat::Nexus).get_min_taxa()
+        }
         ("stats", Some(stats_matches)) => {
             StatsParser::new(stats_matches, SeqFormat::Nexus).show_stats()
         }
@@ -415,6 +427,7 @@ impl Cli for ConcatParser<'_> {
     }
 }
 
+impl Cli for PickParser<'_> {}
 impl Cli for StatsParser<'_> {}
 
 struct ConvertParser<'a> {
@@ -546,6 +559,29 @@ impl<'a> ConcatParser<'a> {
                 }
             }
         }
+    }
+}
+
+struct PickParser<'a> {
+    matches: &'a ArgMatches<'a>,
+    input_format: SeqFormat,
+    percent: f32,
+    output_dir: PathBuf,
+}
+
+impl<'a> PickParser<'a> {
+    fn new(matches: &'a ArgMatches<'a>, input_format: SeqFormat) -> Self {
+        Self {
+            matches,
+            input_format,
+            percent: 0.9,
+            output_dir: PathBuf::from("min_taxa_test"),
+        }
+    }
+
+    fn get_min_taxa(&self) {
+        let dir = self.get_dir_input(self.matches);
+        picker::get_min_taxa(dir, &self.input_format, self.percent, &self.output_dir);
     }
 }
 
