@@ -66,8 +66,7 @@ fn get_fas_header(file: &Path) -> Header {
 }
 
 fn count_min_tax(ntax: usize, percent: f32) -> usize {
-    let min_taxa = ntax as f32 * percent;
-    min_taxa.floor() as usize
+    (ntax as f32 * percent).floor() as usize
 }
 
 #[cfg(test)]
