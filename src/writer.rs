@@ -243,13 +243,13 @@ impl<'a> SeqWriter<'a> {
     fn write_phy_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
         writeln!(
             writer,
-            "DNA, {}-Subset1 = {}-{}",
+            "DNA, {}-Subset1 = {}-{}\\3",
             part.gene, part.start, part.end
         )
         .unwrap();
         writeln!(
             writer,
-            "DNA, {}-Subset2 = {}-{}",
+            "DNA, {}-Subset2 = {}-{}\\3",
             part.gene,
             part.start + 1,
             part.end
@@ -257,7 +257,7 @@ impl<'a> SeqWriter<'a> {
         .unwrap();
         writeln!(
             writer,
-            "DNA, {}-Subset3 = {}-{}",
+            "DNA, {}-Subset3 = {}-{}\\3",
             part.gene,
             part.start + 2,
             part.end
@@ -296,13 +296,13 @@ impl<'a> SeqWriter<'a> {
     fn write_nex_codon<W: Write>(&self, writer: &mut W, part: &Partition) {
         writeln!(
             writer,
-            "charset {}-Subset1 = {}-{}",
+            "charset {}-Subset1 = {}-{}\\3;",
             part.gene, part.start, part.end
         )
         .unwrap();
         writeln!(
             writer,
-            "charset {}-Subset2 = {}-{}",
+            "charset {}-Subset2 = {}-{}\\3;",
             part.gene,
             part.start + 1,
             part.end
@@ -310,7 +310,7 @@ impl<'a> SeqWriter<'a> {
         .unwrap();
         writeln!(
             writer,
-            "charset {}-Subset3 = {}-{}",
+            "charset {}-Subset3 = {}-{}\\3;",
             part.gene,
             part.start + 2,
             part.end
@@ -320,14 +320,14 @@ impl<'a> SeqWriter<'a> {
 
     fn get_partition_path(&mut self) {
         match self.part_format {
-            PartitionFormat::Charset => {
+            PartitionFormat::Charset | PartitionFormat::CharsetCodon => {
                 self.part_file = self
                     .output
                     .parent()
                     .unwrap()
                     .join(&self.get_partition_name("nex"));
             }
-            PartitionFormat::Raxml => {
+            PartitionFormat::Raxml | PartitionFormat::RaxmlCodon => {
                 self.part_file = self
                     .output
                     .parent()
