@@ -5,6 +5,7 @@ use std::io::{self, Result, Write};
 use std::iter;
 use std::path::{Path, PathBuf};
 
+use alphanumeric_sort;
 use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
@@ -105,7 +106,7 @@ impl<'a> Concat<'a> {
     }
 
     fn concat_alignment(&mut self, spin: &ProgressBar) {
-        self.files.sort();
+        alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
         let id = IDs::new(&self.files, &self.input_format).get_id_all();
         spin.set_message("Concatenating alignments...");
