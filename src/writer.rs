@@ -180,6 +180,17 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
+    fn write_matrix_nex_int<W: Write>(&mut self, writer: &mut W) {
+        let mat_int = self.get_matrix_int();
+        mat_int.values().for_each(|seq| {
+            writeln!(writer).unwrap(); // insert newline before each group.
+            seq.iter().for_each(|s| {
+                self.write_padded_seq(writer, &s.id, &s.seq)
+                    .expect("CANNOT WRITE PADDED SEQ MATRIX");
+            });
+        });
+    }
+
     fn write_matrix_phy_int<W: Write>(&mut self, writer: &mut W) {
         let mat_int = self.get_matrix_int();
         mat_int.iter().for_each(|(idx, seq)| {
@@ -189,17 +200,6 @@ impl<'a> SeqWriter<'a> {
                     .write_padded_seq(writer, &s.id, &s.seq)
                     .expect("CANNOT WRITE PADDED SEQ MATRIX"),
                 _ => writeln!(writer, "{}", s.seq).unwrap(),
-            });
-        });
-    }
-
-    fn write_matrix_nex_int<W: Write>(&mut self, writer: &mut W) {
-        let mat_int = self.get_matrix_int();
-        mat_int.values().for_each(|seq| {
-            writeln!(writer).unwrap(); // insert newline before each group.
-            seq.iter().for_each(|s| {
-                self.write_padded_seq(writer, &s.id, &s.seq)
-                    .expect("CANNOT WRITE PADDED SEQ MATRIX");
             });
         });
     }
