@@ -598,9 +598,12 @@ impl<'a> StatsParser<'a> {
         }
     }
 
-    fn show_stats(&self) {
+    fn show_stats(&mut self) {
         let input = Path::new(self.get_file_input(self.matches));
         let interleave = self.check_phylip_interleave(&self.matches);
-        AlnStats::new().get_stats(input, &self.input_format, interleave);
+        if interleave {
+            self.input_format = SeqFormat::PhylipInt;
+        }
+        AlnStats::new().get_stats(input, &self.input_format);
     }
 }

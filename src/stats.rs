@@ -23,9 +23,9 @@ impl AlnStats {
         }
     }
 
-    pub fn get_stats(&mut self, path: &Path, input_format: &SeqFormat, interleave: bool) {
+    pub fn get_stats(&mut self, path: &Path, input_format: &SeqFormat) {
         let mut aln = Alignment::new();
-        aln.get_aln_any(path, input_format, interleave);
+        aln.get_aln_any(path, input_format);
         self.index_sites(&aln.alignment);
         self.parsimony_inf = self.count_parsimony_informative();
         println!("Parsimony informative sites: {}", self.parsimony_inf);

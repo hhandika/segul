@@ -1,6 +1,6 @@
 use std::fs;
 use std::io::Result;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use rayon::prelude::*;
@@ -14,7 +14,7 @@ use crate::phylip::Phylip;
 // Get Alignment
 pub fn get_min_taxa(dir: &str, input_format: &SeqFormat, percent: f32, output_dir: &Path) {
     let files = Files::new(dir, input_format).get_files();
-    let ntax = IDs::new(&files, input_format).get_id_all(false).len();
+    let ntax = IDs::new(&files, input_format).get_id_all().len();
     let file_counts = files.len();
     let count = Arc::new(Mutex::new(0));
     fs::create_dir_all(output_dir).expect("CANNOT CREATE A TARGET DIRECTORY");

@@ -22,12 +22,13 @@ impl Alignment {
         }
     }
 
-    pub fn get_aln_any(&mut self, file: &Path, input_format: &SeqFormat, interleave: bool) {
+    pub fn get_aln_any(&mut self, file: &Path, input_format: &SeqFormat) {
         self.name
             .push_str(&file.file_stem().unwrap().to_string_lossy());
         match input_format {
             SeqFormat::Nexus => self.get_aln_from_nexus(file),
-            SeqFormat::Phylip => self.get_aln_from_phylip(file, interleave),
+            SeqFormat::Phylip => self.get_aln_from_phylip(file, false),
+            SeqFormat::PhylipInt => self.get_aln_from_phylip(file, true),
             SeqFormat::Fasta => self.get_aln_from_fasta(file),
             _ => (),
         }

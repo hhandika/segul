@@ -67,10 +67,11 @@ impl<'a> IDs<'a> {
         }
     }
 
-    pub fn get_id_all(&self, interleave: bool) -> IndexSet<String> {
+    pub fn get_id_all(&self) -> IndexSet<String> {
         let all_ids = match self.input_format {
             SeqFormat::Nexus => self.get_id_from_nexus(),
-            SeqFormat::Phylip => self.get_id_from_phylip(interleave),
+            SeqFormat::Phylip => self.get_id_from_phylip(false),
+            SeqFormat::PhylipInt => self.get_id_from_phylip(true),
             SeqFormat::Fasta => self.get_id_from_fasta(),
             _ => panic!("USE FASTA, NEXUS, OR PHYLIP ONLY"),
         };
