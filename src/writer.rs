@@ -291,19 +291,19 @@ impl<'a> SeqWriter<'a> {
     fn write_raxml_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
         writeln!(
             writer,
-            "DNA, {}-Subset1 = {}-{}\\3",
+            "DNA, {}_Subset1 = {}-{}\\3",
             part.gene, part.start, part.end
         )?;
         writeln!(
             writer,
-            "DNA, {}-Subset2 = {}-{}\\3",
+            "DNA, {}_Subset2 = {}-{}\\3",
             part.gene,
             part.start + 1,
             part.end
         )?;
         writeln!(
             writer,
-            "DNA, {}-Subset3 = {}-{}\\3",
+            "DNA, {}_Subset3 = {}-{}\\3",
             part.gene,
             part.start + 2,
             part.end
@@ -315,19 +315,19 @@ impl<'a> SeqWriter<'a> {
     fn write_nex_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
         writeln!(
             writer,
-            "charset {}-Subset1 = {}-{}\\3;",
+            "charset {}_Subset1 = {}-{}\\3;",
             part.gene, part.start, part.end
         )?;
         writeln!(
             writer,
-            "charset {}-Subset2 = {}-{}\\3;",
+            "charset {}_Subset2 = {}-{}\\3;",
             part.gene,
             part.start + 1,
             part.end
         )?;
         writeln!(
             writer,
-            "charset {}-Subset3 = {}-{}\\3;",
+            "charset {}_Subset3 = {}-{}\\3;",
             part.gene,
             part.start + 2,
             part.end
