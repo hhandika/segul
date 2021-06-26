@@ -149,8 +149,10 @@ impl<'a> Phylip<'a> {
     fn check_seq_len(&self, len: usize) {
         if len != 2 {
             panic!(
-                "THE FILE {} IS UNSUPPORTED PHYLIP FORMAT. \
-            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs",
+                "CAN'T PARSE {}. \
+            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs. \
+            OR YOUR FILES MAY BE IN INTERLEAVED FORMAT. \
+            TRY USING --interleave FLAG. ",
                 self.input.display()
             );
         }
