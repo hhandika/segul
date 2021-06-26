@@ -359,6 +359,7 @@ impl<'a> ConvertParser<'a> {
 struct ConcatParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_format: SeqFormat,
+    output_format: SeqFormat,
     part_format: PartitionFormat,
     codon: bool,
 }
@@ -368,6 +369,7 @@ impl<'a> ConcatParser<'a> {
         Self {
             matches,
             input_format: SeqFormat::Fasta,
+            output_format: SeqFormat::Nexus,
             part_format: PartitionFormat::Charset,
             codon: false,
         }
@@ -377,11 +379,15 @@ impl<'a> ConcatParser<'a> {
         self.input_format = self.get_input_format(self.matches);
         let dir = self.get_dir_input(self.matches);
         let output = self.get_output(self.matches);
-        let output_format = self.get_output_format(self.matches);
+        self.output_format = self.get_output_format(self.matches);
         self.get_partition_format();
         self.display_input_dir(&dir).unwrap();
-        let concat =
-            msa::MSAlignment::new(&self.input_format, output, output_format, &self.part_format);
+        let concat = msa::MSAlignment::new(
+            &self.input_format,
+            output,
+            &self.output_format,
+            &self.part_format,
+        );
         let mut files = self.get_files(dir, &self.input_format);
         concat.concat_alignment(&mut files);
     }
@@ -427,8 +433,8 @@ impl<'a> ConcatParser<'a> {
     }
 
     fn check_partition_format(&self) {
-        match self.input_format {
-            SeqFormat::Nexus => (),
+        match self.output_format {
+            SeqFormat::Nexus | SeqFormat::NexusInt => (),
             _ => {
                 if let PartitionFormat::Nexus | PartitionFormat::NexusCodon = self.part_format {
                     panic!(

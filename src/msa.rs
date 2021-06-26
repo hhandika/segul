@@ -18,7 +18,7 @@ use crate::writer::SeqWriter;
 pub struct MSAlignment<'a> {
     input_format: &'a SeqFormat,
     output: &'a str,
-    output_format: SeqFormat,
+    output_format: &'a SeqFormat,
     part_format: &'a PartitionFormat,
 }
 
@@ -26,7 +26,7 @@ impl<'a> MSAlignment<'a> {
     pub fn new(
         input_format: &'a SeqFormat,
         output: &'a str,
-        output_format: SeqFormat,
+        output_format: &'a SeqFormat,
         part_format: &'a PartitionFormat,
     ) -> Self {
         Self {
@@ -67,9 +67,9 @@ impl<'a> MSAlignment<'a> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
         writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
-        writeln!(writer, "#Loci\t\t: {}", utils::fmt_num(&count))?;
-        writeln!(writer, "#Taxa\t\t: {}", utils::fmt_num(&header.ntax))?;
-        writeln!(writer, "#Chars\t\t: {} bp", utils::fmt_num(&header.nchar))?;
+        writeln!(writer, "Loci\t\t: {}", utils::fmt_num(&count))?;
+        writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&header.ntax))?;
+        writeln!(writer, "Sites\t\t: {}", utils::fmt_num(&header.nchar))?;
 
         Ok(())
     }
