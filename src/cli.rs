@@ -1,4 +1,4 @@
-use std::io::{self, Result, Write};
+use std::io::{self, BufWriter, Result, Write};
 use std::path::{Path, PathBuf};
 
 use clap::{App, AppSettings, Arg, ArgMatches};
@@ -68,7 +68,6 @@ fn get_args(version: &str) -> ArgMatches {
                         .default_value("nexus")
                         .value_name("FORMAT"),
                 )
-                
         )
         .subcommand(
             App::new("concat")
@@ -126,7 +125,6 @@ fn get_args(version: &str) -> ArgMatches {
                     .help("Sets codon model partition format")
                     .takes_value(false)
                 )
-    
         )
         .subcommand(
             App::new("pick")
@@ -165,7 +163,6 @@ fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Sets an output directory")
                         .takes_value(true)
-                        .required(true)
                         .value_name("OUTPUT"),
                 )
                 .arg(
@@ -183,36 +180,18 @@ fn get_args(version: &str) -> ArgMatches {
                                 .takes_value(true)
                                 .value_name("INPUT FILE"),
                         ))
-        
         .get_matches()
 }
 
 pub fn parse_cli(version: &str) {
     let args = get_args(version);
     let text = format!("SEGUL v{}", version);
-    utils::print_divider(&text, 50);
+    utils::print_title(&text);
     match args.subcommand() {
         ("convert", Some(convert_matches)) => ConvertParser::new(convert_matches).convert(),
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
-        ("pick", Some(pick_matches)) => parse_picker_subcommand(pick_matches),
-        ("stats", Some(stats_matches)) => {
-            StatsParser::new(stats_matches).show_stats()
-        }
-        _ => unreachable!(),
-    }
-}
-
-fn parse_picker_subcommand(args: &ArgMatches) {
-    match args.subcommand() {
-         ("fasta", Some(fasta_matches)) => {
-            PickParser::new(fasta_matches, SeqFormat::Fasta).get_min_taxa()
-        }
-        ("nexus", Some(nexus_matches)) => {
-            PickParser::new(nexus_matches, SeqFormat::Nexus).get_min_taxa()
-        }
-        ("phylip", Some(phylip_matches)) => {
-            PickParser::new(phylip_matches, SeqFormat::Phylip).get_min_taxa()
-        }
+        ("pick", Some(pick_matches)) => PickParser::new(pick_matches).get_min_taxa(),
+        ("stats", Some(stats_matches)) => StatsParser::new(stats_matches).show_stats(),
         _ => unreachable!(),
     }
 }
@@ -236,7 +215,7 @@ trait Cli {
         matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
     }
 
-    fn set_output(&self, matches: &ArgMatches) -> PathBuf {
+    fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
         if matches.is_present("output") {
             let output = self.get_output(matches);
             PathBuf::from(output)
@@ -286,13 +265,12 @@ trait Cli {
 
 impl Cli for ConvertParser<'_> {}
 impl Cli for ConcatParser<'_> {
-    fn set_output(&self, matches: &ArgMatches) -> PathBuf {
-        let output = self.get_output(matches);
-        PathBuf::from(output)
+    fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
+        PathBuf::from(self.get_output(matches))
     }
 }
-
 impl Cli for PickParser<'_> {}
+
 impl Cli for StatsParser<'_> {}
 
 struct ConvertParser<'a> {
@@ -324,7 +302,7 @@ impl<'a> ConvertParser<'a> {
     fn convert_file(&mut self) {
         let input = Path::new(self.get_file_input(self.matches));
         let output_format = self.get_output_format(self.matches);
-        self.output = self.set_output(self.matches);
+        self.output = self.get_output_path(self.matches);
         self.display_input_file(input).unwrap();
         self.convert_any(input, &output_format);
     }
@@ -333,7 +311,7 @@ impl<'a> ConvertParser<'a> {
         let dir = self.get_dir_input(self.matches);
         let files = self.get_files(dir, &self.input_format);
         let output_format = self.get_output_format(self.matches);
-        self.output = self.set_output(&self.matches);
+        self.output = self.get_output_path(&self.matches);
         self.is_dir = true;
         self.display_input_dir(Path::new(dir), files.len()).unwrap();
         files.par_iter().for_each(|file| {
@@ -354,7 +332,7 @@ impl<'a> ConvertParser<'a> {
 
     fn display_input_file(&self, input: &Path) -> Result<()> {
         let io = io::stdout();
-        let mut writer = io::BufWriter::new(io);
+        let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul convert")?;
         writeln!(writer, "Input\t\t: {}", &input.display())?;
         Ok(())
@@ -362,14 +340,10 @@ impl<'a> ConvertParser<'a> {
 
     fn display_input_dir(&self, input: &Path, nfile: usize) -> Result<()> {
         let io = io::stdout();
-        let mut writer = io::BufWriter::new(io);
+        let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul convert")?;
         writeln!(writer, "Input dir\t: {}", &input.display())?;
-        writeln!(
-            writer,
-            "Total files\t: {}",
-            utils::format_thousand_sep(&nfile)
-        )?;
+        writeln!(writer, "Total files\t: {}", utils::fmt_thousand_sep(&nfile))?;
         writeln!(writer, "Output dir\t: {}", self.output.display())?;
         Ok(())
     }
@@ -468,25 +442,62 @@ struct PickParser<'a> {
 }
 
 impl<'a> PickParser<'a> {
-    fn new(matches: &'a ArgMatches<'a>, input_format: SeqFormat) -> Self {
+    fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
-            input_format,
-            percent: 0.9,
-            output_dir: PathBuf::from("min_taxa_test"),
+            input_format: SeqFormat::Fasta,
+            percent: 0.0,
+            output_dir: PathBuf::new(),
         }
     }
 
-    fn get_min_taxa(&self) {
+    fn get_min_taxa(&mut self) {
+        self.input_format = self.get_input_format(self.matches);
         let dir = self.get_dir_input(self.matches);
         let mut files = self.get_files(dir, &self.input_format);
-        let pick = Picker::new(
+        self.set_percentage();
+        self.get_output_path(dir);
+        self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
+        let mut pick = Picker::new(
             &mut files,
             &self.input_format,
             &self.output_dir,
             self.percent,
         );
         pick.get_min_taxa();
+    }
+
+    fn set_percentage(&mut self) {
+        self.percent = self
+            .matches
+            .value_of("percent")
+            .expect("CANNOT GET PERCENTAGE VALUES")
+            .parse::<f64>()
+            .expect("CANNOT PARSE PERCENTAGE VALUES TO FLOATING POINTS");
+    }
+
+    fn get_output_path<P: AsRef<Path>>(&mut self, dir: P) {
+        if self.matches.is_present("output") {
+            self.output_dir = PathBuf::from(self.get_output(self.matches));
+        } else {
+            self.output_dir = self.get_formatted_output(dir.as_ref());
+        }
+    }
+
+    fn get_formatted_output(&self, dir: &Path) -> PathBuf {
+        let parent = dir.parent().unwrap();
+        let last = dir.file_name().unwrap().to_string_lossy();
+        let output_dir = format!("{}_{}p", last, self.percent * 100.0);
+        parent.join(output_dir)
+    }
+
+    fn display_input(&self, dir: &str) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "\x1b[0;33mInput\x1b[0m")?;
+        writeln!(writer, "Dir\t\t: {}", dir)?;
+
+        Ok(())
     }
 }
 
@@ -507,5 +518,23 @@ impl<'a> StatsParser<'a> {
         self.get_input_format(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
         AlnStats::new().get_stats(input, &self.input_format);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn min_taxa_output_dir_test() {
+        let arg = App::new("segul-test")
+            .arg(Arg::with_name("test"))
+            .get_matches();
+        let mut min_taxa = PickParser::new(&arg);
+        let dir = "./test_taxa/";
+        min_taxa.percent = 0.75;
+        let res = PathBuf::from("./test_taxa_75p");
+        let output = min_taxa.get_formatted_output(Path::new(dir));
+        assert_eq!(res, output);
     }
 }

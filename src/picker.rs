@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::Result;
+use std::io::{self, BufWriter, Result, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -10,12 +10,16 @@ use crate::fasta::Fasta;
 use crate::finder::IDs;
 use crate::nexus::Nexus;
 use crate::phylip::Phylip;
+use crate::utils;
 
 pub struct Picker<'a> {
     files: &'a mut [PathBuf],
+    file_counts: usize,
     input_format: &'a SeqFormat,
     output_dir: &'a Path,
     percent: f64,
+    min_taxa: usize,
+    ntax: usize,
 }
 
 impl<'a> Picker<'a> {
@@ -27,29 +31,61 @@ impl<'a> Picker<'a> {
     ) -> Self {
         Self {
             files,
+            file_counts: 0,
             input_format,
             output_dir,
             percent,
+            min_taxa: 0,
+            ntax: 0,
         }
     }
 
-    pub fn get_min_taxa(&self) {
-        let ntax = IDs::new(self.files, self.input_format).get_id_all().len();
-        let file_counts = self.files.len();
-        let count = Arc::new(Mutex::new(0));
-        let min_taxa = self.count_min_tax(ntax);
+    pub fn get_min_taxa(&mut self) {
+        self.ntax = IDs::new(self.files, self.input_format).get_id_all().len();
+        self.file_counts = self.files.len();
+        let fcounts = Arc::new(Mutex::new(0));
+        self.min_taxa = self.count_min_tax();
+        self.display_input().expect("CANNOT DISPLAY TO STDOUT");
         fs::create_dir_all(self.output_dir).expect("CANNOT CREATE A TARGET DIRECTORY");
         self.files.par_iter().for_each(|file| {
             let header = self.get_header(file);
-            if header.ntax >= min_taxa {
+            if header.ntax >= self.min_taxa {
                 self.copy_files(file).expect("CANNOT COPY FILES");
-                let mut count = count.lock().unwrap();
-                *count += 1;
+                let mut fcounts = fcounts.lock().unwrap();
+                *fcounts += 1;
             }
         });
 
-        println!("File origin: {}", file_counts);
-        println!("File final: {}", *count.lock().unwrap());
+        self.display_output(*fcounts.lock().unwrap())
+            .expect("CANNOT DISPLAY TO STDOUT");
+    }
+
+    fn display_input(&self) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(
+            writer,
+            "File count\t: {}",
+            utils::fmt_thousand_sep(&self.file_counts)
+        )?;
+        writeln!(writer, "Taxon count\t: {}", self.ntax)?;
+        writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
+        writeln!(writer, "Min tax\t\t: {}", self.min_taxa)?;
+        Ok(())
+    }
+
+    fn display_output(&self, fcounts: usize) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "\n\x1b[0;33mOutput\x1b[0m")?;
+        writeln!(
+            writer,
+            "File count\t: {}",
+            utils::fmt_thousand_sep(&fcounts)
+        )?;
+        writeln!(writer, "Dir\t\t: {}", self.output_dir.display())?;
+
+        Ok(())
     }
 
     fn get_header(&self, file: &Path) -> Header {
@@ -88,8 +124,8 @@ impl<'a> Picker<'a> {
         fas.header
     }
 
-    fn count_min_tax(&self, ntax: usize) -> usize {
-        (ntax as f64 * self.percent).floor() as usize
+    fn count_min_tax(&self) -> usize {
+        (self.ntax as f64 * self.percent).floor() as usize
     }
 }
 
@@ -99,9 +135,9 @@ mod test {
 
     #[test]
     fn min_taxa_test() {
-        let ntax = 10;
         let mut files = [PathBuf::from(".")];
-        let pick = Picker::new(&mut files, &SeqFormat::Nexus, Path::new("."), 0.65);
-        assert_eq!(6, pick.count_min_tax(ntax));
+        let mut pick = Picker::new(&mut files, &SeqFormat::Nexus, Path::new("."), 0.65);
+        pick.ntax = 10;
+        assert_eq!(6, pick.count_min_tax());
     }
 }
