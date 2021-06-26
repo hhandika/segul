@@ -46,10 +46,10 @@ impl<'a> Files<'a> {
 
     fn get_pattern(&mut self) {
         self.pattern = match self.input_format {
-            SeqFormat::Nexus => format!("{}/*.nex*", self.dir),
-            SeqFormat::Phylip => format!("{}/*.phy*", self.dir),
             SeqFormat::Fasta => format!("{}/*.fa*", self.dir),
-            _ => panic!("USE FASTA, NEXUS, OR PHYLIP ONLY"),
+            SeqFormat::Nexus => format!("{}/*.nex*", self.dir),
+            SeqFormat::Phylip | SeqFormat::PhylipInt => format!("{}/*.phy*", self.dir),
+            _ => panic!("UNSUPPORTED FORMAT! USE FASTA, NEXUS, OR PHYLIP ONLY"),
         };
     }
 }
