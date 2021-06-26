@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::prelude::*;
-use std::io::{self, BufWriter, LineWriter, Result};
+use std::io::{self, BufWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
 
@@ -51,8 +51,8 @@ impl<'a> SeqWriter<'a> {
             SeqFormat::NexusInt => self.write_nexus(true)?,
             SeqFormat::Phylip => self.write_phylip(false)?,
             SeqFormat::PhylipInt => self.write_phylip(true)?,
-            SeqFormat::Fasta => self.write_fasta(false),
-            SeqFormat::FastaInt => self.write_fasta(true),
+            SeqFormat::Fasta => self.write_fasta(false)?,
+            SeqFormat::FastaInt => self.write_fasta(true)?,
         }
 
         Ok(())
@@ -70,7 +70,7 @@ impl<'a> SeqWriter<'a> {
         writeln!(writer, "Partition\t: {}", &self.part_file.display()).unwrap();
     }
 
-    fn write_fasta(&mut self, interleave: bool) {
+    fn write_fasta(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self.create_output_file(&self.output);
         let n = self.get_interleave_len();
         self.matrix.iter().for_each(|(id, seq)| {
@@ -88,6 +88,9 @@ impl<'a> SeqWriter<'a> {
         if self.partition.is_some() {
             self.write_partition_sep();
         }
+
+        writer.flush()?;
+        Ok(())
     }
 
     fn write_nexus(&mut self, interleave: bool) -> Result<()> {
@@ -121,6 +124,7 @@ impl<'a> SeqWriter<'a> {
             }
         }
 
+        writer.flush()?;
         Ok(())
     }
 
@@ -138,6 +142,7 @@ impl<'a> SeqWriter<'a> {
             self.write_partition_sep();
         }
 
+        writer.flush()?;
         Ok(())
     }
 
@@ -372,10 +377,10 @@ impl<'a> SeqWriter<'a> {
         };
     }
 
-    fn create_output_file(&self, fname: &Path) -> LineWriter<File> {
+    fn create_output_file(&self, fname: &Path) -> BufWriter<File> {
         fs::create_dir_all(fname.parent().unwrap()).expect("CANNOT CREATE A TARGET DIRECTORY");
         let file = File::create(&fname).expect("CANNOT CREATE OUTPUT FILE");
-        LineWriter::new(file)
+        BufWriter::new(file)
     }
 
     fn chunk_seq(&self, seq: &str, n: usize) -> Vec<String> {
