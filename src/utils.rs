@@ -1,4 +1,4 @@
-use std::io::{self, Result, Write};
+use std::io::{self, BufWriter, Result, Write};
 use std::iter;
 
 use indicatif::{ProgressBar, ProgressStyle};
@@ -22,12 +22,11 @@ pub fn print_title(text: &str) {
     header.print_header().unwrap();
 }
 
-#[allow(dead_code)]
-pub fn print_divider<W: Write>(writer: &mut W) -> Result<()> {
-    let divider: String = iter::repeat('-').take(50).collect();
-    writeln!(writer, "{}", divider)?;
-
-    Ok(())
+pub fn print_divider() {
+    let divider: String = iter::repeat('-').take(52).collect();
+    let io = io::stdout();
+    let mut writer = BufWriter::new(io);
+    writeln!(writer, "\n\x1b[0;33m{}\x1b[0m", divider).expect("CANNOT WRITE TO STDOUT");
 }
 
 struct PrettyDivider {
@@ -54,7 +53,7 @@ impl PrettyDivider {
     fn print_header(&mut self) -> Result<()> {
         self.get_len();
         let io = io::stdout();
-        let mut handle = io::BufWriter::new(io);
+        let mut handle = BufWriter::new(io);
         write!(handle, "{}", self.color)?;
         if self.text_len > self.len {
             writeln!(handle, "{}", self.text)?;
@@ -89,8 +88,7 @@ impl PrettyDivider {
     }
 
     fn print_symbols<W: Write>(&self, io: &mut W) {
-        (0..=self.sym_len).for_each(|_| {
-            write!(io, "{}", self.sym).unwrap();
-        });
+        let sym: String = iter::repeat(self.sym).take(self.sym_len).collect();
+        write!(io, "{}", sym).unwrap();
     }
 }
