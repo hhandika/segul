@@ -5,7 +5,7 @@ authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-clap = "*"
+clap = "2.*"
 nom = "6.*"
 glob = "*"
 indexmap = "1.6.*"
