@@ -40,7 +40,7 @@ impl<'a> Files<'a> {
 
     fn check_glob_results(&self, files: &[PathBuf]) {
         if files.is_empty() {
-            panic!("NO VALID ALIGNMENT FILES FOUND");
+            panic!("NO ALIGNMENT FILES FOUND THAT MATCH {}", self.pattern);
         }
     }
 
