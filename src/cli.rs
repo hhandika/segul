@@ -20,7 +20,7 @@ fn get_args(version: &str) -> ArgMatches {
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
             App::new("convert")
-                .about("Convert sequence formats")
+                .about("Converts sequence formats")
                 .arg(
                     Arg::with_name("input")
                         .short("i")
@@ -54,7 +54,7 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("format")
                         .short("f")
                         .long("format")
-                        .help("Sets input format. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
+                        .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
                         .takes_value(true)
                         .required(true)
                         .value_name("FORMAT"),
@@ -63,7 +63,7 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("target")
                         .short("t")
                         .long("target")
-                        .help("Sets target output format. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
+                        .help("Sets target output format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
                         .takes_value(true)
                         .default_value("nexus")
                         .value_name("FORMAT"),
@@ -71,7 +71,7 @@ fn get_args(version: &str) -> ArgMatches {
         )
         .subcommand(
             App::new("concat")
-                .about("Concat alignments")
+                .about("Concatenates alignments")
                 .arg(
                     Arg::with_name("dir")
                         .short("d")
@@ -85,7 +85,7 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("format")
                         .short("f")
                         .long("format")
-                        .help("Sets input format. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
+                        .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
                         .takes_value(true)
                         .required(true)
                         .value_name("FORMAT"),
@@ -114,7 +114,7 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("target")
                         .short("t")
                         .long("target")
-                        .help("Sets target output format. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
+                        .help("Sets target output format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
                         .takes_value(true)
                         .default_value("nexus")
                         .value_name("FORMAT"),
@@ -128,7 +128,7 @@ fn get_args(version: &str) -> ArgMatches {
         )
         .subcommand(
             App::new("pick")
-            .about("Gets alignment statistics")
+            .about("Picks alignments with specified min taxa")
             .arg(
                 Arg::with_name("dir")
                         .short("d")
@@ -142,19 +142,26 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("format")
                         .short("f")
                         .long("format")
-                        .help("Sets input format. Choices: nexus, nexus-int, fasta, fasta-int, phylip, phylip-int")
+                        .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
                         .takes_value(true)
                         .required(true)
                         .value_name("FORMAT"),
                 )
                 .arg(
                     Arg::with_name("percent")
-                        .short("p")
                         .long("percent")
                         .help("Sets percentage of minimal taxa")
                         .takes_value(true)
-                        .required(true)
+                        .required_unless("npercent")
                         .default_value("0.75")
+                        .value_name("FORMAT"),
+                )
+                .arg(
+                    Arg::with_name("npercent")
+                        .long("npercent")
+                        .help("Sets minimal taxa in multiple percentages")
+                        .takes_value(true)
+                        .multiple(true)
                         .value_name("FORMAT"),
                 )
                 .arg(
@@ -172,7 +179,7 @@ fn get_args(version: &str) -> ArgMatches {
                     .takes_value(false)
                 ),
         )
-        .subcommand(App::new("summary").about("Gets alignment statistics").arg(
+        .subcommand(App::new("summary").about("Gets alignment summary stats").arg(
                             Arg::with_name("dir")
                                 .short("d")
                                 .long("dir")
@@ -437,7 +444,6 @@ impl<'a> ConcatParser<'a> {
 struct PickParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_format: SeqFormat,
-    percent: f64,
     output_dir: PathBuf,
 }
 
@@ -446,7 +452,6 @@ impl<'a> PickParser<'a> {
         Self {
             matches,
             input_format: SeqFormat::Fasta,
-            percent: 0.0,
             output_dir: PathBuf::new(),
         }
     }
@@ -455,39 +460,78 @@ impl<'a> PickParser<'a> {
         self.input_format = self.get_input_format(self.matches);
         let dir = self.get_dir_input(self.matches);
         let mut files = self.get_files(dir, &self.input_format);
-        self.set_percentage();
-        self.get_output_path(dir);
-        self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
-        let mut pick = Picker::new(
-            &mut files,
-            &self.input_format,
-            &self.output_dir,
-            self.percent,
-        );
-        pick.get_min_taxa();
-    }
-
-    fn set_percentage(&mut self) {
-        self.percent = self
-            .matches
-            .value_of("percent")
-            .expect("CANNOT GET PERCENTAGE VALUES")
-            .parse::<f64>()
-            .expect("CANNOT PARSE PERCENTAGE VALUES TO FLOATING POINTS");
-    }
-
-    fn get_output_path<P: AsRef<Path>>(&mut self, dir: P) {
-        if self.matches.is_present("output") {
-            self.output_dir = PathBuf::from(self.get_output(self.matches));
+        if self.is_npercent() {
+            self.get_min_taxa_npercent(dir, &mut files);
         } else {
-            self.output_dir = self.get_formatted_output(dir.as_ref());
+            let percent = self.get_percent();
+            self.set_output_path(dir, &percent);
+            self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
+            self.get_min_taxa_percent(&mut files, percent);
         }
     }
 
-    fn get_formatted_output(&self, dir: &Path) -> PathBuf {
+    fn get_min_taxa_percent(&mut self, files: &mut [PathBuf], percent: f64) {
+        let mut pick = Picker::new(files, &self.input_format, &self.output_dir, percent);
+        pick.get_min_taxa();
+    }
+
+    fn get_min_taxa_npercent(&mut self, dir: &str, files: &mut [PathBuf]) {
+        let npercent = self.get_npercent();
+        npercent.iter().for_each(|np| {
+            self.set_multi_output_path(dir, np);
+            self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
+            self.get_min_taxa_percent(files, *np);
+            utils::print_divider();
+        });
+    }
+
+    fn get_npercent(&self) -> Vec<f64> {
+        let npercent: Vec<&str> = self.matches.values_of("npercent").unwrap().collect();
+        npercent
+            .iter()
+            .map(|np| self.parse_percentage(np))
+            .collect()
+    }
+
+    fn is_npercent(&mut self) -> bool {
+        self.matches.is_present("npercent")
+    }
+
+    fn get_percent(&self) -> f64 {
+        let percent = self
+            .matches
+            .value_of("percent")
+            .expect("CANNOT GET PERCENTAGE VALUES");
+        self.parse_percentage(percent)
+    }
+
+    fn parse_percentage(&self, percent: &str) -> f64 {
+        percent
+            .parse::<f64>()
+            .expect("CANNOT PARSE PERCENTAGE VALUES TO FLOATING POINTS")
+    }
+
+    fn set_output_path<P: AsRef<Path>>(&mut self, dir: P, percent: &f64) {
+        if self.matches.is_present("output") {
+            self.output_dir = PathBuf::from(self.get_output(self.matches));
+        } else {
+            self.output_dir = self.get_formatted_output(dir.as_ref(), percent);
+        }
+    }
+
+    fn set_multi_output_path<P: AsRef<Path>>(&mut self, dir: P, percent: &f64) {
+        if self.matches.is_present("output") {
+            let output_dir = PathBuf::from(self.get_output(self.matches));
+            self.output_dir = self.get_formatted_output(&output_dir, percent)
+        } else {
+            self.output_dir = self.get_formatted_output(dir.as_ref(), percent);
+        }
+    }
+
+    fn get_formatted_output(&self, dir: &Path, percent: &f64) -> PathBuf {
         let parent = dir.parent().unwrap();
         let last = dir.file_name().unwrap().to_string_lossy();
-        let output_dir = format!("{}_{}p", last, self.percent * 100.0);
+        let output_dir = format!("{}_{}p", last, percent * 100.0);
         parent.join(output_dir)
     }
 
@@ -530,11 +574,11 @@ mod test {
         let arg = App::new("segul-test")
             .arg(Arg::with_name("test"))
             .get_matches();
-        let mut min_taxa = PickParser::new(&arg);
+        let min_taxa = PickParser::new(&arg);
         let dir = "./test_taxa/";
-        min_taxa.percent = 0.75;
+        let percent = 0.75;
         let res = PathBuf::from("./test_taxa_75p");
-        let output = min_taxa.get_formatted_output(Path::new(dir));
+        let output = min_taxa.get_formatted_output(Path::new(dir), &percent);
         assert_eq!(res, output);
     }
 }
