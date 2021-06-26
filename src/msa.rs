@@ -67,17 +67,9 @@ impl<'a> MSAlignment<'a> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
         writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
-        writeln!(writer, "#Loci\t\t: {}", utils::format_thousand_sep(&count))?;
-        writeln!(
-            writer,
-            "#Taxa\t\t: {}",
-            utils::format_thousand_sep(&header.ntax)
-        )?;
-        writeln!(
-            writer,
-            "#Chars\t\t: {} bp",
-            utils::format_thousand_sep(&header.nchar)
-        )?;
+        writeln!(writer, "#Loci\t\t: {}", utils::fmt_num(&count))?;
+        writeln!(writer, "#Taxa\t\t: {}", utils::fmt_num(&header.ntax))?;
+        writeln!(writer, "#Chars\t\t: {} bp", utils::fmt_num(&header.nchar))?;
 
         Ok(())
     }

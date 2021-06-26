@@ -66,7 +66,7 @@ impl<'a> Picker<'a> {
         writeln!(
             writer,
             "File count\t: {}",
-            utils::fmt_thousand_sep(&self.file_counts)
+            utils::fmt_num(&self.file_counts)
         )?;
         writeln!(writer, "Taxon count\t: {}", self.ntax)?;
         writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
@@ -78,11 +78,7 @@ impl<'a> Picker<'a> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "\n\x1b[0;33mOutput\x1b[0m")?;
-        writeln!(
-            writer,
-            "File count\t: {}",
-            utils::fmt_thousand_sep(&fcounts)
-        )?;
+        writeln!(writer, "File count\t: {}", utils::fmt_num(&fcounts))?;
         writeln!(writer, "Dir\t\t: {}", self.output_dir.display())?;
 
         Ok(())

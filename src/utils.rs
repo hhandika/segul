@@ -1,9 +1,10 @@
 use std::io::{self, Result, Write};
+use std::iter;
 
 use indicatif::{ProgressBar, ProgressStyle};
 use num_format::{Locale, ToFormattedString};
 
-pub fn format_thousand_sep(num: &usize) -> String {
+pub fn fmt_num(num: &usize) -> String {
     num.to_formatted_string(&Locale::en)
 }
 
@@ -14,10 +15,19 @@ pub fn set_spinner() -> ProgressBar {
     spin
 }
 
-pub fn print_divider(text: &str, len: usize) {
+pub fn print_title(text: &str) {
     let sym = '=';
+    let len = 50;
     let mut header = PrettyDivider::new(text, sym, len);
     header.print_header().unwrap();
+}
+
+#[allow(dead_code)]
+pub fn print_divider<W: Write>(writer: &mut W) -> Result<()> {
+    let divider: String = iter::repeat('-').take(50).collect();
+    writeln!(writer, "{}", divider)?;
+
+    Ok(())
 }
 
 struct PrettyDivider {

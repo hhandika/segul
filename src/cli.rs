@@ -343,7 +343,7 @@ impl<'a> ConvertParser<'a> {
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul convert")?;
         writeln!(writer, "Input dir\t: {}", &input.display())?;
-        writeln!(writer, "Total files\t: {}", utils::fmt_thousand_sep(&nfile))?;
+        writeln!(writer, "Total files\t: {}", utils::fmt_num(&nfile))?;
         writeln!(writer, "Output dir\t: {}", self.output.display())?;
         Ok(())
     }
