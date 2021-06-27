@@ -68,6 +68,12 @@ fn get_args(version: &str) -> ArgMatches {
                         .default_value("nexus")
                         .value_name("FORMAT"),
                 )
+                .arg(
+                    Arg::with_name("sort")
+                        .long("sort")
+                        .help("Sorts the alignments")
+                        .takes_value(false)
+                )
         )
         .subcommand(
             App::new("concat")
@@ -328,13 +334,15 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_any(&self, input: &Path, output_format: &SeqFormat) {
         let mut convert = Converter::new(input, &self.output, output_format, self.is_dir);
-        match self.input_format {
-            SeqFormat::Fasta => convert.convert_fasta(),
-            SeqFormat::Nexus => convert.convert_nexus(),
-            SeqFormat::Phylip => convert.convert_phylip(false),
-            SeqFormat::PhylipInt => convert.convert_phylip(true),
-            _ => (),
+        if self.is_sort() {
+            convert.convert_sorted(&self.input_format);
+        } else {
+            convert.convert_unsorted(&self.input_format);
         }
+    }
+
+    fn is_sort(&self) -> bool {
+        self.matches.is_present("sort")
     }
 
     fn display_input_file(&self, input: &Path) -> Result<()> {

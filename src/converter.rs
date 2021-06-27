@@ -31,23 +31,43 @@ impl<'a> Converter<'a> {
         }
     }
 
-    pub fn convert_fasta(&mut self) {
+    pub fn convert_unsorted(&mut self, input_format: &SeqFormat) {
+        let (matrix, header) = self.get_sequence(input_format);
+        self.convert(&matrix, header);
+    }
+
+    pub fn convert_sorted(&mut self, input_format: &SeqFormat) {
+        let (mut matrix, header) = self.get_sequence(input_format);
+        matrix.sort_keys();
+        self.convert(&matrix, header)
+    }
+
+    fn get_sequence(&mut self, input_format: &SeqFormat) -> (IndexMap<String, String>, Header) {
+        match input_format {
+            SeqFormat::Fasta | SeqFormat::FastaInt => self.convert_fasta(),
+            SeqFormat::Nexus | SeqFormat::NexusInt => self.convert_nexus(),
+            SeqFormat::Phylip => self.convert_phylip(false),
+            SeqFormat::PhylipInt => self.convert_phylip(true),
+        }
+    }
+
+    fn convert_fasta(&mut self) -> (IndexMap<String, String>, Header) {
         let mut fas = Fasta::new(self.input);
         fas.read();
-        self.convert(&fas.matrix, fas.header)
+        (fas.matrix, fas.header)
     }
 
-    pub fn convert_nexus(&mut self) {
+    fn convert_nexus(&mut self) -> (IndexMap<String, String>, Header) {
         let mut nex = Nexus::new(self.input);
         nex.read().expect("CANNOT READ NEXUS FILES");
-        self.convert(&nex.matrix, nex.header);
+        (nex.matrix, nex.header)
     }
 
-    pub fn convert_phylip(&mut self, interleave: bool) {
+    fn convert_phylip(&mut self, interleave: bool) -> (IndexMap<String, String>, Header) {
         let input = Path::new(self.input);
         let mut phy = Phylip::new(input, interleave);
         phy.read().expect("CANNOT READ PHYLIP FILES");
-        self.convert(&phy.matrix, phy.header);
+        (phy.matrix, phy.header)
     }
 
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
