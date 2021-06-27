@@ -1,12 +1,14 @@
+use std::fs::File;
 use std::io::{self, BufWriter, Result, Write};
 use std::path::{Path, PathBuf};
 
 use clap::{App, AppSettings, Arg, ArgMatches};
+use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::common::{PartitionFormat, SeqFormat};
 use crate::converter::Converter;
-use crate::finder::Files;
+use crate::finder::{Files, IDs};
 use crate::msa;
 use crate::picker::Picker;
 use crate::stats::AlnStats;
@@ -185,6 +187,25 @@ fn get_args(version: &str) -> ArgMatches {
                     .takes_value(false)
                 ),
         )
+        .subcommand(App::new("id").about("Gets unique ids from multiple alignments")
+            .arg(
+                Arg::with_name("dir")
+                    .short("d")
+                    .long("dir")
+                    .help("Inputs dir with alignment files")
+                    .takes_value(true)
+                    .value_name("INPUT FILE")
+            )
+            .arg(
+                Arg::with_name("format")
+                    .short("f")
+                    .long("format")
+                    .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                    .takes_value(true)
+                    .required(true)
+                    .value_name("FORMAT"),
+            ),
+        )
         .subcommand(App::new("summary").about("Gets alignment summary stats").arg(
                             Arg::with_name("dir")
                                 .short("d")
@@ -204,7 +225,8 @@ pub fn parse_cli(version: &str) {
         ("convert", Some(convert_matches)) => ConvertParser::new(convert_matches).convert(),
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
         ("pick", Some(pick_matches)) => PickParser::new(pick_matches).get_min_taxa(),
-        ("stats", Some(stats_matches)) => StatsParser::new(stats_matches).show_stats(),
+        ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
+        ("summary", Some(stats_matches)) => StatsParser::new(stats_matches).show_stats(),
         _ => unreachable!(),
     }
 }
@@ -277,14 +299,6 @@ trait Cli {
 }
 
 impl Cli for ConvertParser<'_> {}
-impl Cli for ConcatParser<'_> {
-    fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
-        PathBuf::from(self.get_output(matches))
-    }
-}
-impl Cli for PickParser<'_> {}
-
-impl Cli for StatsParser<'_> {}
 
 struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -365,6 +379,12 @@ impl<'a> ConvertParser<'a> {
         writeln!(writer, "Total files\t: {}", utils::fmt_num(&nfile))?;
         writeln!(writer, "Output dir \t: {}\n", self.output.display())?;
         Ok(())
+    }
+}
+
+impl Cli for ConcatParser<'_> {
+    fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
+        PathBuf::from(self.get_output(matches))
     }
 }
 
@@ -458,6 +478,8 @@ impl<'a> ConcatParser<'a> {
         }
     }
 }
+
+impl Cli for PickParser<'_> {}
 
 struct PickParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -563,6 +585,71 @@ impl<'a> PickParser<'a> {
     }
 }
 
+impl Cli for IdParser<'_> {
+    fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
+        if matches.is_present("output") {
+            let output = self.get_output(matches);
+            PathBuf::from(output).with_extension("txt")
+        } else {
+            let input = Path::new(self.get_dir_input(matches));
+            input.with_extension("txt")
+        }
+    }
+}
+
+struct IdParser<'a> {
+    matches: &'a ArgMatches<'a>,
+}
+
+impl<'a> IdParser<'a> {
+    fn new(matches: &'a ArgMatches) -> Self {
+        Self { matches }
+    }
+
+    fn get_id(&self) {
+        let dir = self.get_dir_input(&self.matches);
+        let input_format = self.get_input_format(&self.matches);
+        let files = self.get_files(dir, &input_format);
+        self.display_inputs(dir).unwrap();
+        let spin = utils::set_spinner();
+        spin.set_message("Indexing IDs..");
+        let ids = IDs::new(&files, &input_format).get_id_all();
+        spin.finish_with_message("DONE!");
+        self.write_results(&ids);
+    }
+
+    fn write_results(&self, ids: &IndexSet<String>) {
+        let fname = self.get_output_path(&self.matches);
+        let file = File::create(&fname).expect("CANNOT CREATE AN OUTPUT FILE");
+        let mut writer = BufWriter::new(file);
+        ids.iter().for_each(|id| {
+            writeln!(writer, "{}", id).unwrap();
+        });
+        writer.flush().unwrap();
+        self.display_outputs(&fname, ids.len()).unwrap();
+    }
+
+    fn display_inputs(&self, dir: &str) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "Command\t\t\t: segul id")?;
+        writeln!(writer, "Input dir\t\t: {}\n", dir)?;
+
+        Ok(())
+    }
+
+    fn display_outputs(&self, output: &Path, ids: usize) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "\nTotal unique IDs\t: {}", ids)?;
+        writeln!(writer, "Output\t\t\t: {}", output.display())?;
+
+        Ok(())
+    }
+}
+
+impl Cli for StatsParser<'_> {}
+
 struct StatsParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_format: SeqFormat,
@@ -598,5 +685,15 @@ mod test {
         let res = PathBuf::from("./test_taxa_75p");
         let output = min_taxa.get_formatted_output(Path::new(dir), &percent);
         assert_eq!(res, output);
+    }
+
+    #[test]
+    fn get_id_output_path_test() {
+        let arg = App::new("segul-test")
+            .arg(Arg::with_name("dir").default_value("./test_dir/"))
+            .get_matches();
+        let id = IdParser::new(&arg);
+        let res = PathBuf::from("./test_dir.txt");
+        assert_eq!(res, id.get_output_path(&arg));
     }
 }
