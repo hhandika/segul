@@ -317,6 +317,7 @@ impl<'a> ConvertParser<'a> {
         let output_format = self.get_output_format(self.matches);
         self.output = self.get_output_path(self.matches);
         self.display_input_file(input).unwrap();
+
         self.convert_any(input, &output_format);
     }
 
@@ -327,9 +328,12 @@ impl<'a> ConvertParser<'a> {
         self.output = self.get_output_path(&self.matches);
         self.is_dir = true;
         self.display_input_dir(Path::new(dir), files.len()).unwrap();
+        let spin = utils::set_spinner();
+        spin.set_message("Converting alignments...");
         files.par_iter().for_each(|file| {
             self.convert_any(file, &output_format);
         });
+        spin.finish_with_message("DONE!");
     }
 
     fn convert_any(&self, input: &Path, output_format: &SeqFormat) {
@@ -359,7 +363,7 @@ impl<'a> ConvertParser<'a> {
         writeln!(writer, "Command\t\t: segul convert")?;
         writeln!(writer, "Input dir\t: {}", &input.display())?;
         writeln!(writer, "Total files\t: {}", utils::fmt_num(&nfile))?;
-        writeln!(writer, "Output dir\t: {}", self.output.display())?;
+        writeln!(writer, "Output dir \t: {}\n", self.output.display())?;
         Ok(())
     }
 }
