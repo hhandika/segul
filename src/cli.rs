@@ -204,6 +204,16 @@ fn get_args(version: &str) -> ArgMatches {
                     .takes_value(true)
                     .required(true)
                     .value_name("FORMAT"),
+            )
+            .arg(
+                    Arg::with_name("output")
+                        .short("o")
+                        .long("output")
+                        .help("Uses a costume output filename")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("concat")
+                        .value_name("OUTPUT"),
             ),
         )
         .subcommand(App::new("summary").about("Gets alignment summary stats").arg(
