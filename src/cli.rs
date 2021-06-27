@@ -313,7 +313,6 @@ impl Cli for ConvertParser<'_> {}
 struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_format: SeqFormat,
-    output: PathBuf,
     is_dir: bool,
 }
 
@@ -322,7 +321,6 @@ impl<'a> ConvertParser<'a> {
         Self {
             matches,
             input_format: SeqFormat::Fasta,
-            output: PathBuf::new(),
             is_dir: false,
         }
     }
@@ -339,29 +337,31 @@ impl<'a> ConvertParser<'a> {
     fn convert_file(&mut self) {
         let input = Path::new(self.get_file_input(self.matches));
         let output_format = self.get_output_format(self.matches);
-        self.output = self.get_output_path(self.matches);
+        let output = self.get_output_path(self.matches);
         self.display_input_file(input).unwrap();
 
-        self.convert_any(input, &output_format);
+        self.convert_any(input, &output, &output_format);
     }
 
     fn convert_multiple_fasta(&mut self) {
         let dir = self.get_dir_input(self.matches);
         let files = self.get_files(dir, &self.input_format);
         let output_format = self.get_output_format(self.matches);
-        self.output = self.get_output_path(&self.matches);
+        let output = self.get_output_path(&self.matches);
         self.is_dir = true;
-        self.display_input_dir(Path::new(dir), files.len()).unwrap();
+        self.display_input_dir(Path::new(dir), files.len(), &output)
+            .unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Converting alignments...");
         files.par_iter().for_each(|file| {
-            self.convert_any(file, &output_format);
+            let output = output.join(file.file_stem().unwrap());
+            self.convert_any(file, &output, &output_format);
         });
         spin.finish_with_message("DONE!");
     }
 
-    fn convert_any(&self, input: &Path, output_format: &SeqFormat) {
-        let mut convert = Converter::new(input, &self.output, output_format, self.is_dir);
+    fn convert_any(&self, input: &Path, output: &Path, output_format: &SeqFormat) {
+        let mut convert = Converter::new(input, output, output_format, self.is_dir);
         if self.is_sort() {
             convert.convert_sorted(&self.input_format);
         } else {
@@ -381,13 +381,13 @@ impl<'a> ConvertParser<'a> {
         Ok(())
     }
 
-    fn display_input_dir(&self, input: &Path, nfile: usize) -> Result<()> {
+    fn display_input_dir(&self, input: &Path, nfile: usize, output: &Path) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul convert")?;
         writeln!(writer, "Input dir\t: {}", &input.display())?;
         writeln!(writer, "Total files\t: {}", utils::fmt_num(&nfile))?;
-        writeln!(writer, "Output dir \t: {}\n", self.output.display())?;
+        writeln!(writer, "Output dir \t: {}\n", output.display())?;
         Ok(())
     }
 }
