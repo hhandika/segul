@@ -693,11 +693,36 @@ impl<'a> StatsParser<'a> {
         Self { matches }
     }
 
-    fn show_stats(&mut self) {
+    fn show_stats(&self) {
+        let input_format = self.get_input_format(&self.matches);
+
+        if self.matches.is_present("dir") {
+            self.show_stats_dir(&input_format);
+        } else {
+            self.show_stats_file(&input_format);
+        }
+    }
+
+    fn show_stats_dir(&self, input_format: &SeqFormat) {
+        let dir = self.get_dir_input(&self.matches);
+        let files = self.get_files(dir, input_format);
+        stats::get_stats_dir(&files, input_format);
+    }
+
+    fn show_stats_file(&self, input_format: &SeqFormat) {
         self.get_input_format(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
-        let input_format = self.get_input_format(&self.matches);
+        self.display_input_file(input).unwrap();
         stats::get_seq_stats(input, &input_format);
+    }
+
+    fn display_input_file(&self, input: &Path) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+        writeln!(writer, "Command\t\t: segul stats")?;
+        writeln!(writer, "Input\t\t: {}\n", input.display())?;
+
+        Ok(())
     }
 }
 

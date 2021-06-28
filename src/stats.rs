@@ -1,9 +1,11 @@
 //! A module for sequence statistics.
 use std::collections::HashMap;
 use std::io::{self, BufWriter, Result, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::mpsc::channel;
 
 use indexmap::IndexMap;
+use rayon::prelude::*;
 
 use crate::alignment::Alignment;
 use crate::common::SeqFormat;
@@ -24,6 +26,35 @@ pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
     display_stats(&sites, &dna).unwrap();
 }
 
+pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
+    let (send, rec) = channel();
+
+    files.par_iter().for_each_with(send, |s, file| {
+        s.send(get_stats(file, input_format)).unwrap();
+    });
+
+    let stats: Vec<(Dna, Sites)> = rec.iter().collect();
+
+    display_summary(&stats);
+}
+
+fn get_stats(path: &Path, input_format: &SeqFormat) -> (Dna, Sites) {
+    let mut aln = Alignment::new();
+    aln.get_aln_any(path, input_format);
+    let mut dna = Dna::new();
+    dna.count_chars(&aln.alignment);
+    let mut sites = Sites::new();
+    sites.get_stats(&aln.alignment);
+
+    (dna, sites)
+}
+
+fn display_summary(stats: &[(Dna, Sites)]) {
+    stats.iter().for_each(|(dna, site)| {
+        display_stats(site, dna).unwrap();
+    })
+}
+
 fn display_stats(site: &Sites, dna: &Dna) -> Result<()> {
     let io = io::stdout();
     let mut writer = BufWriter::new(io);
@@ -35,7 +66,7 @@ fn display_stats(site: &Sites, dna: &Dna) -> Result<()> {
     writeln!(writer, "Parsimony inf.\t: {}\n", site.pars_inf)?;
 
     writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
-    writeln!(writer, "Count\t: {}", utils::fmt_num(&dna.nchars))?;
+    writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.nchars))?;
     writeln!(writer, "A\t: {}", utils::fmt_num(&dna.a_count))?;
     writeln!(writer, "C\t: {}", utils::fmt_num(&dna.c_count))?;
     writeln!(writer, "G\t: {}", utils::fmt_num(&dna.g_count))?;
