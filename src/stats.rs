@@ -78,7 +78,7 @@ fn display_stats(site: &Sites, dna: &Dna) -> Result<()> {
     Ok(())
 }
 
-pub struct Sites {
+struct Sites {
     conserved: usize,
     variable: usize,
     pars_inf: usize,
@@ -95,7 +95,7 @@ impl Sites {
         }
     }
 
-    pub fn get_stats(&mut self, matrix: &IndexMap<String, String>) {
+    fn get_stats(&mut self, matrix: &IndexMap<String, String>) {
         let site_matrix = self.index_sites(matrix);
         self.get_site_stats(&site_matrix);
         self.count_sites();
