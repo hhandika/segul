@@ -11,7 +11,11 @@ pub fn fmt_num(num: &usize) -> String {
 pub fn set_spinner() -> ProgressBar {
     let spin = ProgressBar::new_spinner();
     spin.enable_steady_tick(150);
-    spin.set_style(ProgressStyle::default_spinner().template("{spinner:.simpleDots} {msg}"));
+    spin.set_style(
+        ProgressStyle::default_spinner()
+            .tick_chars("🌑🌒🌓🌔🌕🌖🌗🌘")
+            .template("{spinner} {msg}"),
+    );
     spin
 }
 
