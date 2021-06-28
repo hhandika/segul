@@ -7,18 +7,15 @@ use indexmap::IndexMap;
 
 use crate::alignment::Alignment;
 use crate::common::SeqFormat;
+use crate::utils;
 
-#[allow(dead_code)]
-pub struct AlnStats {
-    parsimony_inf: usize,
-    site_matrix: HashMap<usize, String>,
+pub struct SiteStats {
+    site_matrix: HashMap<usize, Vec<u8>>,
 }
 
-#[allow(dead_code)]
-impl AlnStats {
+impl SiteStats {
     pub fn new() -> Self {
         Self {
-            parsimony_inf: 0,
             site_matrix: HashMap::new(),
         }
     }
@@ -27,54 +24,124 @@ impl AlnStats {
         let mut aln = Alignment::new();
         aln.get_aln_any(path, input_format);
         self.index_sites(&aln.alignment);
-        self.parsimony_inf = self.count_parsimony_informative();
-        println!("Parsimony informative sites: {}", self.parsimony_inf);
+        aln.alignment.clear();
+        let mut dna = DnaStats::new();
+        dna.count_chars(&self.site_matrix);
+        let (conserved, var_sites, parsim) = self.get_site_stats();
+        println!("Sites: {}", utils::fmt_num(&(conserved + var_sites)));
+        println!("Conserved sites: {}", utils::fmt_num(&conserved));
+        println!("Variable sites: {}", utils::fmt_num(&var_sites));
+        println!("Parsimony informative sites: {}", parsim);
+        let all_chars: usize = aln.alignment.values().map(|seq| seq.len()).sum();
+        println!("\nAll chars: {}", utils::fmt_num(&all_chars));
+        println!("A: {}", utils::fmt_num(&dna.a_count));
+        println!("C: {}", utils::fmt_num(&dna.c_count));
+        println!("G: {}", utils::fmt_num(&dna.g_count));
+        println!("T: {}", utils::fmt_num(&dna.t_count));
+        println!("N: {}", utils::fmt_num(&dna.n_count));
+        println!("?: {}", utils::fmt_num(&dna.missings));
+        println!("-: {}", utils::fmt_num(&dna.gaps));
     }
 
     fn index_sites(&mut self, matrix: &IndexMap<String, String>) {
         matrix.values().for_each(|seq| {
-            seq.chars()
+            seq.bytes()
                 .enumerate()
                 .for_each(|(idx, dna)| match self.site_matrix.get_mut(&idx) {
                     Some(value) => match dna {
-                        '-' | 'N' | '?' | '.' => (),
-                        _ => value.push(dna),
+                        b'a' | b'g' | b't' | b'c' | b'A' | b'G' | b'T' | b'C' => value.push(dna),
+                        _ => (), // ignore ambigous characters
                     },
                     None => match dna {
-                        '-' | 'N' | '?' | '.' => (),
-                        _ => {
-                            self.site_matrix.insert(idx, dna.to_string());
+                        b'a' | b'g' | b't' | b'c' | b'A' | b'G' | b'T' | b'C' => {
+                            self.site_matrix.insert(idx, vec![dna]);
                         }
+                        _ => (),
                     },
                 })
         });
     }
 
-    fn count_parsimony_informative(&mut self) -> usize {
+    fn get_site_stats(&mut self) -> (usize, usize, usize) {
         let mut parsim: usize = 0;
+        let mut var_sites = 0;
+        let mut conserved = 0;
         self.site_matrix.values().for_each(|site| {
-            let n_patterns = self.get_pattern(&site);
+            let (cons, var, n_patterns) = self.get_patterns(site);
             if n_patterns >= 2 {
-                parsim += 1
+                parsim += 1;
             }
+            var_sites += var;
+            conserved += cons;
         });
 
-        parsim
+        (conserved, var_sites, parsim)
     }
 
-    fn get_pattern(&self, site: &str) -> usize {
-        let mut uniques: Vec<char> = site.chars().collect();
+    fn get_patterns(&self, site: &[u8]) -> (usize, usize, usize) {
+        let mut uniques: Vec<u8> = site.to_vec();
         uniques.sort_unstable();
         uniques.dedup();
-        let mut n_patterns = 0;
-        uniques.iter().for_each(|c| {
-            let patterns = site.matches(&c.to_string()).count();
-            if patterns >= 2 {
-                n_patterns += 1;
-            }
-        });
 
-        n_patterns
+        // We consider variable sites
+        // when the characters not all the same
+        let mut var_sites = 0;
+        let mut conserved = 0;
+        let mut n_patterns = 0;
+        if uniques.len() != 1 {
+            var_sites += 1;
+            uniques.iter().for_each(|ch| {
+                let patterns = site.iter().filter(|&site| site == ch).count();
+                if patterns >= 2 {
+                    n_patterns += 1;
+                }
+            });
+        } else {
+            conserved += 1;
+        }
+
+        (conserved, var_sites, n_patterns)
+    }
+}
+
+struct DnaStats {
+    a_count: usize,
+    c_count: usize,
+    g_count: usize,
+    t_count: usize,
+    n_count: usize,
+    missings: usize,
+    gaps: usize,
+    others: usize,
+}
+
+impl DnaStats {
+    fn new() -> Self {
+        Self {
+            a_count: 0,
+            c_count: 0,
+            g_count: 0,
+            t_count: 0,
+            n_count: 0,
+            missings: 0,
+            gaps: 0,
+            others: 0,
+        }
+    }
+
+    fn count_chars(&mut self, site: &HashMap<usize, Vec<u8>>) {
+        site.values().for_each(|seqs| {
+            seqs.iter().for_each(|ch| match ch {
+                b'a' | b'A' => self.a_count += 1,
+                b'c' | b'C' => self.c_count += 1,
+                b'g' | b'G' => self.g_count += 1,
+                b't' | b'T' => self.t_count += 1,
+                b'n' | b'N' => self.n_count += 1,
+                b'?' | b'.' => self.missings += 1,
+                b'-' => self.gaps += 1,
+                _ => self.others += 1,
+            })
+        })
     }
 }
 
@@ -93,18 +160,12 @@ mod test {
 
     #[test]
     fn pattern_count_test() {
-        let site = "AATT";
-        let site_2 = "AATTGG";
-        let pattern = AlnStats::new().get_pattern(&site);
+        let site = b"AATT";
+        let site_2 = b"AATTGG";
+        let (_, _, pattern) = SiteStats::new().get_patterns(site);
+        let (_, _, pattern_2) = SiteStats::new().get_patterns(site_2);
         assert_eq!(2, pattern);
-        assert_eq!(3, AlnStats::new().get_pattern(site_2));
-    }
-
-    #[test]
-    fn pattern_count_all_test() {
-        let site = "AAAA";
-        let pattern = AlnStats::new().get_pattern(&site);
-        assert_eq!(1, pattern);
+        assert_eq!(3, pattern_2);
     }
 
     #[test]
@@ -112,9 +173,20 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let mut dna = AlnStats::new();
+        let mut dna = SiteStats::new();
         dna.index_sites(&mat);
-        let parsim = dna.count_parsimony_informative();
+        let (_, _, parsim) = dna.get_site_stats();
+        assert_eq!(1, parsim);
+    }
+
+    #[test]
+    fn count_variable_sites_test() {
+        let id = ["ABC", "ABE", "ABF", "ABD"];
+        let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
+        let mat = get_matrix(&id, &seq);
+        let mut dna = SiteStats::new();
+        dna.index_sites(&mat);
+        let (_, _, parsim) = dna.get_site_stats();
         assert_eq!(1, parsim);
     }
 
@@ -123,9 +195,10 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
-        let mut dna = AlnStats::new();
+        let mut dna = SiteStats::new();
         dna.index_sites(&mat);
-        let parsim = dna.count_parsimony_informative();
+        let (_, var_sites, parsim) = dna.get_site_stats();
         assert_eq!(1, parsim);
+        assert_eq!(3, var_sites);
     }
 }
