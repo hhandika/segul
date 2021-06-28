@@ -25,5 +25,9 @@ fn main() {
     let io = std::io::stdout();
     let mut writer = BufWriter::new(io);
     writeln!(writer).unwrap();
-    writeln!(writer, "Execution time {:?}", duration).unwrap();
+    if duration.as_secs() < 60 {
+        println!("Execution time: {:?}", duration);
+    } else {
+        utils::print_formatted_duration(duration.as_secs());
+    }
 }
