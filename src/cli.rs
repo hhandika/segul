@@ -706,6 +706,7 @@ impl<'a> StatsParser<'a> {
     fn show_stats_dir(&self, input_format: &SeqFormat) {
         let dir = self.get_dir_input(&self.matches);
         let files = self.get_files(dir, input_format);
+        self.display_input_file(Path::new(dir)).unwrap();
         stats::get_stats_dir(&files, input_format);
     }
 
@@ -719,7 +720,7 @@ impl<'a> StatsParser<'a> {
     fn display_input_file(&self, input: &Path) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
-        writeln!(writer, "Command\t\t: segul stats")?;
+        writeln!(writer, "Command\t\t: segul summary")?;
         writeln!(writer, "Input\t\t: {}\n", input.display())?;
 
         Ok(())
