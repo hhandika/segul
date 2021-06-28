@@ -458,7 +458,7 @@ mod test {
         let matrix = IndexMap::new();
         let header = Header::new();
         let mut convert = SeqWriter::new(path, &matrix, header, None, &PartitionFormat::None);
-        let output = PathBuf::from("sanger/cytb.fas");
+        let output = PathBuf::from("sanger/cytb.fasta");
         convert.get_output_name(&SeqFormat::Fasta);
         assert_eq!(output, convert.output);
     }

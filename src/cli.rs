@@ -11,7 +11,7 @@ use crate::converter::Converter;
 use crate::finder::{Files, IDs};
 use crate::msa;
 use crate::picker::Picker;
-use crate::stats::SiteStats;
+use crate::stats;
 use crate::utils;
 
 fn get_args(version: &str) -> ArgMatches {
@@ -697,7 +697,7 @@ impl<'a> StatsParser<'a> {
         self.get_input_format(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
         let input_format = self.get_input_format(&self.matches);
-        SiteStats::new().get_stats(input, &input_format);
+        stats::get_seq_stats(input, &input_format);
     }
 }
 
