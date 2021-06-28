@@ -11,7 +11,7 @@ use crate::converter::Converter;
 use crate::finder::{Files, IDs};
 use crate::msa;
 use crate::picker::Picker;
-use crate::stats::AlnStats;
+use crate::stats::SiteStats;
 use crate::utils;
 
 fn get_args(version: &str) -> ArgMatches {
@@ -206,24 +206,48 @@ fn get_args(version: &str) -> ArgMatches {
                     .value_name("FORMAT"),
             )
             .arg(
-                    Arg::with_name("output")
-                        .short("o")
-                        .long("output")
-                        .help("Uses a costume output filename")
-                        .takes_value(true)
-                        .required(true)
-                        .default_value("concat")
-                        .value_name("OUTPUT"),
+                Arg::with_name("output")
+                    .short("o")
+                    .long("output")
+                    .help("Uses a costume output filename")
+                    .takes_value(true)
+                    .required(true)
+                    .default_value("concat")
+                    .value_name("OUTPUT"),
             ),
         )
-        .subcommand(App::new("summary").about("Gets alignment summary stats").arg(
-                            Arg::with_name("dir")
-                                .short("d")
-                                .long("dir")
-                                .help("Inputs dir with alignment files")
-                                .takes_value(true)
-                                .value_name("INPUT FILE"),
-                        ))
+        .subcommand(
+            App::new("summary")
+            .about("Gets alignment summary stats")
+                .arg(
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Convert a fasta file")
+                        .takes_value(true)
+                        .required_unless("dir")
+                        .conflicts_with("dir")
+                        .value_name("INPUT FILE"),
+                    )
+                .arg(
+                    Arg::with_name("dir")
+                        .short("d")
+                        .long("dir")
+                        .help("Inputs dir with alignment files")
+                        .takes_value(true)
+                        .conflicts_with("input")
+                        .value_name("INPUT FILE")
+                )
+                .arg(
+                    Arg::with_name("format")
+                        .short("f")
+                        .long("format")
+                        .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("FORMAT"),
+                )
+        )
         .get_matches()
 }
 
@@ -662,21 +686,18 @@ impl Cli for StatsParser<'_> {}
 
 struct StatsParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_format: SeqFormat,
 }
 
 impl<'a> StatsParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
-        Self {
-            matches,
-            input_format: SeqFormat::Nexus,
-        }
+        Self { matches }
     }
 
     fn show_stats(&mut self) {
         self.get_input_format(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
-        AlnStats::new().get_stats(input, &self.input_format);
+        let input_format = self.get_input_format(&self.matches);
+        SiteStats::new().get_stats(input, &input_format);
     }
 }
 
