@@ -26,8 +26,8 @@ fn main() {
     let mut writer = BufWriter::new(io);
     writeln!(writer).unwrap();
     if duration.as_secs() < 60 {
-        println!("Execution time: {:?}", duration);
+        writeln!(writer, "Execution time: {:?}", duration).unwrap();
     } else {
-        utils::print_formatted_duration(duration.as_secs());
+        utils::print_formatted_duration(&mut writer, duration.as_secs()).unwrap();
     }
 }
