@@ -1,7 +1,7 @@
+use core::sync::atomic::{AtomicUsize, Ordering};
 use std::fs;
 use std::io::{self, BufWriter, Result, Write};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
 
 use rayon::prelude::*;
 
@@ -12,6 +12,9 @@ use crate::nexus::Nexus;
 use crate::phylip::Phylip;
 use crate::utils;
 
+// TODO:
+// Add support to automatically concat the result
+// Allow more parameters, such as min aln length
 pub struct Picker<'a> {
     files: &'a mut [PathBuf],
     file_counts: usize,
@@ -43,7 +46,7 @@ impl<'a> Picker<'a> {
     pub fn get_min_taxa(&mut self) {
         self.ntax = IDs::new(self.files, self.input_format).get_id_all().len();
         self.file_counts = self.files.len();
-        let fcounts = Arc::new(Mutex::new(0));
+        let fcounts = AtomicUsize::new(0);
         self.min_taxa = self.count_min_tax();
         self.display_input().expect("CANNOT DISPLAY TO STDOUT");
         fs::create_dir_all(self.output_dir).expect("CANNOT CREATE A TARGET DIRECTORY");
@@ -51,12 +54,11 @@ impl<'a> Picker<'a> {
             let header = self.get_header(file);
             if header.ntax >= self.min_taxa {
                 self.copy_files(file).expect("CANNOT COPY FILES");
-                let mut fcounts = fcounts.lock().unwrap();
-                *fcounts += 1;
+                fcounts.fetch_add(1, Ordering::Relaxed);
             }
         });
 
-        self.display_output(*fcounts.lock().unwrap())
+        self.display_output(fcounts.load(Ordering::Relaxed))
             .expect("CANNOT DISPLAY TO STDOUT");
     }
 
