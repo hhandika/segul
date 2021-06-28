@@ -5,7 +5,6 @@ use std::io::{self, Result, Write};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use alphanumeric_sort;
 use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
