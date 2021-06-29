@@ -68,7 +68,7 @@ impl<'a> MSAlignment<'a> {
         writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
         writeln!(writer, "Loci\t\t: {}", utils::fmt_num(&count))?;
         writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&header.ntax))?;
-        writeln!(writer, "Sites\t\t: {}", utils::fmt_num(&header.nchar))?;
+        writeln!(writer, "Length\t\t: {}", utils::fmt_num(&header.nchar))?;
 
         Ok(())
     }
