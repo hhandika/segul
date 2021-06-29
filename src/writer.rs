@@ -462,4 +462,54 @@ mod test {
         convert.get_output_name(&SeqFormat::Fasta);
         assert_eq!(output, convert.output);
     }
+    #[test]
+    fn chunk_seq_test() {
+        let path = Path::new(".");
+        let matrix = IndexMap::new();
+        let header = Header::new();
+        let convert = SeqWriter::new(path, &matrix, header, None, &PartitionFormat::None);
+        let seq = "AGTCAGTC";
+        let chunk = String::from("AGTC");
+        let chunk2 = String::from("AGTC");
+        let res = vec![chunk, chunk2];
+        assert_eq!(res, convert.chunk_seq(seq, 4));
+    }
+
+    #[test]
+    fn matrix_int_test() {
+        let path = Path::new(".");
+        let mut matrix = IndexMap::new();
+        let header = Header::new();
+
+        let id = String::from("ABC");
+
+        let seq = String::from(
+            "ATGTGTGTGTGTGTGTAAAA\
+        ATGTGTGTGTGTGTGTAAAA\
+        ATGTGTGTGTGTGTGTAAAA\
+        ATGTGTGTGTGTGTGTAAAA\
+        ATGTGTGTGTGTGTGTAAAA",
+        );
+
+        // Expected result first chunk
+        let res0 = String::from(
+            "ATGTGTGTGTGTGTGTAAAA\
+        ATGTGTGTGTGTGTGTAAAA\
+        ATGTGTGTGTGTGTGTAAAA\
+        ATGTGTGTGTGTGTGTAAAA",
+        );
+
+        // Expected result second chunk
+        let res1 = String::from("ATGTGTGTGTGTGTGTAAAA");
+
+        matrix.insert(id.clone(), seq);
+        let convert = SeqWriter::new(path, &matrix, header, None, &PartitionFormat::None);
+        let int = convert.get_matrix_int();
+        let mat_int = int.get(&0).unwrap();
+        let mat_int1 = int.get(&1).unwrap();
+        assert_eq!(id, mat_int[0].id.to_string());
+        assert_eq!(id, mat_int1[0].id.to_string());
+        assert_eq!(res0, mat_int[0].seq.to_string());
+        assert_eq!(res1, mat_int1[0].seq.to_string());
+    }
 }
