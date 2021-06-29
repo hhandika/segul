@@ -462,6 +462,7 @@ mod test {
         convert.get_output_name(&SeqFormat::Fasta);
         assert_eq!(output, convert.output);
     }
+
     #[test]
     fn chunk_seq_test() {
         let path = Path::new(".");
