@@ -395,7 +395,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn get_interleave_len(&self) -> usize {
-        if self.header.nchar < 1000 {
+        if self.header.nchar < 2000 {
             80
         } else {
             500
