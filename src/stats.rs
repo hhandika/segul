@@ -35,7 +35,8 @@ pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
         s.send(get_stats(file, input_format)).unwrap();
     });
 
-    let stats: Vec<(PathBuf, Dna, Sites)> = rec.iter().collect();
+    let mut stats: Vec<(PathBuf, Dna, Sites)> = rec.iter().collect();
+    stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0, &b.0));
 
     write_aln_stats(&stats).unwrap();
 }
@@ -57,9 +58,8 @@ fn write_aln_stats(stats: &[(PathBuf, Dna, Sites)]) -> Result<()> {
     let mut writer = BufWriter::new(file);
     writeln!(
         writer,
-        "
-        dir,\
-        locus_path,\
+        "path,\
+        locus,\
         ntaxa,\
         chars_count,\
         site_count,\
@@ -83,6 +83,8 @@ fn write_aln_stats(stats: &[(PathBuf, Dna, Sites)]) -> Result<()> {
         write_content(&mut writer, path, dna, site).unwrap();
     });
 
+    println!("DONE! Saved as {}", fname);
+
     Ok(())
 }
 
@@ -90,8 +92,8 @@ fn write_content<W: Write>(writer: &mut W, path: &Path, dna: &Dna, site: &Sites)
     write!(
         writer,
         "{},{},{},{},",
-        path.parent().unwrap().display(),
-        path.file_name().unwrap().to_string_lossy(),
+        path.display(),
+        path.file_stem().unwrap().to_string_lossy(),
         dna.ntax,
         dna.nchars
     )?;
@@ -121,6 +123,8 @@ fn write_content<W: Write>(writer: &mut W, path: &Path, dna: &Dna, site: &Sites)
         "{},{},{},{},{},{}",
         dna.a_count, dna.t_count, dna.c_count, dna.g_count, dna.gaps, dna.missings
     )?;
+
+    writer.flush()?;
     Ok(())
 }
 
