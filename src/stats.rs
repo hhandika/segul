@@ -106,22 +106,30 @@ fn write_content<W: Write>(writer: &mut W, path: &Path, dna: &Dna, site: &Sites)
         site.conserved,
         site.prop_cons,
         site.variable,
-        site.prop_cons,
+        site.prop_var,
         site.pars_inf,
         site.prop_pinf
     )?;
 
     // GC content
-    write!(writer, "{}", (dna.g_count + dna.c_count) / dna.nchars)?;
+    write!(
+        writer,
+        "{},",
+        (dna.g_count as f64 + dna.c_count as f64) / dna.nchars as f64
+    )?;
 
     // AT content
-    write!(writer, "{}", (dna.a_count + dna.t_count) / dna.nchars)?;
+    write!(
+        writer,
+        "{},",
+        (dna.a_count as f64 + dna.t_count as f64) / dna.nchars as f64
+    )?;
 
     // Characters
     writeln!(
         writer,
         "{},{},{},{},{},{}",
-        dna.a_count, dna.t_count, dna.c_count, dna.g_count, dna.gaps, dna.missings
+        dna.a_count, dna.t_count, dna.g_count, dna.c_count, dna.gaps, dna.missings
     )?;
 
     writer.flush()?;
