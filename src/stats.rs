@@ -11,6 +11,7 @@ use rayon::prelude::*;
 
 use crate::alignment::Alignment;
 use crate::common::{Header, SeqFormat};
+use crate::finder::IDs;
 use crate::utils;
 
 pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
@@ -29,6 +30,7 @@ pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
 }
 
 pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
+    let total_taxa = IDs::new(files, input_format).get_id_all().len();
     let (send, rec) = channel();
 
     files.par_iter().for_each_with(send, |s, file| {
@@ -38,7 +40,37 @@ pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
     let mut stats: Vec<(PathBuf, Dna, Sites)> = rec.iter().collect();
     stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0, &b.0));
 
+    let mut summary = Summary::new();
+    summary.get_totals(&stats, total_taxa);
+    display_summary(&summary).unwrap();
     write_aln_stats(&stats).unwrap();
+}
+
+fn display_summary(summary: &Summary) -> Result<()> {
+    let io = io::stdout();
+    let mut writer = BufWriter::new(io);
+
+    writeln!(
+        writer,
+        "Total taxa\t: {}",
+        utils::fmt_num(&summary.total_taxa)
+    )?;
+    writeln!(
+        writer,
+        "Total sites\t: {}",
+        utils::fmt_num(&summary.total_sites)
+    )?;
+    writeln!(
+        writer,
+        "Total chars\t: {}",
+        utils::fmt_num(&summary.total_chars)
+    )?;
+    writeln!(writer, "Min taxa\t: {}", utils::fmt_num(&summary.min_tax))?;
+    writeln!(writer, "Max taxa\t: {}", utils::fmt_num(&summary.max_tax))?;
+    writeln!(writer, "Mean taxa\t: {:.2}", summary.mean_tax)?;
+    writeln!(writer)?;
+    writer.flush()?;
+    Ok(())
 }
 
 fn get_stats(path: &Path, input_format: &SeqFormat) -> (PathBuf, Dna, Sites) {
@@ -166,8 +198,40 @@ fn display_stats(site: &Sites, dna: &Dna, aln: &Header) -> Result<()> {
     writeln!(writer, "N\t: {}", utils::fmt_num(&dna.n_count))?;
     writeln!(writer, "?\t: {}", utils::fmt_num(&dna.missings))?;
     writeln!(writer, "-\t: {}", utils::fmt_num(&dna.gaps))?;
-
+    writer.flush()?;
     Ok(())
+}
+
+struct Summary {
+    total_taxa: usize,
+    total_chars: usize,
+    total_sites: usize,
+    min_tax: usize,
+    max_tax: usize,
+    mean_tax: f64,
+}
+
+impl Summary {
+    fn new() -> Self {
+        Self {
+            total_taxa: 0,
+            total_chars: 0,
+            total_sites: 0,
+            min_tax: 0,
+            max_tax: 0,
+            mean_tax: 0.0,
+        }
+    }
+
+    fn get_totals(&mut self, stats: &[(PathBuf, Dna, Sites)], ntax: usize) {
+        self.total_taxa = ntax;
+        self.min_tax = stats.iter().map(|s| s.1.ntax).min().unwrap();
+        self.max_tax = stats.iter().map(|s| s.1.ntax).max().unwrap();
+        let sum_tax: usize = stats.iter().map(|s| s.1.ntax).sum();
+        self.mean_tax = sum_tax as f64 / stats.len() as f64;
+        self.total_chars = stats.iter().map(|s| s.1.nchars).sum();
+        self.total_sites = stats.iter().map(|s| s.2.counts).sum();
+    }
 }
 
 #[derive(Debug)]
