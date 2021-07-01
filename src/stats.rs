@@ -11,7 +11,7 @@ use rayon::prelude::*;
 
 use crate::alignment::Alignment;
 use crate::common::{Header, SeqFormat};
-use crate::finder::IDs;
+// use crate::finder::IDs;
 use crate::utils;
 
 pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
@@ -23,68 +23,81 @@ pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
     let mut dna = Dna::new();
     dna.count_chars(&aln);
     spin.set_message("Getting summary stats...");
-    let mut sites = Sites::new();
+    let mut sites = Sites::new(path);
     sites.get_stats(&aln.alignment);
     spin.finish_with_message("DONE!\n");
     display_stats(&sites, &dna, &aln.header).unwrap();
 }
 
 pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
-    let total_taxa = IDs::new(files, input_format).get_id_all().len();
+    let spin = utils::set_spinner();
+    spin.set_message("Processing alignments...");
     let (send, rec) = channel();
-
     files.par_iter().for_each_with(send, |s, file| {
         s.send(get_stats(file, input_format)).unwrap();
     });
 
-    let mut stats: Vec<(PathBuf, Dna, Sites)> = rec.iter().collect();
-    stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0, &b.0));
+    let mut stats: Vec<(Sites, Dna)> = rec.iter().collect();
 
-    let mut summary = Summary::new();
-    summary.get_totals(&stats, total_taxa);
-    display_summary(&summary).unwrap();
+    stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
+    spin.set_message("Getting summary stats...");
+    let (sites, dna) = get_summary_dna(&stats);
+    spin.set_message("Writing results...");
     write_aln_stats(&stats).unwrap();
+    spin.finish_with_message("DONE!\n");
+    display_summary(&sites, &dna).unwrap();
 }
 
-fn display_summary(summary: &Summary) -> Result<()> {
+fn get_stats(path: &Path, input_format: &SeqFormat) -> (Sites, Dna) {
+    let mut aln = Alignment::new();
+    aln.get_aln_any(path, input_format);
+    let mut dna = Dna::new();
+    dna.count_chars(&aln);
+    let mut sites = Sites::new(path);
+    sites.get_stats(&aln.alignment);
+
+    (sites, dna)
+}
+
+fn get_summary_dna(stats: &[(Sites, Dna)]) -> (SiteSummary, DnaSummary) {
+    let (sites, dna): (Vec<Sites>, Vec<Dna>) =
+        stats.par_iter().map(|p| (p.0.clone(), p.1.clone())).unzip();
+    let mut sum_sites = SiteSummary::new();
+    sum_sites.get_summary(&sites);
+    let mut sum_dna = DnaSummary::new();
+    sum_dna.get_summary(&dna);
+
+    (sum_sites, sum_dna)
+}
+
+fn display_summary(site: &SiteSummary, dna: &DnaSummary) -> Result<()> {
     let io = io::stdout();
     let mut writer = BufWriter::new(io);
-
+    writeln!(writer, "Total loci\t: {}", utils::fmt_num(&site.total_loci))?;
     writeln!(
         writer,
-        "Total taxa\t: {}",
-        utils::fmt_num(&summary.total_taxa)
+        "Pars. inf. loci\t: {}",
+        utils::fmt_num(&site.inf_loci)
     )?;
     writeln!(
         writer,
         "Total sites\t: {}",
-        utils::fmt_num(&summary.total_sites)
+        utils::fmt_num(&site.total_sites)
     )?;
     writeln!(
         writer,
         "Total chars\t: {}",
-        utils::fmt_num(&summary.total_chars)
+        utils::fmt_num(&dna.total_chars)
     )?;
-    writeln!(writer, "Min taxa\t: {}", utils::fmt_num(&summary.min_tax))?;
-    writeln!(writer, "Max taxa\t: {}", utils::fmt_num(&summary.max_tax))?;
-    writeln!(writer, "Mean taxa\t: {:.2}", summary.mean_tax)?;
+    writeln!(writer, "Min taxa\t: {}", utils::fmt_num(&dna.min_tax))?;
+    writeln!(writer, "Max taxa\t: {}", utils::fmt_num(&dna.max_tax))?;
+    writeln!(writer, "Mean taxa\t: {:.2}", dna.mean_tax)?;
     writeln!(writer)?;
     writer.flush()?;
     Ok(())
 }
 
-fn get_stats(path: &Path, input_format: &SeqFormat) -> (PathBuf, Dna, Sites) {
-    let mut aln = Alignment::new();
-    aln.get_aln_any(path, input_format);
-    let mut dna = Dna::new();
-    dna.count_chars(&aln);
-    let mut sites = Sites::new();
-    sites.get_stats(&aln.alignment);
-
-    (PathBuf::from(path), dna, sites)
-}
-
-fn write_aln_stats(stats: &[(PathBuf, Dna, Sites)]) -> Result<()> {
+fn write_aln_stats(stats: &[(Sites, Dna)]) -> Result<()> {
     let fname = "SEGUL-stats_per_locus.csv";
     let file = File::create(fname).expect("CANNOT WRITE THE STAT RESULTS");
     let mut writer = BufWriter::new(file);
@@ -111,23 +124,21 @@ fn write_aln_stats(stats: &[(PathBuf, Dna, Sites)]) -> Result<()> {
         missing_counts,\
     "
     )?;
-    stats.iter().for_each(|(path, dna, site)| {
-        write_content(&mut writer, path, dna, site).unwrap();
+    stats.iter().for_each(|(site, dna)| {
+        write_content(&mut writer, site, dna).unwrap();
     });
-
-    println!("DONE! Saved as {}", fname);
 
     Ok(())
 }
 
-fn write_content<W: Write>(writer: &mut W, path: &Path, dna: &Dna, site: &Sites) -> Result<()> {
+fn write_content<W: Write>(writer: &mut W, site: &Sites, dna: &Dna) -> Result<()> {
     write!(
         writer,
         "{},{},{},{},",
-        path.display(),
-        path.file_stem().unwrap().to_string_lossy(),
+        site.path.display(),
+        site.path.file_stem().unwrap().to_string_lossy(),
         dna.ntax,
-        dna.nchars
+        dna.total_chars
     )?;
 
     // Site stats
@@ -147,14 +158,14 @@ fn write_content<W: Write>(writer: &mut W, path: &Path, dna: &Dna, site: &Sites)
     write!(
         writer,
         "{},",
-        (dna.g_count as f64 + dna.c_count as f64) / dna.nchars as f64
+        (dna.g_count as f64 + dna.c_count as f64) / dna.total_chars as f64
     )?;
 
     // AT content
     write!(
         writer,
         "{},",
-        (dna.a_count as f64 + dna.t_count as f64) / dna.nchars as f64
+        (dna.a_count as f64 + dna.t_count as f64) / dna.total_chars as f64
     )?;
 
     // Characters
@@ -190,7 +201,7 @@ fn display_stats(site: &Sites, dna: &Dna, aln: &Header) -> Result<()> {
     writeln!(writer, "Prop. p. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
 
     writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
-    writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.nchars))?;
+    writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.total_chars))?;
     writeln!(writer, "A\t: {}", utils::fmt_num(&dna.a_count))?;
     writeln!(writer, "C\t: {}", utils::fmt_num(&dna.c_count))?;
     writeln!(writer, "G\t: {}", utils::fmt_num(&dna.g_count))?;
@@ -202,40 +213,95 @@ fn display_stats(site: &Sites, dna: &Dna, aln: &Header) -> Result<()> {
     Ok(())
 }
 
-struct Summary {
-    total_taxa: usize,
-    total_chars: usize,
+struct SiteSummary {
+    total_loci: usize,
     total_sites: usize,
-    min_tax: usize,
-    max_tax: usize,
-    mean_tax: f64,
+    mean_sites: usize,
+    inf_loci: usize,
 }
 
-impl Summary {
+impl SiteSummary {
     fn new() -> Self {
         Self {
-            total_taxa: 0,
-            total_chars: 0,
             total_sites: 0,
-            min_tax: 0,
-            max_tax: 0,
-            mean_tax: 0.0,
+            total_loci: 0,
+            mean_sites: 0,
+            inf_loci: 0,
         }
     }
 
-    fn get_totals(&mut self, stats: &[(PathBuf, Dna, Sites)], ntax: usize) {
-        self.total_taxa = ntax;
-        self.min_tax = stats.iter().map(|s| s.1.ntax).min().unwrap();
-        self.max_tax = stats.iter().map(|s| s.1.ntax).max().unwrap();
-        let sum_tax: usize = stats.iter().map(|s| s.1.ntax).sum();
-        self.mean_tax = sum_tax as f64 / stats.len() as f64;
-        self.total_chars = stats.iter().map(|s| s.1.nchars).sum();
-        self.total_sites = stats.iter().map(|s| s.2.counts).sum();
+    fn get_summary(&mut self, sites: &[Sites]) {
+        self.total_loci = sites.len();
+        self.total_sites = sites.iter().map(|s| s.counts).sum();
+        self.inf_loci = sites.iter().filter(|s| s.pars_inf > 0).count();
+        self.mean_sites = self.total_sites / self.total_loci;
     }
 }
 
-#[derive(Debug)]
+struct DnaSummary {
+    min_tax: usize,
+    max_tax: usize,
+    mean_tax: f64,
+    total_chars: usize,
+    total_nucleotides: usize,
+    total_a: usize,
+    total_c: usize,
+    total_g: usize,
+    total_t: usize,
+    total_n: usize,
+    total_missings: usize,
+    total_gaps: usize,
+    total_undetermined: usize,
+}
+
+impl DnaSummary {
+    fn new() -> Self {
+        Self {
+            total_chars: 0,
+            min_tax: 0,
+            max_tax: 0,
+            mean_tax: 0.0,
+            total_nucleotides: 0,
+            total_a: 0,
+            total_c: 0,
+            total_g: 0,
+            total_t: 0,
+            total_n: 0,
+            total_missings: 0,
+            total_gaps: 0,
+            total_undetermined: 0,
+        }
+    }
+
+    fn get_summary(&mut self, dna: &[Dna]) {
+        self.min_tax = dna.iter().map(|d| d.ntax).min().unwrap();
+        self.max_tax = dna.iter().map(|d| d.ntax).max().unwrap();
+        let sum_tax: usize = dna.iter().map(|d| d.ntax).sum();
+        self.mean_tax = sum_tax as f64 / dna.len() as f64;
+        self.total_chars = dna.iter().map(|d| d.total_chars).sum();
+        self.count_chars(dna);
+        self.get_total_nucleotides();
+    }
+
+    fn count_chars(&mut self, dna: &[Dna]) {
+        self.total_a = dna.iter().map(|d| d.a_count).sum();
+        self.total_t = dna.iter().map(|d| d.t_count).sum();
+        self.total_g = dna.iter().map(|d| d.g_count).sum();
+        self.total_c = dna.iter().map(|d| d.c_count).sum();
+        self.total_n = dna.iter().map(|d| d.n_count).sum();
+        self.total_missings = dna.iter().map(|d| d.missings).sum();
+        self.total_gaps = dna.iter().map(|d| d.gaps).sum();
+        self.total_undetermined = dna.iter().map(|d| d.undetermined).sum();
+    }
+
+    fn get_total_nucleotides(&mut self) {
+        self.total_nucleotides = self.total_a + self.total_t + self.total_g + self.total_c
+    }
+}
+
+#[derive(Debug, Clone)]
 struct Sites {
+    path: PathBuf,
     conserved: usize,
     variable: usize,
     pars_inf: usize,
@@ -246,8 +312,9 @@ struct Sites {
 }
 
 impl Sites {
-    pub fn new() -> Self {
+    pub fn new(path: &Path) -> Self {
         Self {
+            path: PathBuf::from(path),
             conserved: 0,
             variable: 0,
             pars_inf: 0,
@@ -330,7 +397,7 @@ impl Sites {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Dna {
     a_count: usize,
     c_count: usize,
@@ -339,8 +406,8 @@ struct Dna {
     n_count: usize,
     missings: usize,
     gaps: usize,
-    others: usize,
-    nchars: usize,
+    undetermined: usize, // alignment length
+    total_chars: usize,  // All characters count
     ntax: usize,
 }
 
@@ -354,15 +421,15 @@ impl Dna {
             n_count: 0,
             missings: 0,
             gaps: 0,
-            others: 0,
-            nchars: 0,
+            undetermined: 0,
+            total_chars: 0,
             ntax: 0,
         }
     }
 
     fn count_chars(&mut self, aln: &Alignment) {
         self.ntax = aln.header.ntax;
-        self.nchars = aln.header.nchar * self.ntax;
+        self.total_chars = aln.header.nchar * self.ntax;
         aln.alignment.values().for_each(|seqs| {
             seqs.bytes().for_each(|ch| match ch {
                 b'a' | b'A' => self.a_count += 1,
@@ -372,7 +439,7 @@ impl Dna {
                 b'n' | b'N' => self.n_count += 1,
                 b'?' | b'.' => self.missings += 1,
                 b'-' => self.gaps += 1,
-                _ => self.others += 1,
+                _ => self.undetermined += 1,
             })
         })
     }
@@ -396,8 +463,8 @@ mod test {
     fn pattern_count_test() {
         let site = b"AATT";
         let site_2 = b"AATTGG";
-        let pattern = Sites::new().get_patterns(site);
-        let pattern_2 = Sites::new().get_patterns(site_2);
+        let pattern = Sites::new(Path::new(".")).get_patterns(site);
+        let pattern_2 = Sites::new(Path::new(".")).get_patterns(site_2);
         assert_eq!(2, pattern);
         assert_eq!(3, pattern_2);
     }
@@ -407,7 +474,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new();
+        let mut site = Sites::new(Path::new("."));
         let smat = site.index_sites(&mat);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -418,7 +485,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new();
+        let mut site = Sites::new(Path::new("."));
         let smat = site.index_sites(&mat);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -429,7 +496,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new();
+        let mut site = Sites::new(Path::new("."));
         let smat = site.index_sites(&mat);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -442,7 +509,7 @@ mod test {
         let input_format = SeqFormat::Fasta;
         let mut aln = Alignment::new();
         aln.get_aln_any(path, &input_format);
-        let mut site = Sites::new();
+        let mut site = Sites::new(Path::new("."));
         let smat = site.index_sites(&aln.alignment);
         site.get_site_stats(&smat);
         assert_eq!(18, site.conserved);
