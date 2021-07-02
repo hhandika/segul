@@ -157,7 +157,7 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
         utils::fmt_num(&complete.ntax_50)
     )?;
 
-    writeln!(writer, "\x1b[0;33mConserved Sites\x1b[0m")?;
+    writeln!(writer, "\x1b[0;33mConserved Sequences\x1b[0m")?;
     writeln!(writer, "Con. loci\t: {}", utils::fmt_num(&site.cons_loci))?;
     writeln!(writer, "%Con. loci\t: {:.2}%", site.prop_cons_loci * 100.0)?;
     writeln!(
@@ -177,7 +177,7 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
     )?;
     writeln!(writer, "Mean con. sites\t: {:.2}\n", &site.mean_cons_site)?;
 
-    writeln!(writer, "\x1b[0;33mVariable Sites\x1b[0m")?;
+    writeln!(writer, "\x1b[0;33mVariable Sequences\x1b[0m")?;
     writeln!(writer, "Var. loci\t: {}", utils::fmt_num(&site.var_loci))?;
     writeln!(writer, "%Var. loci\t: {:.2}%", site.prop_var_loci * 100.0)?;
     writeln!(
