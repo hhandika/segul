@@ -397,7 +397,7 @@ impl Completeness {
             ntax_70: 0,
             ntax_60: 0,
             ntax_50: 0,
-            total_tax: total_tax.clone(),
+            total_tax: *total_tax,
         }
     }
 
