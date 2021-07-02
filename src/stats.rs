@@ -137,7 +137,7 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
     writeln!(writer, "-\t\t: {}", utils::fmt_num(&dna.total_gaps))?;
     writeln!(
         writer,
-        "Undertermined\t: {}\n",
+        "Undetermined\t: {}\n",
         utils::fmt_num(&dna.total_undetermined)
     )?;
 
