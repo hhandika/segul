@@ -17,7 +17,7 @@ use crate::utils;
 fn get_args(version: &str) -> ArgMatches {
     App::new("segul")
         .version(version)
-        .about("A genomic sequence tool")
+        .about("An ultra-fast and efficient alignment manipulation tool")
         .author("Heru Handika")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
