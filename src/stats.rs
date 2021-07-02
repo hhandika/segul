@@ -460,7 +460,7 @@ impl DnaSummary {
     }
 
     fn count_missing_data(&mut self) {
-        self.missing_data = self.total_missings + self.total_gaps;
+        self.missing_data = self.total_missings + self.total_gaps + self.total_n;
         self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
     }
 }
@@ -644,7 +644,8 @@ impl Dna {
                 b'g' | b'G' => self.g_count += 1,
                 b't' | b'T' => self.t_count += 1,
                 b'n' | b'N' => self.n_count += 1,
-                b'?' | b'.' => self.missings += 1,
+                b'?' | b'.' | b'~' => self.missings += 1,
+                b'O' | b'o' | b'X' | b'x' => self.missings += 1, // Following iqtree treatments
                 b'-' => self.gaps += 1,
                 _ => self.undetermined += 1,
             })
