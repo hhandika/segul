@@ -187,7 +187,7 @@ fn get_args(version: &str) -> ArgMatches {
                     .takes_value(false)
                 ),
         )
-        .subcommand(App::new("id").about("Gets unique ids from multiple alignments")
+        .subcommand(App::new("id").about("Gets sample ids from multiple alignments")
             .arg(
                 Arg::with_name("dir")
                     .short("d")
