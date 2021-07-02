@@ -11,7 +11,7 @@ use rayon::prelude::*;
 
 use crate::alignment::Alignment;
 use crate::common::{Header, SeqFormat};
-// use crate::finder::IDs;
+use crate::finder::IDs;
 use crate::utils;
 
 pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
@@ -31,6 +31,8 @@ pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
 
 pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
     let spin = utils::set_spinner();
+    spin.set_message("Counting unique IDs in all alignments...");
+    let total_ntax = IDs::new(files, input_format).get_id_all().len();
     spin.set_message("Processing alignments...");
     let (send, rec) = channel();
     files.par_iter().for_each_with(send, |s, file| {
@@ -41,11 +43,11 @@ pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
 
     stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
     spin.set_message("Getting summary stats...");
-    let (sites, dna) = get_summary_dna(&stats);
+    let (sites, dna, complete) = get_summary_dna(&stats, &total_ntax);
     spin.set_message("Writing results...");
     write_aln_stats(&stats).unwrap();
     spin.finish_with_message("DONE!\n");
-    display_summary(&sites, &dna).unwrap();
+    display_summary(&sites, &dna, &complete).unwrap();
 }
 
 fn get_stats(path: &Path, input_format: &SeqFormat) -> (Sites, Dna) {
@@ -59,39 +61,71 @@ fn get_stats(path: &Path, input_format: &SeqFormat) -> (Sites, Dna) {
     (sites, dna)
 }
 
-fn get_summary_dna(stats: &[(Sites, Dna)]) -> (SiteSummary, DnaSummary) {
+fn get_summary_dna(
+    stats: &[(Sites, Dna)],
+    total_ntax: &usize,
+) -> (SiteSummary, DnaSummary, Completeness) {
     let (sites, dna): (Vec<Sites>, Vec<Dna>) =
         stats.par_iter().map(|p| (p.0.clone(), p.1.clone())).unzip();
     let mut sum_sites = SiteSummary::new();
     sum_sites.get_summary(&sites);
     let mut sum_dna = DnaSummary::new();
     sum_dna.get_summary(&dna);
-
-    (sum_sites, sum_dna)
+    let mut ntax_comp = Completeness::new(total_ntax);
+    ntax_comp.get_ntax_completeness(&dna);
+    (sum_sites, sum_dna, ntax_comp)
 }
 
-fn display_summary(site: &SiteSummary, dna: &DnaSummary) -> Result<()> {
+fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness) -> Result<()> {
     let io = io::stdout();
     let mut writer = BufWriter::new(io);
-    writeln!(writer, "Total loci\t: {}", utils::fmt_num(&site.total_loci))?;
     writeln!(
         writer,
-        "Pars. inf. loci\t: {}",
-        utils::fmt_num(&site.inf_loci)
+        "Total taxa\t: {}",
+        utils::fmt_num(&complete.total_tax)
     )?;
+    writeln!(writer, "Total loci\t: {}", utils::fmt_num(&site.total_loci))?;
     writeln!(
         writer,
         "Total sites\t: {}",
         utils::fmt_num(&site.total_sites)
     )?;
+    writeln!(writer, "Characters\t: {}", utils::fmt_num(&dna.total_chars))?;
     writeln!(
         writer,
-        "Total chars\t: {}",
-        utils::fmt_num(&dna.total_chars)
+        "Nucleotides\t: {}",
+        utils::fmt_num(&dna.total_nucleotides)
+    )?;
+    writeln!(
+        writer,
+        "Missing data\t: {}\n",
+        utils::fmt_num(&(dna.total_missings + dna.total_gaps))
+    )?;
+    writeln!(
+        writer,
+        "Min length\t: {} bp",
+        utils::fmt_num(&site.min_sites)
+    )?;
+    writeln!(
+        writer,
+        "Max length\t: {} bp",
+        utils::fmt_num(&site.max_sites)
+    )?;
+    writeln!(writer, "Mean length\t: {:.2} bp\n", &site.mean_sites)?;
+    writeln!(
+        writer,
+        "Pars. inf. loci\t: {}\n",
+        utils::fmt_num(&site.inf_loci)
     )?;
     writeln!(writer, "Min taxa\t: {}", utils::fmt_num(&dna.min_tax))?;
     writeln!(writer, "Max taxa\t: {}", utils::fmt_num(&dna.max_tax))?;
-    writeln!(writer, "Mean taxa\t: {:.2}", dna.mean_tax)?;
+    writeln!(writer, "Mean taxa\t: {:.2}\n", dna.mean_tax)?;
+
+    writeln!(writer, "90% taxa\t: {}", utils::fmt_num(&complete.ntax_90))?;
+    writeln!(writer, "80% taxa\t: {}", utils::fmt_num(&complete.ntax_80))?;
+    writeln!(writer, "70% taxa\t: {}", utils::fmt_num(&complete.ntax_70))?;
+    writeln!(writer, "60% taxa\t: {}", utils::fmt_num(&complete.ntax_60))?;
+    writeln!(writer, "50% taxa\t: {}", utils::fmt_num(&complete.ntax_50))?;
     writeln!(writer)?;
     writer.flush()?;
     Ok(())
@@ -216,8 +250,21 @@ fn display_stats(site: &Sites, dna: &Dna, aln: &Header) -> Result<()> {
 struct SiteSummary {
     total_loci: usize,
     total_sites: usize,
-    mean_sites: usize,
+    min_sites: usize,
+    max_sites: usize,
+    mean_sites: f64,
+    var_loci: usize,
+    prop_var_loci: f64,
+    total_var_site: usize,
+    min_var_site: usize,
+    max_var_site: usize,
+    mean_var_site: f64,
     inf_loci: usize,
+    prop_inf_loci: f64,
+    total_inf_site: usize,
+    min_inf_site: usize,
+    max_inf_site: usize,
+    mean_inf_site: f64,
 }
 
 impl SiteSummary {
@@ -225,16 +272,50 @@ impl SiteSummary {
         Self {
             total_sites: 0,
             total_loci: 0,
-            mean_sites: 0,
+            min_sites: 0,
+            max_sites: 0,
+            mean_sites: 0.0,
+            var_loci: 0,
+            prop_var_loci: 0.0,
+            total_var_site: 0,
+            min_var_site: 0,
+            max_var_site: 0,
+            mean_var_site: 0.0,
             inf_loci: 0,
+            prop_inf_loci: 0.0,
+            total_inf_site: 0,
+            min_inf_site: 0,
+            max_inf_site: 0,
+            mean_inf_site: 0.0,
         }
     }
 
     fn get_summary(&mut self, sites: &[Sites]) {
         self.total_loci = sites.len();
         self.total_sites = sites.iter().map(|s| s.counts).sum();
+        self.min_sites = sites.iter().map(|s| s.counts).min().unwrap();
+        self.max_sites = sites.iter().map(|s| s.counts).max().unwrap();
+        self.mean_sites = self.total_sites as f64 / self.total_loci as f64;
+        self.count_var_sites(&sites);
+        self.count_inf_sites(&sites);
+    }
+
+    fn count_var_sites(&mut self, sites: &[Sites]) {
+        self.var_loci = sites.iter().filter(|s| s.variable > 0).count();
+        self.prop_var_loci = self.var_loci as f64 / self.total_loci as f64;
+        self.total_var_site = sites.iter().map(|s| s.variable).sum();
+        self.min_var_site = sites.iter().map(|s| s.variable).min().unwrap();
+        self.max_var_site = sites.iter().map(|s| s.variable).max().unwrap();
+        self.mean_var_site = self.total_var_site as f64 / self.total_sites as f64;
+    }
+
+    fn count_inf_sites(&mut self, sites: &[Sites]) {
         self.inf_loci = sites.iter().filter(|s| s.pars_inf > 0).count();
-        self.mean_sites = self.total_sites / self.total_loci;
+        self.prop_inf_loci = self.inf_loci as f64 / self.total_loci as f64;
+        self.total_inf_site = sites.iter().map(|s| s.pars_inf).sum();
+        self.min_inf_site = sites.iter().map(|s| s.pars_inf).min().unwrap();
+        self.max_inf_site = sites.iter().map(|s| s.pars_inf).max().unwrap();
+        self.mean_inf_site = self.total_inf_site as f64 / self.total_sites as f64;
     }
 }
 
@@ -296,6 +377,47 @@ impl DnaSummary {
 
     fn get_total_nucleotides(&mut self) {
         self.total_nucleotides = self.total_a + self.total_t + self.total_g + self.total_c
+    }
+}
+
+struct Completeness {
+    ntax_90: usize,
+    ntax_80: usize,
+    ntax_70: usize,
+    ntax_60: usize,
+    ntax_50: usize,
+    total_tax: usize,
+}
+
+impl Completeness {
+    fn new(total_tax: &usize) -> Self {
+        Self {
+            ntax_90: 0,
+            ntax_80: 0,
+            ntax_70: 0,
+            ntax_60: 0,
+            ntax_50: 0,
+            total_tax: total_tax.clone(),
+        }
+    }
+
+    fn get_ntax_completeness(&mut self, dna: &[Dna]) {
+        let ntax: Vec<usize> = dna.iter().map(|d| d.ntax).collect();
+        self.ntax_90 = self.count_min_tax(&ntax, 0.9);
+        self.ntax_80 = self.count_min_tax(&ntax, 0.8);
+        self.ntax_70 = self.count_min_tax(&ntax, 0.7);
+        self.ntax_60 = self.count_min_tax(&ntax, 0.6);
+        self.ntax_50 = self.count_min_tax(&ntax, 0.5);
+    }
+
+    fn count_min_tax(&self, ntax: &[usize], percent: f64) -> usize {
+        ntax.iter()
+            .filter(|&n| n >= &self.compute_min_taxa(percent))
+            .count()
+    }
+
+    fn compute_min_taxa(&self, percent: f64) -> usize {
+        (self.total_tax as f64 * percent).floor() as usize
     }
 }
 
@@ -515,5 +637,12 @@ mod test {
         assert_eq!(18, site.conserved);
         assert_eq!(8, site.variable);
         assert_eq!(2, site.pars_inf);
+    }
+
+    #[test]
+    fn filter_min_tax_test() {
+        let ntax = vec![10, 8, 20, 30, 60];
+        let comp = Completeness::new(&60);
+        assert_eq!(2, comp.count_min_tax(&ntax, 0.5))
     }
 }
