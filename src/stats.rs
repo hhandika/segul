@@ -142,10 +142,15 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
     )?;
 
     writeln!(writer, "\x1b[0;33mTaxon Completeness\x1b[0m")?;
+    writeln!(writer, "95% taxa\t: {}", utils::fmt_num(&complete.ntax_95))?;
     writeln!(writer, "90% taxa\t: {}", utils::fmt_num(&complete.ntax_90))?;
+    writeln!(writer, "85% taxa\t: {}", utils::fmt_num(&complete.ntax_85))?;
     writeln!(writer, "80% taxa\t: {}", utils::fmt_num(&complete.ntax_80))?;
+    writeln!(writer, "75% taxa\t: {}", utils::fmt_num(&complete.ntax_75))?;
     writeln!(writer, "70% taxa\t: {}", utils::fmt_num(&complete.ntax_70))?;
+    writeln!(writer, "65% taxa\t: {}", utils::fmt_num(&complete.ntax_65))?;
     writeln!(writer, "60% taxa\t: {}", utils::fmt_num(&complete.ntax_60))?;
+    writeln!(writer, "55% taxa\t: {}", utils::fmt_num(&complete.ntax_55))?;
     writeln!(
         writer,
         "50% taxa\t: {}\n",
@@ -515,10 +520,15 @@ impl DnaSummary {
 }
 
 struct Completeness {
+    ntax_95: usize,
     ntax_90: usize,
+    ntax_85: usize,
     ntax_80: usize,
+    ntax_75: usize,
     ntax_70: usize,
+    ntax_65: usize,
     ntax_60: usize,
+    ntax_55: usize,
     ntax_50: usize,
     total_tax: usize,
 }
@@ -526,10 +536,15 @@ struct Completeness {
 impl Completeness {
     fn new(total_tax: &usize) -> Self {
         Self {
+            ntax_95: 0,
             ntax_90: 0,
+            ntax_85: 0,
             ntax_80: 0,
+            ntax_75: 0,
             ntax_70: 0,
+            ntax_65: 0,
             ntax_60: 0,
+            ntax_55: 0,
             ntax_50: 0,
             total_tax: *total_tax,
         }
@@ -537,10 +552,15 @@ impl Completeness {
 
     fn get_ntax_completeness(&mut self, dna: &[Dna]) {
         let ntax: Vec<usize> = dna.iter().map(|d| d.ntax).collect();
+        self.ntax_95 = self.count_min_tax(&ntax, 0.95);
         self.ntax_90 = self.count_min_tax(&ntax, 0.9);
+        self.ntax_85 = self.count_min_tax(&ntax, 0.85);
         self.ntax_80 = self.count_min_tax(&ntax, 0.8);
+        self.ntax_75 = self.count_min_tax(&ntax, 0.75);
         self.ntax_70 = self.count_min_tax(&ntax, 0.7);
+        self.ntax_65 = self.count_min_tax(&ntax, 0.65);
         self.ntax_60 = self.count_min_tax(&ntax, 0.6);
+        self.ntax_55 = self.count_min_tax(&ntax, 0.55);
         self.ntax_50 = self.count_min_tax(&ntax, 0.5);
     }
 
