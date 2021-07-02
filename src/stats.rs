@@ -79,6 +79,7 @@ fn get_summary_dna(
 fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness) -> Result<()> {
     let io = io::stdout();
     let mut writer = BufWriter::new(io);
+    writeln!(writer, "\x1b[0;33mGeneral Summmary\x1b[0m")?;
     writeln!(
         writer,
         "Total taxa\t: {}",
@@ -90,6 +91,8 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
         "Total sites\t: {}",
         utils::fmt_num(&site.total_sites)
     )?;
+    writeln!(writer, "GC content\t: {:.2}", dna.gc_content)?;
+    writeln!(writer, "AT content\t: {:.2}", dna.at_content)?;
     writeln!(writer, "Characters\t: {}", utils::fmt_num(&dna.total_chars))?;
     writeln!(
         writer,
@@ -98,9 +101,16 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
     )?;
     writeln!(
         writer,
-        "Missing data\t: {}\n",
-        utils::fmt_num(&(dna.total_missings + dna.total_gaps))
+        "Missing data\t: {}",
+        utils::fmt_num(&dna.missing_data)
     )?;
+    writeln!(
+        writer,
+        "%Missing data\t: {:.2}%\n",
+        &dna.prop_missing_data * 100.0
+    )?;
+
+    writeln!(writer, "\x1b[0;33mAlignment Summmary\x1b[0m")?;
     writeln!(
         writer,
         "Min length\t: {} bp",
@@ -112,20 +122,75 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
         utils::fmt_num(&site.max_sites)
     )?;
     writeln!(writer, "Mean length\t: {:.2} bp\n", &site.mean_sites)?;
-    writeln!(
-        writer,
-        "Pars. inf. loci\t: {}\n",
-        utils::fmt_num(&site.inf_loci)
-    )?;
+    writeln!(writer, "\x1b[0;33mTaxon Summmary\x1b[0m")?;
     writeln!(writer, "Min taxa\t: {}", utils::fmt_num(&dna.min_tax))?;
     writeln!(writer, "Max taxa\t: {}", utils::fmt_num(&dna.max_tax))?;
     writeln!(writer, "Mean taxa\t: {:.2}\n", dna.mean_tax)?;
 
+    writeln!(writer, "\x1b[0;33mCharacter Count\x1b[0m")?;
+    writeln!(writer, "A\t\t: {}", utils::fmt_num(&dna.total_a))?;
+    writeln!(writer, "C\t\t: {}", utils::fmt_num(&dna.total_c))?;
+    writeln!(writer, "G\t\t: {}", utils::fmt_num(&dna.total_g))?;
+    writeln!(writer, "T\t\t: {}", utils::fmt_num(&dna.total_t))?;
+    writeln!(writer, "N\t\t: {}", utils::fmt_num(&dna.total_n))?;
+    writeln!(writer, "?\t\t: {}", utils::fmt_num(&dna.total_missings))?;
+    writeln!(writer, "-\t\t: {}", utils::fmt_num(&dna.total_gaps))?;
+    writeln!(
+        writer,
+        "Undertermined\t: {}\n",
+        utils::fmt_num(&dna.total_undetermined)
+    )?;
+
+    writeln!(writer, "\x1b[0;33mTaxon Completeness\x1b[0m")?;
     writeln!(writer, "90% taxa\t: {}", utils::fmt_num(&complete.ntax_90))?;
     writeln!(writer, "80% taxa\t: {}", utils::fmt_num(&complete.ntax_80))?;
     writeln!(writer, "70% taxa\t: {}", utils::fmt_num(&complete.ntax_70))?;
     writeln!(writer, "60% taxa\t: {}", utils::fmt_num(&complete.ntax_60))?;
-    writeln!(writer, "50% taxa\t: {}", utils::fmt_num(&complete.ntax_50))?;
+    writeln!(
+        writer,
+        "50% taxa\t: {}\n",
+        utils::fmt_num(&complete.ntax_50)
+    )?;
+
+    writeln!(writer, "\x1b[0;33mVariable Sites\x1b[0m")?;
+    writeln!(writer, "Var. loci\t: {}", utils::fmt_num(&site.var_loci))?;
+    writeln!(writer, "%Var. loci\t: {:.2}", site.prop_var_loci * 100.0)?;
+    writeln!(
+        writer,
+        "Var. sites\t: {}",
+        utils::fmt_num(&site.total_var_site)
+    )?;
+    writeln!(
+        writer,
+        "Min var. sites\t: {}",
+        utils::fmt_num(&site.min_var_site)
+    )?;
+    writeln!(
+        writer,
+        "Max var. sites\t: {}",
+        utils::fmt_num(&site.max_var_site)
+    )?;
+    writeln!(writer, "Mean var. sites\t: {:.2}\n", &site.mean_var_site)?;
+
+    writeln!(writer, "\x1b[0;33mParsimony Informative\x1b[0m")?;
+    writeln!(writer, "Inf. loci\t: {}", utils::fmt_num(&site.inf_loci))?;
+    writeln!(writer, "%Inf. loci\t: {:.2}", site.prop_inf_loci * 100.0)?;
+    writeln!(
+        writer,
+        "Inf. sites\t: {}",
+        utils::fmt_num(&site.total_inf_site)
+    )?;
+    writeln!(
+        writer,
+        "Min inf. sites\t: {}",
+        utils::fmt_num(&site.min_inf_site)
+    )?;
+    writeln!(
+        writer,
+        "Max inf. sites\t: {}",
+        utils::fmt_num(&site.max_inf_site)
+    )?;
+    writeln!(writer, "Mean inf. sites\t: {:.2}", &site.mean_inf_site)?;
     writeln!(writer)?;
     writer.flush()?;
     Ok(())
@@ -323,6 +388,10 @@ struct DnaSummary {
     min_tax: usize,
     max_tax: usize,
     mean_tax: f64,
+    gc_content: f64,
+    at_content: f64,
+    missing_data: usize,
+    prop_missing_data: f64,
     total_chars: usize,
     total_nucleotides: usize,
     total_a: usize,
@@ -342,6 +411,10 @@ impl DnaSummary {
             min_tax: 0,
             max_tax: 0,
             mean_tax: 0.0,
+            gc_content: 0.0,
+            at_content: 0.0,
+            missing_data: 0,
+            prop_missing_data: 0.0,
             total_nucleotides: 0,
             total_a: 0,
             total_c: 0,
@@ -362,6 +435,8 @@ impl DnaSummary {
         self.total_chars = dna.iter().map(|d| d.total_chars).sum();
         self.count_chars(dna);
         self.get_total_nucleotides();
+        self.count_gc_at_content();
+        self.count_missing_data();
     }
 
     fn count_chars(&mut self, dna: &[Dna]) {
@@ -377,6 +452,16 @@ impl DnaSummary {
 
     fn get_total_nucleotides(&mut self) {
         self.total_nucleotides = self.total_a + self.total_t + self.total_g + self.total_c
+    }
+
+    fn count_gc_at_content(&mut self) {
+        self.gc_content = (self.total_g + self.total_c) as f64 / self.total_chars as f64;
+        self.at_content = (self.total_g + self.total_c) as f64 / self.total_chars as f64;
+    }
+
+    fn count_missing_data(&mut self) {
+        self.missing_data = self.total_missings + self.total_gaps;
+        self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
     }
 }
 
