@@ -152,9 +152,29 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
         utils::fmt_num(&complete.ntax_50)
     )?;
 
+    writeln!(writer, "\x1b[0;33mConserved Sites\x1b[0m")?;
+    writeln!(writer, "Con. loci\t: {}", utils::fmt_num(&site.cons_loci))?;
+    writeln!(writer, "%Con. loci\t: {:.2}%", site.prop_cons_loci * 100.0)?;
+    writeln!(
+        writer,
+        "Con. sites\t: {}",
+        utils::fmt_num(&site.total_cons_site)
+    )?;
+    writeln!(
+        writer,
+        "Min con. sites\t: {}",
+        utils::fmt_num(&site.min_cons_site)
+    )?;
+    writeln!(
+        writer,
+        "Max con. sites\t: {}",
+        utils::fmt_num(&site.max_cons_site)
+    )?;
+    writeln!(writer, "Mean con. sites\t: {:.2}\n", &site.mean_cons_site)?;
+
     writeln!(writer, "\x1b[0;33mVariable Sites\x1b[0m")?;
     writeln!(writer, "Var. loci\t: {}", utils::fmt_num(&site.var_loci))?;
-    writeln!(writer, "%Var. loci\t: {:.2}", site.prop_var_loci * 100.0)?;
+    writeln!(writer, "%Var. loci\t: {:.2}%", site.prop_var_loci * 100.0)?;
     writeln!(
         writer,
         "Var. sites\t: {}",
@@ -174,7 +194,7 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
 
     writeln!(writer, "\x1b[0;33mParsimony Informative\x1b[0m")?;
     writeln!(writer, "Inf. loci\t: {}", utils::fmt_num(&site.inf_loci))?;
-    writeln!(writer, "%Inf. loci\t: {:.2}", site.prop_inf_loci * 100.0)?;
+    writeln!(writer, "%Inf. loci\t: {:.2}%", site.prop_inf_loci * 100.0)?;
     writeln!(
         writer,
         "Inf. sites\t: {}",
@@ -313,17 +333,30 @@ fn display_stats(site: &Sites, dna: &Dna, aln: &Header) -> Result<()> {
 }
 
 struct SiteSummary {
+    // General site summary
     total_loci: usize,
     total_sites: usize,
     min_sites: usize,
     max_sites: usize,
     mean_sites: f64,
+
+    // Conserved site summary
+    cons_loci: usize,
+    prop_cons_loci: f64,
+    total_cons_site: usize,
+    min_cons_site: usize,
+    max_cons_site: usize,
+    mean_cons_site: f64,
+
+    // Variable site summary
     var_loci: usize,
     prop_var_loci: f64,
     total_var_site: usize,
     min_var_site: usize,
     max_var_site: usize,
     mean_var_site: f64,
+
+    // Parsimony inf site summary
     inf_loci: usize,
     prop_inf_loci: f64,
     total_inf_site: usize,
@@ -343,6 +376,12 @@ impl SiteSummary {
             var_loci: 0,
             prop_var_loci: 0.0,
             total_var_site: 0,
+            cons_loci: 0,
+            prop_cons_loci: 0.0,
+            total_cons_site: 0,
+            min_cons_site: 0,
+            max_cons_site: 0,
+            mean_cons_site: 0.0,
             min_var_site: 0,
             max_var_site: 0,
             mean_var_site: 0.0,
@@ -361,8 +400,18 @@ impl SiteSummary {
         self.min_sites = sites.iter().map(|s| s.counts).min().unwrap();
         self.max_sites = sites.iter().map(|s| s.counts).max().unwrap();
         self.mean_sites = self.total_sites as f64 / self.total_loci as f64;
+        self.count_cons_sites(&sites);
         self.count_var_sites(&sites);
         self.count_inf_sites(&sites);
+    }
+
+    fn count_cons_sites(&mut self, sites: &[Sites]) {
+        self.cons_loci = sites.iter().filter(|s| s.variable == 0).count();
+        self.prop_cons_loci = self.cons_loci as f64 / self.total_loci as f64;
+        self.total_cons_site = sites.iter().map(|s| s.conserved).sum();
+        self.min_cons_site = sites.iter().map(|s| s.conserved).min().unwrap();
+        self.max_cons_site = sites.iter().map(|s| s.conserved).max().unwrap();
+        self.mean_cons_site = self.total_cons_site as f64 / self.total_sites as f64;
     }
 
     fn count_var_sites(&mut self, sites: &[Sites]) {
