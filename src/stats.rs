@@ -34,13 +34,7 @@ pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
     spin.set_message("Counting unique IDs in all alignments...");
     let total_ntax = IDs::new(files, input_format).get_id_all().len();
     spin.set_message("Processing alignments...");
-    let (send, rec) = channel();
-    files.par_iter().for_each_with(send, |s, file| {
-        s.send(get_stats(file, input_format)).unwrap();
-    });
-
-    let mut stats: Vec<(Sites, Dna)> = rec.iter().collect();
-
+    let mut stats: Vec<(Sites, Dna)> = par_get_stats(files, input_format);
     stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
     spin.set_message("Getting summary stats...");
     let (sites, dna, complete) = get_summary_dna(&stats, &total_ntax);
@@ -48,6 +42,14 @@ pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
     write_aln_stats(&stats).unwrap();
     spin.finish_with_message("DONE!\n");
     display_summary(&sites, &dna, &complete).unwrap();
+}
+
+fn par_get_stats(files: &[PathBuf], input_format: &SeqFormat) -> Vec<(Sites, Dna)> {
+    let (send, rec) = channel();
+    files.par_iter().for_each_with(send, |s, file| {
+        s.send(get_stats(file, input_format)).unwrap();
+    });
+    rec.iter().collect()
 }
 
 fn get_stats(path: &Path, input_format: &SeqFormat) -> (Sites, Dna) {
@@ -519,6 +521,7 @@ impl DnaSummary {
     }
 }
 
+// #[derive(Debug, Send, Sync)]
 struct Completeness {
     ntax_95: usize,
     ntax_90: usize,
