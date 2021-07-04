@@ -10,23 +10,50 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::alignment::Alignment;
-use crate::common::{Header, SeqFormat};
+use crate::common::SeqFormat;
 use crate::finder::IDs;
 use crate::utils;
 
 pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
     let spin = utils::set_spinner();
     spin.set_message("Getting alignments...");
-    let mut aln = Alignment::new();
-    aln.get_aln_any(path, input_format);
-    spin.set_message("Counting characters...");
-    let mut dna = Dna::new();
-    dna.count_chars(&aln);
-    spin.set_message("Getting summary stats...");
-    let mut sites = Sites::new(path);
-    sites.get_stats(&aln.alignment);
+    let (site, dna) = get_stats(path, input_format);
     spin.finish_with_message("DONE!\n");
-    display_stats(&sites, &dna, &aln.header).unwrap();
+    display_stats(&site, &dna).unwrap();
+}
+
+fn display_stats(site: &Sites, dna: &Dna) -> Result<()> {
+    let io = io::stdout();
+    let mut writer = BufWriter::new(io);
+
+    writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
+    writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&dna.ntax))?;
+    writeln!(writer, "Length\t\t: {}\n", utils::fmt_num(&dna.total_chars))?;
+
+    writeln!(writer, "\x1b[0;33mSites\x1b[0m")?;
+    writeln!(writer, "Count\t\t: {}", utils::fmt_num(&site.counts))?;
+    writeln!(writer, "Conserved\t: {}", utils::fmt_num(&site.conserved))?;
+    writeln!(writer, "Variable\t: {}", utils::fmt_num(&site.variable))?;
+    writeln!(
+        writer,
+        "Parsimony inf.\t: {}\n",
+        utils::fmt_num(&site.pars_inf)
+    )?;
+    writeln!(writer, "Prop. conserved\t: {:.2}%", site.prop_cons * 100.0)?;
+    writeln!(writer, "Prop. variable\t: {:.2}%", site.prop_var * 100.0)?;
+    writeln!(writer, "Prop. p. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
+
+    writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
+    writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.total_chars))?;
+    writeln!(writer, "A\t: {}", utils::fmt_num(&dna.a_count))?;
+    writeln!(writer, "C\t: {}", utils::fmt_num(&dna.c_count))?;
+    writeln!(writer, "G\t: {}", utils::fmt_num(&dna.g_count))?;
+    writeln!(writer, "T\t: {}", utils::fmt_num(&dna.t_count))?;
+    writeln!(writer, "N\t: {}", utils::fmt_num(&dna.n_count))?;
+    writeln!(writer, "?\t: {}", utils::fmt_num(&dna.missings))?;
+    writeln!(writer, "-\t: {}", utils::fmt_num(&dna.gaps))?;
+    writer.flush()?;
+    Ok(())
 }
 
 pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
@@ -39,7 +66,7 @@ pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
     spin.set_message("Getting summary stats...");
     let (sites, dna, complete) = get_summary_dna(&stats, &total_ntax);
     spin.set_message("Writing results...");
-    write_aln_stats(&stats).unwrap();
+    write_sum_stats(&stats).unwrap();
     spin.finish_with_message("DONE!\n");
     display_summary(&sites, &dna, &complete).unwrap();
 }
@@ -223,10 +250,19 @@ fn display_summary(site: &SiteSummary, dna: &DnaSummary, complete: &Completeness
     Ok(())
 }
 
-fn write_aln_stats(stats: &[(Sites, Dna)]) -> Result<()> {
+fn write_sum_stats(stats: &[(Sites, Dna)]) -> Result<()> {
     let fname = "SEGUL-stats_per_locus.csv";
     let file = File::create(fname).expect("CANNOT WRITE THE STAT RESULTS");
     let mut writer = BufWriter::new(file);
+    write_csv_header(&mut writer)?;
+    stats.iter().for_each(|(site, dna)| {
+        write_csv_content(&mut writer, site, dna).unwrap();
+    });
+
+    Ok(())
+}
+
+fn write_csv_header<W: Write>(writer: &mut W) -> Result<()> {
     writeln!(
         writer,
         "path,\
@@ -250,14 +286,10 @@ fn write_aln_stats(stats: &[(Sites, Dna)]) -> Result<()> {
         missing_counts,\
     "
     )?;
-    stats.iter().for_each(|(site, dna)| {
-        write_content(&mut writer, site, dna).unwrap();
-    });
-
     Ok(())
 }
 
-fn write_content<W: Write>(writer: &mut W, site: &Sites, dna: &Dna) -> Result<()> {
+fn write_csv_content<W: Write>(writer: &mut W, site: &Sites, dna: &Dna) -> Result<()> {
     write!(
         writer,
         "{},{},{},{},",
@@ -301,40 +333,6 @@ fn write_content<W: Write>(writer: &mut W, site: &Sites, dna: &Dna) -> Result<()
         dna.a_count, dna.t_count, dna.g_count, dna.c_count, dna.gaps, dna.missings
     )?;
 
-    writer.flush()?;
-    Ok(())
-}
-
-fn display_stats(site: &Sites, dna: &Dna, aln: &Header) -> Result<()> {
-    let io = io::stdout();
-    let mut writer = BufWriter::new(io);
-
-    writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
-    writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&aln.ntax))?;
-    writeln!(writer, "Length\t\t: {}\n", utils::fmt_num(&aln.nchar))?;
-
-    writeln!(writer, "\x1b[0;33mSites\x1b[0m")?;
-    writeln!(writer, "Count\t\t: {}", utils::fmt_num(&site.counts))?;
-    writeln!(writer, "Conserved\t: {}", utils::fmt_num(&site.conserved))?;
-    writeln!(writer, "Variable\t: {}", utils::fmt_num(&site.variable))?;
-    writeln!(
-        writer,
-        "Parsimony inf.\t: {}\n",
-        utils::fmt_num(&site.pars_inf)
-    )?;
-    writeln!(writer, "Prop. conserved\t: {:.2}%", site.prop_cons * 100.0)?;
-    writeln!(writer, "Prop. variable\t: {:.2}%", site.prop_var * 100.0)?;
-    writeln!(writer, "Prop. p. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
-
-    writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
-    writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.total_chars))?;
-    writeln!(writer, "A\t: {}", utils::fmt_num(&dna.a_count))?;
-    writeln!(writer, "C\t: {}", utils::fmt_num(&dna.c_count))?;
-    writeln!(writer, "G\t: {}", utils::fmt_num(&dna.g_count))?;
-    writeln!(writer, "T\t: {}", utils::fmt_num(&dna.t_count))?;
-    writeln!(writer, "N\t: {}", utils::fmt_num(&dna.n_count))?;
-    writeln!(writer, "?\t: {}", utils::fmt_num(&dna.missings))?;
-    writeln!(writer, "-\t: {}", utils::fmt_num(&dna.gaps))?;
     writer.flush()?;
     Ok(())
 }
