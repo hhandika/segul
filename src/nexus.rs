@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Lines, Read, Result};
+use std::io::{BufReader, Read, Result};
 use std::path::Path;
 
 use indexmap::{IndexMap, IndexSet};
@@ -104,7 +104,7 @@ impl<'a> Nexus<'a> {
 
     fn parse_format(&mut self, input: &mut String) {
         input.pop();
-        let formats: Vec<&str> = input.split_ascii_whitespace().collect();
+        let formats: Vec<&str> = input.split_whitespace().collect();
         formats
             .iter()
             .map(|f| f.trim())
@@ -304,17 +304,15 @@ impl Commands {
 }
 
 struct Reader<R> {
-    reader: Lines<BufReader<R>>,
-    buffer: String,
-    content: String,
+    reader: BufReader<R>,
+    buffer: Vec<u8>,
 }
 
 impl<R: Read> Reader<R> {
     fn new(file: R) -> Self {
         Self {
-            reader: BufReader::new(file).lines(),
-            buffer: String::new(),
-            content: String::new(),
+            reader: BufReader::new(file),
+            buffer: Vec::new(),
         }
     }
 }
@@ -325,20 +323,19 @@ impl<R: Read> Iterator for Reader<R> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(Ok(line)) = self.reader.next() {
-            self.buffer.push_str(&line);
-            if !line.is_empty() {
-                self.buffer.push('\n');
-            }
-            if line.ends_with(';') {
-                self.content.push_str(&self.buffer);
-                self.buffer.clear();
-            }
-            let token = self.content.trim().to_string();
-            self.content.clear();
-            Some(token)
-        } else {
+        self.buffer.clear();
+        let bytes = self
+            .reader
+            .read_until(b';', &mut self.buffer)
+            .expect("ERROR READING FILES");
+        if bytes == 0 {
             None
+        } else {
+            let mut token = String::new();
+            if let Ok(tok) = std::str::from_utf8(&self.buffer) {
+                token.push_str(tok.trim());
+            }
+            Some(token)
         }
     }
 }
