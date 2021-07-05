@@ -114,7 +114,6 @@ impl<R: Read> FastaReader<R> {
                     self.seq.clear();
                     return Some(recs);
                 }
-                continue;
             } else {
                 self.seq.push_str(line.trim());
             }
