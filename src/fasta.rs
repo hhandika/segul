@@ -105,10 +105,10 @@ impl<R: Read> FastaReader<R> {
         while let Some(Ok(line)) = self.reader.by_ref().lines().next() {
             if let Some(id) = line.strip_prefix('>') {
                 if self.found_rec {
-                    let res = self.get_recs(&self.id, &self.seq);
+                    let recs = self.get_recs(&self.id, &self.seq);
                     self.id = String::from(id);
                     self.seq.clear();
-                    return Some(res);
+                    return Some(recs);
                 } else {
                     self.id = String::from(id);
                     self.found_rec = true;
@@ -119,11 +119,11 @@ impl<R: Read> FastaReader<R> {
             self.seq.push_str(line.trim());
         }
         if self.found_rec {
-            let res = self.get_recs(&self.id, &self.seq);
+            let recs = self.get_recs(&self.id, &self.seq);
             self.found_rec = false;
             self.id.clear();
             self.seq.clear();
-            return Some(res);
+            return Some(recs);
         } else {
             None
         }
@@ -178,9 +178,14 @@ mod test {
         let path = Path::new("test_files/interleave.fas");
         let file = File::open(path).unwrap();
         let rec = FastaReader::new(file);
+        let mut seq = IndexMap::new();
         rec.into_iter().for_each(|r| {
-            assert_eq!("ABCD", r.id);
-            assert_eq!("AGTATGATGTATATGTAT", r.seq);
-        })
+            seq.insert(r.id, r.seq);
+        });
+
+        let res = String::from("AGTATGATGTATATGTAT");
+        let res_2 = String::from("AGTATGATGTATAAAAAA");
+        assert_eq!(Some(&res), seq.get("ABCD"));
+        assert_eq!(Some(&res_2), seq.get("ABCE"));
     }
 }
