@@ -124,8 +124,8 @@ impl<R: Read> FastaReader<R> {
             let mut res = Records::new();
             res.id.push_str(&self.id);
             res.seq.push_str(&self.seq);
-            self.id.clear();
             self.found_rec = false;
+            self.id.clear();
             self.seq.clear();
             return Some(res);
         } else {
