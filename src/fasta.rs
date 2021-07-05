@@ -76,10 +76,10 @@ struct Records {
 }
 
 impl Records {
-    fn new() -> Self {
+    fn new(id: &str, seq: &str) -> Self {
         Self {
-            id: String::new(),
-            seq: String::new(),
+            id: String::from(id),
+            seq: String::from(seq),
         }
     }
 }
@@ -101,13 +101,11 @@ impl<R: Read> FastaReader<R> {
         }
     }
 
-    fn next_read(&mut self) -> Option<Records> {
+    fn next_seq(&mut self) -> Option<Records> {
         while let Some(Ok(line)) = self.reader.by_ref().lines().next() {
             if let Some(id) = line.strip_prefix('>') {
                 if self.found_rec {
-                    let mut res = Records::new();
-                    res.id.push_str(&self.id);
-                    res.seq.push_str(&self.seq);
+                    let res = self.get_recs(&self.id, &self.seq);
                     self.id = String::from(id);
                     self.seq.clear();
                     return Some(res);
@@ -121,9 +119,7 @@ impl<R: Read> FastaReader<R> {
             self.seq.push_str(line.trim());
         }
         if self.found_rec {
-            let mut res = Records::new();
-            res.id.push_str(&self.id);
-            res.seq.push_str(&self.seq);
+            let res = self.get_recs(&self.id, &self.seq);
             self.found_rec = false;
             self.id.clear();
             self.seq.clear();
@@ -132,13 +128,17 @@ impl<R: Read> FastaReader<R> {
             None
         }
     }
+
+    fn get_recs(&self, id: &str, seq: &str) -> Records {
+        Records::new(id, seq)
+    }
 }
 
 impl<R: Read> Iterator for FastaReader<R> {
     type Item = Records;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.next_read()
+        self.next_seq()
     }
 }
 
@@ -156,7 +156,7 @@ mod test {
     }
 
     #[test]
-    fn check_is_alignment() {
+    fn check_is_alignment_test() {
         let path = Path::new("test_files/simple.fas");
         let mut fasta = Fasta::new(path);
         fasta.read();
@@ -165,11 +165,22 @@ mod test {
     }
 
     #[test]
-    fn check_isnot_alignment() {
+    fn check_isnot_alignment_test() {
         let path = Path::new("test_files/unaligned.fas");
         let mut fasta = Fasta::new(path);
         fasta.read();
 
         assert_eq!(false, fasta.is_alignment);
+    }
+
+    #[test]
+    fn interleaved_fas_test() {
+        let path = Path::new("test_files/interleave.fas");
+        let file = File::open(path).unwrap();
+        let rec = FastaReader::new(file);
+        rec.into_iter().for_each(|r| {
+            assert_eq!("ABCD", r.id);
+            assert_eq!("AGTATGATGTATATGTAT", r.seq);
+        })
     }
 }
