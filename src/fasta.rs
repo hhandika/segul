@@ -2,7 +2,7 @@
 
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Lines};
+use std::io::BufReader;
 use std::path::Path;
 
 use indexmap::IndexMap;
@@ -70,7 +70,7 @@ impl<'a> Fasta<'a> {
     }
 }
 
-pub struct Records {
+struct Records {
     id: String,
     seq: String,
 }
@@ -84,18 +84,52 @@ impl Records {
     }
 }
 
-pub struct FastaReader<R> {
-    reader: Lines<BufReader<R>>,
-    pub id: Option<String>,
-    pub seq: String,
+struct FastaReader<R> {
+    reader: BufReader<R>,
+    id: String,
+    seq: String,
+    found_rec: bool,
 }
 
 impl<R: Read> FastaReader<R> {
     fn new(file: R) -> Self {
         Self {
-            reader: BufReader::new(file).lines(),
-            id: None,
+            reader: BufReader::new(file),
+            id: String::new(),
             seq: String::new(),
+            found_rec: false,
+        }
+    }
+
+    fn next_read(&mut self) -> Option<Records> {
+        while let Some(Ok(line)) = self.reader.by_ref().lines().next() {
+            if let Some(id) = line.strip_prefix('>') {
+                if self.found_rec {
+                    let mut res = Records::new();
+                    res.id.push_str(&self.id);
+                    res.seq.push_str(&self.seq);
+                    self.id = String::from(id);
+                    self.seq.clear();
+                    return Some(res);
+                } else {
+                    self.id = String::from(id);
+                    self.found_rec = true;
+                    self.seq.clear();
+                }
+                continue;
+            }
+            self.seq.push_str(line.trim());
+        }
+        if self.found_rec {
+            let mut res = Records::new();
+            res.id.push_str(&self.id);
+            res.seq.push_str(&self.seq);
+            self.id.clear();
+            self.found_rec = false;
+            self.seq.clear();
+            return Some(res);
+        } else {
+            None
         }
     }
 }
@@ -104,33 +138,7 @@ impl<R: Read> Iterator for FastaReader<R> {
     type Item = Records;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(Ok(line)) = self.reader.next() {
-            if let Some(id) = line.strip_prefix('>') {
-                if self.id.is_some() {
-                    let mut res = Records::new();
-                    res.id.push_str(&self.id.as_ref().unwrap());
-                    res.seq.push_str(&self.seq);
-                    self.id = Some(String::from(id));
-                    self.seq.clear();
-                    return Some(res);
-                } else {
-                    self.id = Some(String::from(id));
-                    self.seq.clear();
-                }
-                continue;
-            }
-            self.seq.push_str(line.trim());
-        }
-        if self.id.is_some() {
-            let mut res = Records::new();
-            res.id.push_str(&self.id.as_ref().unwrap());
-            res.seq.push_str(&self.seq);
-            self.id = None;
-            self.seq.clear();
-            self.seq.shrink_to_fit();
-            return Some(res);
-        }
-        None
+        self.next_read()
     }
 }
 
