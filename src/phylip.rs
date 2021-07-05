@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Lines, Result};
+use std::io::{BufReader, Result};
 use std::path::Path;
 
 use indexmap::{IndexMap, IndexSet};
@@ -82,10 +82,13 @@ impl<'a> Phylip<'a> {
         buff.read_line(&mut header_line)?;
         self.parse_header(&header_line.trim());
 
-        buff.lines().filter_map(|ok| ok.ok()).for_each(|line| {
-            let (id, dna) = self.parse_sequence(line.trim());
-            self.insert_matrix(id, dna);
-        });
+        buff.lines()
+            .filter_map(|ok| ok.ok())
+            .filter(|l| !l.is_empty())
+            .for_each(|line| {
+                let (id, dna) = self.parse_sequence(line.trim());
+                self.insert_matrix(id, dna);
+            });
 
         Ok(())
     }
@@ -98,28 +101,30 @@ impl<'a> Phylip<'a> {
         let mut pos: usize = 1;
         let mut ids: IndexMap<usize, String> = IndexMap::new();
         let mut seq = false;
-        let read = Reader::new(buff);
-        read.into_iter().filter(|l| !l.is_empty()).for_each(|line| {
-            if !seq {
-                // then, the line contains the sequence id.
-                let (id, dna) = self.parse_sequence(line.trim());
-                ids.insert(pos, id.clone());
-                self.insert_matrix(id, dna);
-                pos += 1;
-            } else if let Some(id) = ids.get(&pos) {
-                if let Some(value) = self.matrix.get_mut(id) {
-                    value.push_str(line.trim());
+        buff.lines()
+            .filter_map(|ok| ok.ok())
+            .filter(|l| !l.is_empty())
+            .for_each(|line| {
+                if !seq {
+                    // then, the line contains the sequence id.
+                    let (id, dna) = self.parse_sequence(line.trim());
+                    ids.insert(pos, id.clone());
+                    self.insert_matrix(id, dna);
                     pos += 1;
+                } else if let Some(id) = ids.get(&pos) {
+                    if let Some(value) = self.matrix.get_mut(id) {
+                        value.push_str(line.trim());
+                        pos += 1;
+                    }
                 }
-            }
 
-            // We reset the pos position after reaching
-            // the end of the id lines.
-            if pos == self.header.ntax + 1 {
-                pos = 1;
-                seq = true;
-            }
-        });
+                // We reset the pos position after reaching
+                // the end of the id lines.
+                if pos == self.header.ntax + 1 {
+                    pos = 1;
+                    seq = true;
+                }
+            });
 
         Ok(())
     }
@@ -204,37 +209,6 @@ impl<'a> Phylip<'a> {
                 self.header.nchar,
                 longest
             );
-        }
-    }
-}
-
-struct Reader<R> {
-    reader: Lines<BufReader<R>>,
-    buffer: String,
-}
-
-impl<R: Read> Reader<R> {
-    fn new(file: R) -> Self {
-        Self {
-            reader: BufReader::new(file).lines(),
-            buffer: String::new(),
-        }
-    }
-}
-
-impl<R: Read> Iterator for Reader<R> {
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(Ok(line)) = self.reader.next() {
-            if !line.is_empty() {
-                self.buffer.push_str(&line);
-            }
-            let content = self.buffer.trim().to_string();
-            self.buffer.clear();
-            Some(content)
-        } else {
-            None
         }
     }
 }

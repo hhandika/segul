@@ -315,14 +315,8 @@ impl<R: Read> NexusReader<R> {
             buffer: Vec::new(),
         }
     }
-}
 
-// Iterate over the file.
-// Collect each of the nexus block terminated by semi-colon.
-impl<R: Read> Iterator for NexusReader<R> {
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
+    fn nex_seq(&mut self) -> Option<String> {
         self.buffer.clear();
         let bytes = self
             .reader
@@ -337,6 +331,16 @@ impl<R: Read> Iterator for NexusReader<R> {
             }
             Some(token)
         }
+    }
+}
+
+// Iterate over the file.
+// Collect each of the nexus block terminated by semi-colon.
+impl<R: Read> Iterator for NexusReader<R> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.nex_seq()
     }
 }
 
