@@ -104,26 +104,27 @@ impl<R: Read> FastaReader<R> {
     fn next_seq(&mut self) -> Option<Records> {
         while let Some(Ok(line)) = self.reader.by_ref().lines().next() {
             if let Some(id) = line.strip_prefix('>') {
-                if self.found_rec {
+                if !self.found_rec {
+                    self.id = String::from(id);
+                    self.found_rec = true;
+                    self.seq.clear();
+                } else {
                     let recs = self.get_recs(&self.id, &self.seq);
                     self.id = String::from(id);
                     self.seq.clear();
                     return Some(recs);
-                } else {
-                    self.id = String::from(id);
-                    self.found_rec = true;
-                    self.seq.clear();
                 }
                 continue;
+            } else {
+                self.seq.push_str(line.trim());
             }
-            self.seq.push_str(line.trim());
         }
         if self.found_rec {
             let recs = self.get_recs(&self.id, &self.seq);
             self.found_rec = false;
             self.id.clear();
             self.seq.clear();
-            return Some(recs);
+            Some(recs)
         } else {
             None
         }
