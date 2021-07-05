@@ -69,7 +69,7 @@ impl<'a> Nexus<'a> {
     }
 
     fn parse_blocks<R: Read>(&self, buff: R) -> Commands {
-        let reader = Reader::new(buff);
+        let reader = NexusReader::new(buff);
         let mut commands = Commands::new();
         reader.into_iter().for_each(|read| {
             match read.to_lowercase() {
@@ -303,12 +303,12 @@ impl Commands {
     }
 }
 
-struct Reader<R> {
+struct NexusReader<R> {
     reader: BufReader<R>,
     buffer: Vec<u8>,
 }
 
-impl<R: Read> Reader<R> {
+impl<R: Read> NexusReader<R> {
     fn new(file: R) -> Self {
         Self {
             reader: BufReader::new(file),
@@ -319,7 +319,7 @@ impl<R: Read> Reader<R> {
 
 // Iterate over the file.
 // Collect each of the nexus block terminated by semi-colon.
-impl<R: Read> Iterator for Reader<R> {
+impl<R: Read> Iterator for NexusReader<R> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
