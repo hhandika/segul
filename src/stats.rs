@@ -14,117 +14,151 @@ use crate::common::SeqFormat;
 use crate::finder::IDs;
 use crate::utils;
 
-pub fn get_seq_stats(path: &Path, input_format: &SeqFormat) {
-    let spin = utils::set_spinner();
-    spin.set_message("Getting alignments...");
-    let (site, dna) = get_stats(path, input_format);
-    spin.finish_with_message("DONE!\n");
-    display_stats(&site, &dna).unwrap();
+pub struct SeqStats<'a> {
+    input_format: &'a SeqFormat,
+    output: &'a str,
+    ntax: usize,
 }
 
-pub fn get_stats_dir(files: &[PathBuf], input_format: &SeqFormat) {
-    let spin = utils::set_spinner();
-    spin.set_message("Counting unique IDs in all alignments...");
-    let total_ntax = IDs::new(files, input_format).get_id_all().len();
-    spin.set_message("Processing alignments...");
-    let mut stats: Vec<(Sites, Dna)> = par_get_stats(files, input_format);
-    stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
-    spin.set_message("Getting summary stats...");
-    let (sites, dna, complete) = get_summary_dna(&stats, &total_ntax);
-    spin.set_message("Writing results...");
-    write_sum_stats(&stats).unwrap();
-    spin.finish_with_message("DONE!\n");
-    let sum = SummaryWriter::new(&sites, &dna, &complete);
-    sum.display_summary()
-        .expect("CANNOT WRITE SUMMARY TO STDOUT");
-    sum.write_sum_to_file(Path::new("SEGUL-summary"))
-        .expect("CANNOT CREATE FILE FOR SUMMARY OUPUT");
+impl<'a> SeqStats<'a> {
+    pub fn new(input_format: &'a SeqFormat, output: &'a str) -> Self {
+        Self {
+            input_format,
+            output,
+            ntax: 0,
+        }
+    }
+
+    pub fn get_seq_stats_file(&self, path: &Path) {
+        let spin = utils::set_spinner();
+        spin.set_message("Getting alignments...");
+        let (site, dna) = self.get_stats(path);
+        spin.finish_with_message("DONE!\n");
+        self.display_stats(&site, &dna).unwrap();
+    }
+
+    pub fn get_stats_dir(&mut self, files: &[PathBuf]) {
+        let spin = utils::set_spinner();
+        spin.set_message("Counting unique IDs in all alignments...");
+        self.get_ntax(files);
+        spin.set_message("Processing alignments...");
+        let mut stats: Vec<(Sites, Dna)> = self.par_get_stats(files);
+        stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
+        spin.set_message("Getting summary stats...");
+        let (sites, dna, complete) = self.get_summary_dna(&stats);
+        spin.set_message("Writing results...");
+        CsvWriter::new(self.output)
+            .write_locus_summary(&stats)
+            .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
+        let sum = SummaryWriter::new(&sites, &dna, &complete);
+        sum.write_sum_to_file(Path::new("SEGUL-summary"))
+            .expect("CANNOT CREATE FILE FOR SUMMARY OUPUT");
+        spin.finish_with_message("DONE!\n");
+        sum.display_summary()
+            .expect("CANNOT WRITE SUMMARY TO STDOUT");
+    }
+
+    fn get_ntax(&mut self, files: &[PathBuf]) {
+        self.ntax = IDs::new(files, self.input_format).get_id_all().len();
+    }
+
+    fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, Dna)> {
+        let (send, rec) = channel();
+        files.par_iter().for_each_with(send, |s, file| {
+            s.send(self.get_stats(file)).unwrap();
+        });
+        rec.iter().collect()
+    }
+
+    fn get_stats(&self, path: &Path) -> (Sites, Dna) {
+        let mut aln = Alignment::new();
+        aln.get_aln_any(path, self.input_format);
+        let mut dna = Dna::new();
+        dna.count_chars(&aln);
+        let mut sites = Sites::new(path);
+        sites.get_stats(&aln.alignment);
+
+        (sites, dna)
+    }
+
+    fn get_summary_dna(&self, stats: &[(Sites, Dna)]) -> (SiteSummary, DnaSummary, Completeness) {
+        let (sites, dna): (Vec<Sites>, Vec<Dna>) =
+            stats.par_iter().map(|p| (p.0.clone(), p.1.clone())).unzip();
+        let mut sum_sites = SiteSummary::new();
+        sum_sites.get_summary(&sites);
+        let mut sum_dna = DnaSummary::new();
+        sum_dna.get_summary(&dna);
+        let mut ntax_comp = Completeness::new(&self.ntax);
+        ntax_comp.get_ntax_completeness(&dna);
+        (sum_sites, sum_dna, ntax_comp)
+    }
+
+    fn display_stats(&self, site: &Sites, dna: &Dna) -> Result<()> {
+        let io = io::stdout();
+        let mut writer = BufWriter::new(io);
+
+        writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
+        writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&dna.ntax))?;
+        writeln!(writer, "Length\t\t: {}\n", utils::fmt_num(&dna.total_chars))?;
+
+        writeln!(writer, "\x1b[0;33mSites\x1b[0m")?;
+        writeln!(writer, "Count\t\t: {}", utils::fmt_num(&site.counts))?;
+        writeln!(writer, "Conserved\t: {}", utils::fmt_num(&site.conserved))?;
+        writeln!(writer, "Variable\t: {}", utils::fmt_num(&site.variable))?;
+        writeln!(
+            writer,
+            "Parsimony inf.\t: {}\n",
+            utils::fmt_num(&site.pars_inf)
+        )?;
+        writeln!(writer, "Prop. conserved\t: {:.2}%", site.prop_cons * 100.0)?;
+        writeln!(writer, "Prop. variable\t: {:.2}%", site.prop_var * 100.0)?;
+        writeln!(writer, "Prop. p. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
+
+        writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
+        writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.total_chars))?;
+        writeln!(writer, "A\t: {}", utils::fmt_num(&dna.a_count))?;
+        writeln!(writer, "C\t: {}", utils::fmt_num(&dna.c_count))?;
+        writeln!(writer, "G\t: {}", utils::fmt_num(&dna.g_count))?;
+        writeln!(writer, "T\t: {}", utils::fmt_num(&dna.t_count))?;
+        writeln!(writer, "N\t: {}", utils::fmt_num(&dna.n_count))?;
+        writeln!(writer, "?\t: {}", utils::fmt_num(&dna.missings))?;
+        writeln!(writer, "-\t: {}", utils::fmt_num(&dna.gaps))?;
+        writer.flush()?;
+        Ok(())
+    }
 }
 
-fn par_get_stats(files: &[PathBuf], input_format: &SeqFormat) -> Vec<(Sites, Dna)> {
-    let (send, rec) = channel();
-    files.par_iter().for_each_with(send, |s, file| {
-        s.send(get_stats(file, input_format)).unwrap();
-    });
-    rec.iter().collect()
+struct CsvWriter {
+    output: String,
 }
 
-fn get_stats(path: &Path, input_format: &SeqFormat) -> (Sites, Dna) {
-    let mut aln = Alignment::new();
-    aln.get_aln_any(path, input_format);
-    let mut dna = Dna::new();
-    dna.count_chars(&aln);
-    let mut sites = Sites::new(path);
-    sites.get_stats(&aln.alignment);
+impl CsvWriter {
+    fn new(output: &str) -> Self {
+        Self {
+            output: String::from(output),
+        }
+    }
 
-    (sites, dna)
-}
+    fn write_locus_summary(&mut self, stats: &[(Sites, Dna)]) -> Result<()> {
+        self.get_ouput_fname();
+        let file = File::create(&self.output).expect("CANNOT WRITE THE STAT RESULTS");
+        let mut writer = BufWriter::new(file);
+        self.write_csv_header(&mut writer)?;
+        stats.iter().for_each(|(site, dna)| {
+            self.write_csv_content(&mut writer, site, dna).unwrap();
+        });
 
-fn get_summary_dna(
-    stats: &[(Sites, Dna)],
-    total_ntax: &usize,
-) -> (SiteSummary, DnaSummary, Completeness) {
-    let (sites, dna): (Vec<Sites>, Vec<Dna>) =
-        stats.par_iter().map(|p| (p.0.clone(), p.1.clone())).unzip();
-    let mut sum_sites = SiteSummary::new();
-    sum_sites.get_summary(&sites);
-    let mut sum_dna = DnaSummary::new();
-    sum_dna.get_summary(&dna);
-    let mut ntax_comp = Completeness::new(total_ntax);
-    ntax_comp.get_ntax_completeness(&dna);
-    (sum_sites, sum_dna, ntax_comp)
-}
+        Ok(())
+    }
 
-fn display_stats(site: &Sites, dna: &Dna) -> Result<()> {
-    let io = io::stdout();
-    let mut writer = BufWriter::new(io);
+    fn get_ouput_fname(&mut self) {
+        self.output.push_str("_per_locus.csv")
+    }
 
-    writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
-    writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&dna.ntax))?;
-    writeln!(writer, "Length\t\t: {}\n", utils::fmt_num(&dna.total_chars))?;
-
-    writeln!(writer, "\x1b[0;33mSites\x1b[0m")?;
-    writeln!(writer, "Count\t\t: {}", utils::fmt_num(&site.counts))?;
-    writeln!(writer, "Conserved\t: {}", utils::fmt_num(&site.conserved))?;
-    writeln!(writer, "Variable\t: {}", utils::fmt_num(&site.variable))?;
-    writeln!(
-        writer,
-        "Parsimony inf.\t: {}\n",
-        utils::fmt_num(&site.pars_inf)
-    )?;
-    writeln!(writer, "Prop. conserved\t: {:.2}%", site.prop_cons * 100.0)?;
-    writeln!(writer, "Prop. variable\t: {:.2}%", site.prop_var * 100.0)?;
-    writeln!(writer, "Prop. p. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
-
-    writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
-    writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.total_chars))?;
-    writeln!(writer, "A\t: {}", utils::fmt_num(&dna.a_count))?;
-    writeln!(writer, "C\t: {}", utils::fmt_num(&dna.c_count))?;
-    writeln!(writer, "G\t: {}", utils::fmt_num(&dna.g_count))?;
-    writeln!(writer, "T\t: {}", utils::fmt_num(&dna.t_count))?;
-    writeln!(writer, "N\t: {}", utils::fmt_num(&dna.n_count))?;
-    writeln!(writer, "?\t: {}", utils::fmt_num(&dna.missings))?;
-    writeln!(writer, "-\t: {}", utils::fmt_num(&dna.gaps))?;
-    writer.flush()?;
-    Ok(())
-}
-
-fn write_sum_stats(stats: &[(Sites, Dna)]) -> Result<()> {
-    let fname = "SEGUL-stats_per_locus.csv";
-    let file = File::create(fname).expect("CANNOT WRITE THE STAT RESULTS");
-    let mut writer = BufWriter::new(file);
-    write_csv_header(&mut writer)?;
-    stats.iter().for_each(|(site, dna)| {
-        write_csv_content(&mut writer, site, dna).unwrap();
-    });
-
-    Ok(())
-}
-
-fn write_csv_header<W: Write>(writer: &mut W) -> Result<()> {
-    writeln!(
-        writer,
-        "path,\
+    fn write_csv_header<W: Write>(&self, writer: &mut W) -> Result<()> {
+        writeln!(
+            writer,
+            "path,\
         locus,\
         ntaxa,\
         chars_count,\
@@ -144,56 +178,57 @@ fn write_csv_header<W: Write>(writer: &mut W) -> Result<()> {
         gap_counts,\
         missing_counts,\
     "
-    )?;
-    Ok(())
-}
+        )?;
+        Ok(())
+    }
 
-fn write_csv_content<W: Write>(writer: &mut W, site: &Sites, dna: &Dna) -> Result<()> {
-    write!(
-        writer,
-        "{},{},{},{},",
-        site.path.display(),
-        site.path.file_stem().unwrap().to_string_lossy(),
-        dna.ntax,
-        dna.total_chars
-    )?;
+    fn write_csv_content<W: Write>(&self, writer: &mut W, site: &Sites, dna: &Dna) -> Result<()> {
+        write!(
+            writer,
+            "{},{},{},{},",
+            site.path.display(),
+            site.path.file_stem().unwrap().to_string_lossy(),
+            dna.ntax,
+            dna.total_chars
+        )?;
 
-    // Site stats
-    write!(
-        writer,
-        "{},{},{},{},{},{},{},",
-        site.counts,
-        site.conserved,
-        site.prop_cons,
-        site.variable,
-        site.prop_var,
-        site.pars_inf,
-        site.prop_pinf
-    )?;
+        // Site stats
+        write!(
+            writer,
+            "{},{},{},{},{},{},{},",
+            site.counts,
+            site.conserved,
+            site.prop_cons,
+            site.variable,
+            site.prop_var,
+            site.pars_inf,
+            site.prop_pinf
+        )?;
 
-    // GC content
-    write!(
-        writer,
-        "{},",
-        (dna.g_count as f64 + dna.c_count as f64) / dna.total_chars as f64
-    )?;
+        // GC content
+        write!(
+            writer,
+            "{},",
+            (dna.g_count as f64 + dna.c_count as f64) / dna.total_chars as f64
+        )?;
 
-    // AT content
-    write!(
-        writer,
-        "{},",
-        (dna.a_count as f64 + dna.t_count as f64) / dna.total_chars as f64
-    )?;
+        // AT content
+        write!(
+            writer,
+            "{},",
+            (dna.a_count as f64 + dna.t_count as f64) / dna.total_chars as f64
+        )?;
 
-    // Characters
-    writeln!(
-        writer,
-        "{},{},{},{},{},{}",
-        dna.a_count, dna.t_count, dna.g_count, dna.c_count, dna.gaps, dna.missings
-    )?;
+        // Characters
+        writeln!(
+            writer,
+            "{},{},{},{},{},{}",
+            dna.a_count, dna.t_count, dna.g_count, dna.c_count, dna.gaps, dna.missings
+        )?;
 
-    writer.flush()?;
-    Ok(())
+        writer.flush()?;
+        Ok(())
+    }
 }
 
 struct SummaryWriter<'s> {

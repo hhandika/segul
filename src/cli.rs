@@ -11,7 +11,7 @@ use crate::converter::Converter;
 use crate::finder::{Files, IDs};
 use crate::msa;
 use crate::picker::Picker;
-use crate::stats;
+use crate::stats::SeqStats;
 use crate::utils;
 
 fn get_args(version: &str) -> ArgMatches {
@@ -247,6 +247,16 @@ fn get_args(version: &str) -> ArgMatches {
                         .required(true)
                         .value_name("FORMAT"),
                 )
+                .arg(
+                Arg::with_name("output")
+                    .short("o")
+                    .long("output")
+                    .help("Uses a costume output filename")
+                    .takes_value(true)
+                    .required(true)
+                    .default_value("SEGUL-stats")
+                    .value_name("OUTPUT"),
+            )
         )
         .get_matches()
 }
@@ -706,15 +716,17 @@ impl<'a> StatsParser<'a> {
     fn show_stats_dir(&self, input_format: &SeqFormat) {
         let dir = self.get_dir_input(&self.matches);
         let files = self.get_files(dir, input_format);
+        let output = self.get_output(&self.matches);
         self.display_input_file(Path::new(dir)).unwrap();
-        stats::get_stats_dir(&files, input_format);
+        SeqStats::new(input_format, output).get_stats_dir(&files);
     }
 
     fn show_stats_file(&self, input_format: &SeqFormat) {
         self.get_input_format(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
+        let output = self.get_output(&self.matches);
         self.display_input_file(input).unwrap();
-        stats::get_seq_stats(input, &input_format);
+        SeqStats::new(input_format, output).get_seq_stats_file(input);
     }
 
     fn display_input_file(&self, input: &Path) -> Result<()> {
