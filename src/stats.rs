@@ -50,7 +50,7 @@ impl<'a> SeqStats<'a> {
             .write_locus_summary(&stats)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
         let sum = SummaryWriter::new(&sites, &dna, &complete);
-        sum.write_sum_to_file(Path::new("SEGUL-summary"))
+        sum.write_sum_to_file(self.output)
             .expect("CANNOT CREATE FILE FOR SUMMARY OUPUT");
         spin.finish_with_message("DONE!\n");
         sum.display_summary()
@@ -274,8 +274,8 @@ impl<'s> SummaryWriter<'s> {
         Ok(())
     }
 
-    fn write_sum_to_file(&self, output: &Path) -> Result<()> {
-        let fname = output.with_extension("txt");
+    fn write_sum_to_file(&self, output: &str) -> Result<()> {
+        let fname = self.get_output_fname(output);
         let file = File::create(fname)?;
         let mut writer = BufWriter::new(file);
         writeln!(writer, "General Summmary")?;
@@ -302,6 +302,11 @@ impl<'s> SummaryWriter<'s> {
         writeln!(writer)?;
         writer.flush()?;
         Ok(())
+    }
+
+    fn get_output_fname(&self, output: &str) -> PathBuf {
+        let fname = format!("{}_summary.txt", output);
+        PathBuf::from(fname)
     }
 
     fn write_gen_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
