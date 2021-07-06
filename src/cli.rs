@@ -268,7 +268,7 @@ pub fn parse_cli(version: &str) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => ConvertParser::new(convert_matches).convert(),
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
-        ("filter", Some(pick_matches)) => PickParser::new(pick_matches).get_min_taxa(),
+        ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).get_min_taxa(),
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
         ("summary", Some(stats_matches)) => StatsParser::new(stats_matches).show_stats(),
         _ => unreachable!(),
@@ -523,15 +523,15 @@ impl<'a> ConcatParser<'a> {
     }
 }
 
-impl Cli for PickParser<'_> {}
+impl Cli for FilterParser<'_> {}
 
-struct PickParser<'a> {
+struct FilterParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_format: SeqFormat,
     output_dir: PathBuf,
 }
 
-impl<'a> PickParser<'a> {
+impl<'a> FilterParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
@@ -748,7 +748,7 @@ mod test {
         let arg = App::new("segul-test")
             .arg(Arg::with_name("test"))
             .get_matches();
-        let min_taxa = PickParser::new(&arg);
+        let min_taxa = FilterParser::new(&arg);
         let dir = "./test_taxa/";
         let percent = 0.75;
         let res = PathBuf::from("./test_taxa_75p");
