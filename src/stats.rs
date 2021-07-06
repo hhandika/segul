@@ -45,7 +45,6 @@ impl<'a> SeqStats<'a> {
         let mut stats: Vec<(Sites, Dna)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
-        spin.set_message("Writing results...");
         CsvWriter::new(self.output)
             .write_locus_summary(&stats)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
