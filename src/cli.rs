@@ -8,9 +8,9 @@ use rayon::prelude::*;
 
 use crate::common::{PartitionFormat, SeqFormat};
 use crate::converter::Converter;
+use crate::filter::SeqFilter;
 use crate::finder::{Files, IDs};
 use crate::msa;
-use crate::picker::Picker;
 use crate::stats::SeqStats;
 use crate::utils;
 
@@ -135,7 +135,7 @@ fn get_args(version: &str) -> ArgMatches {
                 )
         )
         .subcommand(
-            App::new("pick")
+            App::new("filter")
             .about("Picks alignments with specified min taxa")
             .arg(
                 Arg::with_name("dir")
@@ -268,7 +268,7 @@ pub fn parse_cli(version: &str) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => ConvertParser::new(convert_matches).convert(),
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
-        ("pick", Some(pick_matches)) => PickParser::new(pick_matches).get_min_taxa(),
+        ("filter", Some(pick_matches)) => PickParser::new(pick_matches).get_min_taxa(),
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
         ("summary", Some(stats_matches)) => StatsParser::new(stats_matches).show_stats(),
         _ => unreachable!(),
@@ -555,7 +555,7 @@ impl<'a> PickParser<'a> {
     }
 
     fn get_min_taxa_percent(&mut self, files: &mut [PathBuf], percent: f64) {
-        let mut pick = Picker::new(files, &self.input_format, &self.output_dir, percent);
+        let mut pick = SeqFilter::new(files, &self.input_format, &self.output_dir, percent);
         pick.get_min_taxa();
     }
 

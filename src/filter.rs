@@ -15,7 +15,7 @@ use crate::utils;
 // TODO:
 // Add support to automatically concat the result
 // Allow more parameters, such as min aln length
-pub struct Picker<'a> {
+pub struct SeqFilter<'a> {
     files: &'a mut [PathBuf],
     file_counts: usize,
     input_format: &'a SeqFormat,
@@ -25,7 +25,7 @@ pub struct Picker<'a> {
     ntax: usize,
 }
 
-impl<'a> Picker<'a> {
+impl<'a> SeqFilter<'a> {
     pub fn new(
         files: &'a mut [PathBuf],
         input_format: &'a SeqFormat,
@@ -134,7 +134,7 @@ mod test {
     #[test]
     fn min_taxa_test() {
         let mut files = [PathBuf::from(".")];
-        let mut pick = Picker::new(&mut files, &SeqFormat::Nexus, Path::new("."), 0.65);
+        let mut pick = SeqFilter::new(&mut files, &SeqFormat::Nexus, Path::new("."), 0.65);
         pick.ntax = 10;
         assert_eq!(6, pick.count_min_tax());
     }
