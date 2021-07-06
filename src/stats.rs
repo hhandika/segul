@@ -39,12 +39,11 @@ impl<'a> SeqStats<'a> {
 
     pub fn get_stats_dir(&mut self, files: &[PathBuf]) {
         let spin = utils::set_spinner();
-        spin.set_message("Counting unique IDs in all alignments...");
+        spin.set_message("Indexing alignments...");
         self.get_ntax(files);
-        spin.set_message("Processing alignments...");
+        spin.set_message("Getting summary stats...");
         let mut stats: Vec<(Sites, Dna)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
-        spin.set_message("Getting summary stats...");
         let (sites, dna, complete) = self.get_summary_dna(&stats);
         spin.set_message("Writing results...");
         CsvWriter::new(self.output)
