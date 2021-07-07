@@ -34,6 +34,9 @@ impl<'a> SeqStats<'a> {
         spin.set_message("Getting alignments...");
         let (site, dna) = self.get_stats(path);
         spin.finish_with_message("DONE!\n");
+        CsvWriter::new(self.output)
+            .write_summary_file(&site, &dna)
+            .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
         self.display_stats(&site, &dna).unwrap();
     }
 
@@ -46,7 +49,7 @@ impl<'a> SeqStats<'a> {
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
         CsvWriter::new(self.output)
-            .write_locus_summary(&stats)
+            .write_summary_dir(&stats)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
         let sum = SummaryWriter::new(&sites, &dna, &complete);
         sum.write_sum_to_file(self.output)
@@ -97,10 +100,9 @@ impl<'a> SeqStats<'a> {
 
         writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
         writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&dna.ntax))?;
-        writeln!(writer, "Length\t\t: {}\n", utils::fmt_num(&dna.total_chars))?;
+        writeln!(writer, "Length\t\t: {}\n", utils::fmt_num(&site.counts))?;
 
         writeln!(writer, "\x1b[0;33mSites\x1b[0m")?;
-        writeln!(writer, "Count\t\t: {}", utils::fmt_num(&site.counts))?;
         writeln!(writer, "Conserved\t: {}", utils::fmt_num(&site.conserved))?;
         writeln!(writer, "Variable\t: {}", utils::fmt_num(&site.variable))?;
         writeln!(
@@ -108,9 +110,9 @@ impl<'a> SeqStats<'a> {
             "Parsimony inf.\t: {}\n",
             utils::fmt_num(&site.pars_inf)
         )?;
-        writeln!(writer, "Prop. conserved\t: {:.2}%", site.prop_cons * 100.0)?;
-        writeln!(writer, "Prop. variable\t: {:.2}%", site.prop_var * 100.0)?;
-        writeln!(writer, "Prop. p. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
+        writeln!(writer, "%Conserved\t: {:.2}%", site.prop_cons * 100.0)?;
+        writeln!(writer, "%Variable\t: {:.2}%", site.prop_var * 100.0)?;
+        writeln!(writer, "%Pars. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
 
         writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
         writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.total_chars))?;
@@ -137,7 +139,7 @@ impl CsvWriter {
         }
     }
 
-    fn write_locus_summary(&mut self, stats: &[(Sites, Dna)]) -> Result<()> {
+    fn write_summary_dir(&mut self, stats: &[(Sites, Dna)]) -> Result<()> {
         self.get_ouput_fname();
         let file = File::create(&self.output).expect("CANNOT WRITE THE STAT RESULTS");
         let mut writer = BufWriter::new(file);
@@ -145,6 +147,16 @@ impl CsvWriter {
         stats.iter().for_each(|(site, dna)| {
             self.write_csv_content(&mut writer, site, dna).unwrap();
         });
+
+        Ok(())
+    }
+
+    fn write_summary_file(&mut self, site: &Sites, dna: &Dna) -> Result<()> {
+        self.get_ouput_fname();
+        let file = File::create(&self.output).expect("CANNOT WRITE THE STAT RESULTS");
+        let mut writer = BufWriter::new(file);
+        self.write_csv_header(&mut writer)?;
+        self.write_csv_content(&mut writer, site, dna).unwrap();
 
         Ok(())
     }
