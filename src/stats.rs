@@ -477,7 +477,7 @@ impl<'s> SummaryWriter<'s> {
             "Con. sites\t: {}",
             utils::fmt_num(&self.site.total_cons_site)
         )?;
-        writeln!(writer, "%Con. sites\t: {:.2}", &self.site.prop_cons_site)?;
+        writeln!(writer, "%Con. sites\t: {:.2}%", &self.site.prop_cons_site)?;
         writeln!(
             writer,
             "Min con. sites\t: {}",
@@ -513,7 +513,7 @@ impl<'s> SummaryWriter<'s> {
             "Var. sites\t: {}",
             utils::fmt_num(&self.site.total_var_site)
         )?;
-        writeln!(writer, "%Var. sites\t: {:.2}", &self.site.prop_var_site)?;
+        writeln!(writer, "%Var. sites\t: {:.2}%", &self.site.prop_var_site)?;
         writeln!(
             writer,
             "Min var. sites\t: {}",
@@ -548,7 +548,7 @@ impl<'s> SummaryWriter<'s> {
             "Inf. sites\t: {}",
             utils::fmt_num(&self.site.total_inf_site)
         )?;
-        writeln!(writer, "%Inf. sites\t: {:.2}", &self.site.prop_inf_site)?;
+        writeln!(writer, "%Inf. sites\t: {:.2}%", &self.site.prop_inf_site)?;
         writeln!(
             writer,
             "Min inf. sites\t: {}",
