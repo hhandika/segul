@@ -477,6 +477,7 @@ impl<'s> SummaryWriter<'s> {
             "Con. sites\t: {}",
             utils::fmt_num(&self.site.total_cons_site)
         )?;
+        writeln!(writer, "%Con. sites\t: {:.2}", &self.site.prop_cons_site)?;
         writeln!(
             writer,
             "Min con. sites\t: {}",
@@ -512,6 +513,7 @@ impl<'s> SummaryWriter<'s> {
             "Var. sites\t: {}",
             utils::fmt_num(&self.site.total_var_site)
         )?;
+        writeln!(writer, "%Var. sites\t: {:.2}", &self.site.prop_var_site)?;
         writeln!(
             writer,
             "Min var. sites\t: {}",
@@ -546,6 +548,7 @@ impl<'s> SummaryWriter<'s> {
             "Inf. sites\t: {}",
             utils::fmt_num(&self.site.total_inf_site)
         )?;
+        writeln!(writer, "%Inf. sites\t: {:.2}", &self.site.prop_inf_site)?;
         writeln!(
             writer,
             "Min inf. sites\t: {}",
@@ -574,6 +577,7 @@ struct SiteSummary {
     cons_loci: usize,
     prop_cons_loci: f64,
     total_cons_site: usize,
+    prop_cons_site: f64,
     min_cons_site: usize,
     max_cons_site: usize,
     mean_cons_site: f64,
@@ -582,6 +586,7 @@ struct SiteSummary {
     var_loci: usize,
     prop_var_loci: f64,
     total_var_site: usize,
+    prop_var_site: f64,
     min_var_site: usize,
     max_var_site: usize,
     mean_var_site: f64,
@@ -590,6 +595,7 @@ struct SiteSummary {
     inf_loci: usize,
     prop_inf_loci: f64,
     total_inf_site: usize,
+    prop_inf_site: f64,
     min_inf_site: usize,
     max_inf_site: usize,
     mean_inf_site: f64,
@@ -603,21 +609,24 @@ impl SiteSummary {
             min_sites: 0,
             max_sites: 0,
             mean_sites: 0.0,
-            var_loci: 0,
-            prop_var_loci: 0.0,
-            total_var_site: 0,
             cons_loci: 0,
             prop_cons_loci: 0.0,
             total_cons_site: 0,
+            prop_cons_site: 0.0,
             min_cons_site: 0,
             max_cons_site: 0,
             mean_cons_site: 0.0,
+            var_loci: 0,
+            prop_var_loci: 0.0,
+            total_var_site: 0,
+            prop_var_site: 0.0,
             min_var_site: 0,
             max_var_site: 0,
             mean_var_site: 0.0,
             inf_loci: 0,
             prop_inf_loci: 0.0,
             total_inf_site: 0,
+            prop_inf_site: 0.0,
             min_inf_site: 0,
             max_inf_site: 0,
             mean_inf_site: 0.0,
@@ -639,6 +648,7 @@ impl SiteSummary {
         self.cons_loci = sites.iter().filter(|s| s.variable == 0).count();
         self.prop_cons_loci = self.cons_loci as f64 / self.total_loci as f64;
         self.total_cons_site = sites.iter().map(|s| s.conserved).sum();
+        self.prop_cons_site = self.total_cons_site as f64 / self.total_sites as f64;
         self.min_cons_site = sites.iter().map(|s| s.conserved).min().unwrap();
         self.max_cons_site = sites.iter().map(|s| s.conserved).max().unwrap();
         self.mean_cons_site = self.total_cons_site as f64 / self.total_sites as f64;
@@ -648,6 +658,7 @@ impl SiteSummary {
         self.var_loci = sites.iter().filter(|s| s.variable > 0).count();
         self.prop_var_loci = self.var_loci as f64 / self.total_loci as f64;
         self.total_var_site = sites.iter().map(|s| s.variable).sum();
+        self.prop_var_site = self.total_var_site as f64 / self.total_sites as f64;
         self.min_var_site = sites.iter().map(|s| s.variable).min().unwrap();
         self.max_var_site = sites.iter().map(|s| s.variable).max().unwrap();
         self.mean_var_site = self.total_var_site as f64 / self.total_sites as f64;
@@ -657,6 +668,7 @@ impl SiteSummary {
         self.inf_loci = sites.iter().filter(|s| s.pars_inf > 0).count();
         self.prop_inf_loci = self.inf_loci as f64 / self.total_loci as f64;
         self.total_inf_site = sites.iter().map(|s| s.pars_inf).sum();
+        self.prop_inf_site = self.total_inf_site as f64 / self.total_sites as f64;
         self.min_inf_site = sites.iter().map(|s| s.pars_inf).min().unwrap();
         self.max_inf_site = sites.iter().map(|s| s.pars_inf).max().unwrap();
         self.mean_inf_site = self.total_inf_site as f64 / self.total_sites as f64;
