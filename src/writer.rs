@@ -371,9 +371,9 @@ impl<'a> SeqWriter<'a> {
 
     fn get_output_name(&mut self, ext: &SeqFormat) {
         self.output = match ext {
-            SeqFormat::Fasta | SeqFormat::FastaInt => self.path.with_extension("fasta"),
-            SeqFormat::Nexus | SeqFormat::NexusInt => self.path.with_extension("nexus"),
-            SeqFormat::Phylip | SeqFormat::PhylipInt => self.path.with_extension("phylip"),
+            SeqFormat::Fasta | SeqFormat::FastaInt => self.path.with_extension("fas"),
+            SeqFormat::Nexus | SeqFormat::NexusInt => self.path.with_extension("nex"),
+            SeqFormat::Phylip | SeqFormat::PhylipInt => self.path.with_extension("phy"),
         };
     }
 
