@@ -6,7 +6,7 @@ use std::path::Path;
 use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 
-use crate::common::{self, Header, SeqCheck};
+use crate::helper::common::{self, Header, SeqCheck};
 
 pub struct Phylip<'a> {
     input: &'a Path,

@@ -6,13 +6,13 @@ use clap::{App, AppSettings, Arg, ArgMatches};
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
-use crate::common::{PartitionFormat, SeqFormat};
 use crate::core::converter::Converter;
 use crate::core::filter::SeqFilter;
 use crate::core::msa;
 use crate::core::stats::SeqStats;
-use crate::finder::{Files, IDs};
-use crate::utils;
+use crate::helper::common::{PartitionFormat, SeqFormat};
+use crate::helper::finder::{Files, IDs};
+use crate::helper::utils;
 
 fn get_args(version: &str) -> ArgMatches {
     App::new("segul")

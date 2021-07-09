@@ -8,7 +8,7 @@ use std::path::Path;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
-use crate::common::{Header, SeqCheck};
+use crate::helper::common::{Header, SeqCheck};
 
 pub struct Fasta<'a> {
     input: &'a Path,

@@ -8,10 +8,10 @@ use std::path::{Path, PathBuf};
 use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
-use crate::alignment::Alignment;
-use crate::common::{Header, Partition, PartitionFormat, SeqFormat};
-use crate::finder::IDs;
-use crate::utils;
+use crate::helper::alignment::Alignment;
+use crate::helper::common::{Header, Partition, PartitionFormat, SeqFormat};
+use crate::helper::finder::IDs;
+use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
 
 pub struct MSAlignment<'a> {
@@ -173,7 +173,7 @@ impl<'a> Concat<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::finder::Files;
+    use crate::helper::finder::Files;
 
     #[test]
     fn concat_nexus_test() {

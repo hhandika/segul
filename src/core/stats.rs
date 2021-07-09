@@ -8,10 +8,10 @@ use std::sync::mpsc::channel;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::alignment::Alignment;
-use crate::common::SeqFormat;
-use crate::finder::IDs;
-use crate::utils;
+use crate::helper::alignment::Alignment;
+use crate::helper::common::SeqFormat;
+use crate::helper::finder::IDs;
+use crate::helper::utils;
 use crate::writer::sumwriter;
 
 pub struct SeqStats<'a> {

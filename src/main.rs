@@ -1,16 +1,13 @@
-mod alignment;
-mod cli;
-mod common;
-mod core;
-mod finder;
-mod parser;
-mod utils;
-mod writer;
-
 use std::io::{BufWriter, Write};
 use std::time::Instant;
 
 use clap::crate_version;
+
+mod cli;
+mod core;
+mod helper;
+mod parser;
+mod writer;
 
 fn main() {
     let version = crate_version!();
@@ -23,6 +20,6 @@ fn main() {
     if duration.as_secs() < 60 {
         writeln!(writer, "Execution time: {:?}", duration).unwrap();
     } else {
-        utils::print_formatted_duration(&mut writer, duration.as_secs()).unwrap();
+        helper::utils::print_formatted_duration(&mut writer, duration.as_secs()).unwrap();
     }
 }

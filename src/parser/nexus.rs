@@ -6,7 +6,7 @@ use std::path::Path;
 use indexmap::{IndexMap, IndexSet};
 use nom::{bytes::complete, character, sequence, IResult};
 
-use crate::common::{self, Header, SeqCheck};
+use crate::helper::common::{self, Header, SeqCheck};
 
 pub struct Nexus<'a> {
     input: &'a Path,

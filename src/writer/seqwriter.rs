@@ -5,7 +5,7 @@ use std::io::{self, BufWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use crate::common::{Header, Partition, PartitionFormat, SeqFormat};
+use crate::helper::common::{Header, Partition, PartitionFormat, SeqFormat};
 use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {

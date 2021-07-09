@@ -5,12 +5,12 @@ use std::path::{Path, PathBuf};
 
 use rayon::prelude::*;
 
-use crate::common::{Header, SeqFormat};
-use crate::finder::IDs;
+use crate::helper::common::{Header, SeqFormat};
+use crate::helper::finder::IDs;
+use crate::helper::utils;
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
-use crate::utils;
 
 // TODO:
 // Add support to automatically concat the result

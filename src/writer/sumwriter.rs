@@ -3,7 +3,7 @@ use std::io::{self, BufWriter, Result, Write};
 use std::path::PathBuf;
 
 use crate::core::stats::{Completeness, Dna, DnaSummary, SiteSummary, Sites};
-use crate::utils;
+use crate::helper::utils;
 
 pub fn display_stats(site: &Sites, dna: &Dna) -> Result<()> {
     let io = io::stdout();
