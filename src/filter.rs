@@ -6,10 +6,10 @@ use std::path::{Path, PathBuf};
 use rayon::prelude::*;
 
 use crate::common::{Header, SeqFormat};
-use crate::fasta::Fasta;
 use crate::finder::IDs;
-use crate::nexus::Nexus;
-use crate::phylip::Phylip;
+use crate::parser::fasta::Fasta;
+use crate::parser::nexus::Nexus;
+use crate::parser::phylip::Phylip;
 use crate::utils;
 
 // TODO:

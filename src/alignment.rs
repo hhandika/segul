@@ -3,9 +3,9 @@ use std::path::Path;
 use indexmap::IndexMap;
 
 use crate::common::{Header, SeqFormat};
-use crate::fasta::Fasta;
-use crate::nexus::Nexus;
-use crate::phylip::Phylip;
+use crate::parser::fasta::Fasta;
+use crate::parser::nexus::Nexus;
+use crate::parser::phylip::Phylip;
 
 pub struct Alignment {
     pub alignment: IndexMap<String, String>,

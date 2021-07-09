@@ -8,9 +8,9 @@ use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::common::SeqFormat;
-use crate::fasta;
-use crate::nexus::Nexus;
-use crate::phylip::Phylip;
+use crate::parser::fasta;
+use crate::parser::nexus::Nexus;
+use crate::parser::phylip::Phylip;
 
 pub struct Files<'a> {
     dir: &'a str,

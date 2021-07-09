@@ -5,9 +5,9 @@ use indexmap::IndexMap;
 use crate::writer::SeqWriter;
 
 use crate::common::{Header, PartitionFormat, SeqFormat};
-use crate::fasta::Fasta;
-use crate::nexus::Nexus;
-use crate::phylip::Phylip;
+use crate::parser::fasta::Fasta;
+use crate::parser::nexus::Nexus;
+use crate::parser::phylip::Phylip;
 
 pub struct Converter<'a> {
     input: &'a Path,
