@@ -1,12 +1,9 @@
 mod alignment;
 mod cli;
 mod common;
-mod converter;
-mod filter;
+mod core;
 mod finder;
-mod msa;
 mod parser;
-mod stats;
 mod utils;
 mod writer;
 

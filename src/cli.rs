@@ -7,11 +7,11 @@ use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::common::{PartitionFormat, SeqFormat};
-use crate::converter::Converter;
-use crate::filter::SeqFilter;
+use crate::core::converter::Converter;
+use crate::core::filter::SeqFilter;
+use crate::core::msa;
+use crate::core::stats::SeqStats;
 use crate::finder::{Files, IDs};
-use crate::msa;
-use crate::stats::SeqStats;
 use crate::utils;
 
 fn get_args(version: &str) -> ArgMatches {
