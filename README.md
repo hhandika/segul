@@ -58,8 +58,8 @@ FLAGS:
 SUBCOMMANDS:
     concat     Concatenates alignments
     convert    Converts sequence formats
+    filter     Picks alignments with specified min taxa
     help       Prints this message or the help of the given subcommand(s)
-    id         Gets unique ids from multiple alignments
-    pick       Picks alignments with specified min taxa
+    id         Gets sample ids from multiple alignments
     summary    Gets alignment summary stats
 ```
