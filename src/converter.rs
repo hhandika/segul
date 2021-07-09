@@ -2,7 +2,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::writer::SeqWriter;
+use crate::writer::seqwriter::SeqWriter;
 
 use crate::common::{Header, PartitionFormat, SeqFormat};
 use crate::parser::fasta::Fasta;

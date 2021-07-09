@@ -12,7 +12,7 @@ use crate::alignment::Alignment;
 use crate::common::{Header, Partition, PartitionFormat, SeqFormat};
 use crate::finder::IDs;
 use crate::utils;
-use crate::writer::SeqWriter;
+use crate::writer::seqwriter::SeqWriter;
 
 pub struct MSAlignment<'a> {
     input_format: &'a SeqFormat,
