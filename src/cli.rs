@@ -62,9 +62,9 @@ fn get_args(version: &str) -> ArgMatches {
                         .value_name("FORMAT"),
                 )
                 .arg(
-                    Arg::with_name("target")
-                        .short("t")
-                        .long("target")
+                    Arg::with_name("output-format")
+                        .short("F")
+                        .long("output-format")
                         .help("Sets target output format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
                         .takes_value(true)
                         .default_value("nexus")
@@ -119,9 +119,9 @@ fn get_args(version: &str) -> ArgMatches {
                         .value_name("OUTPUT"),
                 )
                 .arg(
-                    Arg::with_name("target")
-                        .short("t")
-                        .long("target")
+                    Arg::with_name("output-format")
+                        .short("F")
+                        .long("output-format")
                         .help("Sets target output format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
                         .takes_value(true)
                         .default_value("nexus")
@@ -323,7 +323,7 @@ trait Cli {
 
     fn get_output_format(&self, matches: &ArgMatches) -> SeqFormat {
         let output_format = matches
-            .value_of("target")
+            .value_of("output-format")
             .expect("CANNOT READ FORMAT INPUT");
         match output_format {
             "nexus" => SeqFormat::Nexus,
