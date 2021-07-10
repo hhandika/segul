@@ -14,6 +14,11 @@ use crate::helper::finder::IDs;
 use crate::helper::utils;
 use crate::writer::sumwriter;
 
+#[allow(dead_code)]
+pub fn get_pars_inf(matrix: &IndexMap<String, String>) -> usize {
+    Sites::new().get_pars_inf_only(matrix)
+}
+
 pub struct SeqStats<'a> {
     input_format: &'a SeqFormat,
     output: &'a str,
@@ -76,8 +81,8 @@ impl<'a> SeqStats<'a> {
         aln.get_aln_any(path, self.input_format);
         let mut dna = Dna::new();
         dna.count_chars(&aln);
-        let mut sites = Sites::new(path);
-        sites.get_stats(&aln.alignment);
+        let mut sites = Sites::new();
+        sites.get_stats(path, &aln.alignment);
 
         (sites, dna)
     }
@@ -356,9 +361,9 @@ pub struct Sites {
 }
 
 impl Sites {
-    fn new(path: &Path) -> Self {
+    fn new() -> Self {
         Self {
-            path: PathBuf::from(path),
+            path: PathBuf::new(),
             conserved: 0,
             variable: 0,
             pars_inf: 0,
@@ -369,11 +374,18 @@ impl Sites {
         }
     }
 
-    fn get_stats(&mut self, matrix: &IndexMap<String, String>) {
+    fn get_stats(&mut self, path: &Path, matrix: &IndexMap<String, String>) {
+        self.path = path.to_path_buf();
         let site_matrix = self.index_sites(matrix);
         self.get_site_stats(&site_matrix);
         self.count_sites();
         self.get_proportion();
+    }
+
+    fn get_pars_inf_only(&mut self, matrix: &IndexMap<String, String>) -> usize {
+        let site_matrix = self.index_sites(matrix);
+        self.get_site_stats(&site_matrix);
+        self.pars_inf
     }
 
     fn index_sites(&mut self, matrix: &IndexMap<String, String>) -> HashMap<usize, Vec<u8>> {
@@ -508,8 +520,8 @@ mod test {
     fn pattern_count_test() {
         let site = b"AATT";
         let site_2 = b"AATTGG";
-        let pattern = Sites::new(Path::new(".")).get_patterns(site);
-        let pattern_2 = Sites::new(Path::new(".")).get_patterns(site_2);
+        let pattern = Sites::new().get_patterns(site);
+        let pattern_2 = Sites::new().get_patterns(site_2);
         assert_eq!(2, pattern);
         assert_eq!(3, pattern_2);
     }
@@ -519,7 +531,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new(Path::new("."));
+        let mut site = Sites::new();
         let smat = site.index_sites(&mat);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -530,7 +542,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new(Path::new("."));
+        let mut site = Sites::new();
         let smat = site.index_sites(&mat);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -541,7 +553,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new(Path::new("."));
+        let mut site = Sites::new();
         let smat = site.index_sites(&mat);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -554,7 +566,7 @@ mod test {
         let input_format = SeqFormat::Fasta;
         let mut aln = Alignment::new();
         aln.get_aln_any(path, &input_format);
-        let mut site = Sites::new(Path::new("."));
+        let mut site = Sites::new();
         let smat = site.index_sites(&aln.alignment);
         site.get_site_stats(&smat);
         assert_eq!(18, site.conserved);
