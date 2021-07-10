@@ -41,10 +41,10 @@ impl<'a> SeqFilter<'a> {
 
     pub fn get_min_taxa(&mut self) {
         self.ntax = IDs::new(self.files, self.input_format).get_id_all().len();
-        let fcounts = AtomicUsize::new(0);
         self.min_taxa = self.count_min_tax();
         self.display_input().expect("CANNOT DISPLAY TO STDOUT");
         fs::create_dir_all(self.output_dir).expect("CANNOT CREATE A TARGET DIRECTORY");
+        let fcounts = AtomicUsize::new(0);
         self.files.par_iter().for_each(|file| {
             let header = self.get_header(file);
             if header.ntax >= self.min_taxa {
