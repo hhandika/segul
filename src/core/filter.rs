@@ -5,19 +5,16 @@ use std::path::{Path, PathBuf};
 
 use rayon::prelude::*;
 
+use crate::helper::alignment::Alignment;
 use crate::helper::common::{Header, SeqFormat};
 use crate::helper::finder::IDs;
 use crate::helper::utils;
-use crate::parser::fasta::Fasta;
-use crate::parser::nexus::Nexus;
-use crate::parser::phylip::Phylip;
 
 // TODO:
-// Add support to automatically concat the result
-// Allow more parameters, such as min aln length
+// 1. Add support to concat the result
+// 2. Allow more parameters, such as min aln length
 pub struct SeqFilter<'a> {
     files: &'a mut [PathBuf],
-    file_counts: usize,
     input_format: &'a SeqFormat,
     output_dir: &'a Path,
     percent: f64,
@@ -34,7 +31,6 @@ impl<'a> SeqFilter<'a> {
     ) -> Self {
         Self {
             files,
-            file_counts: 0,
             input_format,
             output_dir,
             percent,
@@ -45,7 +41,6 @@ impl<'a> SeqFilter<'a> {
 
     pub fn get_min_taxa(&mut self) {
         self.ntax = IDs::new(self.files, self.input_format).get_id_all().len();
-        self.file_counts = self.files.len();
         let fcounts = AtomicUsize::new(0);
         self.min_taxa = self.count_min_tax();
         self.display_input().expect("CANNOT DISPLAY TO STDOUT");
@@ -68,7 +63,7 @@ impl<'a> SeqFilter<'a> {
         writeln!(
             writer,
             "File count\t: {}",
-            utils::fmt_num(&self.file_counts)
+            utils::fmt_num(&self.files.len())
         )?;
         writeln!(writer, "Taxon count\t: {}", self.ntax)?;
         writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
@@ -86,15 +81,6 @@ impl<'a> SeqFilter<'a> {
         Ok(())
     }
 
-    fn get_header(&self, file: &Path) -> Header {
-        match self.input_format {
-            SeqFormat::Fasta | SeqFormat::FastaInt => self.get_fas_header(file),
-            SeqFormat::Nexus | SeqFormat::NexusInt => self.get_nex_header(file),
-            SeqFormat::Phylip => self.get_phy_header(file, false),
-            SeqFormat::PhylipInt => self.get_phy_header(file, true),
-        }
-    }
-
     fn copy_files(&self, origin: &Path) -> Result<()> {
         let fname = origin.file_name().unwrap();
         let destination = self.output_dir.join(fname);
@@ -104,22 +90,10 @@ impl<'a> SeqFilter<'a> {
         Ok(())
     }
 
-    fn get_nex_header(&self, file: &Path) -> Header {
-        let mut nex = Nexus::new(file);
-        nex.read().unwrap();
-        nex.header
-    }
-
-    fn get_phy_header(&self, file: &Path, interleave: bool) -> Header {
-        let mut phy = Phylip::new(file, interleave);
-        phy.read().unwrap();
-        phy.header
-    }
-
-    fn get_fas_header(&self, file: &Path) -> Header {
-        let mut fas = Fasta::new(file);
-        fas.read();
-        fas.header
+    fn get_header(&self, file: &Path) -> Header {
+        let mut aln = Alignment::new();
+        aln.get_aln_any(file, self.input_format);
+        aln.header
     }
 
     fn count_min_tax(&self) -> usize {
