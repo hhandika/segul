@@ -364,10 +364,9 @@ impl<'s> SummaryWriter<'s> {
         )?;
         writeln!(
             writer,
-            "50% taxa\t: {}\n",
+            "50% taxa\t: {}",
             utils::fmt_num(&self.complete.ntax_50)
         )?;
-
         writeln!(
             writer,
             "45% taxa\t: {}",
@@ -410,7 +409,7 @@ impl<'s> SummaryWriter<'s> {
         )?;
         writeln!(
             writer,
-            "5% taxa\t: {}",
+            "5% taxa\t\t: {}\n",
             utils::fmt_num(&self.complete.ntax_5)
         )?;
 
