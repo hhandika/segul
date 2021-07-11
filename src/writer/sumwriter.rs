@@ -368,6 +368,52 @@ impl<'s> SummaryWriter<'s> {
             utils::fmt_num(&self.complete.ntax_50)
         )?;
 
+        writeln!(
+            writer,
+            "45% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_45)
+        )?;
+        writeln!(
+            writer,
+            "40% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_40)
+        )?;
+        writeln!(
+            writer,
+            "35% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_35)
+        )?;
+        writeln!(
+            writer,
+            "30% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_30)
+        )?;
+        writeln!(
+            writer,
+            "25% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_25)
+        )?;
+        writeln!(
+            writer,
+            "20% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_20)
+        )?;
+        writeln!(
+            writer,
+            "15% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_15)
+        )?;
+        writeln!(
+            writer,
+            "10% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_10)
+        )?;
+        writeln!(
+            writer,
+            "5% taxa\t: {}",
+            utils::fmt_num(&self.complete.ntax_5)
+        )?;
+
         Ok(())
     }
 

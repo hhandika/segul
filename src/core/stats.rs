@@ -303,6 +303,15 @@ pub struct Completeness {
     pub ntax_60: usize,
     pub ntax_55: usize,
     pub ntax_50: usize,
+    pub ntax_45: usize,
+    pub ntax_40: usize,
+    pub ntax_35: usize,
+    pub ntax_30: usize,
+    pub ntax_25: usize,
+    pub ntax_20: usize,
+    pub ntax_15: usize,
+    pub ntax_10: usize,
+    pub ntax_5: usize,
     pub total_tax: usize,
 }
 
@@ -319,6 +328,15 @@ impl Completeness {
             ntax_60: 0,
             ntax_55: 0,
             ntax_50: 0,
+            ntax_45: 0,
+            ntax_40: 0,
+            ntax_35: 0,
+            ntax_30: 0,
+            ntax_25: 0,
+            ntax_20: 0,
+            ntax_15: 0,
+            ntax_10: 0,
+            ntax_5: 0,
             total_tax: *total_tax,
         }
     }
@@ -335,6 +353,15 @@ impl Completeness {
         self.ntax_60 = self.count_min_tax(&ntax, 0.6);
         self.ntax_55 = self.count_min_tax(&ntax, 0.55);
         self.ntax_50 = self.count_min_tax(&ntax, 0.5);
+        self.ntax_45 = self.count_min_tax(&ntax, 0.45);
+        self.ntax_40 = self.count_min_tax(&ntax, 0.4);
+        self.ntax_35 = self.count_min_tax(&ntax, 0.35);
+        self.ntax_30 = self.count_min_tax(&ntax, 0.3);
+        self.ntax_25 = self.count_min_tax(&ntax, 0.25);
+        self.ntax_20 = self.count_min_tax(&ntax, 0.2);
+        self.ntax_15 = self.count_min_tax(&ntax, 0.15);
+        self.ntax_10 = self.count_min_tax(&ntax, 0.1);
+        self.ntax_5 = self.count_min_tax(&ntax, 0.5);
     }
 
     fn count_min_tax(&self, ntax: &[usize], percent: f64) -> usize {
