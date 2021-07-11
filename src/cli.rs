@@ -731,8 +731,14 @@ impl<'a> FilterParser<'a> {
             utils::fmt_num(&self.files.len())
         )?;
         writeln!(writer, "Taxon count\t: {}", self.ntax)?;
-        // writeln!(writer, "Percent\t\t: {}%", percent * 100.0)?;
-        // writeln!(writer, "Min tax\t\t: {}", min_taxa)?;
+        match self.params {
+            filter::Params::MinTax(min_taxa) => {
+                writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
+                writeln!(writer, "Min tax\t\t: {}", min_taxa)?;
+            }
+            filter::Params::AlnLen(len) => writeln!(writer, "Min aln len\t: {}bp", len)?,
+            filter::Params::ParsInf(inf) => writeln!(writer, "Min pars. inf\t: {}", inf)?,
+        }
         Ok(())
     }
 }
