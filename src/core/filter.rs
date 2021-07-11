@@ -11,6 +11,13 @@ use crate::helper::common::{Header, SeqFormat};
 use crate::helper::finder::IDs;
 use crate::helper::utils;
 
+#[allow(dead_code)]
+pub enum Params {
+    MinTax(usize),
+    ParInf(usize),
+    Nchar(usize),
+}
+
 // TODO:
 // 1. Add support to concat the result
 // 2. Allow more parameters, such as min aln length
