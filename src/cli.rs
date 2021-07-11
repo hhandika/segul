@@ -7,7 +7,7 @@ use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::core::converter::Converter;
-use crate::core::filter::SeqFilter;
+use crate::core::filter;
 use crate::core::msa;
 use crate::core::stats::SeqStats;
 use crate::helper::common::{PartitionFormat, SeqFormat};
@@ -160,7 +160,8 @@ fn get_args(version: &str) -> ArgMatches {
                         .long("percent")
                         .help("Sets percentage of minimal taxa")
                         .takes_value(true)
-                        .required_unless("npercent")
+                        .required_unless_all(&["npercent", "aln-len", "pars-inf"])
+                        .conflicts_with_all(&["npercent", "aln-len", "pars-inf"])
                         .default_value("0.75")
                         .value_name("FORMAT"),
                 )
@@ -169,7 +170,33 @@ fn get_args(version: &str) -> ArgMatches {
                         .long("npercent")
                         .help("Sets minimal taxa in multiple percentages")
                         .takes_value(true)
+                        .conflicts_with_all(&["percent", "aln-len", "pars-inf"])
                         .multiple(true)
+                        .value_name("FORMAT"),
+                )
+                .arg(
+                    Arg::with_name("ntax")
+                        .long("ntax")
+                        .help("Inputs the total number of taxa")
+                        .takes_value(true)
+                        .value_name("TAXON-COUNT"),
+                )
+                .arg(
+                    Arg::with_name("aln-len")
+                        .long("len")
+                        .help("Sets minimal alignment length")
+                        .takes_value(true)
+                        .conflicts_with_all(&["percent", "npercent", "pars-inf"])
+                        .default_value("0.75")
+                        .value_name("FORMAT"),
+                )
+                .arg(
+                    Arg::with_name("pars-inf")
+                        .long("len")
+                        .help("Sets minimal alignment length")
+                        .takes_value(true)
+                        .conflicts_with_all(&["percent", "npercent", "aln-len"])
+                        .default_value("0.75")
                         .value_name("FORMAT"),
                 )
                 .arg(
@@ -268,7 +295,7 @@ pub fn parse_cli(version: &str) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => ConvertParser::new(convert_matches).convert(),
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
-        ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).get_min_taxa(),
+        ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).min_taxa(),
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
         ("summary", Some(stats_matches)) => StatsParser::new(stats_matches).show_stats(),
         _ => unreachable!(),
@@ -529,6 +556,10 @@ struct FilterParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_format: SeqFormat,
     output_dir: PathBuf,
+    files: Vec<PathBuf>,
+    params: filter::Params,
+    ntax: usize,
+    percent: f64,
 }
 
 impl<'a> FilterParser<'a> {
@@ -537,36 +568,89 @@ impl<'a> FilterParser<'a> {
             matches,
             input_format: SeqFormat::Fasta,
             output_dir: PathBuf::new(),
+            files: Vec::new(),
+            params: filter::Params::MinTax(0),
+            ntax: 0,
+            percent: 0.0,
         }
     }
 
-    fn get_min_taxa(&mut self) {
+    fn min_taxa(&mut self) {
         self.input_format = self.get_input_format(self.matches);
         let dir = self.get_dir_input(self.matches);
-        let mut files = self.get_files(dir, &self.input_format);
+        self.files = self.get_files(dir, &self.input_format);
         if self.is_npercent() {
-            self.get_min_taxa_npercent(dir, &mut files);
+            self.get_min_taxa_npercent(dir);
         } else {
-            let percent = self.get_percent();
-            self.set_output_path(dir, &percent);
+            self.percent = self.get_percent();
+            self.get_params();
+            self.set_output_path(dir);
             self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
-            self.get_min_taxa_percent(&mut files, percent);
+            self.get_min_taxa_percent();
         }
     }
 
-    fn get_min_taxa_percent(&mut self, files: &mut [PathBuf], percent: f64) {
-        let mut pick = SeqFilter::new(files, &self.input_format, &self.output_dir, percent);
-        pick.get_min_taxa();
-    }
-
-    fn get_min_taxa_npercent(&mut self, dir: &str, files: &mut [PathBuf]) {
+    fn get_min_taxa_npercent(&mut self, dir: &str) {
         let npercent = self.get_npercent();
-        npercent.iter().for_each(|np| {
-            self.set_multi_output_path(dir, np);
+        npercent.iter().for_each(|&np| {
+            self.percent = np;
+            let min_tax = self.get_min_taxa();
+            self.params = filter::Params::MinTax(min_tax);
+            self.set_multi_output_path(dir);
             self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
-            self.get_min_taxa_percent(files, *np);
+            self.get_min_taxa_percent();
             utils::print_divider();
         });
+    }
+
+    fn get_min_taxa_percent(&mut self) {
+        let mut filter = filter::SeqFilter::new(
+            &self.files,
+            &self.input_format,
+            &self.output_dir,
+            &self.params,
+        );
+        filter.get_min_taxa();
+    }
+
+    fn get_params(&mut self) {
+        self.params = match self.matches {
+            m if m.is_present("percent") => filter::Params::MinTax(self.get_min_taxa()),
+            m if m.is_present("aln-len") => filter::Params::AlnLen(self.get_aln_len()),
+            m if m.is_present("pars-inf") => filter::Params::ParsInf(self.get_pars_inf()),
+            _ => unreachable!(),
+        }
+    }
+
+    fn get_min_taxa(&mut self) -> usize {
+        self.get_ntax();
+        self.count_min_tax()
+    }
+
+    fn get_aln_len(&self) -> usize {
+        let len = self
+            .matches
+            .value_of("aln-len")
+            .expect("CANNOT GET ALIGNMENT LENGTH VALUES");
+        len.parse::<usize>()
+            .expect("CANNOT PARSE ALIGNMENT LENGTH VALUES TO INTEGERS")
+    }
+
+    fn get_pars_inf(&self) -> usize {
+        let len = self
+            .matches
+            .value_of("pars-inf")
+            .expect("CANNOT GET PARSIMONY INFORMATIVE VALUES");
+        len.parse::<usize>()
+            .expect("CANNOT PARSE PARSIMONY INFORMATIVE VALUES TO INTEGERS")
+    }
+
+    fn get_ntax(&mut self) {
+        self.ntax = if self.matches.is_present("ntax") {
+            self.parse_ntax()
+        } else {
+            IDs::new(&self.files, &self.input_format).get_id_all().len()
+        };
     }
 
     fn get_npercent(&self) -> Vec<f64> {
@@ -581,12 +665,21 @@ impl<'a> FilterParser<'a> {
         self.matches.is_present("npercent")
     }
 
-    fn get_percent(&self) -> f64 {
+    fn get_percent(&mut self) -> f64 {
         let percent = self
             .matches
             .value_of("percent")
             .expect("CANNOT GET PERCENTAGE VALUES");
         self.parse_percentage(percent)
+    }
+
+    fn parse_ntax(&self) -> usize {
+        let ntax = self
+            .matches
+            .value_of("ntax")
+            .expect("CANNOT GET NTAX VALUES");
+        ntax.parse::<usize>()
+            .expect("CANNOT PARSE NTAX VALUES TO INTEGERS")
     }
 
     fn parse_percentage(&self, percent: &str) -> f64 {
@@ -595,27 +688,35 @@ impl<'a> FilterParser<'a> {
             .expect("CANNOT PARSE PERCENTAGE VALUES TO FLOATING POINTS")
     }
 
-    fn set_output_path<P: AsRef<Path>>(&mut self, dir: P, percent: &f64) {
+    fn set_output_path<P: AsRef<Path>>(&mut self, dir: P) {
         if self.matches.is_present("output") {
             self.output_dir = PathBuf::from(self.get_output(self.matches));
         } else {
-            self.output_dir = self.get_formatted_output(dir.as_ref(), percent);
+            self.output_dir = self.fmt_output_path(dir.as_ref());
         }
     }
 
-    fn set_multi_output_path<P: AsRef<Path>>(&mut self, dir: P, percent: &f64) {
+    fn set_multi_output_path<P: AsRef<Path>>(&mut self, dir: P) {
         if self.matches.is_present("output") {
             let output_dir = PathBuf::from(self.get_output(self.matches));
-            self.output_dir = self.get_formatted_output(&output_dir, percent)
+            self.output_dir = self.fmt_output_path(&output_dir)
         } else {
-            self.output_dir = self.get_formatted_output(dir.as_ref(), percent);
+            self.output_dir = self.fmt_output_path(dir.as_ref());
         }
     }
 
-    fn get_formatted_output(&self, dir: &Path, percent: &f64) -> PathBuf {
+    fn count_min_tax(&self) -> usize {
+        (self.ntax as f64 * self.percent).floor() as usize
+    }
+
+    fn fmt_output_path(&self, dir: &Path) -> PathBuf {
         let parent = dir.parent().unwrap();
         let last = dir.file_name().unwrap().to_string_lossy();
-        let output_dir = format!("{}_{}p", last, percent * 100.0);
+        let output_dir = match self.params {
+            filter::Params::MinTax(_) => format!("{}_{}p", last, self.percent * 100.0),
+            filter::Params::AlnLen(len) => format!("{}_{}bp", last, len),
+            filter::Params::ParsInf(inf) => format!("{}_{}inf", last, inf),
+        };
         parent.join(output_dir)
     }
 
@@ -624,7 +725,14 @@ impl<'a> FilterParser<'a> {
         let mut writer = BufWriter::new(io);
         writeln!(writer, "\x1b[0;33mInput\x1b[0m")?;
         writeln!(writer, "Dir\t\t: {}", dir)?;
-
+        writeln!(
+            writer,
+            "File count\t: {}",
+            utils::fmt_num(&self.files.len())
+        )?;
+        writeln!(writer, "Taxon count\t: {}", self.ntax)?;
+        // writeln!(writer, "Percent\t\t: {}%", percent * 100.0)?;
+        // writeln!(writer, "Min tax\t\t: {}", min_taxa)?;
         Ok(())
     }
 }
@@ -748,11 +856,11 @@ mod test {
         let arg = App::new("segul-test")
             .arg(Arg::with_name("test"))
             .get_matches();
-        let min_taxa = FilterParser::new(&arg);
+        let mut min_taxa = FilterParser::new(&arg);
         let dir = "./test_taxa/";
-        let percent = 0.75;
+        min_taxa.percent = 0.75;
         let res = PathBuf::from("./test_taxa_75p");
-        let output = min_taxa.get_formatted_output(Path::new(dir), &percent);
+        let output = min_taxa.fmt_output_path(Path::new(dir));
         assert_eq!(res, output);
     }
 
@@ -764,5 +872,16 @@ mod test {
         let id = IdParser::new(&arg);
         let res = PathBuf::from("./test_dir.txt");
         assert_eq!(res, id.get_output_path(&arg));
+    }
+
+    #[test]
+    fn min_taxa_test() {
+        let arg = App::new("segul-test")
+            .arg(Arg::with_name("filter-test"))
+            .get_matches();
+        let mut filter = FilterParser::new(&arg);
+        filter.percent = 0.65;
+        filter.ntax = 10;
+        assert_eq!(6, filter.count_min_tax());
     }
 }

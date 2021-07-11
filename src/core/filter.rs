@@ -6,51 +6,45 @@ use std::sync::mpsc::channel;
 
 use rayon::prelude::*;
 
+use crate::core::stats;
 use crate::helper::alignment::Alignment;
 use crate::helper::common::{Header, SeqFormat};
-use crate::helper::finder::IDs;
+// use crate::helper::finder::IDs;
 use crate::helper::utils;
 
-#[allow(dead_code)]
 pub enum Params {
     MinTax(usize),
-    ParInf(usize),
     AlnLen(usize),
+    ParsInf(usize),
 }
 
 // TODO:
 // 1. Add support to concat the result
 // 2. Allow more parameters, such as min aln length
 pub struct SeqFilter<'a> {
-    files: &'a mut [PathBuf],
+    files: &'a [PathBuf],
     input_format: &'a SeqFormat,
     output_dir: &'a Path,
-    percent: f64,
-    min_taxa: usize,
-    ntax: usize,
+    params: &'a Params,
 }
 
 impl<'a> SeqFilter<'a> {
     pub fn new(
-        files: &'a mut [PathBuf],
+        files: &'a [PathBuf],
         input_format: &'a SeqFormat,
         output_dir: &'a Path,
-        percent: f64,
+        params: &'a Params,
     ) -> Self {
         Self {
             files,
             input_format,
             output_dir,
-            percent,
-            min_taxa: 0,
-            ntax: 0,
+            params,
         }
     }
 
     pub fn get_min_taxa(&mut self) {
-        self.ntax = IDs::new(self.files, self.input_format).get_id_all().len();
-        self.min_taxa = self.count_min_tax();
-        self.display_input().expect("CANNOT DISPLAY TO STDOUT");
+        // self.display_input().expect("CANNOT DISPLAY TO STDOUT");
         fs::create_dir_all(self.output_dir).expect("CANNOT CREATE A TARGET DIRECTORY");
         let match_aln = self.par_match_aln();
         self.par_copy_files(&match_aln);
@@ -60,12 +54,28 @@ impl<'a> SeqFilter<'a> {
 
     fn par_match_aln(&self) -> Vec<PathBuf> {
         let (send, rx) = channel();
-        self.files.par_iter().for_each_with(send, |s, file| {
-            let header = self.get_header(file);
-            if header.ntax >= self.min_taxa {
-                s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
-            }
-        });
+        self.files
+            .par_iter()
+            .for_each_with(send, |s, file| match self.params {
+                Params::MinTax(min_taxa) => {
+                    let header = self.get_header(file);
+                    if header.ntax >= *min_taxa {
+                        s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
+                    }
+                }
+                Params::AlnLen(nchar) => {
+                    let header = self.get_header(file);
+                    if header.nchar >= *nchar {
+                        s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
+                    }
+                }
+                Params::ParsInf(pars_inf) => {
+                    let pars = self.get_pars_inf(file);
+                    if pars >= *pars_inf {
+                        s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
+                    }
+                }
+            });
 
         rx.iter().collect()
     }
@@ -85,19 +95,19 @@ impl<'a> SeqFilter<'a> {
         Ok(())
     }
 
-    fn display_input(&self) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(
-            writer,
-            "File count\t: {}",
-            utils::fmt_num(&self.files.len())
-        )?;
-        writeln!(writer, "Taxon count\t: {}", self.ntax)?;
-        writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
-        writeln!(writer, "Min tax\t\t: {}", self.min_taxa)?;
-        Ok(())
-    }
+    // fn display_input(&self) -> Result<()> {
+    //     let io = io::stdout();
+    //     let mut writer = BufWriter::new(io);
+    //     writeln!(
+    //         writer,
+    //         "File count\t: {}",
+    //         utils::fmt_num(&self.files.len())
+    //     )?;
+    //     writeln!(writer, "Taxon count\t: {}", self.ntax)?;
+    //     writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
+    //     writeln!(writer, "Min tax\t\t: {}", self.min_taxa)?;
+    //     Ok(())
+    // }
 
     fn display_output(&self, fcounts: usize) -> Result<()> {
         let io = io::stdout();
@@ -109,26 +119,32 @@ impl<'a> SeqFilter<'a> {
         Ok(())
     }
 
+    fn get_pars_inf(&self, file: &Path) -> usize {
+        let aln = self.get_alignment(file);
+        stats::get_pars_inf(&aln.alignment)
+    }
+
     fn get_header(&self, file: &Path) -> Header {
-        let mut aln = Alignment::new();
-        aln.get_aln_any(file, self.input_format);
+        let aln = self.get_alignment(file);
         aln.header
     }
 
-    fn count_min_tax(&self) -> usize {
-        (self.ntax as f64 * self.percent).floor() as usize
+    fn get_alignment(&self, file: &Path) -> Alignment {
+        let mut aln = Alignment::new();
+        aln.get_aln_any(file, self.input_format);
+        aln
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
+// #[cfg(test)]
+// mod test {
+//     use super::*;
 
-    #[test]
-    fn min_taxa_test() {
-        let mut files = [PathBuf::from(".")];
-        let mut pick = SeqFilter::new(&mut files, &SeqFormat::Nexus, Path::new("."), 0.65);
-        pick.ntax = 10;
-        assert_eq!(6, pick.count_min_tax());
-    }
-}
+//     #[test]
+//     fn min_taxa_test() {
+//         let mut files = [PathBuf::from(".")];
+//         let mut pick = SeqFilter::new(&mut files, &SeqFormat::Nexus, Path::new("."), 0.65);
+//         pick.ntax = 10;
+//         assert_eq!(6, pick.count_min_tax());
+//     }
+// }
