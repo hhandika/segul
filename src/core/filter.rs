@@ -15,7 +15,7 @@ use crate::helper::utils;
 pub enum Params {
     MinTax(usize),
     ParInf(usize),
-    Nchar(usize),
+    AlnLen(usize),
 }
 
 // TODO:
