@@ -162,7 +162,6 @@ fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required_unless_all(&["npercent", "aln-len", "pars-inf"])
                         .conflicts_with_all(&["npercent", "aln-len", "pars-inf"])
-                        .default_value("0.75")
                         .value_name("FORMAT"),
                 )
                 .arg(
@@ -188,16 +187,14 @@ fn get_args(version: &str) -> ArgMatches {
                         .help("Sets minimal alignment length")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "pars-inf"])
-                        .default_value("0.75")
                         .value_name("FORMAT"),
                 )
                 .arg(
                     Arg::with_name("pars-inf")
-                        .long("len")
+                        .long("pinf")
                         .help("Sets minimal alignment length")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "aln-len"])
-                        .default_value("0.75")
                         .value_name("FORMAT"),
                 )
                 .arg(
@@ -583,7 +580,6 @@ impl<'a> FilterParser<'a> {
         if self.is_npercent() {
             self.get_min_taxa_npercent(dir);
         } else {
-            self.percent = self.get_percent();
             self.get_params();
             self.set_output_path(dir);
             self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
@@ -616,7 +612,10 @@ impl<'a> FilterParser<'a> {
 
     fn get_params(&mut self) {
         self.params = match self.matches {
-            m if m.is_present("percent") => filter::Params::MinTax(self.get_min_taxa()),
+            m if m.is_present("percent") => {
+                self.percent = self.get_percent();
+                filter::Params::MinTax(self.get_min_taxa())
+            }
             m if m.is_present("aln-len") => filter::Params::AlnLen(self.get_aln_len()),
             m if m.is_present("pars-inf") => filter::Params::ParsInf(self.get_pars_inf()),
             _ => unreachable!(),
