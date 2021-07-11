@@ -179,6 +179,7 @@ fn get_args(version: &str) -> ArgMatches {
                         .long("ntax")
                         .help("Inputs the total number of taxa")
                         .takes_value(true)
+                        .conflicts_with_all(&["aln-len", "pars-inf"])
                         .value_name("TAXON-COUNT"),
                 )
                 .arg(
