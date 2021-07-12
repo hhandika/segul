@@ -208,7 +208,7 @@ fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("output-format")
                         .short("F")
-                        .long("Format")
+                        .long("output-format")
                         .help("Sets output format if concat. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
                         .takes_value(true)
                         .value_name("FORMAT"),
@@ -572,6 +572,7 @@ impl<'a> ConcatParser<'a> {
 }
 
 impl Cli for FilterParser<'_> {}
+impl PartCLi for FilterParser<'_> {}
 
 struct FilterParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -623,14 +624,45 @@ impl<'a> FilterParser<'a> {
         });
     }
 
-    fn filter_aln(&mut self) {
+    fn filter_aln(&self) {
         let mut filter = filter::SeqFilter::new(
             &self.files,
             &self.input_format,
             &self.output_dir,
             &self.params,
         );
-        filter.get_min_taxa();
+        match self.is_concat() {
+            Some(part_fmt) => {
+                let output_format = self.get_output_fmt();
+                filter.set_concat(&output_format, &part_fmt);
+                filter.filter_aln();
+            }
+            None => filter.filter_aln(),
+        }
+    }
+
+    fn is_concat(&self) -> Option<PartitionFormat> {
+        if self.matches.is_present("concat") {
+            Some(self.is_partition_default())
+        } else {
+            None
+        }
+    }
+
+    fn is_partition_default(&self) -> PartitionFormat {
+        if self.matches.is_present("partition") {
+            self.get_partition_format(self.matches)
+        } else {
+            PartitionFormat::Charset
+        }
+    }
+
+    fn get_output_fmt(&self) -> SeqFormat {
+        if self.matches.is_present("output-format") {
+            self.get_output_format(self.matches)
+        } else {
+            SeqFormat::Nexus
+        }
     }
 
     fn get_params(&mut self) {
@@ -762,6 +794,7 @@ impl<'a> FilterParser<'a> {
             filter::Params::AlnLen(len) => writeln!(writer, "Min aln len\t: {}bp", len)?,
             filter::Params::ParsInf(inf) => writeln!(writer, "Min pars. inf\t: {}", inf)?,
         }
+        writeln!(writer)?;
         Ok(())
     }
 }

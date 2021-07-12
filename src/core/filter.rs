@@ -5,9 +5,10 @@ use std::sync::mpsc::channel;
 
 use rayon::prelude::*;
 
+use crate::core::msa::MSAlignment;
 use crate::core::stats;
 use crate::helper::alignment::Alignment;
-use crate::helper::common::{Header, SeqFormat};
+use crate::helper::common::{Header, PartitionFormat, SeqFormat};
 use crate::helper::utils;
 
 pub enum Params {
@@ -21,31 +22,44 @@ pub enum Params {
 pub struct SeqFilter<'a> {
     files: &'a [PathBuf],
     input_format: &'a SeqFormat,
-    output_dir: &'a Path,
+    output: &'a Path,
     params: &'a Params,
+    concat: Option<(&'a SeqFormat, &'a PartitionFormat)>,
 }
 
 impl<'a> SeqFilter<'a> {
     pub fn new(
         files: &'a [PathBuf],
         input_format: &'a SeqFormat,
-        output_dir: &'a Path,
+        output: &'a Path,
         params: &'a Params,
     ) -> Self {
         Self {
             files,
             input_format,
-            output_dir,
+            output,
             params,
+            concat: None,
         }
     }
 
-    pub fn get_min_taxa(&mut self) {
-        fs::create_dir_all(self.output_dir).expect("CANNOT CREATE A TARGET DIRECTORY");
-        let match_aln = self.par_match_aln();
-        self.par_copy_files(&match_aln);
-        self.display_output(match_aln.len())
-            .expect("CANNOT DISPLAY TO STDOUT");
+    pub fn filter_aln(&mut self) {
+        let mut ftr_aln = self.par_match_aln();
+        match self.concat {
+            Some((output_format, part_format)) => {
+                self.concat_results(&mut ftr_aln, output_format, part_format)
+            }
+            None => {
+                fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
+                self.par_copy_files(&ftr_aln);
+                self.display_output(ftr_aln.len())
+                    .expect("CANNOT DISPLAY TO STDOUT");
+            }
+        }
+    }
+
+    pub fn set_concat(&mut self, output_format: &'a SeqFormat, part_format: &'a PartitionFormat) {
+        self.concat = Some((output_format, part_format))
     }
 
     fn par_match_aln(&self) -> Vec<PathBuf> {
@@ -82,9 +96,20 @@ impl<'a> SeqFilter<'a> {
         });
     }
 
+    fn concat_results(
+        &self,
+        ftr_files: &mut [PathBuf],
+        output_format: &SeqFormat,
+        part_format: &PartitionFormat,
+    ) {
+        let output = self.output.to_string_lossy();
+        let concat = MSAlignment::new(self.input_format, &output, output_format, part_format);
+        concat.concat_alignment(ftr_files);
+    }
+
     fn copy_files(&self, origin: &Path) -> Result<()> {
         let fname = origin.file_name().unwrap();
-        let destination = self.output_dir.join(fname);
+        let destination = self.output.join(fname);
 
         fs::copy(origin, destination)?;
 
@@ -94,9 +119,9 @@ impl<'a> SeqFilter<'a> {
     fn display_output(&self, fcounts: usize) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
-        writeln!(writer, "\n\x1b[0;33mOutput\x1b[0m")?;
+        writeln!(writer, "\x1b[0;33mOutput\x1b[0m")?;
         writeln!(writer, "File count\t: {}", utils::fmt_num(&fcounts))?;
-        writeln!(writer, "Dir\t\t: {}", self.output_dir.display())?;
+        writeln!(writer, "Dir\t\t: {}", self.output.display())?;
 
         Ok(())
     }
@@ -122,11 +147,4 @@ impl<'a> SeqFilter<'a> {
 // mod test {
 //     use super::*;
 
-//     #[test]
-//     fn min_taxa_test() {
-//         let mut files = [PathBuf::from(".")];
-//         let mut pick = SeqFilter::new(&mut files, &SeqFormat::Nexus, Path::new("."), 0.65);
-//         pick.ntax = 10;
-//         assert_eq!(6, pick.count_min_tax());
-//     }
 // }
