@@ -19,7 +19,7 @@ pub enum Params {
 
 pub struct SeqFilter<'a> {
     files: &'a [PathBuf],
-    input_format: &'a SeqFormat,
+    input_fmt: &'a SeqFormat,
     output: &'a Path,
     params: &'a Params,
     concat: Option<(&'a SeqFormat, &'a PartitionFormat)>,
@@ -28,13 +28,13 @@ pub struct SeqFilter<'a> {
 impl<'a> SeqFilter<'a> {
     pub fn new(
         files: &'a [PathBuf],
-        input_format: &'a SeqFormat,
+        input_fmt: &'a SeqFormat,
         output: &'a Path,
         params: &'a Params,
     ) -> Self {
         Self {
             files,
-            input_format,
+            input_fmt,
             output,
             params,
             concat: None,
@@ -42,11 +42,9 @@ impl<'a> SeqFilter<'a> {
     }
 
     pub fn filter_aln(&mut self) {
-        let mut ftr_aln = self.par_match_aln();
+        let mut ftr_aln = self.par_ftr_aln();
         match self.concat {
-            Some((output_format, part_format)) => {
-                self.concat_results(&mut ftr_aln, output_format, part_format)
-            }
+            Some((output_fmt, part_fmt)) => self.concat_results(&mut ftr_aln, output_fmt, part_fmt),
             None => {
                 fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
                 self.par_copy_files(&ftr_aln);
@@ -56,11 +54,11 @@ impl<'a> SeqFilter<'a> {
         }
     }
 
-    pub fn set_concat(&mut self, output_format: &'a SeqFormat, part_format: &'a PartitionFormat) {
-        self.concat = Some((output_format, part_format))
+    pub fn set_concat(&mut self, output_fmt: &'a SeqFormat, part_fmt: &'a PartitionFormat) {
+        self.concat = Some((output_fmt, part_fmt))
     }
 
-    fn par_match_aln(&self) -> Vec<PathBuf> {
+    fn par_ftr_aln(&self) -> Vec<PathBuf> {
         let (send, rx) = channel();
         self.files
             .par_iter()
@@ -97,11 +95,11 @@ impl<'a> SeqFilter<'a> {
     fn concat_results(
         &self,
         ftr_files: &mut [PathBuf],
-        output_format: &SeqFormat,
-        part_format: &PartitionFormat,
+        output_fmt: &SeqFormat,
+        part_fmt: &PartitionFormat,
     ) {
         let output = self.output.to_string_lossy();
-        let concat = MSAlignment::new(self.input_format, &output, output_format, part_format);
+        let concat = MSAlignment::new(self.input_fmt, &output, output_fmt, part_fmt);
         concat.concat_alignment(ftr_files);
     }
 
@@ -136,7 +134,7 @@ impl<'a> SeqFilter<'a> {
 
     fn get_alignment(&self, file: &Path) -> Alignment {
         let mut aln = Alignment::new();
-        aln.get_aln_any(file, self.input_format);
+        aln.get_aln_any(file, self.input_fmt);
         aln
     }
 }
