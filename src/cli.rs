@@ -577,7 +577,6 @@ impl<'a> FilterParser<'a> {
         self.input_format = self.get_input_format(self.matches);
         let dir = self.get_dir_input(self.matches);
         self.files = self.get_files(dir, &self.input_format);
-        self.get_ntax();
         if self.is_npercent() {
             self.get_min_taxa_npercent(dir);
         } else {
@@ -624,6 +623,7 @@ impl<'a> FilterParser<'a> {
     }
 
     fn get_min_taxa(&mut self) -> usize {
+        self.get_ntax();
         self.count_min_tax()
     }
 
@@ -730,9 +730,9 @@ impl<'a> FilterParser<'a> {
             "File count\t: {}",
             utils::fmt_num(&self.files.len())
         )?;
-        writeln!(writer, "Taxon count\t: {}", self.ntax)?;
         match self.params {
             filter::Params::MinTax(min_taxa) => {
+                writeln!(writer, "Taxon count\t: {}", self.ntax)?;
                 writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
                 writeln!(writer, "Min tax\t\t: {}", min_taxa)?;
             }
