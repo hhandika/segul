@@ -619,7 +619,7 @@ impl<'a> FilterParser<'a> {
             self.params = filter::Params::MinTax(min_tax);
             self.set_multi_output_path(dir);
             self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
-            self.filter();
+            self.filter_aln();
             utils::print_divider();
         });
     }
