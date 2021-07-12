@@ -334,8 +334,8 @@ trait Cli {
         matches.value_of("dir").expect("CANNOT READ DIR PATH")
     }
 
-    fn get_files(&self, dir: &str, input_format: &SeqFormat) -> Vec<PathBuf> {
-        Files::new(dir, input_format).get_files()
+    fn get_files(&self, dir: &str, input_fmt: &SeqFormat) -> Vec<PathBuf> {
+        Files::new(dir, input_fmt).get_files()
     }
 
     fn get_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
@@ -351,11 +351,11 @@ trait Cli {
         }
     }
 
-    fn get_input_format(&self, matches: &ArgMatches) -> SeqFormat {
-        let input_format = matches
+    fn get_input_fmt(&self, matches: &ArgMatches) -> SeqFormat {
+        let input_fmt = matches
             .value_of("format")
             .expect("CANNOT READ FORMAT INPUT");
-        match input_format {
+        match input_fmt {
             "fasta" | "fasta-int" => SeqFormat::Fasta,
             "nexus" | "nexus-int" => SeqFormat::Nexus,
             "phylip" => SeqFormat::Phylip,
@@ -364,16 +364,16 @@ trait Cli {
                 "UNSUPPORTED FORMAT. \
         THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, phylip, and phylip-int. ALL IN lowercase. \
         YOUR INPUT: {} ",
-                input_format
+                input_fmt
             ),
         }
     }
 
-    fn get_output_format(&self, matches: &ArgMatches) -> SeqFormat {
-        let output_format = matches
+    fn get_output_fmt(&self, matches: &ArgMatches) -> SeqFormat {
+        let output_fmt = matches
             .value_of("output-format")
             .expect("CANNOT READ FORMAT INPUT");
-        match output_format {
+        match output_fmt {
             "nexus" => SeqFormat::Nexus,
             "phylip" => SeqFormat::Phylip,
             "fasta" => SeqFormat::Fasta,
@@ -384,7 +384,7 @@ trait Cli {
                 "UNSUPPORTED FORMAT. \
         THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, phylip, and phylip-int. ALL IN lowercase. \
         YOUR INPUT: {} ",
-                output_format
+                output_fmt
             ),
         }
     }
@@ -394,7 +394,7 @@ impl Cli for ConvertParser<'_> {}
 
 struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_format: SeqFormat,
+    input_fmt: SeqFormat,
     is_dir: bool,
 }
 
@@ -402,13 +402,13 @@ impl<'a> ConvertParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
-            input_format: SeqFormat::Fasta,
+            input_fmt: SeqFormat::Fasta,
             is_dir: false,
         }
     }
 
     fn convert(&mut self) {
-        self.input_format = self.get_input_format(&self.matches);
+        self.input_fmt = self.get_input_fmt(&self.matches);
         if self.matches.is_present("input") {
             self.convert_file();
         } else {
@@ -418,17 +418,17 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_file(&mut self) {
         let input = Path::new(self.get_file_input(self.matches));
-        let output_format = self.get_output_format(self.matches);
+        let output_fmt = self.get_output_fmt(self.matches);
         let output = self.get_output_path(self.matches);
         self.display_input_file(input).unwrap();
 
-        self.convert_any(input, &output, &output_format);
+        self.convert_any(input, &output, &output_fmt);
     }
 
     fn convert_multiple_fasta(&mut self) {
         let dir = self.get_dir_input(self.matches);
-        let files = self.get_files(dir, &self.input_format);
-        let output_format = self.get_output_format(self.matches);
+        let files = self.get_files(dir, &self.input_fmt);
+        let output_fmt = self.get_output_fmt(self.matches);
         let output = self.get_output_path(&self.matches);
         self.is_dir = true;
         self.display_input_dir(Path::new(dir), files.len(), &output)
@@ -437,17 +437,17 @@ impl<'a> ConvertParser<'a> {
         spin.set_message("Converting alignments...");
         files.par_iter().for_each(|file| {
             let output = output.join(file.file_stem().unwrap());
-            self.convert_any(file, &output, &output_format);
+            self.convert_any(file, &output, &output_fmt);
         });
         spin.finish_with_message("DONE!");
     }
 
-    fn convert_any(&self, input: &Path, output: &Path, output_format: &SeqFormat) {
-        let mut convert = Converter::new(input, output, output_format, self.is_dir);
+    fn convert_any(&self, input: &Path, output: &Path, output_fmt: &SeqFormat) {
+        let mut convert = Converter::new(input, output, output_fmt, self.is_dir);
         if self.is_sort() {
-            convert.convert_sorted(&self.input_format);
+            convert.convert_sorted(&self.input_fmt);
         } else {
-            convert.convert_unsorted(&self.input_format);
+            convert.convert_unsorted(&self.input_fmt);
         }
     }
 
@@ -476,18 +476,18 @@ impl<'a> ConvertParser<'a> {
 
 trait PartCLi {
     fn get_partition_format(&self, matches: &ArgMatches) -> PartitionFormat {
-        let part_format = matches
+        let part_fmt = matches
             .value_of("partition")
             .expect("CANNOT READ PARTITION FORMAT");
         if matches.is_present("codon") {
-            self.get_partition_format_codon(part_format)
+            self.get_partition_format_codon(part_fmt)
         } else {
-            self.get_partition_format_std(part_format)
+            self.get_partition_format_std(part_fmt)
         }
     }
 
-    fn get_partition_format_std(&self, part_format: &str) -> PartitionFormat {
-        match part_format {
+    fn get_partition_format_std(&self, part_fmt: &str) -> PartitionFormat {
+        match part_fmt {
             "nexus" => PartitionFormat::Nexus,
             "raxml" => PartitionFormat::Raxml,
             "charset" => PartitionFormat::Charset,
@@ -495,8 +495,8 @@ trait PartCLi {
         }
     }
 
-    fn get_partition_format_codon(&self, part_format: &str) -> PartitionFormat {
-        match part_format {
+    fn get_partition_format_codon(&self, part_fmt: &str) -> PartitionFormat {
+        match part_fmt {
             "charset" => PartitionFormat::CharsetCodon,
             "nexus" => PartitionFormat::NexusCodon,
             "raxml" => PartitionFormat::RaxmlCodon,
@@ -504,11 +504,11 @@ trait PartCLi {
         }
     }
 
-    fn check_partition_format(&self, output_format: &SeqFormat, part_format: &PartitionFormat) {
-        match output_format {
+    fn check_partition_format(&self, output_fmt: &SeqFormat, part_fmt: &PartitionFormat) {
+        match output_fmt {
             SeqFormat::Nexus | SeqFormat::NexusInt => (),
             _ => {
-                if let PartitionFormat::Nexus | PartitionFormat::NexusCodon = part_format {
+                if let PartitionFormat::Nexus | PartitionFormat::NexusCodon = part_fmt {
                     panic!(
                         "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
                 MAYBE YOU MEAN TO WRITE THE PARTITION TO 'charset' INSTEAD."
@@ -529,36 +529,32 @@ impl Cli for ConcatParser<'_> {
 
 struct ConcatParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_format: SeqFormat,
-    output_format: SeqFormat,
-    part_format: PartitionFormat,
+    input_fmt: SeqFormat,
+    output_fmt: SeqFormat,
+    part_fmt: PartitionFormat,
 }
 
 impl<'a> ConcatParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
-            input_format: SeqFormat::Fasta,
-            output_format: SeqFormat::Nexus,
-            part_format: PartitionFormat::Charset,
+            input_fmt: SeqFormat::Fasta,
+            output_fmt: SeqFormat::Nexus,
+            part_fmt: PartitionFormat::Charset,
         }
     }
 
     fn concat(&mut self) {
-        self.input_format = self.get_input_format(self.matches);
+        self.input_fmt = self.get_input_fmt(self.matches);
         let dir = self.get_dir_input(self.matches);
         let output = self.get_output(self.matches);
-        self.output_format = self.get_output_format(self.matches);
-        self.part_format = self.get_partition_format(self.matches);
-        self.check_partition_format(&self.output_format, &self.part_format);
+        self.output_fmt = self.get_output_fmt(self.matches);
+        self.part_fmt = self.get_partition_format(self.matches);
+        self.check_partition_format(&self.output_fmt, &self.part_fmt);
         self.display_input_dir(&dir).unwrap();
-        let concat = msa::MSAlignment::new(
-            &self.input_format,
-            output,
-            &self.output_format,
-            &self.part_format,
-        );
-        let mut files = self.get_files(dir, &self.input_format);
+        let concat =
+            msa::MSAlignment::new(&self.input_fmt, output, &self.output_fmt, &self.part_fmt);
+        let mut files = self.get_files(dir, &self.input_fmt);
         concat.concat_alignment(&mut files);
     }
 
@@ -576,7 +572,7 @@ impl PartCLi for FilterParser<'_> {}
 
 struct FilterParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_format: SeqFormat,
+    input_fmt: SeqFormat,
     output_dir: PathBuf,
     files: Vec<PathBuf>,
     params: filter::Params,
@@ -588,7 +584,7 @@ impl<'a> FilterParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
-            input_format: SeqFormat::Fasta,
+            input_fmt: SeqFormat::Fasta,
             output_dir: PathBuf::new(),
             files: Vec::new(),
             params: filter::Params::MinTax(0),
@@ -598,9 +594,9 @@ impl<'a> FilterParser<'a> {
     }
 
     fn filter(&mut self) {
-        self.input_format = self.get_input_format(self.matches);
+        self.input_fmt = self.get_input_fmt(self.matches);
         let dir = self.get_dir_input(self.matches);
-        self.files = self.get_files(dir, &self.input_format);
+        self.files = self.get_files(dir, &self.input_fmt);
         if self.is_npercent() {
             self.get_min_taxa_npercent(dir);
         } else {
@@ -625,16 +621,16 @@ impl<'a> FilterParser<'a> {
     }
 
     fn filter_aln(&self) {
-        let mut filter = filter::SeqFilter::new(
-            &self.files,
-            &self.input_format,
-            &self.output_dir,
-            &self.params,
-        );
+        let mut filter =
+            filter::SeqFilter::new(&self.files, &self.input_fmt, &self.output_dir, &self.params);
         match self.is_concat() {
             Some(part_fmt) => {
-                let output_format = self.get_output_fmt();
-                filter.set_concat(&output_format, &part_fmt);
+                let output_fmt = if self.matches.is_present("output-format") {
+                    self.get_output_fmt(self.matches)
+                } else {
+                    SeqFormat::Nexus
+                };
+                filter.set_concat(&output_fmt, &part_fmt);
                 filter.filter_aln();
             }
             None => filter.filter_aln(),
@@ -654,14 +650,6 @@ impl<'a> FilterParser<'a> {
             self.get_partition_format(self.matches)
         } else {
             PartitionFormat::Charset
-        }
-    }
-
-    fn get_output_fmt(&self) -> SeqFormat {
-        if self.matches.is_present("output-format") {
-            self.get_output_format(self.matches)
-        } else {
-            SeqFormat::Nexus
         }
     }
 
@@ -704,7 +692,7 @@ impl<'a> FilterParser<'a> {
         self.ntax = if self.matches.is_present("ntax") {
             self.parse_ntax()
         } else {
-            IDs::new(&self.files, &self.input_format).get_id_all().len()
+            IDs::new(&self.files, &self.input_fmt).get_id_all().len()
         };
     }
 
@@ -825,12 +813,12 @@ impl<'a> IdParser<'a> {
 
     fn get_id(&self) {
         let dir = self.get_dir_input(&self.matches);
-        let input_format = self.get_input_format(&self.matches);
-        let files = self.get_files(dir, &input_format);
+        let input_fmt = self.get_input_fmt(&self.matches);
+        let files = self.get_files(dir, &input_fmt);
         self.display_inputs(dir).unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
-        let ids = IDs::new(&files, &input_format).get_id_all();
+        let ids = IDs::new(&files, &input_fmt).get_id_all();
         spin.finish_with_message("DONE!");
         self.write_results(&ids);
     }
@@ -877,29 +865,29 @@ impl<'a> StatsParser<'a> {
     }
 
     fn show_stats(&self) {
-        let input_format = self.get_input_format(&self.matches);
+        let input_fmt = self.get_input_fmt(&self.matches);
 
         if self.matches.is_present("dir") {
-            self.show_stats_dir(&input_format);
+            self.show_stats_dir(&input_fmt);
         } else {
-            self.show_stats_file(&input_format);
+            self.show_stats_file(&input_fmt);
         }
     }
 
-    fn show_stats_dir(&self, input_format: &SeqFormat) {
+    fn show_stats_dir(&self, input_fmt: &SeqFormat) {
         let dir = self.get_dir_input(&self.matches);
-        let files = self.get_files(dir, input_format);
+        let files = self.get_files(dir, input_fmt);
         let output = self.get_output(&self.matches);
         self.display_input_file(Path::new(dir)).unwrap();
-        SeqStats::new(input_format, output).get_stats_dir(&files);
+        SeqStats::new(input_fmt, output).get_stats_dir(&files);
     }
 
-    fn show_stats_file(&self, input_format: &SeqFormat) {
-        self.get_input_format(&self.matches);
+    fn show_stats_file(&self, input_fmt: &SeqFormat) {
+        self.get_input_fmt(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
         let output = self.get_output(&self.matches);
         self.display_input_file(input).unwrap();
-        SeqStats::new(input_format, output).get_seq_stats_file(input);
+        SeqStats::new(input_fmt, output).get_seq_stats_file(input);
     }
 
     fn display_input_file(&self, input: &Path) -> Result<()> {
