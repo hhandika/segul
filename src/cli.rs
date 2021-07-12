@@ -225,10 +225,15 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("concat")
                     .long("concat")
                     .help("Concats the final results")
-                    .required_ifs(&[("filter", "partition"), ("filter", "output-format")])
+                    .required_ifs(&[("filter", "partition"), ("filter", "codon"), ("filter", "output-format")])
                     .takes_value(false)
                 )
-                ,
+                .arg(
+                    Arg::with_name("codon")
+                    .long("codon")
+                    .help("Sets codon model partition format")
+                    .takes_value(false)
+                ),
         )
         .subcommand(App::new("id").about("Gets sample ids from multiple alignments")
             .arg(
@@ -311,7 +316,7 @@ pub fn parse_cli(version: &str) {
     match args.subcommand() {
         ("convert", Some(convert_matches)) => ConvertParser::new(convert_matches).convert(),
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
-        ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).min_taxa(),
+        ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).filter(),
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
         ("summary", Some(stats_matches)) => StatsParser::new(stats_matches).show_stats(),
         _ => unreachable!(),
@@ -469,6 +474,53 @@ impl<'a> ConvertParser<'a> {
     }
 }
 
+trait PartCLi {
+    fn get_partition_format(&self, matches: &ArgMatches) -> PartitionFormat {
+        let part_format = matches
+            .value_of("partition")
+            .expect("CANNOT READ PARTITION FORMAT");
+        if matches.is_present("codon") {
+            self.get_partition_format_codon(part_format)
+        } else {
+            self.get_partition_format_std(part_format)
+        }
+    }
+
+    fn get_partition_format_std(&self, part_format: &str) -> PartitionFormat {
+        match part_format {
+            "nexus" => PartitionFormat::Nexus,
+            "raxml" => PartitionFormat::Raxml,
+            "charset" => PartitionFormat::Charset,
+            _ => PartitionFormat::Nexus,
+        }
+    }
+
+    fn get_partition_format_codon(&self, part_format: &str) -> PartitionFormat {
+        match part_format {
+            "charset" => PartitionFormat::CharsetCodon,
+            "nexus" => PartitionFormat::NexusCodon,
+            "raxml" => PartitionFormat::RaxmlCodon,
+            _ => PartitionFormat::NexusCodon,
+        }
+    }
+
+    fn check_partition_format(&self, output_format: &SeqFormat, part_format: &PartitionFormat) {
+        match output_format {
+            SeqFormat::Nexus | SeqFormat::NexusInt => (),
+            _ => {
+                if let PartitionFormat::Nexus | PartitionFormat::NexusCodon = part_format {
+                    panic!(
+                        "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
+                MAYBE YOU MEAN TO WRITE THE PARTITION TO 'charset' INSTEAD."
+                    )
+                }
+            }
+        }
+    }
+}
+
+impl PartCLi for ConcatParser<'_> {}
+
 impl Cli for ConcatParser<'_> {
     fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
         PathBuf::from(self.get_output(matches))
@@ -480,7 +532,6 @@ struct ConcatParser<'a> {
     input_format: SeqFormat,
     output_format: SeqFormat,
     part_format: PartitionFormat,
-    codon: bool,
 }
 
 impl<'a> ConcatParser<'a> {
@@ -490,7 +541,6 @@ impl<'a> ConcatParser<'a> {
             input_format: SeqFormat::Fasta,
             output_format: SeqFormat::Nexus,
             part_format: PartitionFormat::Charset,
-            codon: false,
         }
     }
 
@@ -499,7 +549,8 @@ impl<'a> ConcatParser<'a> {
         let dir = self.get_dir_input(self.matches);
         let output = self.get_output(self.matches);
         self.output_format = self.get_output_format(self.matches);
-        self.get_partition_format();
+        self.part_format = self.get_partition_format(self.matches);
+        self.check_partition_format(&self.output_format, &self.part_format);
         self.display_input_dir(&dir).unwrap();
         let concat = msa::MSAlignment::new(
             &self.input_format,
@@ -511,58 +562,12 @@ impl<'a> ConcatParser<'a> {
         concat.concat_alignment(&mut files);
     }
 
-    fn get_partition_format(&mut self) {
-        let part_format = self
-            .matches
-            .value_of("partition")
-            .expect("CANNOT READ PARTITION FORMAT");
-        if self.matches.is_present("codon") {
-            self.codon = true;
-            self.get_partition_format_codon(part_format);
-        } else {
-            self.get_partition_format_std(part_format);
-        }
-        self.check_partition_format();
-    }
-
-    fn get_partition_format_std(&mut self, part_format: &str) {
-        self.part_format = match part_format {
-            "nexus" => PartitionFormat::Nexus,
-            "raxml" => PartitionFormat::Raxml,
-            "charset" => PartitionFormat::Charset,
-            _ => PartitionFormat::Nexus,
-        };
-    }
-
-    fn get_partition_format_codon(&mut self, part_format: &str) {
-        self.part_format = match part_format {
-            "charset" => PartitionFormat::CharsetCodon,
-            "nexus" => PartitionFormat::NexusCodon,
-            "raxml" => PartitionFormat::RaxmlCodon,
-            _ => PartitionFormat::NexusCodon,
-        };
-    }
-
     fn display_input_dir(&self, input: &str) -> Result<()> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul concat")?;
         writeln!(writer, "Input dir\t: {}\n", input)?;
         Ok(())
-    }
-
-    fn check_partition_format(&self) {
-        match self.output_format {
-            SeqFormat::Nexus | SeqFormat::NexusInt => (),
-            _ => {
-                if let PartitionFormat::Nexus | PartitionFormat::NexusCodon = self.part_format {
-                    panic!(
-                        "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
-                MAYBE YOU MEAN TO WRITE THE PARTITION TO 'charset' INSTEAD."
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -591,7 +596,7 @@ impl<'a> FilterParser<'a> {
         }
     }
 
-    fn min_taxa(&mut self) {
+    fn filter(&mut self) {
         self.input_format = self.get_input_format(self.matches);
         let dir = self.get_dir_input(self.matches);
         self.files = self.get_files(dir, &self.input_format);
@@ -601,7 +606,7 @@ impl<'a> FilterParser<'a> {
             self.get_params();
             self.set_output_path(dir);
             self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
-            self.get_min_taxa_percent();
+            self.filter_aln();
         }
     }
 
@@ -613,12 +618,12 @@ impl<'a> FilterParser<'a> {
             self.params = filter::Params::MinTax(min_tax);
             self.set_multi_output_path(dir);
             self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
-            self.get_min_taxa_percent();
+            self.filter();
             utils::print_divider();
         });
     }
 
-    fn get_min_taxa_percent(&mut self) {
+    fn filter_aln(&mut self) {
         let mut filter = filter::SeqFilter::new(
             &self.files,
             &self.input_format,
