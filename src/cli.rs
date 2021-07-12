@@ -206,11 +206,29 @@ fn get_args(version: &str) -> ArgMatches {
                         .value_name("OUTPUT"),
                 )
                 .arg(
+                    Arg::with_name("output-format")
+                        .short("F")
+                        .long("Format")
+                        .help("Sets output format if concat. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .takes_value(true)
+                        .value_name("FORMAT"),
+                )
+                .arg(
+                    Arg::with_name("partition")
+                        .short("-p")
+                        .long("part")
+                        .help("Sets partition format if concat. Choices: nexus, phylip, charset")
+                        .takes_value(true)
+                        .value_name("FORMAT"),
+                )
+                .arg(
                     Arg::with_name("concat")
-                    .long("codon")
+                    .long("concat")
                     .help("Concats the final results")
+                    .required_ifs(&[("filter", "partition"), ("filter", "output-format")])
                     .takes_value(false)
-                ),
+                )
+                ,
         )
         .subcommand(App::new("id").about("Gets sample ids from multiple alignments")
             .arg(
