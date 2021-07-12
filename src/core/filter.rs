@@ -1,4 +1,3 @@
-// use core::sync::atomic::{AtomicUsize, Ordering};
 use std::fs;
 use std::io::{self, BufWriter, Result, Write};
 use std::path::{Path, PathBuf};
@@ -9,7 +8,6 @@ use rayon::prelude::*;
 use crate::core::stats;
 use crate::helper::alignment::Alignment;
 use crate::helper::common::{Header, SeqFormat};
-// use crate::helper::finder::IDs;
 use crate::helper::utils;
 
 pub enum Params {
@@ -20,7 +18,6 @@ pub enum Params {
 
 // TODO:
 // 1. Add support to concat the result
-// 2. Allow more parameters, such as min aln length
 pub struct SeqFilter<'a> {
     files: &'a [PathBuf],
     input_format: &'a SeqFormat,
@@ -44,7 +41,6 @@ impl<'a> SeqFilter<'a> {
     }
 
     pub fn get_min_taxa(&mut self) {
-        // self.display_input().expect("CANNOT DISPLAY TO STDOUT");
         fs::create_dir_all(self.output_dir).expect("CANNOT CREATE A TARGET DIRECTORY");
         let match_aln = self.par_match_aln();
         self.par_copy_files(&match_aln);
@@ -94,20 +90,6 @@ impl<'a> SeqFilter<'a> {
 
         Ok(())
     }
-
-    // fn display_input(&self) -> Result<()> {
-    //     let io = io::stdout();
-    //     let mut writer = BufWriter::new(io);
-    //     writeln!(
-    //         writer,
-    //         "File count\t: {}",
-    //         utils::fmt_num(&self.files.len())
-    //     )?;
-    //     writeln!(writer, "Taxon count\t: {}", self.ntax)?;
-    //     writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
-    //     writeln!(writer, "Min tax\t\t: {}", self.min_taxa)?;
-    //     Ok(())
-    // }
 
     fn display_output(&self, fcounts: usize) -> Result<()> {
         let io = io::stdout();
