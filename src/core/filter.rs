@@ -17,8 +17,6 @@ pub enum Params {
     ParsInf(usize),
 }
 
-// TODO:
-// 1. Add support to concat the result
 pub struct SeqFilter<'a> {
     files: &'a [PathBuf],
     input_format: &'a SeqFormat,
