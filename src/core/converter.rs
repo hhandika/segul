@@ -12,38 +12,33 @@ use crate::parser::phylip::Phylip;
 pub struct Converter<'a> {
     input: &'a Path,
     output: &'a Path,
-    output_format: &'a SeqFormat,
+    output_fmt: &'a SeqFormat,
     is_dir: bool,
 }
 
 impl<'a> Converter<'a> {
-    pub fn new(
-        input: &'a Path,
-        output: &'a Path,
-        output_format: &'a SeqFormat,
-        is_dir: bool,
-    ) -> Self {
+    pub fn new(input: &'a Path, output: &'a Path, output_fmt: &'a SeqFormat, is_dir: bool) -> Self {
         Self {
             input,
             output,
-            output_format,
+            output_fmt,
             is_dir,
         }
     }
 
-    pub fn convert_unsorted(&mut self, input_format: &SeqFormat) {
-        let (matrix, header) = self.get_sequence(input_format);
+    pub fn convert_unsorted(&mut self, input_fmt: &SeqFormat) {
+        let (matrix, header) = self.get_sequence(input_fmt);
         self.convert(&matrix, header);
     }
 
-    pub fn convert_sorted(&mut self, input_format: &SeqFormat) {
-        let (mut matrix, header) = self.get_sequence(input_format);
+    pub fn convert_sorted(&mut self, input_fmt: &SeqFormat) {
+        let (mut matrix, header) = self.get_sequence(input_fmt);
         matrix.sort_keys();
         self.convert(&matrix, header)
     }
 
-    fn get_sequence(&mut self, input_format: &SeqFormat) -> (IndexMap<String, String>, Header) {
-        match input_format {
+    fn get_sequence(&mut self, input_fmt: &SeqFormat) -> (IndexMap<String, String>, Header) {
+        match input_fmt {
             SeqFormat::Fasta | SeqFormat::FastaInt => self.convert_fasta(),
             SeqFormat::Nexus | SeqFormat::NexusInt => self.convert_nexus(),
             SeqFormat::Phylip => self.convert_phylip(false),
@@ -73,7 +68,7 @@ impl<'a> Converter<'a> {
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
         let mut convert = SeqWriter::new(self.output, matrix, header, None, &PartitionFormat::None);
         convert
-            .write_sequence(self.output_format)
+            .write_sequence(self.output_fmt)
             .expect("CANNOT WRITE OUTPUT FILES");
 
         if !self.is_dir {

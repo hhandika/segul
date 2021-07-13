@@ -14,15 +14,15 @@ use crate::parser::phylip::Phylip;
 
 pub struct Files<'a> {
     dir: &'a str,
-    input_format: &'a SeqFormat,
+    input_fmt: &'a SeqFormat,
     pattern: String,
 }
 
 impl<'a> Files<'a> {
-    pub fn new(dir: &'a str, input_format: &'a SeqFormat) -> Self {
+    pub fn new(dir: &'a str, input_fmt: &'a SeqFormat) -> Self {
         Self {
             dir,
-            input_format,
+            input_fmt,
             pattern: String::new(),
         }
     }
@@ -45,7 +45,7 @@ impl<'a> Files<'a> {
     }
 
     fn get_pattern(&mut self) {
-        self.pattern = match self.input_format {
+        self.pattern = match self.input_fmt {
             SeqFormat::Fasta => format!("{}/*.fa*", self.dir),
             SeqFormat::Nexus => format!("{}/*.nex*", self.dir),
             SeqFormat::Phylip | SeqFormat::PhylipInt => format!("{}/*.phy*", self.dir),
@@ -56,19 +56,16 @@ impl<'a> Files<'a> {
 
 pub struct IDs<'a> {
     files: &'a [PathBuf],
-    input_format: &'a SeqFormat,
+    input_fmt: &'a SeqFormat,
 }
 
 impl<'a> IDs<'a> {
-    pub fn new(files: &'a [PathBuf], input_format: &'a SeqFormat) -> Self {
-        Self {
-            files,
-            input_format,
-        }
+    pub fn new(files: &'a [PathBuf], input_fmt: &'a SeqFormat) -> Self {
+        Self { files, input_fmt }
     }
 
     pub fn get_id_all(&self) -> IndexSet<String> {
-        let all_ids = match self.input_format {
+        let all_ids = match self.input_fmt {
             SeqFormat::Nexus => self.get_id_from_nexus(),
             SeqFormat::Phylip => self.get_id_from_phylip(false),
             SeqFormat::PhylipInt => self.get_id_from_phylip(true),

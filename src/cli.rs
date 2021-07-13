@@ -812,7 +812,7 @@ impl<'a> IdParser<'a> {
         let dir = self.get_dir_input(&self.matches);
         let input_fmt = self.get_input_fmt(&self.matches);
         let files = self.get_files(dir, &input_fmt);
-        self.print_inputs(dir).unwrap();
+        self.print_input(dir).unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
         let ids = IDs::new(&files, &input_fmt).get_id_all();
@@ -828,10 +828,10 @@ impl<'a> IdParser<'a> {
             writeln!(writer, "{}", id).unwrap();
         });
         writer.flush().unwrap();
-        self.print_outputs(&fname, ids.len()).unwrap();
+        self.print_output(&fname, ids.len()).unwrap();
     }
 
-    fn print_inputs(&self, dir: &str) -> Result<()> {
+    fn print_input(&self, dir: &str) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t\t: segul id")?;
@@ -840,7 +840,7 @@ impl<'a> IdParser<'a> {
         Ok(())
     }
 
-    fn print_outputs(&self, output: &Path, ids: usize) -> Result<()> {
+    fn print_output(&self, output: &Path, ids: usize) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "\nTotal unique IDs\t: {}", ids)?;

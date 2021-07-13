@@ -15,29 +15,29 @@ use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
 
 pub struct MSAlignment<'a> {
-    input_format: &'a SeqFormat,
+    input_fmt: &'a SeqFormat,
     output: &'a str,
-    output_format: &'a SeqFormat,
+    output_fmt: &'a SeqFormat,
     part_format: &'a PartitionFormat,
 }
 
 impl<'a> MSAlignment<'a> {
     pub fn new(
-        input_format: &'a SeqFormat,
+        input_fmt: &'a SeqFormat,
         output: &'a str,
-        output_format: &'a SeqFormat,
+        output_fmt: &'a SeqFormat,
         part_format: &'a PartitionFormat,
     ) -> Self {
         Self {
-            input_format,
+            input_fmt,
             output,
-            output_format,
+            output_fmt,
             part_format,
         }
     }
 
     pub fn concat_alignment(&self, files: &mut [PathBuf]) {
-        let mut concat = Concat::new(files, &self.input_format);
+        let mut concat = Concat::new(files, &self.input_fmt);
         let spin = utils::set_spinner();
         self.write_alignment(&mut concat, &spin);
     }
@@ -53,7 +53,7 @@ impl<'a> MSAlignment<'a> {
             &self.part_format,
         );
         spin.set_message("Writing output files...");
-        save.write_sequence(&self.output_format)
+        save.write_sequence(&self.output_fmt)
             .expect("CANNOT WRITE OUTPUT FILES");
         spin.finish_with_message("DONE!\n");
         self.print_alignment_stats(concat.partition.len(), &concat.header)
@@ -75,7 +75,7 @@ impl<'a> MSAlignment<'a> {
 }
 
 struct Concat<'a> {
-    input_format: &'a SeqFormat,
+    input_fmt: &'a SeqFormat,
     alignment: IndexMap<String, String>,
     header: Header,
     partition: Vec<Partition>,
@@ -83,9 +83,9 @@ struct Concat<'a> {
 }
 
 impl<'a> Concat<'a> {
-    fn new(files: &'a mut [PathBuf], input_format: &'a SeqFormat) -> Self {
+    fn new(files: &'a mut [PathBuf], input_fmt: &'a SeqFormat) -> Self {
         Self {
-            input_format,
+            input_fmt,
             alignment: IndexMap::new(),
             header: Header::new(),
             partition: Vec::new(),
@@ -96,7 +96,7 @@ impl<'a> Concat<'a> {
     fn concat_alignment(&mut self, spin: &ProgressBar) {
         alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
-        let id = IDs::new(&self.files, &self.input_format).get_id_all();
+        let id = IDs::new(&self.files, &self.input_fmt).get_id_all();
         spin.set_message("Concatenating alignments...");
         let (alignment, nchar, partition) = self.concat(&id);
         self.alignment = alignment;
@@ -107,7 +107,7 @@ impl<'a> Concat<'a> {
 
     fn get_alignment(&self, file: &Path) -> Alignment {
         let mut aln = Alignment::new();
-        aln.get_aln_any(file, &self.input_format);
+        aln.get_aln_any(file, &self.input_fmt);
         assert!(
             aln.header.ntax != 0,
             "ZERO TAXON FOUND IN ALIGNMENT FILES {}",
