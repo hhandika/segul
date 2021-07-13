@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, BufWriter, Result, Write};
 use std::path::PathBuf;
 
-use crate::core::stats::{Completeness, Dna, DnaSummary, SiteSummary, Sites};
+use crate::core::summary::{Completeness, Dna, DnaSummary, SiteSummary, Sites};
 use crate::helper::utils;
 
 pub fn print_stats(site: &Sites, dna: &Dna) -> Result<()> {

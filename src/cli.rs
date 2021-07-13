@@ -9,7 +9,7 @@ use rayon::prelude::*;
 use crate::core::converter::Converter;
 use crate::core::filter;
 use crate::core::msa;
-use crate::core::stats::SeqStats;
+use crate::core::summary::SeqStats;
 use crate::helper::common::{PartitionFormat, SeqFormat};
 use crate::helper::finder::{Files, IDs};
 use crate::helper::utils;

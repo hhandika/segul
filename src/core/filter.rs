@@ -6,7 +6,7 @@ use std::sync::mpsc::channel;
 use rayon::prelude::*;
 
 use crate::core::msa::MSAlignment;
-use crate::core::stats;
+use crate::core::summary;
 use crate::helper::alignment::Alignment;
 use crate::helper::common::{Header, PartitionFormat, SeqFormat};
 use crate::helper::utils;
@@ -124,7 +124,7 @@ impl<'a> SeqFilter<'a> {
 
     fn get_pars_inf(&self, file: &Path) -> usize {
         let aln = self.get_alignment(file);
-        stats::get_pars_inf(&aln.alignment)
+        summary::get_pars_inf(&aln.alignment)
     }
 
     fn get_header(&self, file: &Path) -> Header {

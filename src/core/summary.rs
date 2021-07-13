@@ -14,7 +14,6 @@ use crate::helper::finder::IDs;
 use crate::helper::utils;
 use crate::writer::sumwriter;
 
-#[allow(dead_code)]
 pub fn get_pars_inf(matrix: &IndexMap<String, String>) -> usize {
     Sites::new().get_pars_inf_only(matrix)
 }
@@ -488,9 +487,11 @@ pub struct Dna {
     pub n_count: usize,
     pub missings: usize,
     pub gaps: usize,
-    pub undetermined: usize, // alignment length
-    pub total_chars: usize,  // All characters count
+    pub undetermined: usize,
+    pub total_chars: usize, // All characters count
     pub ntax: usize,
+    pub missing_data: usize,
+    pub prop_missing_data: f64,
 }
 
 impl Dna {
@@ -506,6 +507,8 @@ impl Dna {
             undetermined: 0,
             total_chars: 0,
             ntax: 0,
+            missing_data: 0,
+            prop_missing_data: 0.0,
         }
     }
 
@@ -524,7 +527,14 @@ impl Dna {
                 b'-' => self.gaps += 1,
                 _ => self.undetermined += 1,
             })
-        })
+        });
+
+        self.count_missing_data();
+    }
+
+    fn count_missing_data(&mut self) {
+        self.missing_data = self.missings + self.gaps + self.n_count;
+        self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
     }
 }
 
