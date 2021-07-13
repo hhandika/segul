@@ -420,7 +420,7 @@ impl<'a> ConvertParser<'a> {
         let input = Path::new(self.get_file_input(self.matches));
         let output_fmt = self.get_output_fmt(self.matches);
         let output = self.get_output_path(self.matches);
-        self.display_input_file(input).unwrap();
+        self.print_input_file(input).unwrap();
 
         self.convert_any(input, &output, &output_fmt);
     }
@@ -431,7 +431,7 @@ impl<'a> ConvertParser<'a> {
         let output_fmt = self.get_output_fmt(self.matches);
         let output = self.get_output_path(&self.matches);
         self.is_dir = true;
-        self.display_input_dir(Path::new(dir), files.len(), &output)
+        self.print_input_dir(Path::new(dir), files.len(), &output)
             .unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Converting alignments...");
@@ -455,7 +455,7 @@ impl<'a> ConvertParser<'a> {
         self.matches.is_present("sort")
     }
 
-    fn display_input_file(&self, input: &Path) -> Result<()> {
+    fn print_input_file(&self, input: &Path) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul convert")?;
@@ -463,7 +463,7 @@ impl<'a> ConvertParser<'a> {
         Ok(())
     }
 
-    fn display_input_dir(&self, input: &Path, nfile: usize, output: &Path) -> Result<()> {
+    fn print_input_dir(&self, input: &Path, nfile: usize, output: &Path) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul convert")?;
@@ -475,18 +475,18 @@ impl<'a> ConvertParser<'a> {
 }
 
 trait PartCLi {
-    fn get_partition_format(&self, matches: &ArgMatches) -> PartitionFormat {
+    fn parse_partition_fmt(&self, matches: &ArgMatches) -> PartitionFormat {
         let part_fmt = matches
             .value_of("partition")
             .expect("CANNOT READ PARTITION FORMAT");
         if matches.is_present("codon") {
-            self.get_partition_format_codon(part_fmt)
+            self.parse_partition_fmt_codon(part_fmt)
         } else {
-            self.get_partition_format_std(part_fmt)
+            self.parse_partition_fmt_std(part_fmt)
         }
     }
 
-    fn get_partition_format_std(&self, part_fmt: &str) -> PartitionFormat {
+    fn parse_partition_fmt_std(&self, part_fmt: &str) -> PartitionFormat {
         match part_fmt {
             "nexus" => PartitionFormat::Nexus,
             "raxml" => PartitionFormat::Raxml,
@@ -495,7 +495,7 @@ trait PartCLi {
         }
     }
 
-    fn get_partition_format_codon(&self, part_fmt: &str) -> PartitionFormat {
+    fn parse_partition_fmt_codon(&self, part_fmt: &str) -> PartitionFormat {
         match part_fmt {
             "charset" => PartitionFormat::CharsetCodon,
             "nexus" => PartitionFormat::NexusCodon,
@@ -549,16 +549,16 @@ impl<'a> ConcatParser<'a> {
         let dir = self.get_dir_input(self.matches);
         let output = self.get_output(self.matches);
         self.output_fmt = self.get_output_fmt(self.matches);
-        self.part_fmt = self.get_partition_format(self.matches);
+        self.part_fmt = self.parse_partition_fmt(self.matches);
         self.check_partition_format(&self.output_fmt, &self.part_fmt);
-        self.display_input_dir(&dir).unwrap();
+        self.print_input_dir(&dir).unwrap();
         let concat =
             msa::MSAlignment::new(&self.input_fmt, output, &self.output_fmt, &self.part_fmt);
         let mut files = self.get_files(dir, &self.input_fmt);
         concat.concat_alignment(&mut files);
     }
 
-    fn display_input_dir(&self, input: &str) -> Result<()> {
+    fn print_input_dir(&self, input: &str) -> Result<()> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul concat")?;
@@ -602,19 +602,19 @@ impl<'a> FilterParser<'a> {
         } else {
             self.get_params();
             self.set_output_path(dir);
-            self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
+            self.print_input(dir).expect("CANNOT DISPLAY TO STDOUT");
             self.filter_aln();
         }
     }
 
     fn get_min_taxa_npercent(&mut self, dir: &str) {
-        let npercent = self.get_npercent();
+        let npercent = self.parse_npercent();
         npercent.iter().for_each(|&np| {
             self.percent = np;
             let min_tax = self.get_min_taxa();
             self.params = filter::Params::MinTax(min_tax);
             self.set_multi_output_path(dir);
-            self.display_input(dir).expect("CANNOT DISPLAY TO STDOUT");
+            self.print_input(dir).expect("CANNOT DISPLAY TO STDOUT");
             self.filter_aln();
             utils::print_divider();
         });
@@ -623,7 +623,7 @@ impl<'a> FilterParser<'a> {
     fn filter_aln(&self) {
         let mut filter =
             filter::SeqFilter::new(&self.files, &self.input_fmt, &self.output_dir, &self.params);
-        match self.is_concat() {
+        match self.check_concat() {
             Some(part_fmt) => {
                 let output_fmt = if self.matches.is_present("output-format") {
                     self.get_output_fmt(self.matches)
@@ -634,22 +634,6 @@ impl<'a> FilterParser<'a> {
                 filter.filter_aln();
             }
             None => filter.filter_aln(),
-        }
-    }
-
-    fn is_concat(&self) -> Option<PartitionFormat> {
-        if self.matches.is_present("concat") {
-            Some(self.is_partition_default())
-        } else {
-            None
-        }
-    }
-
-    fn is_partition_default(&self) -> PartitionFormat {
-        if self.matches.is_present("partition") {
-            self.get_partition_format(self.matches)
-        } else {
-            PartitionFormat::Charset
         }
     }
 
@@ -668,6 +652,22 @@ impl<'a> FilterParser<'a> {
     fn get_min_taxa(&mut self) -> usize {
         self.get_ntax();
         self.count_min_tax()
+    }
+
+    fn check_concat(&self) -> Option<PartitionFormat> {
+        if self.matches.is_present("concat") {
+            Some(self.get_part_fmt())
+        } else {
+            None
+        }
+    }
+
+    fn get_part_fmt(&self) -> PartitionFormat {
+        if self.matches.is_present("partition") {
+            self.parse_partition_fmt(self.matches)
+        } else {
+            PartitionFormat::Charset
+        }
     }
 
     fn get_aln_len(&self) -> usize {
@@ -696,12 +696,13 @@ impl<'a> FilterParser<'a> {
         };
     }
 
-    fn get_npercent(&self) -> Vec<f64> {
+    fn count_min_tax(&self) -> usize {
+        (self.ntax as f64 * self.percent).floor() as usize
+    }
+
+    fn parse_npercent(&self) -> Vec<f64> {
         let npercent: Vec<&str> = self.matches.values_of("npercent").unwrap().collect();
-        npercent
-            .iter()
-            .map(|np| self.parse_percentage(np))
-            .collect()
+        npercent.iter().map(|np| self.parse_percent(np)).collect()
     }
 
     fn is_npercent(&mut self) -> bool {
@@ -713,7 +714,13 @@ impl<'a> FilterParser<'a> {
             .matches
             .value_of("percent")
             .expect("CANNOT GET PERCENTAGE VALUES");
-        self.parse_percentage(percent)
+        self.parse_percent(percent)
+    }
+
+    fn parse_percent(&self, percent: &str) -> f64 {
+        percent
+            .parse::<f64>()
+            .expect("CANNOT PARSE PERCENTAGE VALUES TO FLOATING POINTS")
     }
 
     fn parse_ntax(&self) -> usize {
@@ -723,12 +730,6 @@ impl<'a> FilterParser<'a> {
             .expect("CANNOT GET NTAX VALUES");
         ntax.parse::<usize>()
             .expect("CANNOT PARSE NTAX VALUES TO INTEGERS")
-    }
-
-    fn parse_percentage(&self, percent: &str) -> f64 {
-        percent
-            .parse::<f64>()
-            .expect("CANNOT PARSE PERCENTAGE VALUES TO FLOATING POINTS")
     }
 
     fn set_output_path<P: AsRef<Path>>(&mut self, dir: P) {
@@ -748,10 +749,6 @@ impl<'a> FilterParser<'a> {
         }
     }
 
-    fn count_min_tax(&self) -> usize {
-        (self.ntax as f64 * self.percent).floor() as usize
-    }
-
     fn fmt_output_path(&self, dir: &Path) -> PathBuf {
         let parent = dir.parent().unwrap();
         let last: String = match dir.file_name() {
@@ -766,7 +763,7 @@ impl<'a> FilterParser<'a> {
         parent.join(output_dir)
     }
 
-    fn display_input(&self, dir: &str) -> Result<()> {
+    fn print_input(&self, dir: &str) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "\x1b[0;33mInput\x1b[0m")?;
@@ -815,7 +812,7 @@ impl<'a> IdParser<'a> {
         let dir = self.get_dir_input(&self.matches);
         let input_fmt = self.get_input_fmt(&self.matches);
         let files = self.get_files(dir, &input_fmt);
-        self.display_inputs(dir).unwrap();
+        self.print_inputs(dir).unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
         let ids = IDs::new(&files, &input_fmt).get_id_all();
@@ -831,10 +828,10 @@ impl<'a> IdParser<'a> {
             writeln!(writer, "{}", id).unwrap();
         });
         writer.flush().unwrap();
-        self.display_outputs(&fname, ids.len()).unwrap();
+        self.print_outputs(&fname, ids.len()).unwrap();
     }
 
-    fn display_inputs(&self, dir: &str) -> Result<()> {
+    fn print_inputs(&self, dir: &str) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t\t: segul id")?;
@@ -843,7 +840,7 @@ impl<'a> IdParser<'a> {
         Ok(())
     }
 
-    fn display_outputs(&self, output: &Path, ids: usize) -> Result<()> {
+    fn print_outputs(&self, output: &Path, ids: usize) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "\nTotal unique IDs\t: {}", ids)?;
@@ -878,7 +875,7 @@ impl<'a> StatsParser<'a> {
         let dir = self.get_dir_input(&self.matches);
         let files = self.get_files(dir, input_fmt);
         let output = self.get_output(&self.matches);
-        self.display_input_file(Path::new(dir)).unwrap();
+        self.print_input_file(Path::new(dir)).unwrap();
         SeqStats::new(input_fmt, output).get_stats_dir(&files);
     }
 
@@ -886,11 +883,11 @@ impl<'a> StatsParser<'a> {
         self.get_input_fmt(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
         let output = self.get_output(&self.matches);
-        self.display_input_file(input).unwrap();
+        self.print_input_file(input).unwrap();
         SeqStats::new(input_fmt, output).get_seq_stats_file(input);
     }
 
-    fn display_input_file(&self, input: &Path) -> Result<()> {
+    fn print_input_file(&self, input: &Path) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul summary")?;
