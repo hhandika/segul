@@ -48,7 +48,7 @@ impl<'a> SeqFilter<'a> {
             None => {
                 fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
                 self.par_copy_files(&ftr_aln);
-                self.display_output(ftr_aln.len())
+                self.print_output(ftr_aln.len())
                     .expect("CANNOT DISPLAY TO STDOUT");
             }
         }
@@ -112,7 +112,7 @@ impl<'a> SeqFilter<'a> {
         Ok(())
     }
 
-    fn display_output(&self, fcounts: usize) -> Result<()> {
+    fn print_output(&self, fcounts: usize) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "\x1b[0;33mOutput\x1b[0m")?;

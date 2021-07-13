@@ -42,7 +42,7 @@ impl<'a> SeqStats<'a> {
         sumwriter::CsvWriter::new(self.output)
             .write_summary_file(&site, &dna)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
-        sumwriter::display_stats(&site, &dna).unwrap();
+        sumwriter::print_stats(&site, &dna).unwrap();
     }
 
     pub fn get_stats_dir(&mut self, files: &[PathBuf]) {
@@ -60,8 +60,7 @@ impl<'a> SeqStats<'a> {
         sum.write_sum_to_file(self.output)
             .expect("CANNOT CREATE FILE FOR SUMMARY OUPUT");
         spin.finish_with_message("DONE!\n");
-        sum.display_summary()
-            .expect("CANNOT WRITE SUMMARY TO STDOUT");
+        sum.print_summary().expect("CANNOT WRITE SUMMARY TO STDOUT");
     }
 
     fn get_ntax(&mut self, files: &[PathBuf]) {

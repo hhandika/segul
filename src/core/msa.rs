@@ -56,13 +56,13 @@ impl<'a> MSAlignment<'a> {
         save.write_sequence(&self.output_format)
             .expect("CANNOT WRITE OUTPUT FILES");
         spin.finish_with_message("DONE!\n");
-        self.display_alignment_stats(concat.partition.len(), &concat.header)
+        self.print_alignment_stats(concat.partition.len(), &concat.header)
             .unwrap();
-        save.display_save_path();
-        save.display_partition_path();
+        save.print_save_path();
+        save.print_partition_path();
     }
 
-    fn display_alignment_stats(&self, count: usize, header: &Header) -> Result<()> {
+    fn print_alignment_stats(&self, count: usize, header: &Header) -> Result<()> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
         writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;

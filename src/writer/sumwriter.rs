@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use crate::core::stats::{Completeness, Dna, DnaSummary, SiteSummary, Sites};
 use crate::helper::utils;
 
-pub fn display_stats(site: &Sites, dna: &Dna) -> Result<()> {
+pub fn print_stats(site: &Sites, dna: &Dna) -> Result<()> {
     let io = io::stdout();
     let mut writer = BufWriter::new(io);
 
@@ -166,7 +166,7 @@ impl<'s> SummaryWriter<'s> {
         }
     }
 
-    pub fn display_summary(&self) -> Result<()> {
+    pub fn print_summary(&self) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "\x1b[0;33mGeneral Summmary\x1b[0m")?;

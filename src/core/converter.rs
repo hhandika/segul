@@ -77,7 +77,7 @@ impl<'a> Converter<'a> {
             .expect("CANNOT WRITE OUTPUT FILES");
 
         if !self.is_dir {
-            convert.display_save_path();
+            convert.print_save_path();
         }
     }
 }

@@ -58,13 +58,13 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    pub fn display_save_path(&self) {
+    pub fn print_save_path(&self) {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Output\t\t: {}", self.output.display()).unwrap();
     }
 
-    pub fn display_partition_path(&self) {
+    pub fn print_partition_path(&self) {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Partition\t: {}", &self.part_file.display()).unwrap();
