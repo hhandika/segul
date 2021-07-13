@@ -5,12 +5,15 @@ authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-clap = "2.*"
-nom = "6.*"
-glob = "*"
-chrono = "0.4.*"
-indexmap = "1.6.*"
-rayon = "*"
-num-format = "0.4.*"
-indicatif = "0.16.*"
 alphanumeric-sort = "1.4.*"
+bytecount = "0.6.2"
+chrono = "0.4.*"
+clap = "2.*"
+glob = "*"
+indexmap = "1.6.*"
+indicatif = "0.16.*"
+nom = "6.*"
+num-format = "0.4.*"
+rayon = "*"
+
+

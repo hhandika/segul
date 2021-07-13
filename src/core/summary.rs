@@ -410,11 +410,11 @@ impl Sites {
         // We consider variable sites
         // when the characters not all the same
         let mut n_patterns = 0;
-        if uniques.len() >= 2 {
+        if uniques.len() > 1 {
             self.variable += 1;
-            uniques.iter().for_each(|ch| {
-                let patterns = site.iter().filter(|&site| site == ch).count();
-                if patterns >= 2 {
+            uniques.iter().for_each(|&ch| {
+                let patterns = bytecount::count(site, ch);
+                if patterns > 1 {
                     n_patterns += 1;
                 }
             });
