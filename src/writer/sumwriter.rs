@@ -27,6 +27,12 @@ pub fn print_stats(site: &Sites, dna: &Dna) -> Result<()> {
 
     writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
     writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.total_chars))?;
+    writeln!(
+        writer,
+        "Missing data\t: {}",
+        utils::fmt_num(&dna.missing_data)
+    )?;
+    writeln!(writer, "Prop. missing \t: {:.2}", &dna.prop_missing_data)?;
     writeln!(writer, "A\t: {}", utils::fmt_num(&dna.a_count))?;
     writeln!(writer, "C\t: {}", utils::fmt_num(&dna.c_count))?;
     writeln!(writer, "G\t: {}", utils::fmt_num(&dna.g_count))?;
@@ -89,6 +95,8 @@ impl CsvWriter {
         proportion_var_sites,\
         parsimony_informative_sites,\
         proportion_pars_inf_sites,\
+        missing_data,\
+        proportion_missing_data,\
         AT_content,\
         GC_content,\
         A_counts,\
@@ -124,6 +132,10 @@ impl CsvWriter {
             site.pars_inf,
             site.prop_pinf
         )?;
+
+        // Missing data
+        write!(writer, "{},", dna.missing_data)?;
+        write!(writer, "{},", dna.prop_missing_data)?;
 
         // GC content
         write!(
