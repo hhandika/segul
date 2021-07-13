@@ -18,7 +18,7 @@ pub struct MSAlignment<'a> {
     input_fmt: &'a SeqFormat,
     output: &'a str,
     output_fmt: &'a SeqFormat,
-    part_format: &'a PartitionFormat,
+    part_fmt: &'a PartitionFormat,
 }
 
 impl<'a> MSAlignment<'a> {
@@ -26,13 +26,13 @@ impl<'a> MSAlignment<'a> {
         input_fmt: &'a SeqFormat,
         output: &'a str,
         output_fmt: &'a SeqFormat,
-        part_format: &'a PartitionFormat,
+        part_fmt: &'a PartitionFormat,
     ) -> Self {
         Self {
             input_fmt,
             output,
             output_fmt,
-            part_format,
+            part_fmt,
         }
     }
 
@@ -50,7 +50,7 @@ impl<'a> MSAlignment<'a> {
             &concat.alignment,
             concat.header.clone(),
             Some(&concat.partition),
-            &self.part_format,
+            &self.part_fmt,
         );
         spin.set_message("Writing output files...");
         save.write_sequence(&self.output_fmt)
