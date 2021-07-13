@@ -329,101 +329,29 @@ impl<'s> SummaryWriter<'s> {
     }
 
     fn write_tax_comp<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(
-            writer,
-            "95% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_95)
-        )?;
-        writeln!(
-            writer,
-            "90% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_90)
-        )?;
-        writeln!(
-            writer,
-            "85% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_85)
-        )?;
-        writeln!(
-            writer,
-            "80% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_80)
-        )?;
-        writeln!(
-            writer,
-            "75% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_75)
-        )?;
-        writeln!(
-            writer,
-            "70% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_70)
-        )?;
-        writeln!(
-            writer,
-            "65% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_65)
-        )?;
-        writeln!(
-            writer,
-            "60% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_60)
-        )?;
-        writeln!(
-            writer,
-            "55% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_55)
-        )?;
-        writeln!(
-            writer,
-            "50% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_50)
-        )?;
-        writeln!(
-            writer,
-            "45% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_45)
-        )?;
-        writeln!(
-            writer,
-            "40% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_40)
-        )?;
-        writeln!(
-            writer,
-            "35% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_35)
-        )?;
-        writeln!(
-            writer,
-            "30% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_30)
-        )?;
-        writeln!(
-            writer,
-            "25% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_25)
-        )?;
-        writeln!(
-            writer,
-            "20% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_20)
-        )?;
-        writeln!(
-            writer,
-            "15% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_15)
-        )?;
-        writeln!(
-            writer,
-            "10% taxa\t: {}",
-            utils::fmt_num(&self.complete.ntax_10)
-        )?;
-        writeln!(
-            writer,
-            "5% taxa\t\t: {}\n",
-            utils::fmt_num(&self.complete.ntax_5)
-        )?;
+        self.complete
+            .completeness
+            .iter()
+            .for_each(|(percent, ntax)| {
+                self.write_tax_comp_content(writer, percent, ntax)
+                    .expect("CANNOT WRITE TAXON COMPLETENESS TO STDOUT")
+            });
+        writeln!(writer)?;
+
+        Ok(())
+    }
+
+    fn write_tax_comp_content<W: Write>(
+        &self,
+        writer: &mut W,
+        percent: &usize,
+        ntax: &usize,
+    ) -> Result<()> {
+        if *percent > 5 {
+            writeln!(writer, "{}% taxa\t: {}", percent, utils::fmt_num(ntax))?;
+        } else {
+            writeln!(writer, "{}% taxa\t\t: {}", percent, utils::fmt_num(ntax))?;
+        }
 
         Ok(())
     }

@@ -291,75 +291,33 @@ impl DnaSummary {
 
 // #[derive(Debug, Send, Sync)]
 pub struct Completeness {
-    pub ntax_95: usize,
-    pub ntax_90: usize,
-    pub ntax_85: usize,
-    pub ntax_80: usize,
-    pub ntax_75: usize,
-    pub ntax_70: usize,
-    pub ntax_65: usize,
-    pub ntax_60: usize,
-    pub ntax_55: usize,
-    pub ntax_50: usize,
-    pub ntax_45: usize,
-    pub ntax_40: usize,
-    pub ntax_35: usize,
-    pub ntax_30: usize,
-    pub ntax_25: usize,
-    pub ntax_20: usize,
-    pub ntax_15: usize,
-    pub ntax_10: usize,
-    pub ntax_5: usize,
+    pub completeness: Vec<(usize, usize)>,
     pub total_tax: usize,
 }
 
 impl Completeness {
     fn new(total_tax: &usize) -> Self {
         Self {
-            ntax_95: 0,
-            ntax_90: 0,
-            ntax_85: 0,
-            ntax_80: 0,
-            ntax_75: 0,
-            ntax_70: 0,
-            ntax_65: 0,
-            ntax_60: 0,
-            ntax_55: 0,
-            ntax_50: 0,
-            ntax_45: 0,
-            ntax_40: 0,
-            ntax_35: 0,
-            ntax_30: 0,
-            ntax_25: 0,
-            ntax_20: 0,
-            ntax_15: 0,
-            ntax_10: 0,
-            ntax_5: 0,
+            completeness: Vec::new(),
             total_tax: *total_tax,
         }
     }
 
     fn get_ntax_completeness(&mut self, dna: &[Dna]) {
         let ntax: Vec<usize> = dna.iter().map(|d| d.ntax).collect();
-        self.ntax_95 = self.count_min_tax(&ntax, 0.95);
-        self.ntax_90 = self.count_min_tax(&ntax, 0.9);
-        self.ntax_85 = self.count_min_tax(&ntax, 0.85);
-        self.ntax_80 = self.count_min_tax(&ntax, 0.8);
-        self.ntax_75 = self.count_min_tax(&ntax, 0.75);
-        self.ntax_70 = self.count_min_tax(&ntax, 0.7);
-        self.ntax_65 = self.count_min_tax(&ntax, 0.65);
-        self.ntax_60 = self.count_min_tax(&ntax, 0.6);
-        self.ntax_55 = self.count_min_tax(&ntax, 0.55);
-        self.ntax_50 = self.count_min_tax(&ntax, 0.5);
-        self.ntax_45 = self.count_min_tax(&ntax, 0.45);
-        self.ntax_40 = self.count_min_tax(&ntax, 0.4);
-        self.ntax_35 = self.count_min_tax(&ntax, 0.35);
-        self.ntax_30 = self.count_min_tax(&ntax, 0.3);
-        self.ntax_25 = self.count_min_tax(&ntax, 0.25);
-        self.ntax_20 = self.count_min_tax(&ntax, 0.2);
-        self.ntax_15 = self.count_min_tax(&ntax, 0.15);
-        self.ntax_10 = self.count_min_tax(&ntax, 0.1);
-        self.ntax_5 = self.count_min_tax(&ntax, 0.5);
+        let mut values: usize = 100;
+        let decrement: usize = 5;
+
+        while values > 0 {
+            let percent = values as f64 / 100.0;
+            let ntax_comp = self.count_min_tax(&ntax, percent);
+            self.completeness.push((values, ntax_comp));
+            if ntax_comp == ntax.len() {
+                break;
+            } else {
+                values -= decrement;
+            }
+        }
     }
 
     fn count_min_tax(&self, ntax: &[usize], percent: f64) -> usize {
