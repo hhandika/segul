@@ -32,7 +32,11 @@ pub fn print_stats(site: &Sites, dna: &Dna) -> Result<()> {
         "Missing data\t: {}",
         utils::fmt_num(&dna.missing_data)
     )?;
-    writeln!(writer, "Prop. missing \t: {:.2}", &dna.prop_missing_data)?;
+    writeln!(
+        writer,
+        "Prop. missing \t: {:.2}%",
+        &dna.prop_missing_data * 100.0
+    )?;
     writeln!(writer, "A\t\t: {}", utils::fmt_num(&dna.a_count))?;
     writeln!(writer, "C\t\t: {}", utils::fmt_num(&dna.c_count))?;
     writeln!(writer, "G\t\t: {}", utils::fmt_num(&dna.g_count))?;
