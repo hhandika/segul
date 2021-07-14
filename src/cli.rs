@@ -56,26 +56,42 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("format")
                         .short("f")
                         .long("format")
-                        .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&[
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
                 )
                 .arg(
                     Arg::with_name("output-format")
                         .short("F")
                         .long("output-format")
-                        .help("Sets target output format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .help("Sets target output format")
                         .takes_value(true)
                         .default_value("nexus")
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&[
+                            "nexus",
+                            "phylip",
+                            "fasta",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
                 )
                 .arg(
                     Arg::with_name("sort")
                         .long("sort")
                         .help("Sorts the alignments")
-                        .takes_value(false)
-                )
+                        .takes_value(false),
+                ),
         )
         .subcommand(
             App::new("concat")
@@ -93,20 +109,29 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("format")
                         .short("f")
                         .long("format")
-                        .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&[
+                            "nexus",
+                            "phylip",
+                            "fasta",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
                 )
                 .arg(
                     Arg::with_name("partition")
                         .short("-p")
                         .long("part")
-                        .help("Sets partition format. Choices: nexus, phylip, charset")
+                        .help("Sets partition format")
                         .takes_value(true)
                         .required(true)
                         .default_value("charset")
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&["nexus", "phylip", "charset"]),
                 )
                 .arg(
                     Arg::with_name("output")
@@ -122,23 +147,31 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("output-format")
                         .short("F")
                         .long("output-format")
-                        .help("Sets target output format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .help("Sets target output format")
                         .takes_value(true)
                         .default_value("nexus")
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&[
+                            "nexus",
+                            "phylip",
+                            "fasta",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
                 )
                 .arg(
                     Arg::with_name("codon")
-                    .long("codon")
-                    .help("Sets codon model partition format")
-                    .takes_value(false)
-                )
+                        .long("codon")
+                        .help("Sets codon model partition format")
+                        .takes_value(false),
+                ),
         )
         .subcommand(
             App::new("filter")
-            .about("Picks alignments with specified min taxa")
-            .arg(
-                Arg::with_name("dir")
+                .about("Picks alignments with specified min taxa")
+                .arg(
+                    Arg::with_name("dir")
                         .short("d")
                         .long("dir")
                         .help("Inputs a path to alignment dir")
@@ -150,10 +183,18 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("format")
                         .short("f")
                         .long("format")
-                        .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&[
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
                 )
                 .arg(
                     Arg::with_name("percent")
@@ -209,64 +250,87 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("output-format")
                         .short("F")
                         .long("output-format")
-                        .help("Sets output format if concat. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .help("Sets output format if concat")
                         .takes_value(true)
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&[
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
                 )
                 .arg(
                     Arg::with_name("partition")
                         .short("-p")
                         .long("part")
-                        .help("Sets partition format if concat. Choices: nexus, phylip, charset")
+                        .help("Sets partition format if concat")
                         .takes_value(true)
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&["nexus", "phylip", "charset"]),
                 )
                 .arg(
                     Arg::with_name("concat")
-                    .long("concat")
-                    .help("Concats the final results")
-                    .required_ifs(&[("filter", "partition"), ("filter", "codon"), ("filter", "output-format")])
-                    .takes_value(false)
+                        .long("concat")
+                        .help("Concats the final results")
+                        .required_ifs(&[
+                            ("filter", "partition"),
+                            ("filter", "codon"),
+                            ("filter", "output-format"),
+                        ])
+                        .takes_value(false),
                 )
                 .arg(
                     Arg::with_name("codon")
-                    .long("codon")
-                    .help("Sets codon model partition format")
-                    .takes_value(false)
+                        .long("codon")
+                        .help("Sets codon model partition format")
+                        .takes_value(false),
                 ),
         )
-        .subcommand(App::new("id").about("Gets sample ids from multiple alignments")
-            .arg(
-                Arg::with_name("dir")
-                    .short("d")
-                    .long("dir")
-                    .help("Inputs dir with alignment files")
-                    .takes_value(true)
-                    .value_name("INPUT FILE")
-            )
-            .arg(
-                Arg::with_name("format")
-                    .short("f")
-                    .long("format")
-                    .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
-                    .takes_value(true)
-                    .required(true)
-                    .value_name("FORMAT"),
-            )
-            .arg(
-                Arg::with_name("output")
-                    .short("o")
-                    .long("output")
-                    .help("Uses a costume output filename")
-                    .takes_value(true)
-                    .required(true)
-                    .default_value("concat")
-                    .value_name("OUTPUT"),
-            ),
+        .subcommand(
+            App::new("id")
+                .about("Gets sample ids from multiple alignments")
+                .arg(
+                    Arg::with_name("dir")
+                        .short("d")
+                        .long("dir")
+                        .help("Inputs dir with alignment files")
+                        .takes_value(true)
+                        .value_name("INPUT FILE"),
+                )
+                .arg(
+                    Arg::with_name("format")
+                        .short("f")
+                        .long("format")
+                        .help("Sets input format")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("FORMAT")
+                        .possible_values(&[
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .short("o")
+                        .long("output")
+                        .help("Uses a costume output filename")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("concat")
+                        .value_name("OUTPUT"),
+                ),
         )
         .subcommand(
             App::new("summary")
-            .about("Gets alignment summary stats")
+                .about("Gets alignment summary stats")
                 .arg(
                     Arg::with_name("input")
                         .short("i")
@@ -276,7 +340,7 @@ fn get_args(version: &str) -> ArgMatches {
                         .required_unless("dir")
                         .conflicts_with("dir")
                         .value_name("INPUT FILE"),
-                    )
+                )
                 .arg(
                     Arg::with_name("dir")
                         .short("d")
@@ -284,27 +348,35 @@ fn get_args(version: &str) -> ArgMatches {
                         .help("Inputs dir with alignment files")
                         .takes_value(true)
                         .conflicts_with("input")
-                        .value_name("INPUT FILE")
+                        .value_name("INPUT FILE"),
                 )
                 .arg(
                     Arg::with_name("format")
                         .short("f")
                         .long("format")
-                        .help("Sets input format. Choices: fasta, nexus, phylip, fasta-int, nexus-int, phylip-int")
+                        .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT"),
+                        .value_name("FORMAT")
+                        .possible_values(&[
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
                 )
                 .arg(
-                Arg::with_name("output")
-                    .short("o")
-                    .long("output")
-                    .help("Uses a costume output filename")
-                    .takes_value(true)
-                    .required(true)
-                    .default_value("SEGUL-stats")
-                    .value_name("OUTPUT"),
-            )
+                    Arg::with_name("output")
+                        .short("o")
+                        .long("output")
+                        .help("Uses a costume output filename")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("SEGUL-stats")
+                        .value_name("OUTPUT"),
+                ),
         )
         .get_matches()
 }
