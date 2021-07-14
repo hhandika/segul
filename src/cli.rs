@@ -384,7 +384,7 @@ fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .value_name("DECREMENT")
                         .default_value("5")
-                        .possible_values(&["2", "5", "10"]),
+                        .possible_values(&["1", "2", "5", "10"]),
                 ),
         )
         .get_matches()
