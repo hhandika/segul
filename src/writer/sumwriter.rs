@@ -347,10 +347,10 @@ impl<'s> SummaryWriter<'s> {
         percent: &usize,
         ntax: &usize,
     ) -> Result<()> {
-        if *percent > 5 {
-            writeln!(writer, "{}% taxa\t: {}", percent, utils::fmt_num(ntax))?;
-        } else {
+        if *percent < 10 {
             writeln!(writer, "{}% taxa\t\t: {}", percent, utils::fmt_num(ntax))?;
+        } else {
+            writeln!(writer, "{}% taxa\t: {}", percent, utils::fmt_num(ntax))?;
         }
 
         Ok(())
