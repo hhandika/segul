@@ -376,6 +376,15 @@ fn get_args(version: &str) -> ArgMatches {
                         .required(true)
                         .default_value("SEGUL-stats")
                         .value_name("OUTPUT"),
+                )
+                .arg(
+                    Arg::with_name("decrement")
+                        .long("decrement")
+                        .help("Sets a custom decrement value for counting taxon completeness")
+                        .takes_value(true)
+                        .value_name("DECREMENT")
+                        .default_value("5")
+                        .possible_values(&["2", "5", "10"]),
                 ),
         )
         .get_matches()
@@ -926,16 +935,20 @@ impl Cli for StatsParser<'_> {}
 
 struct StatsParser<'a> {
     matches: &'a ArgMatches<'a>,
+    decrement: usize,
 }
 
 impl<'a> StatsParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
-        Self { matches }
+        Self {
+            matches,
+            decrement: 0,
+        }
     }
 
-    fn show_stats(&self) {
+    fn show_stats(&mut self) {
         let input_fmt = self.get_input_fmt(&self.matches);
-
+        self.decrement = self.parse_decrement();
         if self.matches.is_present("dir") {
             self.show_stats_dir(&input_fmt);
         } else {
@@ -948,7 +961,7 @@ impl<'a> StatsParser<'a> {
         let files = self.get_files(dir, input_fmt);
         let output = self.get_output(&self.matches);
         self.print_input_file(Path::new(dir)).unwrap();
-        SeqStats::new(input_fmt, output).get_stats_dir(&files);
+        SeqStats::new(input_fmt, output, self.decrement).get_stats_dir(&files);
     }
 
     fn show_stats_file(&self, input_fmt: &SeqFormat) {
@@ -956,7 +969,17 @@ impl<'a> StatsParser<'a> {
         let input = Path::new(self.get_file_input(self.matches));
         let output = self.get_output(&self.matches);
         self.print_input_file(input).unwrap();
-        SeqStats::new(input_fmt, output).get_seq_stats_file(input);
+        SeqStats::new(input_fmt, output, self.decrement).get_seq_stats_file(input);
+    }
+
+    fn parse_decrement(&self) -> usize {
+        let decrement = self
+            .matches
+            .value_of("decrement")
+            .expect("CAN'T GET DECREMENT VALUES");
+        decrement
+            .parse::<usize>()
+            .expect("FAIL PARSING DECREMENT VALUES")
     }
 
     fn print_input_file(&self, input: &Path) -> Result<()> {
