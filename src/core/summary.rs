@@ -291,7 +291,6 @@ impl DnaSummary {
     }
 }
 
-// #[derive(Debug, Send, Sync)]
 pub struct Completeness {
     pub completeness: Vec<(usize, usize)>,
     pub total_tax: usize,
@@ -381,7 +380,7 @@ impl Sites {
                 match site_matrix.get_mut(&idx) {
                     Some(value) => match dna {
                         b'a' | b'g' | b't' | b'c' | b'A' | b'G' | b'T' | b'C' => value.push(dna),
-                        _ => (), // ignore ambigous characters
+                        _ => (), // ignore ambiguous characters
                     },
                     None => match dna {
                         b'a' | b'g' | b't' | b'c' | b'A' | b'G' | b'T' | b'C' => {
@@ -449,7 +448,7 @@ pub struct Dna {
     pub missings: usize,
     pub gaps: usize,
     pub undetermined: usize,
-    pub total_chars: usize, // All characters count
+    pub total_chars: usize,
     pub ntax: usize,
     pub missing_data: usize,
     pub prop_missing_data: f64,
@@ -501,7 +500,6 @@ impl Dna {
 
 #[cfg(test)]
 mod test {
-    // use indexmap::IndexMap;
     use super::*;
 
     fn get_matrix(id: &[&str], seq: &[&str]) -> IndexMap<String, String> {
