@@ -26,20 +26,20 @@ pub fn print_stats(site: &Sites, dna: &Dna) -> Result<()> {
     writeln!(writer, "%Pars. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
 
     writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
-    writeln!(writer, "Total\t: {}", utils::fmt_num(&dna.total_chars))?;
+    writeln!(writer, "Total\t\t: {}", utils::fmt_num(&dna.total_chars))?;
     writeln!(
         writer,
         "Missing data\t: {}",
         utils::fmt_num(&dna.missing_data)
     )?;
     writeln!(writer, "Prop. missing \t: {:.2}", &dna.prop_missing_data)?;
-    writeln!(writer, "A\t: {}", utils::fmt_num(&dna.a_count))?;
-    writeln!(writer, "C\t: {}", utils::fmt_num(&dna.c_count))?;
-    writeln!(writer, "G\t: {}", utils::fmt_num(&dna.g_count))?;
-    writeln!(writer, "T\t: {}", utils::fmt_num(&dna.t_count))?;
-    writeln!(writer, "N\t: {}", utils::fmt_num(&dna.n_count))?;
-    writeln!(writer, "?\t: {}", utils::fmt_num(&dna.missings))?;
-    writeln!(writer, "-\t: {}", utils::fmt_num(&dna.gaps))?;
+    writeln!(writer, "A\t\t: {}", utils::fmt_num(&dna.a_count))?;
+    writeln!(writer, "C\t\t: {}", utils::fmt_num(&dna.c_count))?;
+    writeln!(writer, "G\t\t: {}", utils::fmt_num(&dna.g_count))?;
+    writeln!(writer, "T\t\t: {}", utils::fmt_num(&dna.t_count))?;
+    writeln!(writer, "N\t\t: {}", utils::fmt_num(&dna.n_count))?;
+    writeln!(writer, "?\t\t: {}", utils::fmt_num(&dna.missings))?;
+    writeln!(writer, "-\t\t: {}", utils::fmt_num(&dna.gaps))?;
     writer.flush()?;
     Ok(())
 }
