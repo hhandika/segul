@@ -475,8 +475,10 @@ impl Dna {
     fn count_chars(&mut self, aln: &Alignment) {
         self.ntax = aln.header.ntax;
         self.total_chars = aln.header.nchar * self.ntax;
-        aln.alignment.values().for_each(|seqs| {
-            seqs.bytes().for_each(|ch| match ch {
+        aln.alignment
+            .values()
+            .flat_map(|seqs| seqs.bytes())
+            .for_each(|ch| match ch {
                 b'a' | b'A' => self.a_count += 1,
                 b'c' | b'C' => self.c_count += 1,
                 b'g' | b'G' => self.g_count += 1,
@@ -486,8 +488,7 @@ impl Dna {
                 b'O' | b'o' | b'X' | b'x' => self.missings += 1, // Following iqtree treatments
                 b'-' => self.gaps += 1,
                 _ => self.undetermined += 1,
-            })
-        });
+            });
 
         self.count_missing_data();
     }
@@ -574,5 +575,25 @@ mod test {
         let ntax = vec![10, 8, 20, 30, 60];
         let comp = Completeness::new(&60, 2);
         assert_eq!(2, comp.count_min_tax(&ntax, 0.5))
+    }
+
+    #[test]
+    fn dna_count_test() {
+        let path = Path::new("test_files/concat.fasta");
+        let input_format = SeqFormat::Fasta;
+        let mut aln = Alignment::new();
+        aln.get_aln_any(path, &input_format);
+        let mut dna = Dna::new();
+        dna.count_chars(&aln);
+        assert_eq!(4, dna.ntax);
+        assert_eq!(104, dna.total_chars);
+        assert_eq!(48, dna.a_count);
+        assert_eq!(22, dna.t_count);
+        assert_eq!(10, dna.g_count);
+        assert_eq!(0, dna.c_count);
+        assert_eq!(24, dna.missings);
+        assert_eq!(24, dna.missing_data);
+        assert_eq!(0, dna.undetermined);
+        assert_eq!(0, dna.gaps);
     }
 }
