@@ -380,7 +380,7 @@ fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("decrement")
                         .long("decrement")
-                        .help("Sets a custom decrement value for counting taxon completeness")
+                        .help("Sets a custom percentage decrement value for counting taxon completeness")
                         .takes_value(true)
                         .value_name("DECREMENT")
                         .default_value("5")
