@@ -131,7 +131,7 @@ fn get_args(version: &str) -> ArgMatches {
                         .required(true)
                         .default_value("charset")
                         .value_name("FORMAT")
-                        .possible_values(&["nexus", "phylip", "charset"]),
+                        .possible_values(&["charset", "nexus", "raxml"]),
                 )
                 .arg(
                     Arg::with_name("output")
@@ -269,7 +269,7 @@ fn get_args(version: &str) -> ArgMatches {
                         .help("Sets partition format if concat")
                         .takes_value(true)
                         .value_name("FORMAT")
-                        .possible_values(&["nexus", "phylip", "charset"]),
+                        .possible_values(&["charset", "nexus", "raxml"]),
                 )
                 .arg(
                     Arg::with_name("concat")
