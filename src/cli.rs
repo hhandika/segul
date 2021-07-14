@@ -324,7 +324,7 @@ fn get_args(version: &str) -> ArgMatches {
                         .help("Uses a costume output filename")
                         .takes_value(true)
                         .required(true)
-                        .default_value("concat")
+                        .default_value("id")
                         .value_name("OUTPUT"),
                 ),
         )
