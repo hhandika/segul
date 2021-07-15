@@ -363,9 +363,9 @@ impl<'a> FilterParser<'a> {
     // FIX ME
     fn filter(&mut self) {
         self.input_fmt = self.get_input_fmt(self.matches);
-        let input_type = self.get_input_type(self.matches);
+        // let input_type = self.get_input_type(self.matches);
         let dir = self.get_dir_input(self.matches);
-        let mut files = if self.is_input_dir() {
+        self.files = if self.is_input_dir() {
             let dir = self.get_dir_input(self.matches);
             self.get_files(dir, &self.input_fmt)
         } else {
@@ -606,9 +606,9 @@ impl<'a> IdParser<'a> {
     }
 
     fn get_id(&self) {
-        let input_type = self.get_input_type(&self.matches);
+        // let input_type = self.get_input_type(&self.matches);
         let input_fmt = self.get_input_fmt(&self.matches);
-        let mut files = if self.is_input_dir() {
+        let files = if self.is_input_dir() {
             let dir = self.get_dir_input(self.matches);
             self.get_files(dir, &input_fmt)
         } else {
@@ -667,7 +667,7 @@ impl Cli for StatsParser<'_> {}
 
 struct StatsParser<'a> {
     matches: &'a ArgMatches<'a>,
-    decrement: usize,
+    interval: usize,
     input_fmt: SeqFormat,
 }
 
@@ -675,20 +675,21 @@ impl<'a> StatsParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
-            decrement: 0,
+            interval: 0,
             input_fmt: SeqFormat::Fasta,
         }
     }
 
     fn stats(&mut self) {
         self.input_fmt = self.get_input_fmt(&self.matches);
-        self.decrement = self.parse_decrement();
+        self.interval = self.parse_interval();
         let input_type = self.get_input_type(&self.matches);
         match input_type {
             InputType::File => self.get_stats_file(),
             InputType::Dir => {
                 let dir = self.get_dir_input(self.matches);
                 let files = self.get_files(dir, &self.input_fmt);
+                self.get_stats_multiple(&files);
                 self.print_input_file(Path::new(dir)).unwrap();
             }
             InputType::Wildcard => {
@@ -700,7 +701,7 @@ impl<'a> StatsParser<'a> {
 
     fn get_stats_multiple(&self, files: &[PathBuf]) {
         let output = self.get_output(&self.matches);
-        SeqStats::new(&self.input_fmt, output, self.decrement).get_stats_dir(&files);
+        SeqStats::new(&self.input_fmt, output, self.interval).get_stats_dir(&files);
     }
 
     fn get_stats_file(&self) {
@@ -708,17 +709,17 @@ impl<'a> StatsParser<'a> {
         let input = Path::new(self.get_file_input(self.matches));
         let output = self.get_output(&self.matches);
         self.print_input_file(input).unwrap();
-        SeqStats::new(&self.input_fmt, output, self.decrement).get_seq_stats_file(input);
+        SeqStats::new(&self.input_fmt, output, self.interval).get_seq_stats_file(input);
     }
 
-    fn parse_decrement(&self) -> usize {
-        let decrement = self
+    fn parse_interval(&self) -> usize {
+        let interval = self
             .matches
-            .value_of("decrement")
-            .expect("CAN'T GET DECREMENT VALUES");
-        decrement
+            .value_of("comp-interval")
+            .expect("CAN'T GET INTERVAL VALUES");
+        interval
             .parse::<usize>()
-            .expect("FAIL PARSING DECREMENT VALUES")
+            .expect("FAIL PARSING INTERVAL VALUES")
     }
 
     fn print_input_file(&self, input: &Path) -> Result<()> {

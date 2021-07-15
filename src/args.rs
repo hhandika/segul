@@ -396,9 +396,9 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("OUTPUT"),
                 )
                 .arg(
-                    Arg::with_name("decrement")
-                        .long("decrement")
-                        .help("Sets a custom percentage decrement value for counting taxon completeness")
+                    Arg::with_name("comp-interval")
+                        .long("comp-interval")
+                        .help("Sets a custom percentage interval value for counting data matrix completeness")
                         .takes_value(true)
                         .value_name("DECREMENT")
                         .default_value("5")
