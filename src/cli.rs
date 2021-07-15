@@ -782,8 +782,11 @@ impl<'a> FilterParser<'a> {
     }
 
     fn parse_npercent(&self) -> Vec<f64> {
-        let npercent: Vec<&str> = self.matches.values_of("npercent").unwrap().collect();
-        npercent.iter().map(|np| self.parse_percent(np)).collect()
+        self.matches
+            .values_of("npercent")
+            .expect("FAILED PARSING npercent")
+            .map(|np| self.parse_percent(np))
+            .collect()
     }
 
     fn is_npercent(&mut self) -> bool {
