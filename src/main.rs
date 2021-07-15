@@ -3,6 +3,7 @@ use std::time::Instant;
 
 use clap::crate_version;
 
+mod args;
 mod cli;
 mod core;
 mod helper;
