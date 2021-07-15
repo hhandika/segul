@@ -30,7 +30,7 @@ fn get_args(version: &str) -> ArgMatches {
                         .help("Convert a fasta file")
                         .takes_value(true)
                         .required_unless("dir")
-                        .conflicts_with("dir")
+                        .conflicts_with_all(&["dir", "wildcard"])
                         .value_name("INPUT FILE"),
                 )
                 .arg(
@@ -40,7 +40,18 @@ fn get_args(version: &str) -> ArgMatches {
                         .help("Convert multiple fasta files inside a dir")
                         .takes_value(true)
                         .required_unless("input")
-                        .conflicts_with("input")
+                        .conflicts_with_all(&["input", "wildcard"])
+                        .value_name("DIR"),
+                )
+                .arg(
+                    Arg::with_name("wildcard")
+                        .short("c")
+                        .long("wcard")
+                        .help("Convert multiple fasta files using wildcard as an input")
+                        .takes_value(true)
+                        .multiple(true)
+                        .required_unless("input")
+                        .conflicts_with_all(&["input", "dir"])
                         .value_name("DIR"),
                 )
                 .arg(
@@ -335,20 +346,31 @@ fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("input")
                         .short("i")
                         .long("input")
-                        .help("Convert a fasta file")
+                        .help("Gets summary from a file")
                         .takes_value(true)
                         .required_unless("dir")
-                        .conflicts_with("dir")
+                        .conflicts_with_all(&["dir", "wildcard"])
                         .value_name("INPUT FILE"),
                 )
                 .arg(
                     Arg::with_name("dir")
                         .short("d")
                         .long("dir")
-                        .help("Inputs dir with alignment files")
+                        .help("Gets summary from alignment files")
                         .takes_value(true)
-                        .conflicts_with("input")
+                        .conflicts_with_all(&["input", "wildcard"])
                         .value_name("INPUT FILE"),
+                )
+                .arg(
+                    Arg::with_name("wildcard")
+                        .short("c")
+                        .long("wcard")
+                        .help("Convert multiple fasta files using wildcard as an input")
+                        .takes_value(true)
+                        .multiple(true)
+                        .required_unless("input")
+                        .conflicts_with_all(&["input", "dir"])
+                        .value_name("DIR"),
                 )
                 .arg(
                     Arg::with_name("format")
@@ -415,8 +437,20 @@ trait Cli {
         matches.value_of("dir").expect("CANNOT READ DIR PATH")
     }
 
-    fn get_files(&self, dir: &str, input_fmt: &SeqFormat) -> Vec<PathBuf> {
-        Files::new(dir, input_fmt).get_files()
+    fn parse_wcard_input(&self, matches: &ArgMatches) -> Vec<PathBuf> {
+        matches
+            .values_of("wildcard")
+            .expect("FAILED PARSING npercent")
+            .map(PathBuf::from)
+            .collect()
+    }
+
+    fn get_files(&self, matches: &ArgMatches, dir: &str, input_fmt: &SeqFormat) -> Vec<PathBuf> {
+        if !matches.is_present("wildcard") {
+            Files::new(dir, input_fmt).get_files()
+        } else {
+            self.parse_wcard_input(matches)
+        }
     }
 
     fn get_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
@@ -508,7 +542,7 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_multiple_fasta(&mut self) {
         let dir = self.get_dir_input(self.matches);
-        let files = self.get_files(dir, &self.input_fmt);
+        let files = self.get_files(self.matches, dir, &self.input_fmt);
         let output_fmt = self.get_output_fmt(self.matches);
         let output = self.get_output_path(&self.matches);
         self.is_dir = true;
@@ -635,7 +669,7 @@ impl<'a> ConcatParser<'a> {
         self.print_input_dir(&dir).unwrap();
         let concat =
             msa::MSAlignment::new(&self.input_fmt, output, &self.output_fmt, &self.part_fmt);
-        let mut files = self.get_files(dir, &self.input_fmt);
+        let mut files = self.get_files(self.matches, dir, &self.input_fmt);
         concat.concat_alignment(&mut files);
     }
 
@@ -677,7 +711,7 @@ impl<'a> FilterParser<'a> {
     fn filter(&mut self) {
         self.input_fmt = self.get_input_fmt(self.matches);
         let dir = self.get_dir_input(self.matches);
-        self.files = self.get_files(dir, &self.input_fmt);
+        self.files = self.get_files(self.matches, dir, &self.input_fmt);
         if self.is_npercent() {
             self.get_min_taxa_npercent(dir);
         } else {
@@ -895,7 +929,7 @@ impl<'a> IdParser<'a> {
     fn get_id(&self) {
         let dir = self.get_dir_input(&self.matches);
         let input_fmt = self.get_input_fmt(&self.matches);
-        let files = self.get_files(dir, &input_fmt);
+        let files = self.get_files(self.matches, dir, &input_fmt);
         self.print_input(dir).unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
@@ -961,7 +995,7 @@ impl<'a> StatsParser<'a> {
 
     fn show_stats_dir(&self, input_fmt: &SeqFormat) {
         let dir = self.get_dir_input(&self.matches);
-        let files = self.get_files(dir, input_fmt);
+        let files = self.get_files(self.matches, dir, input_fmt);
         let output = self.get_output(&self.matches);
         self.print_input_file(Path::new(dir)).unwrap();
         SeqStats::new(input_fmt, output, self.decrement).get_stats_dir(&files);
