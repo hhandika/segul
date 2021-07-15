@@ -300,11 +300,11 @@ impl<'a> ConcatParser<'a> {
         self.output_fmt = self.get_output_fmt(self.matches);
         self.part_fmt = self.parse_partition_fmt(self.matches);
         self.check_partition_format(&self.output_fmt, &self.part_fmt);
-        let mut files = if self.is_input_dir() {
+        let mut files = if self.is_input_wcard() {
+            self.parse_input_wcard(&self.matches)
+        } else {
             let dir = self.get_dir_input(self.matches);
             self.get_files(dir, &self.input_fmt)
-        } else {
-            self.parse_input_wcard(&self.matches)
         };
         self.print_user_input().unwrap();
         let concat =
@@ -313,22 +313,22 @@ impl<'a> ConcatParser<'a> {
         concat.concat_alignment(&mut files);
     }
 
-    fn is_input_dir(&self) -> bool {
-        self.matches.is_present("dir")
+    fn is_input_wcard(&self) -> bool {
+        self.matches.is_present("wildcard")
     }
 
     fn print_user_input(&self) -> Result<()> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul concat")?;
-        if self.is_input_dir() {
+        if !self.is_input_wcard() {
             writeln!(
                 writer,
                 "Input dir\t: {}\n",
                 self.get_dir_input(self.matches)
             )?;
         } else {
-            writeln!(writer, "Input\t\t: WILDCARD",)?;
+            writeln!(writer, "Input\t\t: WILDCARD\n",)?;
         }
         Ok(())
     }

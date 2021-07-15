@@ -101,8 +101,19 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("dir")
                         .help("Inputs alignment dir")
                         .takes_value(true)
-                        .required(true)
+                        .required_unless("wildcard")
                         .value_name("DIR"),
+                )
+                .arg(
+                    Arg::with_name("wildcard")
+                        .short("c")
+                        .long("wcard")
+                        .help("Uses wildcard as an input")
+                        .takes_value(true)
+                        .multiple(true)
+                        .required_unless("input")
+                        .conflicts_with_all(&["input", "dir"])
+                        .value_name("WILDCARD"),
                 )
                 .arg(
                     Arg::with_name("format")
@@ -359,12 +370,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("wildcard")
                         .short("c")
                         .long("wcard")
-                        .help("Convert multiple fasta files using wildcard as an input")
+                        .help("Uses wildcard as an input")
                         .takes_value(true)
                         .multiple(true)
                         .required_unless("input")
                         .conflicts_with_all(&["input", "dir"])
-                        .value_name("DIR"),
+                        .value_name("WILDCARD"),
                 )
                 .arg(
                     Arg::with_name("format")

@@ -7,7 +7,7 @@ use glob::glob;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
-use crate::helper::common::SeqFormat;
+use crate::helper::common::{self, SeqFormat};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -75,9 +75,24 @@ impl<'a> IDs<'a> {
             SeqFormat::Phylip => self.get_id_from_phylip(false),
             SeqFormat::PhylipInt => self.get_id_from_phylip(true),
             SeqFormat::Fasta => self.get_id_from_fasta(),
+            SeqFormat::Auto => self.get_id_auto(),
             _ => panic!("USE FASTA, NEXUS, OR PHYLIP ONLY"),
         };
         self.get_id(&all_ids)
+    }
+
+    fn get_id_auto(&self) -> Vec<IndexSet<String>> {
+        let (sender, receiver) = channel();
+        self.files.par_iter().for_each_with(sender, |s, file| {
+            let input_fmt = common::infer_input_auto(file);
+            match input_fmt {
+                SeqFormat::Fasta => s.send(fasta::read_only_id(file)).unwrap(),
+                SeqFormat::Nexus => s.send(Nexus::new(file).read_only_id()).unwrap(),
+                SeqFormat::PhylipInt => s.send(Phylip::new(file, true).read_only_id()).unwrap(),
+                _ => unreachable!(),
+            }
+        });
+        receiver.iter().collect()
     }
 
     fn get_id_from_phylip(&self, interleave: bool) -> Vec<IndexSet<String>> {
