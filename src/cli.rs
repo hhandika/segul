@@ -505,11 +505,34 @@ trait Cli {
     }
 }
 
+enum InputType {
+    File,
+    Dir,
+    Wildcard,
+}
+
+trait InputParser {
+    fn get_input_type(&self, matches: &ArgMatches) -> InputType {
+        if matches.is_present("input") {
+            InputType::File
+        } else if matches.is_present("dir") {
+            InputType::Dir
+        } else {
+            InputType::Wildcard
+        }
+    }
+}
+
+impl InputParser for ConvertParser<'_> {}
+
 impl Cli for ConvertParser<'_> {}
 
 struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_fmt: SeqFormat,
+    output: PathBuf,
+    output_fmt: SeqFormat,
+
     is_dir: bool,
 }
 
@@ -518,41 +541,46 @@ impl<'a> ConvertParser<'a> {
         Self {
             matches,
             input_fmt: SeqFormat::Fasta,
+            output: PathBuf::new(),
+            output_fmt: SeqFormat::Nexus,
             is_dir: false,
         }
     }
 
     fn convert(&mut self) {
         self.input_fmt = self.get_input_fmt(&self.matches);
-        if self.matches.is_present("input") {
-            self.convert_file();
-        } else {
-            self.convert_multiple_fasta();
+        self.output = self.get_output_path(self.matches);
+        self.output_fmt = self.get_output_fmt(self.matches);
+        let input_type = self.get_input_type(&self.matches);
+        match input_type {
+            InputType::File => self.convert_file(),
+            InputType::Dir => {
+                let dir = self.get_dir_input(self.matches);
+                let files = self.get_files(self.matches, dir, &self.input_fmt);
+                self.convert_multiple_files(&files);
+                self.print_input_dir(Path::new(dir), files.len(), &self.output)
+                    .unwrap();
+            }
+            InputType::Wildcard => {
+                let files = self.parse_wcard_input(&self.matches);
+                self.convert_multiple_files(&files)
+            }
         }
     }
 
     fn convert_file(&mut self) {
         let input = Path::new(self.get_file_input(self.matches));
-        let output_fmt = self.get_output_fmt(self.matches);
-        let output = self.get_output_path(self.matches);
         self.print_input_file(input).unwrap();
-
-        self.convert_any(input, &output, &output_fmt);
+        self.convert_any(input, &self.output, &self.output_fmt);
     }
 
-    fn convert_multiple_fasta(&mut self) {
-        let dir = self.get_dir_input(self.matches);
-        let files = self.get_files(self.matches, dir, &self.input_fmt);
-        let output_fmt = self.get_output_fmt(self.matches);
-        let output = self.get_output_path(&self.matches);
+    fn convert_multiple_files(&mut self, files: &[PathBuf]) {
         self.is_dir = true;
-        self.print_input_dir(Path::new(dir), files.len(), &output)
-            .unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Converting alignments...");
         files.par_iter().for_each(|file| {
-            let output = output.join(file.file_stem().unwrap());
-            self.convert_any(file, &output, &output_fmt);
+            let output = self.output.join(file.file_stem().unwrap());
+            self.convert_any(file, &output, &self.output_fmt);
         });
         spin.finish_with_message("DONE!");
     }
