@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use crate::writer::seqwriter::SeqWriter;
 
-use crate::helper::common::{Header, PartitionFormat, SeqFormat};
+use crate::helper::common::{self, Header, PartitionFormat, SeqFormat};
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -43,6 +43,10 @@ impl<'a> Converter<'a> {
             SeqFormat::Nexus | SeqFormat::NexusInt => self.convert_nexus(),
             SeqFormat::Phylip => self.convert_phylip(false),
             SeqFormat::PhylipInt => self.convert_phylip(true),
+            SeqFormat::Auto => {
+                let input_fmt = common::infer_input_auto(self.input);
+                self.get_sequence(&input_fmt)
+            }
         }
     }
 

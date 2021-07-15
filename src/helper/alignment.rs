@@ -2,7 +2,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::helper::common::{Header, SeqFormat};
+use crate::helper::common::{self, Header, SeqFormat};
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -30,6 +30,10 @@ impl Alignment {
             SeqFormat::Phylip => self.get_aln_from_phylip(file, false),
             SeqFormat::PhylipInt => self.get_aln_from_phylip(file, true),
             SeqFormat::Fasta => self.get_aln_from_fasta(file),
+            SeqFormat::Auto => {
+                let input_fmt = common::infer_input_auto(file);
+                self.get_aln_any(file, &input_fmt);
+            }
             _ => (),
         }
     }

@@ -71,7 +71,9 @@ fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .value_name("FORMAT")
+                        .default_value("auto")
                         .possible_values(&[
+                            "auto",
                             "fasta",
                             "nexus",
                             "phylip",
@@ -124,7 +126,9 @@ fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .value_name("FORMAT")
+                        .default_value("auto")
                         .possible_values(&[
+                            "auto",
                             "nexus",
                             "phylip",
                             "fasta",
@@ -198,7 +202,9 @@ fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .value_name("FORMAT")
+                        .default_value("auto")
                         .possible_values(&[
+                            "auto",
                             "fasta",
                             "nexus",
                             "phylip",
@@ -319,7 +325,9 @@ fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .value_name("FORMAT")
+                        .default_value("auto")
                         .possible_values(&[
+                            "auto",
                             "fasta",
                             "nexus",
                             "phylip",
@@ -380,7 +388,9 @@ fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .value_name("FORMAT")
+                        .default_value("auto")
                         .possible_values(&[
+                            "auto",
                             "fasta",
                             "nexus",
                             "phylip",
@@ -471,6 +481,7 @@ trait Cli {
             .value_of("format")
             .expect("CANNOT READ FORMAT INPUT");
         match input_fmt {
+            "auto" => SeqFormat::Auto,
             "fasta" | "fasta-int" => SeqFormat::Fasta,
             "nexus" | "nexus-int" => SeqFormat::Nexus,
             "phylip" => SeqFormat::Phylip,

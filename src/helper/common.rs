@@ -1,8 +1,10 @@
+use std::ffi::OsStr;
 use std::path::Path;
 
 use indexmap::IndexMap;
 
 pub enum SeqFormat {
+    Auto,
     Fasta,
     Nexus,
     Phylip,
@@ -55,6 +57,19 @@ impl Header {
             missing: '?',
             gap: '-',
         }
+    }
+}
+
+pub fn infer_input_auto(input: &Path) -> SeqFormat {
+    let ext: &str = input
+        .extension()
+        .and_then(OsStr::to_str)
+        .expect("CANNOT PARSE EXTENSION");
+    match ext {
+        "fas" | "fa" | "fasta" => SeqFormat::Fasta,
+        "nex" | "nexus" => SeqFormat::Nexus,
+        "phy" | "phylip" => SeqFormat::PhylipInt,
+        _ => panic!("UNKNOWN EXTENSION. PLEASE, SPECIFY INPUT FORMAT!"),
     }
 }
 

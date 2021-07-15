@@ -49,6 +49,11 @@ impl<'a> Files<'a> {
             SeqFormat::Fasta => format!("{}/*.fa*", self.dir),
             SeqFormat::Nexus => format!("{}/*.nex*", self.dir),
             SeqFormat::Phylip | SeqFormat::PhylipInt => format!("{}/*.phy*", self.dir),
+            SeqFormat::Auto => panic!(
+                "YOUR INPUT FORMAT IS THE DEFAULT AUTO. \
+            THE PROGRAM CANNOT USE AUTO FOR DIR INPUT. PLEASE, \
+            SPECIFY INPUT FORMAT USING THE OPTION -f or --format OR USE USE WILDCARD."
+            ),
             _ => panic!("UNSUPPORTED FORMAT! USE FASTA, NEXUS, OR PHYLIP ONLY"),
         };
     }

@@ -53,6 +53,7 @@ impl<'a> SeqWriter<'a> {
             SeqFormat::PhylipInt => self.write_phylip(true)?,
             SeqFormat::Fasta => self.write_fasta(false)?,
             SeqFormat::FastaInt => self.write_fasta(true)?,
+            _ => unreachable!(),
         }
 
         Ok(())
@@ -374,6 +375,7 @@ impl<'a> SeqWriter<'a> {
             SeqFormat::Fasta | SeqFormat::FastaInt => self.path.with_extension("fas"),
             SeqFormat::Nexus | SeqFormat::NexusInt => self.path.with_extension("nex"),
             SeqFormat::Phylip | SeqFormat::PhylipInt => self.path.with_extension("phy"),
+            _ => unreachable!(),
         };
     }
 
