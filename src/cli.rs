@@ -431,7 +431,7 @@ pub fn parse_cli(version: &str) {
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
         ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).filter(),
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
-        ("summary", Some(stats_matches)) => StatsParser::new(stats_matches).show_stats(),
+        ("summary", Some(stats_matches)) => StatsParser::new(stats_matches).stats(),
         _ => unreachable!(),
     }
 }
@@ -447,7 +447,7 @@ trait Cli {
         matches.value_of("dir").expect("CANNOT READ DIR PATH")
     }
 
-    fn parse_wcard_input(&self, matches: &ArgMatches) -> Vec<PathBuf> {
+    fn parse_input_wcard(&self, matches: &ArgMatches) -> Vec<PathBuf> {
         matches
             .values_of("wildcard")
             .expect("FAILED PARSING npercent")
@@ -455,11 +455,17 @@ trait Cli {
             .collect()
     }
 
-    fn get_files(&self, matches: &ArgMatches, dir: &str, input_fmt: &SeqFormat) -> Vec<PathBuf> {
-        if !matches.is_present("wildcard") {
-            Files::new(dir, input_fmt).get_files()
+    fn get_files(&self, dir: &str, input_fmt: &SeqFormat) -> Vec<PathBuf> {
+        Files::new(dir, input_fmt).get_files()
+    }
+
+    fn get_input_type(&self, matches: &ArgMatches) -> InputType {
+        if matches.is_present("input") {
+            InputType::File
+        } else if matches.is_present("dir") {
+            InputType::Dir
         } else {
-            self.parse_wcard_input(matches)
+            InputType::Wildcard
         }
     }
 
@@ -522,20 +528,6 @@ enum InputType {
     Wildcard,
 }
 
-trait InputParser {
-    fn get_input_type(&self, matches: &ArgMatches) -> InputType {
-        if matches.is_present("input") {
-            InputType::File
-        } else if matches.is_present("dir") {
-            InputType::Dir
-        } else {
-            InputType::Wildcard
-        }
-    }
-}
-
-impl InputParser for ConvertParser<'_> {}
-
 impl Cli for ConvertParser<'_> {}
 
 struct ConvertParser<'a> {
@@ -567,13 +559,13 @@ impl<'a> ConvertParser<'a> {
             InputType::File => self.convert_file(),
             InputType::Dir => {
                 let dir = self.get_dir_input(self.matches);
-                let files = self.get_files(self.matches, dir, &self.input_fmt);
+                let files = self.get_files(dir, &self.input_fmt);
                 self.convert_multiple_files(&files);
                 self.print_input_dir(Path::new(dir), files.len(), &self.output)
                     .unwrap();
             }
             InputType::Wildcard => {
-                let files = self.parse_wcard_input(&self.matches);
+                let files = self.parse_input_wcard(&self.matches);
                 self.convert_multiple_files(&files)
             }
         }
@@ -676,6 +668,14 @@ trait PartCLi {
 impl PartCLi for ConcatParser<'_> {}
 
 impl Cli for ConcatParser<'_> {
+    fn get_input_type(&self, matches: &ArgMatches) -> InputType {
+        if matches.is_present("dir") {
+            InputType::Dir
+        } else {
+            InputType::Wildcard
+        }
+    }
+
     fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
         PathBuf::from(self.get_output(matches))
     }
@@ -684,6 +684,7 @@ impl Cli for ConcatParser<'_> {
 struct ConcatParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_fmt: SeqFormat,
+    input_type: InputType,
     output_fmt: SeqFormat,
     part_fmt: PartitionFormat,
 }
@@ -693,6 +694,7 @@ impl<'a> ConcatParser<'a> {
         Self {
             matches,
             input_fmt: SeqFormat::Fasta,
+            input_type: InputType::Dir,
             output_fmt: SeqFormat::Nexus,
             part_fmt: PartitionFormat::Charset,
         }
@@ -700,23 +702,41 @@ impl<'a> ConcatParser<'a> {
 
     fn concat(&mut self) {
         self.input_fmt = self.get_input_fmt(self.matches);
-        let dir = self.get_dir_input(self.matches);
+        self.input_type = self.get_input_type(self.matches);
         let output = self.get_output(self.matches);
         self.output_fmt = self.get_output_fmt(self.matches);
         self.part_fmt = self.parse_partition_fmt(self.matches);
         self.check_partition_format(&self.output_fmt, &self.part_fmt);
-        self.print_input_dir(&dir).unwrap();
+        let mut files = if self.is_input_dir() {
+            let dir = self.get_dir_input(self.matches);
+            self.get_files(dir, &self.input_fmt)
+        } else {
+            self.parse_input_wcard(&self.matches)
+        };
+        self.print_user_input().unwrap();
         let concat =
             msa::MSAlignment::new(&self.input_fmt, output, &self.output_fmt, &self.part_fmt);
-        let mut files = self.get_files(self.matches, dir, &self.input_fmt);
+
         concat.concat_alignment(&mut files);
     }
 
-    fn print_input_dir(&self, input: &str) -> Result<()> {
+    fn is_input_dir(&self) -> bool {
+        self.matches.is_present("dir")
+    }
+
+    fn print_user_input(&self) -> Result<()> {
         let io = io::stdout();
         let mut writer = io::BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul concat")?;
-        writeln!(writer, "Input dir\t: {}\n", input)?;
+        if self.is_input_dir() {
+            writeln!(
+                writer,
+                "Input dir\t: {}\n",
+                self.get_dir_input(self.matches)
+            )?;
+        } else {
+            writeln!(writer, "Input\t\t: WILDCARD",)?;
+        }
         Ok(())
     }
 }
@@ -747,16 +767,23 @@ impl<'a> FilterParser<'a> {
         }
     }
 
+    // FIX ME
     fn filter(&mut self) {
         self.input_fmt = self.get_input_fmt(self.matches);
+        let input_type = self.get_input_type(self.matches);
         let dir = self.get_dir_input(self.matches);
-        self.files = self.get_files(self.matches, dir, &self.input_fmt);
+        let mut files = if self.is_input_dir() {
+            let dir = self.get_dir_input(self.matches);
+            self.get_files(dir, &self.input_fmt)
+        } else {
+            self.parse_input_wcard(&self.matches)
+        };
         if self.is_npercent() {
             self.get_min_taxa_npercent(dir);
         } else {
             self.get_params();
             self.set_output_path(dir);
-            self.print_input(dir).expect("CANNOT DISPLAY TO STDOUT");
+            self.print_input().expect("CANNOT DISPLAY TO STDOUT");
             self.filter_aln();
         }
     }
@@ -768,10 +795,14 @@ impl<'a> FilterParser<'a> {
             let min_tax = self.get_min_taxa();
             self.params = filter::Params::MinTax(min_tax);
             self.set_multi_output_path(dir);
-            self.print_input(dir).expect("CANNOT DISPLAY TO STDOUT");
+            self.print_input().expect("CANNOT DISPLAY TO STDOUT");
             self.filter_aln();
             utils::print_divider();
         });
+    }
+
+    fn is_input_dir(&self) -> bool {
+        self.matches.is_present("dir")
     }
 
     fn filter_aln(&self) {
@@ -920,11 +951,19 @@ impl<'a> FilterParser<'a> {
         parent.join(output_dir)
     }
 
-    fn print_input(&self, dir: &str) -> Result<()> {
+    fn print_input(&self) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "\x1b[0;33mInput\x1b[0m")?;
-        writeln!(writer, "Dir\t\t: {}", dir)?;
+        if self.is_input_dir() {
+            writeln!(
+                writer,
+                "Input dir\t: {}\n",
+                self.get_dir_input(self.matches)
+            )?;
+        } else {
+            writeln!(writer, "Input\t\t: WILDCARD",)?;
+        }
         writeln!(
             writer,
             "File count\t: {}",
@@ -945,6 +984,14 @@ impl<'a> FilterParser<'a> {
 }
 
 impl Cli for IdParser<'_> {
+    fn get_input_type(&self, matches: &ArgMatches) -> InputType {
+        if matches.is_present("dir") {
+            InputType::Dir
+        } else {
+            InputType::Wildcard
+        }
+    }
+
     fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
         if matches.is_present("output") {
             let output = self.get_output(matches);
@@ -966,15 +1013,24 @@ impl<'a> IdParser<'a> {
     }
 
     fn get_id(&self) {
-        let dir = self.get_dir_input(&self.matches);
+        let input_type = self.get_input_type(&self.matches);
         let input_fmt = self.get_input_fmt(&self.matches);
-        let files = self.get_files(self.matches, dir, &input_fmt);
-        self.print_input(dir).unwrap();
+        let mut files = if self.is_input_dir() {
+            let dir = self.get_dir_input(self.matches);
+            self.get_files(dir, &input_fmt)
+        } else {
+            self.parse_input_wcard(&self.matches)
+        };
+        self.print_input().unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
         let ids = IDs::new(&files, &input_fmt).get_id_all();
         spin.finish_with_message("DONE!");
         self.write_results(&ids);
+    }
+
+    fn is_input_dir(&self) -> bool {
+        self.matches.is_present("dir")
     }
 
     fn write_results(&self, ids: &IndexSet<String>) {
@@ -988,12 +1044,19 @@ impl<'a> IdParser<'a> {
         self.print_output(&fname, ids.len()).unwrap();
     }
 
-    fn print_input(&self, dir: &str) -> Result<()> {
+    fn print_input(&self) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t\t: segul id")?;
-        writeln!(writer, "Input dir\t\t: {}\n", dir)?;
-
+        if self.is_input_dir() {
+            writeln!(
+                writer,
+                "Input dir\t: {}\n",
+                self.get_dir_input(self.matches)
+            )?;
+        } else {
+            writeln!(writer, "Input\t\t: WILDCARD",)?;
+        }
         Ok(())
     }
 
@@ -1012,6 +1075,7 @@ impl Cli for StatsParser<'_> {}
 struct StatsParser<'a> {
     matches: &'a ArgMatches<'a>,
     decrement: usize,
+    input_fmt: SeqFormat,
 }
 
 impl<'a> StatsParser<'a> {
@@ -1019,33 +1083,39 @@ impl<'a> StatsParser<'a> {
         Self {
             matches,
             decrement: 0,
+            input_fmt: SeqFormat::Fasta,
         }
     }
 
-    fn show_stats(&mut self) {
-        let input_fmt = self.get_input_fmt(&self.matches);
+    fn stats(&mut self) {
+        self.input_fmt = self.get_input_fmt(&self.matches);
         self.decrement = self.parse_decrement();
-        if self.matches.is_present("dir") {
-            self.show_stats_dir(&input_fmt);
-        } else {
-            self.show_stats_file(&input_fmt);
+        let input_type = self.get_input_type(&self.matches);
+        match input_type {
+            InputType::File => self.get_stats_file(),
+            InputType::Dir => {
+                let dir = self.get_dir_input(self.matches);
+                let files = self.get_files(dir, &self.input_fmt);
+                self.print_input_file(Path::new(dir)).unwrap();
+            }
+            InputType::Wildcard => {
+                let files = self.parse_input_wcard(&self.matches);
+                self.get_stats_multiple(&files)
+            }
         }
     }
 
-    fn show_stats_dir(&self, input_fmt: &SeqFormat) {
-        let dir = self.get_dir_input(&self.matches);
-        let files = self.get_files(self.matches, dir, input_fmt);
+    fn get_stats_multiple(&self, files: &[PathBuf]) {
         let output = self.get_output(&self.matches);
-        self.print_input_file(Path::new(dir)).unwrap();
-        SeqStats::new(input_fmt, output, self.decrement).get_stats_dir(&files);
+        SeqStats::new(&self.input_fmt, output, self.decrement).get_stats_dir(&files);
     }
 
-    fn show_stats_file(&self, input_fmt: &SeqFormat) {
+    fn get_stats_file(&self) {
         self.get_input_fmt(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
         let output = self.get_output(&self.matches);
         self.print_input_file(input).unwrap();
-        SeqStats::new(input_fmt, output, self.decrement).get_seq_stats_file(input);
+        SeqStats::new(&self.input_fmt, output, self.decrement).get_seq_stats_file(input);
     }
 
     fn parse_decrement(&self) -> usize {
