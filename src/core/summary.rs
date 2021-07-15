@@ -22,16 +22,16 @@ pub struct SeqStats<'a> {
     input_format: &'a SeqFormat,
     output: &'a str,
     ntax: usize,
-    decrement: usize,
+    interval: usize,
 }
 
 impl<'a> SeqStats<'a> {
-    pub fn new(input_format: &'a SeqFormat, output: &'a str, decrement: usize) -> Self {
+    pub fn new(input_format: &'a SeqFormat, output: &'a str, interval: usize) -> Self {
         Self {
             input_format,
             output,
             ntax: 0,
-            decrement,
+            interval,
         }
     }
 
@@ -94,9 +94,9 @@ impl<'a> SeqStats<'a> {
         sum_sites.get_summary(&sites);
         let mut sum_dna = DnaSummary::new();
         sum_dna.get_summary(&dna);
-        let mut ntax_comp = Completeness::new(&self.ntax, self.decrement);
-        ntax_comp.get_ntax_completeness(&dna);
-        (sum_sites, sum_dna, ntax_comp)
+        let mut mat_comp = Completeness::new(&self.ntax, self.interval);
+        mat_comp.matrix_completeness(&dna);
+        (sum_sites, sum_dna, mat_comp)
     }
 }
 
@@ -294,35 +294,35 @@ impl DnaSummary {
 pub struct Completeness {
     pub completeness: Vec<(usize, usize)>,
     pub total_tax: usize,
-    decrement: usize,
+    interval: usize,
 }
 
 impl Completeness {
-    fn new(total_tax: &usize, decrement: usize) -> Self {
+    fn new(total_tax: &usize, interval: usize) -> Self {
         Self {
             completeness: Vec::new(),
             total_tax: *total_tax,
-            decrement,
+            interval,
         }
     }
 
-    fn get_ntax_completeness(&mut self, dna: &[Dna]) {
+    fn matrix_completeness(&mut self, dna: &[Dna]) {
         let ntax: Vec<usize> = dna.iter().map(|d| d.ntax).collect();
         let mut values: usize = 100;
 
         while values > 0 {
             let percent = values as f64 / 100.0;
-            let ntax_comp = self.count_min_tax(&ntax, percent);
-            self.completeness.push((values, ntax_comp));
-            if ntax_comp == ntax.len() {
+            let mat_comp = self.count_mat_completeness(&ntax, percent);
+            self.completeness.push((values, mat_comp));
+            if mat_comp == ntax.len() {
                 break;
             } else {
-                values -= self.decrement;
+                values -= self.interval;
             }
         }
     }
 
-    fn count_min_tax(&self, ntax: &[usize], percent: f64) -> usize {
+    fn count_mat_completeness(&self, ntax: &[usize], percent: f64) -> usize {
         ntax.iter()
             .filter(|&n| n >= &self.compute_min_taxa(percent))
             .count()
@@ -574,7 +574,7 @@ mod test {
     fn filter_min_tax_test() {
         let ntax = vec![10, 8, 20, 30, 60];
         let comp = Completeness::new(&60, 2);
-        assert_eq!(2, comp.count_min_tax(&ntax, 0.5))
+        assert_eq!(2, comp.count_mat_completeness(&ntax, 0.5))
     }
 
     #[test]
