@@ -3,20 +3,20 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
+pub enum InputFmt {
+    Auto,
+    Fasta,
+    Nexus,
+    Phylip,
+    PhylipInt,
+}
+
 pub enum OutputFmt {
     Fasta,
     Nexus,
     Phylip,
     FastaInt,
     NexusInt,
-    PhylipInt,
-}
-
-pub enum InputFmt {
-    Auto,
-    Fasta,
-    Nexus,
-    Phylip,
     PhylipInt,
 }
 
