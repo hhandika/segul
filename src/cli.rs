@@ -680,12 +680,12 @@ impl<'a> StatsParser<'a> {
     fn stats(&mut self) {
         self.input_fmt = self.get_input_fmt(&self.matches);
         self.interval = self.parse_interval();
+        self.print_input_file().unwrap();
         let input_type = self.get_input_type(&self.matches);
         match input_type {
             InputType::File => self.get_stats_file(),
             InputType::Dir => {
                 let dir = self.get_dir_input(self.matches);
-                self.print_input_file(Path::new(dir)).unwrap();
                 let files = self.get_files(dir, &self.input_fmt);
                 self.get_stats_multiple(&files);
             }
@@ -705,7 +705,7 @@ impl<'a> StatsParser<'a> {
         self.get_input_fmt(&self.matches);
         let input = Path::new(self.get_file_input(self.matches));
         let output = self.get_output(&self.matches);
-        self.print_input_file(input).unwrap();
+        self.print_input_file().unwrap();
         SeqStats::new(&self.input_fmt, output, self.interval).get_seq_stats_file(input);
     }
 
@@ -719,11 +719,24 @@ impl<'a> StatsParser<'a> {
             .expect("FAIL PARSING INTERVAL VALUES")
     }
 
-    fn print_input_file(&self, input: &Path) -> Result<()> {
+    fn is_input_dir(&self) -> bool {
+        self.matches.is_present("dir")
+    }
+
+    // FIXME: This does not cover all cases
+    fn print_input_file(&self) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
         writeln!(writer, "Command\t\t: segul summary")?;
-        writeln!(writer, "Input\t\t: {}\n", input.display())?;
+        if self.is_input_dir() {
+            writeln!(
+                writer,
+                "Input dir\t: {}\n",
+                self.get_dir_input(self.matches)
+            )?;
+        } else {
+            writeln!(writer, "Input\t\t: WILDCARD",)?;
+        }
 
         Ok(())
     }
