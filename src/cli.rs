@@ -128,7 +128,6 @@ struct ConvertParser<'a> {
     input_fmt: InputFmt,
     output: PathBuf,
     output_fmt: OutputFmt,
-
     is_dir: bool,
 }
 
@@ -363,6 +362,7 @@ impl<'a> FilterParser<'a> {
     fn filter(&mut self) {
         self.input_fmt = self.get_input_fmt(self.matches);
         let dir = self.get_dir_input(self.matches);
+        self.print_input().expect("CANNOT DISPLAY TO STDOUT");
         self.files = if self.is_input_dir() {
             let dir = self.get_dir_input(self.matches);
             self.get_files(dir, &self.input_fmt)
@@ -374,7 +374,6 @@ impl<'a> FilterParser<'a> {
         } else {
             self.get_params();
             self.set_output_path(dir);
-            self.print_input().expect("CANNOT DISPLAY TO STDOUT");
             self.filter_aln();
         }
     }
