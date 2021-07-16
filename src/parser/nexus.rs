@@ -27,7 +27,7 @@ impl<'a> Nexus<'a> {
         }
     }
 
-    pub fn read(&mut self) -> Result<()> {
+    pub fn parse(&mut self) -> Result<()> {
         let mut commands = self.get_commands();
         self.parse_dimensions(&mut commands.dimensions);
         self.parse_format(&mut commands.format);
@@ -40,7 +40,7 @@ impl<'a> Nexus<'a> {
         Ok(())
     }
 
-    pub fn read_only_id(&mut self) -> IndexSet<String> {
+    pub fn parse_only_id(&mut self) -> IndexSet<String> {
         let mut commands = self.get_commands();
         self.parse_dimensions(&mut commands.dimensions);
         let ids = self.parse_matrix_id(&mut commands.matrix);
@@ -352,7 +352,7 @@ mod test {
     fn nexus_reading_simple_test() {
         let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
         assert_eq!(1, nex.matrix.len());
     }
 
@@ -360,7 +360,7 @@ mod test {
     fn nexus_reading_complete_test() {
         let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
         assert_eq!(5, nex.matrix.len());
     }
 
@@ -368,7 +368,7 @@ mod test {
     fn nexus_reading_tabulated_test() {
         let sample = Path::new("test_files/tabulated.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
         assert_eq!(2, nex.matrix.len());
     }
 
@@ -376,7 +376,7 @@ mod test {
     fn nexus_parsing_object_test() {
         let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
         assert_eq!(5, nex.header.ntax);
         assert_eq!(802, nex.header.nchar);
         assert_eq!("dna", nex.header.datatype);
@@ -398,7 +398,7 @@ mod test {
     fn check_match_ntax_test() {
         let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
     }
 
     #[test]
@@ -406,7 +406,7 @@ mod test {
     fn check_match_ntax_panic_test() {
         let sample = Path::new("test_files/unmatched_block.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
     }
 
     #[test]
@@ -414,7 +414,7 @@ mod test {
     fn check_invalid_nexus_test() {
         let sample = Path::new("test_files/simple.fas");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
     }
 
     #[test]
@@ -422,7 +422,7 @@ mod test {
     fn nexus_duplicate_panic_test() {
         let sample = Path::new("test_files/duplicates.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
     }
 
     #[test]
@@ -430,14 +430,14 @@ mod test {
     fn nexus_space_panic_test() {
         let sample = Path::new("test_files/idspaces.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
     }
 
     #[test]
     fn nexus_sequence_test() {
         let sample = Path::new("test_files/tabulated.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
         let key = String::from("ABEF");
         let res = String::from("gatata---");
         assert_eq!(Some(&res), nex.matrix.get(&key));
@@ -447,7 +447,7 @@ mod test {
     fn nexus_parse_interleave() {
         let sample = Path::new("test_files/interleave.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
         assert_eq!(3, nex.matrix.len());
     }
 
@@ -455,7 +455,7 @@ mod test {
     fn nexus_parse_interleave_res_test() {
         let sample = Path::new("test_files/interleave.nex");
         let mut nex = Nexus::new(sample);
-        nex.read().unwrap();
+        nex.parse().unwrap();
         let key = String::from("ABCD");
         let res = String::from("gatatagatatt");
         assert_eq!(Some(&res), nex.matrix.get(&key));

@@ -84,9 +84,9 @@ impl<'a> IDs<'a> {
         self.files.par_iter().for_each_with(sender, |s, file| {
             let input_fmt = common::infer_input_auto(file);
             match input_fmt {
-                InputFmt::Fasta => s.send(fasta::read_only_id(file)).unwrap(),
-                InputFmt::Nexus => s.send(Nexus::new(file).read_only_id()).unwrap(),
-                InputFmt::PhylipInt => s.send(Phylip::new(file, true).read_only_id()).unwrap(),
+                InputFmt::Fasta => s.send(fasta::parse_only_id(file)).unwrap(),
+                InputFmt::Nexus => s.send(Nexus::new(file).parse_only_id()).unwrap(),
+                InputFmt::PhylipInt => s.send(Phylip::new(file, true).parse_only_id()).unwrap(),
                 _ => unreachable!(),
             }
         });
@@ -96,7 +96,7 @@ impl<'a> IDs<'a> {
     fn get_id_from_phylip(&self, interleave: bool) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(Phylip::new(file, interleave).read_only_id())
+            s.send(Phylip::new(file, interleave).parse_only_id())
                 .unwrap();
         });
         receiver.iter().collect()
@@ -105,7 +105,7 @@ impl<'a> IDs<'a> {
     fn get_id_from_nexus(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(Nexus::new(file).read_only_id()).unwrap();
+            s.send(Nexus::new(file).parse_only_id()).unwrap();
         });
         receiver.iter().collect()
     }
@@ -113,7 +113,7 @@ impl<'a> IDs<'a> {
     fn get_id_from_fasta(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(fasta::read_only_id(file)).unwrap();
+            s.send(fasta::parse_only_id(file)).unwrap();
         });
         receiver.iter().collect()
     }

@@ -52,20 +52,20 @@ impl<'a> Converter<'a> {
 
     fn convert_fasta(&mut self) -> (IndexMap<String, String>, Header) {
         let mut fas = Fasta::new(self.input);
-        fas.read();
+        fas.parse();
         (fas.matrix, fas.header)
     }
 
     fn convert_nexus(&mut self) -> (IndexMap<String, String>, Header) {
         let mut nex = Nexus::new(self.input);
-        nex.read().expect("Failed parsing a nexus file");
+        nex.parse().expect("Failed parsing a nexus file");
         (nex.matrix, nex.header)
     }
 
     fn convert_phylip(&mut self, interleave: bool) -> (IndexMap<String, String>, Header) {
         let input = Path::new(self.input);
         let mut phy = Phylip::new(input, interleave);
-        phy.read().expect("Failed parsing a phylip file");
+        phy.parse().expect("Failed parsing a phylip file");
         (phy.matrix, phy.header)
     }
 

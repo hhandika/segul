@@ -27,8 +27,8 @@ impl<'a> Phylip<'a> {
         }
     }
 
-    pub fn read(&mut self) -> Result<()> {
-        self.read_file()?;
+    pub fn parse(&mut self) -> Result<()> {
+        self.parse_file()?;
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
         self.is_alignment = seq_info.is_alignment;
@@ -37,7 +37,7 @@ impl<'a> Phylip<'a> {
         Ok(())
     }
 
-    pub fn read_only_id(&mut self) -> IndexSet<String> {
+    pub fn parse_only_id(&mut self) -> IndexSet<String> {
         let file = File::open(self.input).expect("CANNOT READ THE FILE");
         let mut buff = BufReader::new(file);
         let mut header_line = String::new();
@@ -64,19 +64,19 @@ impl<'a> Phylip<'a> {
         ids
     }
 
-    fn read_file(&mut self) -> Result<()> {
+    fn parse_file(&mut self) -> Result<()> {
         let file = File::open(self.input)?;
 
         if self.interleave {
-            self.read_interleave(file)?;
+            self.parse_matrix_interleave(file)?;
         } else {
-            self.read_sequential(file)?;
+            self.parse_matrix_sequential(file)?;
         }
 
         Ok(())
     }
 
-    fn read_sequential<R: Read>(&mut self, file: R) -> Result<()> {
+    fn parse_matrix_sequential<R: Read>(&mut self, file: R) -> Result<()> {
         let mut buff = BufReader::new(file);
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
@@ -93,7 +93,7 @@ impl<'a> Phylip<'a> {
         Ok(())
     }
 
-    fn read_interleave<R: Read>(&mut self, file: R) -> Result<()> {
+    fn parse_matrix_interleave<R: Read>(&mut self, file: R) -> Result<()> {
         let mut buff = BufReader::new(file);
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
@@ -221,7 +221,7 @@ mod test {
     fn read_phylip_simple_test() {
         let path = Path::new("test_files/simple.phy");
         let mut phylip = Phylip::new(path, false);
-        phylip.read().unwrap();
+        phylip.parse().unwrap();
 
         assert_eq!(2, phylip.header.ntax);
         assert_eq!(4, phylip.header.nchar);
@@ -233,14 +233,14 @@ mod test {
     fn read_phylip_invalid_test() {
         let path = Path::new("test_files/invalid.phy");
         let mut phylip = Phylip::new(path, false);
-        phylip.read().unwrap();
+        phylip.parse().unwrap();
     }
 
     #[test]
     fn read_phylip_whitespace_test() {
         let path = Path::new("test_files/whitespaces.phy");
         let mut phylip = Phylip::new(path, false);
-        phylip.read().unwrap();
+        phylip.parse().unwrap();
         assert_eq!(2, phylip.header.ntax);
         assert_eq!(4, phylip.header.nchar);
         assert_eq!(2, phylip.matrix.len());
@@ -257,11 +257,11 @@ mod test {
     }
 
     #[test]
-    fn parse_interleave_phylip_test() {
+    fn parse_matrix_interleave_phylip_test() {
         let path = Path::new("test_files/interleave.phy");
         let file = File::open(path).unwrap();
         let mut phy = Phylip::new(path, true);
-        phy.read_interleave(file).unwrap();
+        phy.parse_matrix_interleave(file).unwrap();
         let res = phy.matrix.get("ABCD");
         assert_eq!(Some(&String::from("agccatggaa")), res);
     }
@@ -270,7 +270,7 @@ mod test {
     fn read_interleave_phylip_test() {
         let path = Path::new("test_files/interleave.phy");
         let mut phy = Phylip::new(path, true);
-        phy.read().unwrap();
+        phy.parse().unwrap();
         let res = phy.matrix.get("ABCD");
         assert_eq!(Some(&String::from("agccatggaa")), res);
     }
@@ -279,7 +279,7 @@ mod test {
     fn reade_int_phylip_whitespaces_test() {
         let path = Path::new("test_files/interleave_whitespaces.phy");
         let mut phy = Phylip::new(path, true);
-        phy.read().unwrap();
+        phy.parse().unwrap();
         let res = phy.matrix.get("ABCD");
         assert_eq!(Some(&String::from("agccatggcc")), res);
     }
@@ -290,6 +290,6 @@ mod test {
         // The header does not matches the character length.
         let path = Path::new("test_files/invalid_interleave.phy");
         let mut phy = Phylip::new(path, true);
-        phy.read().unwrap();
+        phy.parse().unwrap();
     }
 }

@@ -17,7 +17,7 @@ pub struct Fasta<'a> {
     pub header: Header,
 }
 
-pub fn read_only_id(input: &Path) -> IndexSet<String> {
+pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("CANNOT READ A FASTA FILE");
     let buff = BufReader::new(file);
     let mut ids: IndexSet<String> = IndexSet::new();
@@ -42,10 +42,10 @@ impl<'a> Fasta<'a> {
         }
     }
 
-    pub fn read(&mut self) {
+    pub fn parse(&mut self) {
         let file = File::open(self.input).expect("CANNOT OPEN THE FILE");
         let buff = BufReader::new(file);
-        self.parse_fasta(buff);
+        self.parse_matrix(buff);
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
         self.is_alignment = seq_info.is_alignment;
@@ -53,7 +53,7 @@ impl<'a> Fasta<'a> {
         self.header.ntax = self.matrix.len();
     }
 
-    fn parse_fasta<R: Read>(&mut self, buff: R) {
+    fn parse_matrix<R: Read>(&mut self, buff: R) {
         let fasta = FastaReader::new(buff);
         fasta
             .into_iter()
@@ -150,7 +150,7 @@ mod test {
     fn read_fasta_simple_test() {
         let path = Path::new("test_files/simple.fas");
         let mut fasta = Fasta::new(path);
-        fasta.read();
+        fasta.parse();
 
         assert_eq!(2, fasta.matrix.len());
     }
@@ -159,7 +159,7 @@ mod test {
     fn check_is_alignment_test() {
         let path = Path::new("test_files/simple.fas");
         let mut fasta = Fasta::new(path);
-        fasta.read();
+        fasta.parse();
 
         assert_eq!(true, fasta.is_alignment);
     }
@@ -168,7 +168,7 @@ mod test {
     fn check_isnot_alignment_test() {
         let path = Path::new("test_files/unaligned.fas");
         let mut fasta = Fasta::new(path);
-        fasta.read();
+        fasta.parse();
 
         assert_eq!(false, fasta.is_alignment);
     }
