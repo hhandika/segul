@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 alphanumeric-sort = "1.4.*"
+anyhow = "1.0.*"
 bytecount = "0.6.2"
 chrono = "0.4.*"
 clap = "2.*"

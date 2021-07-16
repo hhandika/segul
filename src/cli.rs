@@ -685,9 +685,9 @@ impl<'a> StatsParser<'a> {
             InputType::File => self.get_stats_file(),
             InputType::Dir => {
                 let dir = self.get_dir_input(self.matches);
+                self.print_input_file(Path::new(dir)).unwrap();
                 let files = self.get_files(dir, &self.input_fmt);
                 self.get_stats_multiple(&files);
-                self.print_input_file(Path::new(dir)).unwrap();
             }
             InputType::Wildcard => {
                 let files = self.parse_input_wcard(&self.matches);
