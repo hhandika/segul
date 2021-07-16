@@ -58,14 +58,14 @@ impl<'a> Converter<'a> {
 
     fn convert_nexus(&mut self) -> (IndexMap<String, String>, Header) {
         let mut nex = Nexus::new(self.input);
-        nex.read().expect("CANNOT READ NEXUS FILES");
+        nex.read().expect("Failed parsing a nexus file");
         (nex.matrix, nex.header)
     }
 
     fn convert_phylip(&mut self, interleave: bool) -> (IndexMap<String, String>, Header) {
         let input = Path::new(self.input);
         let mut phy = Phylip::new(input, interleave);
-        phy.read().expect("CANNOT READ PHYLIP FILES");
+        phy.read().expect("Failed parsing a phylip file");
         (phy.matrix, phy.header)
     }
 
@@ -73,12 +73,12 @@ impl<'a> Converter<'a> {
         let mut convert = SeqWriter::new(self.output, matrix, header, None, &PartitionFmt::None);
         convert
             .write_sequence(self.output_fmt)
-            .expect("CANNOT WRITE OUTPUT FILES");
+            .expect("Failed writing output files");
 
         if !self.is_dir {
             convert
                 .print_save_path()
-                .expect("Cannot write save path to stdout");
+                .expect("Failed writing save path to stdout");
         }
     }
 }
