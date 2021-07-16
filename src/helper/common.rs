@@ -76,7 +76,7 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
     let ext: &str = input
         .extension()
         .and_then(OsStr::to_str)
-        .expect(format!("Failed parsing extension from {}", input.display()));
+        .expect("Failed parsing extension");
     match ext {
         "fas" | "fa" | "fasta" => InputFmt::Fasta,
         "nex" | "nexus" => InputFmt::Nexus,
