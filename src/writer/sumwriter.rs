@@ -1,6 +1,8 @@
 use std::fs::File;
-use std::io::{self, BufWriter, Result, Write};
+use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
+
+use anyhow::{Context, Result};
 
 use crate::core::summary::{Completeness, Dna, DnaSummary, SiteSummary, Sites};
 use crate::helper::utils;
@@ -61,7 +63,8 @@ impl CsvWriter {
 
     pub fn write_summary_dir(&mut self, stats: &[(Sites, Dna)]) -> Result<()> {
         self.get_ouput_fname();
-        let file = File::create(&self.output).expect("CANNOT WRITE THE STAT RESULTS");
+        let file = File::create(&self.output)
+            .with_context(|| format!("Failed creating file {}", self.output))?;
         let mut writer = BufWriter::new(file);
         self.write_csv_header(&mut writer)?;
         stats.iter().for_each(|(site, dna)| {
@@ -73,7 +76,8 @@ impl CsvWriter {
 
     pub fn write_summary_file(&mut self, site: &Sites, dna: &Dna) -> Result<()> {
         self.get_ouput_fname();
-        let file = File::create(&self.output).expect("CANNOT WRITE THE STAT RESULTS");
+        let file = File::create(&self.output)
+            .with_context(|| format!("Failed creating file {}", self.output))?;
         let mut writer = BufWriter::new(file);
         self.write_csv_header(&mut writer)?;
         self.write_csv_content(&mut writer, site, dna).unwrap();
@@ -213,7 +217,8 @@ impl<'s> SummaryWriter<'s> {
 
     pub fn write_sum_to_file(&self, output: &str) -> Result<()> {
         let fname = self.get_output_fname(output);
-        let file = File::create(fname)?;
+        let file = File::create(&fname)
+            .with_context(|| format!("Failed creating file {}", fname.display()))?;
         let mut writer = BufWriter::new(file);
         writeln!(writer, "General Summmary")?;
         self.write_gen_sum(&mut writer)?;
