@@ -735,7 +735,7 @@ impl<'a> StatsParser<'a> {
                 self.get_dir_input(self.matches)
             )?;
         } else {
-            writeln!(writer, "Input\t\t: WILDCARD",)?;
+            writeln!(writer, "Input\t\t: WILDCARD\n",)?;
         }
 
         Ok(())
