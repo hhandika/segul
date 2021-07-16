@@ -39,14 +39,14 @@ impl Alignment {
 
     fn get_aln_from_nexus(&mut self, file: &Path) {
         let mut nex = Nexus::new(file);
-        nex.parse().expect("CANNOT READ A NEXUS FILE");
+        nex.parse().expect("Failed reading a nexus file");
         self.check_is_alignment(&file, nex.is_alignment);
         self.get_alignment(nex.matrix, nex.header)
     }
 
     fn get_aln_from_phylip(&mut self, file: &Path, interleave: bool) {
         let mut phy = Phylip::new(file, interleave);
-        phy.parse().expect("CANNOT READ A PHYLIP FILE");
+        phy.parse().expect("Failed reading a phylip file");
         self.check_is_alignment(file, phy.is_alignment);
         self.get_alignment(phy.matrix, phy.header);
     }
@@ -66,7 +66,7 @@ impl Alignment {
     fn check_is_alignment(&self, file: &Path, aligned: bool) {
         if !aligned {
             panic!(
-                "INVALID INPUT FILES. {} IS NOT AN ALIGNMENT",
+                "Ups. Something is wrong. {} is not an alignment",
                 file.display()
             );
         }
