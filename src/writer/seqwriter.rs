@@ -1,9 +1,11 @@
 use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::prelude::*;
-use std::io::{self, BufWriter, Result};
+use std::io::{self, BufWriter};
 use std::iter;
 use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
 
 use crate::helper::common::{Header, OutputFmt, Partition, PartitionFmt};
 use indexmap::IndexMap;
@@ -58,20 +60,24 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    pub fn print_save_path(&self) {
+    pub fn print_save_path(&self) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
-        writeln!(writer, "Output\t\t: {}", self.output.display()).unwrap();
+        writeln!(writer, "Output\t\t: {}", self.output.display())?;
+        Ok(())
     }
 
-    pub fn print_partition_path(&self) {
+    pub fn print_partition_path(&self) -> Result<()> {
         let io = io::stdout();
         let mut writer = BufWriter::new(io);
-        writeln!(writer, "Partition\t: {}", &self.part_file.display()).unwrap();
+        writeln!(writer, "Partition\t: {}", &self.part_file.display())?;
+        Ok(())
     }
 
     fn write_fasta(&mut self, interleave: bool) -> Result<()> {
-        let mut writer = self.create_output_file(&self.output);
+        let mut writer = self
+            .create_output_file(&self.output)
+            .expect("Failed writing a fasta formatted file");
         let n = self.get_interleave_len();
         self.matrix.iter().for_each(|(id, seq)| {
             writeln!(writer, ">{}", id).unwrap();
@@ -94,7 +100,9 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_nexus(&mut self, interleave: bool) -> Result<()> {
-        let mut writer = self.create_output_file(&self.output);
+        let mut writer = self
+            .create_output_file(&self.output)
+            .expect("Failed writing a NEXUS formatted file");
         self.write_nex_header(&mut writer, interleave)?;
 
         // We write only instead of write line.
@@ -128,7 +136,9 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_phylip(&mut self, interleave: bool) -> Result<()> {
-        let mut writer = self.create_output_file(&self.output);
+        let mut writer = self
+            .create_output_file(&self.output)
+            .expect("Failed writing a philip formatted file");
         write!(writer, "{} {}", self.header.ntax, self.header.nchar)?;
 
         if !interleave {
@@ -229,7 +239,7 @@ impl<'a> SeqWriter<'a> {
             .chunks(n)
             .map(|chunk| {
                 std::str::from_utf8(chunk)
-                    .expect("FAILED CHUNKING THE SEQ OUTPUT")
+                    .expect("Failed chunking sequence")
                     .to_string()
             })
             .collect()
@@ -249,12 +259,14 @@ impl<'a> SeqWriter<'a> {
             PartitionFmt::CharsetCodon => self.write_part_nexus_sep(true),
             PartitionFmt::Raxml => self.write_part_raxml(false),
             PartitionFmt::RaxmlCodon => self.write_part_raxml(true),
-            _ => eprintln!("UNKNOWN PARTITION FORMAT"),
+            _ => eprintln!("Ups. Error while parsing partition format"),
         }
     }
 
     fn write_part_raxml(&self, codon: bool) {
-        let mut writer = self.create_output_file(Path::new(&self.part_file));
+        let mut writer = self
+            .create_output_file(Path::new(&self.part_file))
+            .expect("Failed writing a RaXML formatted partition file");
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
                 if codon {
@@ -263,15 +275,17 @@ impl<'a> SeqWriter<'a> {
                     writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
                 }
             }),
-            None => eprintln!("CANNOT FIND PARTITION DATA"),
+            None => eprintln!("Failed to find partition data"),
         }
     }
 
     fn write_part_nexus_sep(&self, codon: bool) {
-        let mut writer = self.create_output_file(&self.part_file);
+        let mut writer = self
+            .create_output_file(&self.part_file)
+            .expect("Failed writing a NEXUS formatted partition file");
         writeln!(writer, "#nexus").unwrap();
         self.write_part_nexus(&mut writer, codon)
-            .expect("CANNOT WRITE NEXUS PARTITION");
+            .expect("Failed writing nexus partition");
     }
 
     fn write_part_nexus<W: Write>(&self, writer: &mut W, codon: bool) -> Result<()> {
@@ -384,10 +398,22 @@ impl<'a> SeqWriter<'a> {
         };
     }
 
-    fn create_output_file(&self, fname: &Path) -> BufWriter<File> {
-        fs::create_dir_all(fname.parent().unwrap()).expect("CANNOT CREATE A TARGET DIRECTORY");
-        let file = File::create(&fname).expect("CANNOT CREATE OUTPUT FILE");
-        BufWriter::new(file)
+    fn create_output_file(&self, fname: &Path) -> Result<BufWriter<File>> {
+        let dir_name = fname.parent().with_context(|| {
+            format!(
+                "Failed getting an output directory name for {}",
+                self.path.display()
+            )
+        })?;
+        fs::create_dir_all(&dir_name).with_context(|| {
+            format!(
+                "Failed creating an output directory for {}",
+                self.path.display()
+            )
+        })?;
+        let file = File::create(&fname)
+            .with_context(|| format!("Failed writing output file for {}", self.path.display()))?;
+        Ok(BufWriter::new(file))
     }
 
     fn get_interleave_len(&self) -> usize {

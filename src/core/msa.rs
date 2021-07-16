@@ -54,12 +54,14 @@ impl<'a> MSAlignment<'a> {
         );
         spin.set_message("Writing output files...");
         save.write_sequence(&self.output_fmt)
-            .expect("CANNOT WRITE OUTPUT FILES");
+            .expect("Failed writing the output file");
         spin.finish_with_message("DONE!\n");
         self.print_alignment_stats(concat.partition.len(), &concat.header)
             .unwrap();
-        save.print_save_path();
-        save.print_partition_path();
+        save.print_save_path()
+            .expect("Cannot write save path to stdout");
+        save.print_partition_path()
+            .expect("Cannot write partition path to stdout");
     }
 
     fn print_alignment_stats(&self, count: usize, header: &Header) -> Result<()> {
@@ -110,7 +112,7 @@ impl<'a> Concat<'a> {
         aln.get_aln_any(file, &self.input_fmt);
         assert!(
             aln.header.ntax != 0,
-            "ZERO TAXON FOUND IN ALIGNMENT FILES {}",
+            "Alignment failed is empty {}",
             file.display()
         );
         aln

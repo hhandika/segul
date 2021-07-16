@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
@@ -123,7 +124,13 @@ impl CsvWriter {
             writer,
             "{},{},{},{},",
             site.path.display(),
-            site.path.file_stem().unwrap().to_string_lossy(),
+            site.path
+                .file_stem()
+                .and_then(OsStr::to_str)
+                .with_context(|| format!(
+                    "Failed getting locus name for {}",
+                    site.path.display()
+                ))?,
             dna.ntax,
             dna.total_chars
         )?;
@@ -200,7 +207,7 @@ impl<'s> SummaryWriter<'s> {
         self.write_char_count(&mut writer)?;
 
         writeln!(writer, "\x1b[0;33mTaxon Completeness\x1b[0m")?;
-        self.write_tax_comp(&mut writer)?;
+        self.write_matrix_comp(&mut writer)?;
 
         writeln!(writer, "\x1b[0;33mConserved Sequences\x1b[0m")?;
         self.write_cons_seq(&mut writer)?;
@@ -231,7 +238,7 @@ impl<'s> SummaryWriter<'s> {
         self.write_char_count(&mut writer)?;
 
         writeln!(writer, "Taxon Completeness")?;
-        self.write_tax_comp(&mut writer)?;
+        self.write_matrix_comp(&mut writer)?;
 
         writeln!(writer, "Conserved Sequences")?;
         self.write_cons_seq(&mut writer)?;
@@ -337,20 +344,20 @@ impl<'s> SummaryWriter<'s> {
         Ok(())
     }
 
-    fn write_tax_comp<W: Write>(&self, writer: &mut W) -> Result<()> {
+    fn write_matrix_comp<W: Write>(&self, writer: &mut W) -> Result<()> {
         self.complete
             .completeness
             .iter()
             .for_each(|(percent, ntax)| {
-                self.write_tax_comp_content(writer, percent, ntax)
-                    .expect("CANNOT WRITE TAXON COMPLETENESS TO STDOUT")
+                self.write_matrix_comp_content(writer, percent, ntax)
+                    .expect("Failed printing data matrix completeness to stdout")
             });
         writeln!(writer)?;
 
         Ok(())
     }
 
-    fn write_tax_comp_content<W: Write>(
+    fn write_matrix_comp_content<W: Write>(
         &self,
         writer: &mut W,
         percent: &usize,
