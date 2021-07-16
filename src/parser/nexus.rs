@@ -316,7 +316,7 @@ impl<R: Read> NexusReader<R> {
         }
     }
 
-    fn nex_seq(&mut self) -> Option<String> {
+    fn next_block(&mut self) -> Option<String> {
         self.buffer.clear();
         let bytes = self
             .reader
@@ -340,7 +340,7 @@ impl<R: Read> Iterator for NexusReader<R> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.nex_seq()
+        self.next_block()
     }
 }
 
