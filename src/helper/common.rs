@@ -76,12 +76,15 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
     let ext: &str = input
         .extension()
         .and_then(OsStr::to_str)
-        .expect("CANNOT PARSE EXTENSION");
+        .expect(format!("Failed parsing extension from {}", input.display()));
     match ext {
         "fas" | "fa" | "fasta" => InputFmt::Fasta,
         "nex" | "nexus" => InputFmt::Nexus,
         "phy" | "phylip" => InputFmt::PhylipInt,
-        _ => panic!("UNKNOWN EXTENSION. PLEASE, SPECIFY INPUT FORMAT!"),
+        _ => panic!(
+            "Ups... The program cannot recognize the file extension. \
+        Maybe try specify the input format using -f --format option."
+        ),
     }
 }
 
@@ -115,7 +118,7 @@ impl SeqCheck {
             .values()
             .map(|s| s.len())
             .min()
-            .expect("CANNOT GET THE SHORTEST SEQUENCE LENGTH");
+            .expect("Failed getting the shortest failed length");
     }
 
     fn get_longest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
@@ -123,14 +126,14 @@ impl SeqCheck {
             .values()
             .map(|s| s.len())
             .max()
-            .expect("CANNOT GET THE LONGEST SEQUENCE LENGTH");
+            .expect("Failed getting the longest failed length");
     }
 }
 
 pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
     if !is_valid_dna(dna) {
         panic!(
-            "INVALID DNA SEQUENCE FOUND FOR {} IN FILE {}",
+            "Ups... The {} is not a dna sequence. Found in file {}",
             id,
             input.display()
         );
