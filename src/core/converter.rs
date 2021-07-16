@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use crate::writer::seqwriter::SeqWriter;
 
-use crate::helper::common::{self, Header, InputFmt, OutputFmt, PartitionFormat};
+use crate::helper::common::{self, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -70,7 +70,7 @@ impl<'a> Converter<'a> {
     }
 
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
-        let mut convert = SeqWriter::new(self.output, matrix, header, None, &PartitionFormat::None);
+        let mut convert = SeqWriter::new(self.output, matrix, header, None, &PartitionFmt::None);
         convert
             .write_sequence(self.output_fmt)
             .expect("CANNOT WRITE OUTPUT FILES");

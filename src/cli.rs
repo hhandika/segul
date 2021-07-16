@@ -11,7 +11,7 @@ use crate::core::converter::Converter;
 use crate::core::filter;
 use crate::core::msa;
 use crate::core::summary::SeqStats;
-use crate::helper::common::{InputFmt, OutputFmt, PartitionFormat};
+use crate::helper::common::{InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::finder::{Files, IDs};
 use crate::helper::utils;
 
@@ -214,7 +214,7 @@ impl<'a> ConvertParser<'a> {
 }
 
 trait PartCLi {
-    fn parse_partition_fmt(&self, matches: &ArgMatches) -> PartitionFormat {
+    fn parse_partition_fmt(&self, matches: &ArgMatches) -> PartitionFmt {
         let part_fmt = matches
             .value_of("partition")
             .expect("CANNOT READ PARTITION FORMAT");
@@ -225,29 +225,29 @@ trait PartCLi {
         }
     }
 
-    fn parse_partition_fmt_std(&self, part_fmt: &str) -> PartitionFormat {
+    fn parse_partition_fmt_std(&self, part_fmt: &str) -> PartitionFmt {
         match part_fmt {
-            "nexus" => PartitionFormat::Nexus,
-            "raxml" => PartitionFormat::Raxml,
-            "charset" => PartitionFormat::Charset,
-            _ => PartitionFormat::Nexus,
+            "nexus" => PartitionFmt::Nexus,
+            "raxml" => PartitionFmt::Raxml,
+            "charset" => PartitionFmt::Charset,
+            _ => PartitionFmt::Nexus,
         }
     }
 
-    fn parse_partition_fmt_codon(&self, part_fmt: &str) -> PartitionFormat {
+    fn parse_partition_fmt_codon(&self, part_fmt: &str) -> PartitionFmt {
         match part_fmt {
-            "charset" => PartitionFormat::CharsetCodon,
-            "nexus" => PartitionFormat::NexusCodon,
-            "raxml" => PartitionFormat::RaxmlCodon,
-            _ => PartitionFormat::NexusCodon,
+            "charset" => PartitionFmt::CharsetCodon,
+            "nexus" => PartitionFmt::NexusCodon,
+            "raxml" => PartitionFmt::RaxmlCodon,
+            _ => PartitionFmt::NexusCodon,
         }
     }
 
-    fn check_partition_format(&self, output_fmt: &OutputFmt, part_fmt: &PartitionFormat) {
+    fn check_partition_format(&self, output_fmt: &OutputFmt, part_fmt: &PartitionFmt) {
         match output_fmt {
             OutputFmt::Nexus | OutputFmt::NexusInt => (),
             _ => {
-                if let PartitionFormat::Nexus | PartitionFormat::NexusCodon = part_fmt {
+                if let PartitionFmt::Nexus | PartitionFmt::NexusCodon = part_fmt {
                     panic!(
                         "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
                 MAYBE YOU MEAN TO WRITE THE PARTITION TO 'charset' INSTEAD."
@@ -279,7 +279,7 @@ struct ConcatParser<'a> {
     input_fmt: InputFmt,
     input_type: InputType,
     output_fmt: OutputFmt,
-    part_fmt: PartitionFormat,
+    part_fmt: PartitionFmt,
 }
 
 impl<'a> ConcatParser<'a> {
@@ -289,7 +289,7 @@ impl<'a> ConcatParser<'a> {
             input_fmt: InputFmt::Fasta,
             input_type: InputType::Dir,
             output_fmt: OutputFmt::Nexus,
-            part_fmt: PartitionFormat::Charset,
+            part_fmt: PartitionFmt::Charset,
         }
     }
 
@@ -430,7 +430,7 @@ impl<'a> FilterParser<'a> {
         self.count_min_tax()
     }
 
-    fn check_concat(&self) -> Option<PartitionFormat> {
+    fn check_concat(&self) -> Option<PartitionFmt> {
         if self.matches.is_present("concat") {
             Some(self.get_part_fmt())
         } else {
@@ -438,11 +438,11 @@ impl<'a> FilterParser<'a> {
         }
     }
 
-    fn get_part_fmt(&self) -> PartitionFormat {
+    fn get_part_fmt(&self) -> PartitionFmt {
         if self.matches.is_present("partition") {
             self.parse_partition_fmt(self.matches)
         } else {
-            PartitionFormat::Charset
+            PartitionFmt::Charset
         }
     }
 

@@ -9,7 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
 use crate::helper::alignment::Alignment;
-use crate::helper::common::{Header, InputFmt, OutputFmt, Partition, PartitionFormat};
+use crate::helper::common::{Header, InputFmt, OutputFmt, Partition, PartitionFmt};
 use crate::helper::finder::IDs;
 use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
@@ -18,7 +18,7 @@ pub struct MSAlignment<'a> {
     input_fmt: &'a InputFmt,
     output: &'a str,
     output_fmt: &'a OutputFmt,
-    part_fmt: &'a PartitionFormat,
+    part_fmt: &'a PartitionFmt,
 }
 
 impl<'a> MSAlignment<'a> {
@@ -26,7 +26,7 @@ impl<'a> MSAlignment<'a> {
         input_fmt: &'a InputFmt,
         output: &'a str,
         output_fmt: &'a OutputFmt,
-        part_fmt: &'a PartitionFormat,
+        part_fmt: &'a PartitionFmt,
     ) -> Self {
         Self {
             input_fmt,

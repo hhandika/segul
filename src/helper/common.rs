@@ -20,7 +20,7 @@ pub enum InputFmt {
     PhylipInt,
 }
 
-pub enum PartitionFormat {
+pub enum PartitionFmt {
     Charset,
     CharsetCodon,
     Nexus,

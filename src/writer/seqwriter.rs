@@ -5,7 +5,7 @@ use std::io::{self, BufWriter, Result};
 use std::iter;
 use std::path::{Path, PathBuf};
 
-use crate::helper::common::{Header, OutputFmt, Partition, PartitionFormat};
+use crate::helper::common::{Header, OutputFmt, Partition, PartitionFmt};
 use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {
@@ -15,7 +15,7 @@ pub struct SeqWriter<'a> {
     id_len: usize,
     header: Header,
     partition: Option<&'a [Partition]>,
-    part_format: &'a PartitionFormat,
+    part_fmt: &'a PartitionFmt,
     part_file: PathBuf,
 }
 
@@ -25,7 +25,7 @@ impl<'a> SeqWriter<'a> {
         matrix: &'a IndexMap<String, String>,
         header: Header,
         partition: Option<&'a [Partition]>,
-        part_format: &'a PartitionFormat,
+        part_fmt: &'a PartitionFmt,
     ) -> Self {
         Self {
             path,
@@ -34,7 +34,7 @@ impl<'a> SeqWriter<'a> {
             matrix,
             header,
             partition,
-            part_format,
+            part_fmt,
             part_file: PathBuf::new(),
         }
     }
@@ -113,11 +113,11 @@ impl<'a> SeqWriter<'a> {
         writeln!(writer, "end;")?;
 
         if self.partition.is_some() {
-            match self.part_format {
-                PartitionFormat::Nexus => self
+            match self.part_fmt {
+                PartitionFmt::Nexus => self
                     .write_part_nexus(&mut writer, false)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
-                PartitionFormat::NexusCodon => self
+                PartitionFmt::NexusCodon => self
                     .write_part_nexus(&mut writer, true)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
                 _ => self.write_partition_sep(),
@@ -237,11 +237,11 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_partition_sep(&self) {
-        match self.part_format {
-            PartitionFormat::Charset => self.write_part_nexus_sep(false),
-            PartitionFormat::CharsetCodon => self.write_part_nexus_sep(true),
-            PartitionFormat::Raxml => self.write_part_raxml(false),
-            PartitionFormat::RaxmlCodon => self.write_part_raxml(true),
+        match self.part_fmt {
+            PartitionFmt::Charset => self.write_part_nexus_sep(false),
+            PartitionFmt::CharsetCodon => self.write_part_nexus_sep(true),
+            PartitionFmt::Raxml => self.write_part_raxml(false),
+            PartitionFmt::RaxmlCodon => self.write_part_raxml(true),
             _ => eprintln!("UNKNOWN PARTITION FORMAT"),
         }
     }
@@ -337,22 +337,22 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn get_partition_path(&mut self) {
-        match self.part_format {
-            PartitionFormat::Charset | PartitionFormat::CharsetCodon => {
+        match self.part_fmt {
+            PartitionFmt::Charset | PartitionFmt::CharsetCodon => {
                 self.part_file = self
                     .output
                     .parent()
                     .unwrap()
                     .join(&self.get_partition_name("nex"));
             }
-            PartitionFormat::Raxml | PartitionFormat::RaxmlCodon => {
+            PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => {
                 self.part_file = self
                     .output
                     .parent()
                     .unwrap()
                     .join(&self.get_partition_name("txt"));
             }
-            PartitionFormat::Nexus | PartitionFormat::NexusCodon => {
+            PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
                 self.part_file = PathBuf::from("in-file")
             }
             _ => (),
@@ -442,13 +442,7 @@ mod test {
         let id = "ABCDE";
         let matrix = IndexMap::new();
         let header = Header::new();
-        let convert = SeqWriter::new(
-            Path::new("."),
-            &matrix,
-            header,
-            None,
-            &PartitionFormat::None,
-        );
+        let convert = SeqWriter::new(Path::new("."), &matrix, header, None, &PartitionFmt::None);
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 
@@ -457,7 +451,7 @@ mod test {
         let path = Path::new("sanger/cytb");
         let matrix = IndexMap::new();
         let header = Header::new();
-        let mut convert = SeqWriter::new(path, &matrix, header, None, &PartitionFormat::None);
+        let mut convert = SeqWriter::new(path, &matrix, header, None, &PartitionFmt::None);
         let output = PathBuf::from("sanger/cytb.fas");
         convert.get_output_name(&OutputFmt::Fasta);
         assert_eq!(output, convert.output);
@@ -468,7 +462,7 @@ mod test {
         let path = Path::new(".");
         let matrix = IndexMap::new();
         let header = Header::new();
-        let convert = SeqWriter::new(path, &matrix, header, None, &PartitionFormat::None);
+        let convert = SeqWriter::new(path, &matrix, header, None, &PartitionFmt::None);
         let seq = "AGTCAGTC";
         let chunk = String::from("AGTC");
         let chunk2 = String::from("AGTC");
@@ -504,7 +498,7 @@ mod test {
         let res1 = String::from("ATGTGTGTGTGTGTGTAAAA");
 
         matrix.insert(id.clone(), seq);
-        let convert = SeqWriter::new(path, &matrix, header, None, &PartitionFormat::None);
+        let convert = SeqWriter::new(path, &matrix, header, None, &PartitionFmt::None);
         let int = convert.get_matrix_int();
         let mat_int = int.get(&0).unwrap();
         let mat_int1 = int.get(&1).unwrap();
