@@ -40,7 +40,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     pub fn write_sequence(&mut self, output_fmt: &OutputFmt) -> Result<()> {
-        self.get_output_name(output_fmt);
+        self.get_output_fname(output_fmt);
 
         if self.partition.is_some() {
             self.get_partition_path();
@@ -86,7 +86,7 @@ impl<'a> SeqWriter<'a> {
         });
 
         if self.partition.is_some() {
-            self.write_partition_sep();
+            self.write_part_sep();
         }
 
         writer.flush()?;
@@ -95,8 +95,7 @@ impl<'a> SeqWriter<'a> {
 
     fn write_nexus(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self.create_output_file(&self.output);
-        self.write_nex_header(&mut writer)?;
-        self.write_nex_format(&mut writer, interleave)?;
+        self.write_nex_header(&mut writer, interleave)?;
 
         // We write only instead of write line.
         // This allow for no whitespace
@@ -120,7 +119,7 @@ impl<'a> SeqWriter<'a> {
                 PartitionFmt::NexusCodon => self
                     .write_part_nexus(&mut writer, true)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
-                _ => self.write_partition_sep(),
+                _ => self.write_part_sep(),
             }
         }
 
@@ -139,14 +138,14 @@ impl<'a> SeqWriter<'a> {
         }
 
         if self.partition.is_some() {
-            self.write_partition_sep();
+            self.write_part_sep();
         }
 
         writer.flush()?;
         Ok(())
     }
 
-    fn write_nex_header<W: Write>(&self, writer: &mut W) -> Result<()> {
+    fn write_nex_header<W: Write>(&self, writer: &mut W, interleave: bool) -> Result<()> {
         writeln!(writer, "#NEXUS")?;
         writeln!(writer, "begin data;")?;
         writeln!(
@@ -155,10 +154,6 @@ impl<'a> SeqWriter<'a> {
             self.header.ntax, self.header.nchar
         )?;
 
-        Ok(())
-    }
-
-    fn write_nex_format<W: Write>(&self, writer: &mut W, interleave: bool) -> Result<()> {
         write!(
             writer,
             "format datatype={} missing={} gap={}",
@@ -170,6 +165,7 @@ impl<'a> SeqWriter<'a> {
         }
 
         writeln!(writer, ";")?;
+
         Ok(())
     }
 
@@ -228,6 +224,17 @@ impl<'a> SeqWriter<'a> {
         vec
     }
 
+    fn chunk_seq(&self, seq: &str, n: usize) -> Vec<String> {
+        seq.as_bytes()
+            .chunks(n)
+            .map(|chunk| {
+                std::str::from_utf8(chunk)
+                    .expect("FAILED CHUNKING THE SEQ OUTPUT")
+                    .to_string()
+            })
+            .collect()
+    }
+
     fn write_padded_seq<W: Write>(&mut self, writer: &mut W, taxa: &str, seq: &str) -> Result<()> {
         self.get_max_id_len();
         write!(writer, "{}", taxa)?;
@@ -236,7 +243,7 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    fn write_partition_sep(&self) {
+    fn write_part_sep(&self) {
         match self.part_fmt {
             PartitionFmt::Charset => self.write_part_nexus_sep(false),
             PartitionFmt::CharsetCodon => self.write_part_nexus_sep(true),
@@ -343,14 +350,14 @@ impl<'a> SeqWriter<'a> {
                     .output
                     .parent()
                     .unwrap()
-                    .join(&self.get_partition_name("nex"));
+                    .join(&self.get_part_fname("nex"));
             }
             PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => {
                 self.part_file = self
                     .output
                     .parent()
                     .unwrap()
-                    .join(&self.get_partition_name("txt"));
+                    .join(&self.get_part_fname("txt"));
             }
             PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
                 self.part_file = PathBuf::from("in-file")
@@ -359,7 +366,7 @@ impl<'a> SeqWriter<'a> {
         }
     }
 
-    fn get_partition_name(&self, ext: &str) -> PathBuf {
+    fn get_part_fname(&self, ext: &str) -> PathBuf {
         let fname = format!(
             "{}_partition.{}",
             self.output.file_stem().unwrap().to_string_lossy(),
@@ -369,7 +376,7 @@ impl<'a> SeqWriter<'a> {
         PathBuf::from(fname)
     }
 
-    fn get_output_name(&mut self, ext: &OutputFmt) {
+    fn get_output_fname(&mut self, ext: &OutputFmt) {
         self.output = match ext {
             OutputFmt::Fasta | OutputFmt::FastaInt => self.path.with_extension("fas"),
             OutputFmt::Nexus | OutputFmt::NexusInt => self.path.with_extension("nex"),
@@ -381,17 +388,6 @@ impl<'a> SeqWriter<'a> {
         fs::create_dir_all(fname.parent().unwrap()).expect("CANNOT CREATE A TARGET DIRECTORY");
         let file = File::create(&fname).expect("CANNOT CREATE OUTPUT FILE");
         BufWriter::new(file)
-    }
-
-    fn chunk_seq(&self, seq: &str, n: usize) -> Vec<String> {
-        seq.as_bytes()
-            .chunks(n)
-            .map(|chunk| {
-                std::str::from_utf8(chunk)
-                    .expect("FAILED CHUNKING THE SEQ OUTPUT")
-                    .to_string()
-            })
-            .collect()
     }
 
     fn get_interleave_len(&self) -> usize {
@@ -447,13 +443,13 @@ mod test {
     }
 
     #[test]
-    fn get_output_name_test() {
+    fn get_output_fname_test() {
         let path = Path::new("sanger/cytb");
         let matrix = IndexMap::new();
         let header = Header::new();
         let mut convert = SeqWriter::new(path, &matrix, header, None, &PartitionFmt::None);
         let output = PathBuf::from("sanger/cytb.fas");
-        convert.get_output_name(&OutputFmt::Fasta);
+        convert.get_output_fname(&OutputFmt::Fasta);
         assert_eq!(output, convert.output);
     }
 
