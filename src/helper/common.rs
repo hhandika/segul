@@ -3,13 +3,20 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-pub enum SeqFormat {
-    Auto,
+pub enum OutputFmt {
     Fasta,
     Nexus,
     Phylip,
     FastaInt,
     NexusInt,
+    PhylipInt,
+}
+
+pub enum InputFmt {
+    Auto,
+    Fasta,
+    Nexus,
+    Phylip,
     PhylipInt,
 }
 
@@ -65,15 +72,15 @@ impl Header {
 /// since the parsers handles
 /// interleave and non-interleave in the same way.
 /// This treatment is similar to cli parser.
-pub fn infer_input_auto(input: &Path) -> SeqFormat {
+pub fn infer_input_auto(input: &Path) -> InputFmt {
     let ext: &str = input
         .extension()
         .and_then(OsStr::to_str)
         .expect("CANNOT PARSE EXTENSION");
     match ext {
-        "fas" | "fa" | "fasta" => SeqFormat::Fasta,
-        "nex" | "nexus" => SeqFormat::Nexus,
-        "phy" | "phylip" => SeqFormat::PhylipInt,
+        "fas" | "fa" | "fasta" => InputFmt::Fasta,
+        "nex" | "nexus" => InputFmt::Nexus,
+        "phy" | "phylip" => InputFmt::PhylipInt,
         _ => panic!("UNKNOWN EXTENSION. PLEASE, SPECIFY INPUT FORMAT!"),
     }
 }

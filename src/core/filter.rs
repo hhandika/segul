@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use crate::core::msa::MSAlignment;
 use crate::core::summary;
 use crate::helper::alignment::Alignment;
-use crate::helper::common::{Header, PartitionFormat, SeqFormat};
+use crate::helper::common::{Header, InputFmt, OutputFmt, PartitionFormat};
 use crate::helper::utils;
 
 pub enum Params {
@@ -19,16 +19,16 @@ pub enum Params {
 
 pub struct SeqFilter<'a> {
     files: &'a [PathBuf],
-    input_fmt: &'a SeqFormat,
+    input_fmt: &'a InputFmt,
     output: &'a Path,
     params: &'a Params,
-    concat: Option<(&'a SeqFormat, &'a PartitionFormat)>,
+    concat: Option<(&'a OutputFmt, &'a PartitionFormat)>,
 }
 
 impl<'a> SeqFilter<'a> {
     pub fn new(
         files: &'a [PathBuf],
-        input_fmt: &'a SeqFormat,
+        input_fmt: &'a InputFmt,
         output: &'a Path,
         params: &'a Params,
     ) -> Self {
@@ -54,7 +54,7 @@ impl<'a> SeqFilter<'a> {
         }
     }
 
-    pub fn set_concat(&mut self, output_fmt: &'a SeqFormat, part_fmt: &'a PartitionFormat) {
+    pub fn set_concat(&mut self, output_fmt: &'a OutputFmt, part_fmt: &'a PartitionFormat) {
         self.concat = Some((output_fmt, part_fmt))
     }
 
@@ -95,7 +95,7 @@ impl<'a> SeqFilter<'a> {
     fn concat_results(
         &self,
         ftr_files: &mut [PathBuf],
-        output_fmt: &SeqFormat,
+        output_fmt: &OutputFmt,
         part_fmt: &PartitionFormat,
     ) {
         let output = self.output.to_string_lossy();

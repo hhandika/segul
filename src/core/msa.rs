@@ -9,23 +9,23 @@ use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
 use crate::helper::alignment::Alignment;
-use crate::helper::common::{Header, Partition, PartitionFormat, SeqFormat};
+use crate::helper::common::{Header, InputFmt, OutputFmt, Partition, PartitionFormat};
 use crate::helper::finder::IDs;
 use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
 
 pub struct MSAlignment<'a> {
-    input_fmt: &'a SeqFormat,
+    input_fmt: &'a InputFmt,
     output: &'a str,
-    output_fmt: &'a SeqFormat,
+    output_fmt: &'a OutputFmt,
     part_fmt: &'a PartitionFormat,
 }
 
 impl<'a> MSAlignment<'a> {
     pub fn new(
-        input_fmt: &'a SeqFormat,
+        input_fmt: &'a InputFmt,
         output: &'a str,
-        output_fmt: &'a SeqFormat,
+        output_fmt: &'a OutputFmt,
         part_fmt: &'a PartitionFormat,
     ) -> Self {
         Self {
@@ -75,7 +75,7 @@ impl<'a> MSAlignment<'a> {
 }
 
 struct Concat<'a> {
-    input_fmt: &'a SeqFormat,
+    input_fmt: &'a InputFmt,
     alignment: IndexMap<String, String>,
     header: Header,
     partition: Vec<Partition>,
@@ -83,7 +83,7 @@ struct Concat<'a> {
 }
 
 impl<'a> Concat<'a> {
-    fn new(files: &'a mut [PathBuf], input_fmt: &'a SeqFormat) -> Self {
+    fn new(files: &'a mut [PathBuf], input_fmt: &'a InputFmt) -> Self {
         Self {
             input_fmt,
             alignment: IndexMap::new(),
@@ -178,8 +178,8 @@ mod test {
     #[test]
     fn concat_nexus_test() {
         let path = "test_files/concat/";
-        let mut files = Files::new(path, &SeqFormat::Nexus).get_files();
-        let mut concat = Concat::new(&mut files, &SeqFormat::Nexus);
+        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut concat = Concat::new(&mut files, &InputFmt::Nexus);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
         assert_eq!(3, concat.alignment.len());
@@ -189,16 +189,16 @@ mod test {
     #[should_panic]
     fn get_alignment_panic_test() {
         let path = "test_files/concat/";
-        let mut files = Files::new(path, &SeqFormat::Nexus).get_files();
-        let concat = Concat::new(&mut files, &SeqFormat::Nexus);
+        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let concat = Concat::new(&mut files, &InputFmt::Nexus);
         concat.get_alignment(Path::new("."));
     }
 
     #[test]
     fn concat_check_result_test() {
         let path = "test_files/concat/";
-        let mut files = Files::new(path, &SeqFormat::Nexus).get_files();
-        let mut concat = Concat::new(&mut files, &SeqFormat::Nexus);
+        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut concat = Concat::new(&mut files, &InputFmt::Nexus);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
         let abce = concat.alignment.get("ABCE").unwrap();
@@ -209,8 +209,8 @@ mod test {
     #[test]
     fn concat_partition_test() {
         let path = "test_files/concat/";
-        let mut files = Files::new(path, &SeqFormat::Nexus).get_files();
-        let mut concat = Concat::new(&mut files, &SeqFormat::Nexus);
+        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut concat = Concat::new(&mut files, &InputFmt::Nexus);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
         assert_eq!(1, concat.partition[0].start);
@@ -229,7 +229,7 @@ mod test {
         let gaps = "?????";
         assert_eq!(
             gaps,
-            Concat::new(&mut [PathBuf::from(".")], &SeqFormat::Fasta).get_missings(len)
+            Concat::new(&mut [PathBuf::from(".")], &InputFmt::Fasta).get_missings(len)
         )
     }
 }

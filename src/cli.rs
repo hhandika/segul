@@ -11,7 +11,7 @@ use crate::core::converter::Converter;
 use crate::core::filter;
 use crate::core::msa;
 use crate::core::summary::SeqStats;
-use crate::helper::common::{PartitionFormat, SeqFormat};
+use crate::helper::common::{InputFmt, OutputFmt, PartitionFormat};
 use crate::helper::finder::{Files, IDs};
 use crate::helper::utils;
 
@@ -48,7 +48,7 @@ trait Cli {
             .collect()
     }
 
-    fn get_files(&self, dir: &str, input_fmt: &SeqFormat) -> Vec<PathBuf> {
+    fn get_files(&self, dir: &str, input_fmt: &InputFmt) -> Vec<PathBuf> {
         Files::new(dir, input_fmt).get_files()
     }
 
@@ -75,16 +75,16 @@ trait Cli {
         }
     }
 
-    fn get_input_fmt(&self, matches: &ArgMatches) -> SeqFormat {
+    fn get_input_fmt(&self, matches: &ArgMatches) -> InputFmt {
         let input_fmt = matches
             .value_of("format")
             .expect("CANNOT READ FORMAT INPUT");
         match input_fmt {
-            "auto" => SeqFormat::Auto,
-            "fasta" | "fasta-int" => SeqFormat::Fasta,
-            "nexus" | "nexus-int" => SeqFormat::Nexus,
-            "phylip" => SeqFormat::Phylip,
-            "phylip-int" => SeqFormat::PhylipInt,
+            "auto" => InputFmt::Auto,
+            "fasta" | "fasta-int" => InputFmt::Fasta,
+            "nexus" | "nexus-int" => InputFmt::Nexus,
+            "phylip" => InputFmt::Phylip,
+            "phylip-int" => InputFmt::PhylipInt,
             _ => panic!(
                 "UNSUPPORTED FORMAT. \
         THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, phylip, and phylip-int. ALL IN lowercase. \
@@ -94,17 +94,17 @@ trait Cli {
         }
     }
 
-    fn get_output_fmt(&self, matches: &ArgMatches) -> SeqFormat {
+    fn get_output_fmt(&self, matches: &ArgMatches) -> OutputFmt {
         let output_fmt = matches
             .value_of("output-format")
             .expect("CANNOT READ FORMAT INPUT");
         match output_fmt {
-            "nexus" => SeqFormat::Nexus,
-            "phylip" => SeqFormat::Phylip,
-            "fasta" => SeqFormat::Fasta,
-            "nexus-int" => SeqFormat::NexusInt,
-            "fasta-int" => SeqFormat::FastaInt,
-            "phylip-int" => SeqFormat::PhylipInt,
+            "nexus" => OutputFmt::Nexus,
+            "phylip" => OutputFmt::Phylip,
+            "fasta" => OutputFmt::Fasta,
+            "nexus-int" => OutputFmt::NexusInt,
+            "fasta-int" => OutputFmt::FastaInt,
+            "phylip-int" => OutputFmt::PhylipInt,
             _ => panic!(
                 "UNSUPPORTED FORMAT. \
         THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, phylip, and phylip-int. ALL IN lowercase. \
@@ -125,9 +125,9 @@ impl Cli for ConvertParser<'_> {}
 
 struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_fmt: SeqFormat,
+    input_fmt: InputFmt,
     output: PathBuf,
-    output_fmt: SeqFormat,
+    output_fmt: OutputFmt,
 
     is_dir: bool,
 }
@@ -136,9 +136,9 @@ impl<'a> ConvertParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
-            input_fmt: SeqFormat::Fasta,
+            input_fmt: InputFmt::Auto,
             output: PathBuf::new(),
-            output_fmt: SeqFormat::Nexus,
+            output_fmt: OutputFmt::Nexus,
             is_dir: false,
         }
     }
@@ -181,7 +181,7 @@ impl<'a> ConvertParser<'a> {
         spin.finish_with_message("DONE!");
     }
 
-    fn convert_any(&self, input: &Path, output: &Path, output_fmt: &SeqFormat) {
+    fn convert_any(&self, input: &Path, output: &Path, output_fmt: &OutputFmt) {
         let mut convert = Converter::new(input, output, output_fmt, self.is_dir);
         if self.is_sort() {
             convert.convert_sorted(&self.input_fmt);
@@ -243,9 +243,9 @@ trait PartCLi {
         }
     }
 
-    fn check_partition_format(&self, output_fmt: &SeqFormat, part_fmt: &PartitionFormat) {
+    fn check_partition_format(&self, output_fmt: &OutputFmt, part_fmt: &PartitionFormat) {
         match output_fmt {
-            SeqFormat::Nexus | SeqFormat::NexusInt => (),
+            OutputFmt::Nexus | OutputFmt::NexusInt => (),
             _ => {
                 if let PartitionFormat::Nexus | PartitionFormat::NexusCodon = part_fmt {
                     panic!(
@@ -276,9 +276,9 @@ impl Cli for ConcatParser<'_> {
 
 struct ConcatParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_fmt: SeqFormat,
+    input_fmt: InputFmt,
     input_type: InputType,
-    output_fmt: SeqFormat,
+    output_fmt: OutputFmt,
     part_fmt: PartitionFormat,
 }
 
@@ -286,9 +286,9 @@ impl<'a> ConcatParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
-            input_fmt: SeqFormat::Fasta,
+            input_fmt: InputFmt::Fasta,
             input_type: InputType::Dir,
-            output_fmt: SeqFormat::Nexus,
+            output_fmt: OutputFmt::Nexus,
             part_fmt: PartitionFormat::Charset,
         }
     }
@@ -339,7 +339,7 @@ impl PartCLi for FilterParser<'_> {}
 
 struct FilterParser<'a> {
     matches: &'a ArgMatches<'a>,
-    input_fmt: SeqFormat,
+    input_fmt: InputFmt,
     output_dir: PathBuf,
     files: Vec<PathBuf>,
     params: filter::Params,
@@ -351,7 +351,7 @@ impl<'a> FilterParser<'a> {
     fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
             matches,
-            input_fmt: SeqFormat::Fasta,
+            input_fmt: InputFmt::Fasta,
             output_dir: PathBuf::new(),
             files: Vec::new(),
             params: filter::Params::MinTax(0),
@@ -360,10 +360,8 @@ impl<'a> FilterParser<'a> {
         }
     }
 
-    // FIX ME
     fn filter(&mut self) {
         self.input_fmt = self.get_input_fmt(self.matches);
-        // let input_type = self.get_input_type(self.matches);
         let dir = self.get_dir_input(self.matches);
         self.files = if self.is_input_dir() {
             let dir = self.get_dir_input(self.matches);
@@ -406,7 +404,7 @@ impl<'a> FilterParser<'a> {
                 let output_fmt = if self.matches.is_present("output-format") {
                     self.get_output_fmt(self.matches)
                 } else {
-                    SeqFormat::Nexus
+                    OutputFmt::Nexus
                 };
                 filter.set_concat(&output_fmt, &part_fmt);
                 filter.filter_aln();
@@ -668,7 +666,7 @@ impl Cli for StatsParser<'_> {}
 struct StatsParser<'a> {
     matches: &'a ArgMatches<'a>,
     interval: usize,
-    input_fmt: SeqFormat,
+    input_fmt: InputFmt,
 }
 
 impl<'a> StatsParser<'a> {
@@ -676,7 +674,7 @@ impl<'a> StatsParser<'a> {
         Self {
             matches,
             interval: 0,
-            input_fmt: SeqFormat::Fasta,
+            input_fmt: InputFmt::Fasta,
         }
     }
 

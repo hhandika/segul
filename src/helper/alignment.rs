@@ -2,7 +2,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::helper::common::{self, Header, SeqFormat};
+use crate::helper::common::{self, Header, InputFmt};
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -22,19 +22,18 @@ impl Alignment {
         }
     }
 
-    pub fn get_aln_any(&mut self, file: &Path, input_fmt: &SeqFormat) {
+    pub fn get_aln_any(&mut self, file: &Path, input_fmt: &InputFmt) {
         self.name
             .push_str(&file.file_stem().unwrap().to_string_lossy());
         match input_fmt {
-            SeqFormat::Nexus => self.get_aln_from_nexus(file),
-            SeqFormat::Phylip => self.get_aln_from_phylip(file, false),
-            SeqFormat::PhylipInt => self.get_aln_from_phylip(file, true),
-            SeqFormat::Fasta => self.get_aln_from_fasta(file),
-            SeqFormat::Auto => {
+            InputFmt::Nexus => self.get_aln_from_nexus(file),
+            InputFmt::Phylip => self.get_aln_from_phylip(file, false),
+            InputFmt::PhylipInt => self.get_aln_from_phylip(file, true),
+            InputFmt::Fasta => self.get_aln_from_fasta(file),
+            InputFmt::Auto => {
                 let input_fmt = common::infer_input_auto(file);
                 self.get_aln_any(file, &input_fmt);
             }
-            _ => (),
         }
     }
 

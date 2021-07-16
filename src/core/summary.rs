@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::helper::alignment::Alignment;
-use crate::helper::common::SeqFormat;
+use crate::helper::common::InputFmt;
 use crate::helper::finder::IDs;
 use crate::helper::utils;
 use crate::writer::sumwriter;
@@ -19,14 +19,14 @@ pub fn get_pars_inf(matrix: &IndexMap<String, String>) -> usize {
 }
 
 pub struct SeqStats<'a> {
-    input_format: &'a SeqFormat,
+    input_format: &'a InputFmt,
     output: &'a str,
     ntax: usize,
     interval: usize,
 }
 
 impl<'a> SeqStats<'a> {
-    pub fn new(input_format: &'a SeqFormat, output: &'a str, interval: usize) -> Self {
+    pub fn new(input_format: &'a InputFmt, output: &'a str, interval: usize) -> Self {
         Self {
             input_format,
             output,
@@ -559,7 +559,7 @@ mod test {
     #[test]
     fn get_site_stats_test() {
         let path = Path::new("test_files/concat.fasta");
-        let input_format = SeqFormat::Fasta;
+        let input_format = InputFmt::Fasta;
         let mut aln = Alignment::new();
         aln.get_aln_any(path, &input_format);
         let mut site = Sites::new();
@@ -580,7 +580,7 @@ mod test {
     #[test]
     fn dna_count_test() {
         let path = Path::new("test_files/concat.fasta");
-        let input_format = SeqFormat::Fasta;
+        let input_format = InputFmt::Fasta;
         let mut aln = Alignment::new();
         aln.get_aln_any(path, &input_format);
         let mut dna = Dna::new();

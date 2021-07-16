@@ -7,19 +7,19 @@ use glob::glob;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
-use crate::helper::common::{self, SeqFormat};
+use crate::helper::common::{self, InputFmt};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
 
 pub struct Files<'a> {
     dir: &'a str,
-    input_fmt: &'a SeqFormat,
+    input_fmt: &'a InputFmt,
     pattern: String,
 }
 
 impl<'a> Files<'a> {
-    pub fn new(dir: &'a str, input_fmt: &'a SeqFormat) -> Self {
+    pub fn new(dir: &'a str, input_fmt: &'a InputFmt) -> Self {
         Self {
             dir,
             input_fmt,
@@ -46,37 +46,35 @@ impl<'a> Files<'a> {
 
     fn get_pattern(&mut self) {
         self.pattern = match self.input_fmt {
-            SeqFormat::Fasta => format!("{}/*.fa*", self.dir),
-            SeqFormat::Nexus => format!("{}/*.nex*", self.dir),
-            SeqFormat::Phylip | SeqFormat::PhylipInt => format!("{}/*.phy*", self.dir),
-            SeqFormat::Auto => panic!(
+            InputFmt::Fasta => format!("{}/*.fa*", self.dir),
+            InputFmt::Nexus => format!("{}/*.nex*", self.dir),
+            InputFmt::Phylip | InputFmt::PhylipInt => format!("{}/*.phy*", self.dir),
+            InputFmt::Auto => panic!(
                 "YOUR INPUT FORMAT IS THE DEFAULT AUTO. \
             THE PROGRAM CANNOT USE AUTO FOR DIR INPUT. PLEASE, \
             SPECIFY INPUT FORMAT USING THE OPTION -f or --format OR USE USE WILDCARD."
             ),
-            _ => panic!("UNSUPPORTED FORMAT! USE FASTA, NEXUS, OR PHYLIP ONLY"),
         };
     }
 }
 
 pub struct IDs<'a> {
     files: &'a [PathBuf],
-    input_fmt: &'a SeqFormat,
+    input_fmt: &'a InputFmt,
 }
 
 impl<'a> IDs<'a> {
-    pub fn new(files: &'a [PathBuf], input_fmt: &'a SeqFormat) -> Self {
+    pub fn new(files: &'a [PathBuf], input_fmt: &'a InputFmt) -> Self {
         Self { files, input_fmt }
     }
 
     pub fn get_id_all(&self) -> IndexSet<String> {
         let all_ids = match self.input_fmt {
-            SeqFormat::Nexus => self.get_id_from_nexus(),
-            SeqFormat::Phylip => self.get_id_from_phylip(false),
-            SeqFormat::PhylipInt => self.get_id_from_phylip(true),
-            SeqFormat::Fasta => self.get_id_from_fasta(),
-            SeqFormat::Auto => self.get_id_auto(),
-            _ => panic!("USE FASTA, NEXUS, OR PHYLIP ONLY"),
+            InputFmt::Nexus => self.get_id_from_nexus(),
+            InputFmt::Phylip => self.get_id_from_phylip(false),
+            InputFmt::PhylipInt => self.get_id_from_phylip(true),
+            InputFmt::Fasta => self.get_id_from_fasta(),
+            InputFmt::Auto => self.get_id_auto(),
         };
         self.get_id(&all_ids)
     }
@@ -86,9 +84,9 @@ impl<'a> IDs<'a> {
         self.files.par_iter().for_each_with(sender, |s, file| {
             let input_fmt = common::infer_input_auto(file);
             match input_fmt {
-                SeqFormat::Fasta => s.send(fasta::read_only_id(file)).unwrap(),
-                SeqFormat::Nexus => s.send(Nexus::new(file).read_only_id()).unwrap(),
-                SeqFormat::PhylipInt => s.send(Phylip::new(file, true).read_only_id()).unwrap(),
+                InputFmt::Fasta => s.send(fasta::read_only_id(file)).unwrap(),
+                InputFmt::Nexus => s.send(Nexus::new(file).read_only_id()).unwrap(),
+                InputFmt::PhylipInt => s.send(Phylip::new(file, true).read_only_id()).unwrap(),
                 _ => unreachable!(),
             }
         });
@@ -141,7 +139,7 @@ mod test {
     #[test]
     fn get_files_test() {
         let path = "test_files/concat/";
-        let mut finder = Files::new(path, &SeqFormat::Nexus);
+        let mut finder = Files::new(path, &InputFmt::Nexus);
         let files = finder.get_files();
         assert_eq!(4, files.len());
     }
@@ -150,7 +148,7 @@ mod test {
     #[should_panic]
     fn check_empty_files_test() {
         let path = "test_files/empty/";
-        let mut finder = Files::new(path, &SeqFormat::Nexus);
+        let mut finder = Files::new(path, &InputFmt::Nexus);
         let files = finder.get_files();
         finder.check_glob_results(&files);
     }

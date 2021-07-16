@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use crate::writer::seqwriter::SeqWriter;
 
-use crate::helper::common::{self, Header, PartitionFormat, SeqFormat};
+use crate::helper::common::{self, Header, InputFmt, OutputFmt, PartitionFormat};
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -12,12 +12,12 @@ use crate::parser::phylip::Phylip;
 pub struct Converter<'a> {
     input: &'a Path,
     output: &'a Path,
-    output_fmt: &'a SeqFormat,
+    output_fmt: &'a OutputFmt,
     is_dir: bool,
 }
 
 impl<'a> Converter<'a> {
-    pub fn new(input: &'a Path, output: &'a Path, output_fmt: &'a SeqFormat, is_dir: bool) -> Self {
+    pub fn new(input: &'a Path, output: &'a Path, output_fmt: &'a OutputFmt, is_dir: bool) -> Self {
         Self {
             input,
             output,
@@ -26,24 +26,24 @@ impl<'a> Converter<'a> {
         }
     }
 
-    pub fn convert_unsorted(&mut self, input_fmt: &SeqFormat) {
+    pub fn convert_unsorted(&mut self, input_fmt: &InputFmt) {
         let (matrix, header) = self.get_sequence(input_fmt);
         self.convert(&matrix, header);
     }
 
-    pub fn convert_sorted(&mut self, input_fmt: &SeqFormat) {
+    pub fn convert_sorted(&mut self, input_fmt: &InputFmt) {
         let (mut matrix, header) = self.get_sequence(input_fmt);
         matrix.sort_keys();
         self.convert(&matrix, header)
     }
 
-    fn get_sequence(&mut self, input_fmt: &SeqFormat) -> (IndexMap<String, String>, Header) {
+    fn get_sequence(&mut self, input_fmt: &InputFmt) -> (IndexMap<String, String>, Header) {
         match input_fmt {
-            SeqFormat::Fasta | SeqFormat::FastaInt => self.convert_fasta(),
-            SeqFormat::Nexus | SeqFormat::NexusInt => self.convert_nexus(),
-            SeqFormat::Phylip => self.convert_phylip(false),
-            SeqFormat::PhylipInt => self.convert_phylip(true),
-            SeqFormat::Auto => {
+            InputFmt::Fasta => self.convert_fasta(),
+            InputFmt::Nexus => self.convert_nexus(),
+            InputFmt::Phylip => self.convert_phylip(false),
+            InputFmt::PhylipInt => self.convert_phylip(true),
+            InputFmt::Auto => {
                 let input_fmt = common::infer_input_auto(self.input);
                 self.get_sequence(&input_fmt)
             }
