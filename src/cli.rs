@@ -529,7 +529,7 @@ impl<'a> FilterParser<'a> {
     }
 
     fn fmt_output_path(&self, dir: &Path) -> PathBuf {
-        let parent = dir.parent().unwrap();
+        let parent = dir.parent().expect("FAILED PARSING PARENT DIR");
         let last: String = match dir.file_name() {
             Some(fname) => fname.to_string_lossy().to_string(),
             None => String::from("segul-filter"),
