@@ -237,7 +237,7 @@ impl<'a> Nexus<'a> {
 enum Block {
     Dimensions(Vec<String>),
     Format(Vec<String>),
-    Matrix(Box<Vec<(String, String)>>),
+    Matrix(Vec<(String, String)>),
     Undetermined,
 }
 
@@ -285,11 +285,11 @@ impl<R: Read> NexusReader<R> {
         headers[1..]
             .iter()
             .filter(|h| !h.is_empty())
-            .for_each(|h| tokens.push(h.to_lowercase().to_string()));
+            .for_each(|h| tokens.push(h.to_lowercase()));
         tokens
     }
 
-    fn parse_matrix(&self, block: &str) -> Box<Vec<(String, String)>> {
+    fn parse_matrix(&self, block: &str) -> Vec<(String, String)> {
         let matrix: Vec<&str> = block.split('\n').collect();
         let mut sequence = Vec::new();
         matrix[1..].iter().filter(|s| !s.is_empty()).for_each(|s| {
@@ -299,7 +299,7 @@ impl<R: Read> NexusReader<R> {
             }
         });
 
-        Box::new(sequence)
+        sequence
     }
 }
 
