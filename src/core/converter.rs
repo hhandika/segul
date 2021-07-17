@@ -41,8 +41,7 @@ impl<'a> Converter<'a> {
         match input_fmt {
             InputFmt::Fasta => self.convert_fasta(),
             InputFmt::Nexus => self.convert_nexus(),
-            InputFmt::Phylip => self.convert_phylip(false),
-            InputFmt::PhylipInt => self.convert_phylip(true),
+            InputFmt::Phylip => self.convert_phylip(),
             InputFmt::Auto => {
                 let input_fmt = common::infer_input_auto(self.input);
                 self.get_sequence(&input_fmt)
@@ -62,9 +61,9 @@ impl<'a> Converter<'a> {
         (nex.matrix, nex.header)
     }
 
-    fn convert_phylip(&mut self, interleave: bool) -> (IndexMap<String, String>, Header) {
+    fn convert_phylip(&mut self) -> (IndexMap<String, String>, Header) {
         let input = Path::new(self.input);
-        let mut phy = Phylip::new(input, interleave);
+        let mut phy = Phylip::new(input);
         phy.parse().expect("Failed parsing a phylip file");
         (phy.matrix, phy.header)
     }

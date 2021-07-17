@@ -81,13 +81,13 @@ trait Cli {
             .expect("CANNOT READ FORMAT INPUT");
         match input_fmt {
             "auto" => InputFmt::Auto,
-            "fasta" | "fasta-int" => InputFmt::Fasta,
-            "nexus" | "nexus-int" => InputFmt::Nexus,
+            "fasta" => InputFmt::Fasta,
+            "nexus" => InputFmt::Nexus,
             "phylip" => InputFmt::Phylip,
-            "phylip-int" => InputFmt::PhylipInt,
             _ => panic!(
                 "UNSUPPORTED FORMAT. \
-        THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, phylip, and phylip-int. ALL IN lowercase. \
+        THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, and phylip. \
+        ALL IN lowercase. \
         YOUR INPUT: {} ",
                 input_fmt
             ),

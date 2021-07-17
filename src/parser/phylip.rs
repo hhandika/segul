@@ -10,17 +10,15 @@ use crate::helper::common::{self, Header, SeqCheck};
 
 pub struct Phylip<'a> {
     input: &'a Path,
-    interleave: bool,
     pub matrix: IndexMap<String, String>,
     pub header: Header,
     pub is_alignment: bool,
 }
 
 impl<'a> Phylip<'a> {
-    pub fn new(input: &'a Path, interleave: bool) -> Self {
+    pub fn new(input: &'a Path) -> Self {
         Self {
             input,
-            interleave,
             matrix: IndexMap::new(),
             header: Header::new(),
             is_alignment: false,
@@ -28,7 +26,7 @@ impl<'a> Phylip<'a> {
     }
 
     pub fn parse(&mut self) -> Result<()> {
-        self.parse_file()?;
+        self.parse_matrix()?;
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
         self.is_alignment = seq_info.is_alignment;
@@ -64,36 +62,8 @@ impl<'a> Phylip<'a> {
         ids
     }
 
-    fn parse_file(&mut self) -> Result<()> {
+    fn parse_matrix(&mut self) -> Result<()> {
         let file = File::open(self.input)?;
-
-        if self.interleave {
-            self.parse_matrix_interleave(file)?;
-        } else {
-            self.parse_matrix_sequential(file)?;
-        }
-
-        Ok(())
-    }
-
-    fn parse_matrix_sequential<R: Read>(&mut self, file: R) -> Result<()> {
-        let mut buff = BufReader::new(file);
-        let mut header_line = String::new();
-        buff.read_line(&mut header_line)?;
-        self.parse_header(&header_line.trim());
-
-        buff.lines()
-            .filter_map(|ok| ok.ok())
-            .filter(|l| !l.is_empty())
-            .for_each(|line| {
-                let (id, dna) = self.parse_sequence(line.trim());
-                self.insert_matrix(id, dna);
-            });
-
-        Ok(())
-    }
-
-    fn parse_matrix_interleave<R: Read>(&mut self, file: R) -> Result<()> {
         let mut buff = BufReader::new(file);
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
@@ -220,7 +190,7 @@ mod test {
     #[test]
     fn read_phylip_simple_test() {
         let path = Path::new("test_files/simple.phy");
-        let mut phylip = Phylip::new(path, false);
+        let mut phylip = Phylip::new(path);
         phylip.parse().unwrap();
 
         assert_eq!(2, phylip.header.ntax);
@@ -232,14 +202,14 @@ mod test {
     #[should_panic]
     fn read_phylip_invalid_test() {
         let path = Path::new("test_files/invalid.phy");
-        let mut phylip = Phylip::new(path, false);
+        let mut phylip = Phylip::new(path);
         phylip.parse().unwrap();
     }
 
     #[test]
     fn read_phylip_whitespace_test() {
         let path = Path::new("test_files/whitespaces.phy");
-        let mut phylip = Phylip::new(path, false);
+        let mut phylip = Phylip::new(path);
         phylip.parse().unwrap();
         assert_eq!(2, phylip.header.ntax);
         assert_eq!(4, phylip.header.nchar);
@@ -249,7 +219,7 @@ mod test {
     #[test]
     fn parse_phylip_header_test() {
         let header = "2 24";
-        let mut phy = Phylip::new(Path::new("."), false);
+        let mut phy = Phylip::new(Path::new("."));
         phy.parse_header(header);
 
         assert_eq!(2, phy.header.ntax);
@@ -259,9 +229,8 @@ mod test {
     #[test]
     fn parse_matrix_interleave_phylip_test() {
         let path = Path::new("test_files/interleave.phy");
-        let file = File::open(path).unwrap();
-        let mut phy = Phylip::new(path, true);
-        phy.parse_matrix_interleave(file).unwrap();
+        let mut phy = Phylip::new(path);
+        phy.parse_matrix().unwrap();
         let res = phy.matrix.get("ABCD");
         assert_eq!(Some(&String::from("agccatggaa")), res);
     }
@@ -269,7 +238,7 @@ mod test {
     #[test]
     fn read_interleave_phylip_test() {
         let path = Path::new("test_files/interleave.phy");
-        let mut phy = Phylip::new(path, true);
+        let mut phy = Phylip::new(path);
         phy.parse().unwrap();
         let res = phy.matrix.get("ABCD");
         assert_eq!(Some(&String::from("agccatggaa")), res);
@@ -278,7 +247,7 @@ mod test {
     #[test]
     fn reade_int_phylip_whitespaces_test() {
         let path = Path::new("test_files/interleave_whitespaces.phy");
-        let mut phy = Phylip::new(path, true);
+        let mut phy = Phylip::new(path);
         phy.parse().unwrap();
         let res = phy.matrix.get("ABCD");
         assert_eq!(Some(&String::from("agccatggcc")), res);
@@ -289,7 +258,7 @@ mod test {
     fn read_interleave_phylip_panic_test() {
         // The header does not matches the character length.
         let path = Path::new("test_files/invalid_interleave.phy");
-        let mut phy = Phylip::new(path, true);
+        let mut phy = Phylip::new(path);
         phy.parse().unwrap();
     }
 }

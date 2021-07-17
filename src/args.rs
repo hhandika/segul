@@ -63,9 +63,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "fasta",
                             "nexus",
                             "phylip",
-                            "fasta-int",
-                            "nexus-int",
-                            "phylip-int",
                         ]),
                 )
                 .arg(
@@ -129,9 +126,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "nexus",
                             "phylip",
                             "fasta",
-                            "fasta-int",
-                            "nexus-int",
-                            "phylip-int",
                         ]),
                 )
                 .arg(
@@ -205,9 +199,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "fasta",
                             "nexus",
                             "phylip",
-                            "fasta-int",
-                            "nexus-int",
-                            "phylip-int",
                         ]),
                 )
                 .arg(
@@ -328,9 +319,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "fasta",
                             "nexus",
                             "phylip",
-                            "fasta-int",
-                            "nexus-int",
-                            "phylip-int",
                         ]),
                 )
                 .arg(
@@ -391,9 +379,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "fasta",
                             "nexus",
                             "phylip",
-                            "fasta-int",
-                            "nexus-int",
-                            "phylip-int",
                         ]),
                 )
                 .arg(

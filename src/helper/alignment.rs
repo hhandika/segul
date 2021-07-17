@@ -27,8 +27,7 @@ impl Alignment {
             .push_str(&file.file_stem().unwrap().to_string_lossy());
         match input_fmt {
             InputFmt::Nexus => self.get_aln_from_nexus(file),
-            InputFmt::Phylip => self.get_aln_from_phylip(file, false),
-            InputFmt::PhylipInt => self.get_aln_from_phylip(file, true),
+            InputFmt::Phylip => self.get_aln_from_phylip(file),
             InputFmt::Fasta => self.get_aln_from_fasta(file),
             InputFmt::Auto => {
                 let input_fmt = common::infer_input_auto(file);
@@ -44,8 +43,8 @@ impl Alignment {
         self.get_alignment(nex.matrix, nex.header)
     }
 
-    fn get_aln_from_phylip(&mut self, file: &Path, interleave: bool) {
-        let mut phy = Phylip::new(file, interleave);
+    fn get_aln_from_phylip(&mut self, file: &Path) {
+        let mut phy = Phylip::new(file);
         phy.parse().expect("Failed reading a phylip file");
         self.check_is_alignment(file, phy.is_alignment);
         self.get_alignment(phy.matrix, phy.header);

@@ -8,7 +8,6 @@ pub enum InputFmt {
     Fasta,
     Nexus,
     Phylip,
-    PhylipInt,
 }
 
 pub enum OutputFmt {
@@ -80,7 +79,7 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
     match ext {
         "fas" | "fa" | "fasta" => InputFmt::Fasta,
         "nex" | "nexus" => InputFmt::Nexus,
-        "phy" | "phylip" => InputFmt::PhylipInt,
+        "phy" | "phylip" => InputFmt::Phylip,
         _ => panic!(
             "Ups... The program cannot recognize the file extension. \
         Maybe try specify the input format using -f --format option."

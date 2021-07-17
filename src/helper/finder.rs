@@ -48,7 +48,7 @@ impl<'a> Files<'a> {
         self.pattern = match self.input_fmt {
             InputFmt::Fasta => format!("{}/*.fa*", self.dir),
             InputFmt::Nexus => format!("{}/*.nex*", self.dir),
-            InputFmt::Phylip | InputFmt::PhylipInt => format!("{}/*.phy*", self.dir),
+            InputFmt::Phylip => format!("{}/*.phy*", self.dir),
             InputFmt::Auto => panic!(
                 "YOUR INPUT FORMAT IS THE DEFAULT AUTO. \
             THE PROGRAM CANNOT USE AUTO FOR DIR INPUT. PLEASE, \
@@ -71,8 +71,7 @@ impl<'a> IDs<'a> {
     pub fn get_id_all(&self) -> IndexSet<String> {
         let all_ids = match self.input_fmt {
             InputFmt::Nexus => self.get_id_from_nexus(),
-            InputFmt::Phylip => self.get_id_from_phylip(false),
-            InputFmt::PhylipInt => self.get_id_from_phylip(true),
+            InputFmt::Phylip => self.get_id_from_phylip(),
             InputFmt::Fasta => self.get_id_from_fasta(),
             InputFmt::Auto => self.get_id_auto(),
         };
@@ -86,18 +85,17 @@ impl<'a> IDs<'a> {
             match input_fmt {
                 InputFmt::Fasta => s.send(fasta::parse_only_id(file)).unwrap(),
                 InputFmt::Nexus => s.send(Nexus::new(file).parse_only_id()).unwrap(),
-                InputFmt::PhylipInt => s.send(Phylip::new(file, true).parse_only_id()).unwrap(),
+                InputFmt::Phylip => s.send(Phylip::new(file).parse_only_id()).unwrap(),
                 _ => unreachable!(),
             }
         });
         receiver.iter().collect()
     }
 
-    fn get_id_from_phylip(&self, interleave: bool) -> Vec<Vec<String>> {
+    fn get_id_from_phylip(&self) -> Vec<Vec<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(Phylip::new(file, interleave).parse_only_id())
-                .unwrap();
+            s.send(Phylip::new(file).parse_only_id()).unwrap();
         });
         receiver.iter().collect()
     }
