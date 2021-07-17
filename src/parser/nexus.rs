@@ -143,7 +143,7 @@ impl<'a> Nexus<'a> {
         match tokens {
             "interleave=yes" => self.interleave = true,
             "interleave" => self.interleave = true,
-            "interleave=no" => self.interleave = true,
+            "interleave=no" => self.interleave = false,
             _ => (),
         }
     }
@@ -374,7 +374,6 @@ mod test {
     }
 
     #[test]
-    // #[should_panic]
     fn check_match_ntax_test() {
         let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new(sample);
