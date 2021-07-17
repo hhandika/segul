@@ -1,0 +1,2 @@
+path,locus,ntaxa,chars_count,site_count,conserved_sites,proportion_cons_sites,variable_sites,proportion_var_sites,parsimony_informative_sites,proportion_pars_inf_sites,missing_data,proportion_missing_data,AT_content,GC_content,A_counts,T_counts,G_counts,C_counts,gap_counts,missing_counts,
+test_files/complete.nex,complete,5,4010,802,649,0.8092269326683291,153,0.19077306733167082,91,0.11346633416458853,63,0.01571072319201995,0.41271820448877805,0.571571072319202,1177,1115,516,1139,63,0

@@ -28,13 +28,10 @@ impl<'a> Nexus<'a> {
     }
 
     pub fn parse(&mut self) -> Result<()> {
-        let blocks = self.get_blocks();
-        blocks.iter().for_each(|block| match block {
-            Block::Dimensions(dimensions) => self.parse_dimensions(&dimensions),
-            Block::Format(format) => self.parse_format(&format),
-            Block::Matrix(matrix) => self.parse_matrix(&matrix),
-            Block::Undetermined => (),
-        });
+        let mut commands = self.get_commands();
+        self.parse_dimensions(&mut commands.dimensions);
+        self.parse_format(&mut commands.format);
+        self.parse_matrix(&mut commands.matrix);
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
         self.is_alignment = seq_info.is_alignment;
@@ -44,18 +41,9 @@ impl<'a> Nexus<'a> {
     }
 
     pub fn parse_only_id(&mut self) -> IndexSet<String> {
-        let blocks = self.get_blocks();
-        let mut ids = IndexSet::new();
-        blocks.iter().for_each(|block| match block {
-            Block::Dimensions(dimensions) => self.parse_dimensions(dimensions),
-            Block::Format(format) => self.parse_format(&format),
-            Block::Matrix(matrix) => {
-                matrix.iter().for_each(|(id, _)| {
-                    ids.insert(id.to_string());
-                });
-            }
-            Block::Undetermined => (),
-        });
+        let mut commands = self.get_commands();
+        self.parse_dimensions(&mut commands.dimensions);
+        let ids = self.parse_matrix_id(&mut commands.matrix);
         assert!(
             ids.len() == self.header.ntax,
             "FAILED PARSING {}. \
@@ -67,54 +55,108 @@ impl<'a> Nexus<'a> {
             self.header.ntax,
             ids.len()
         );
-
         ids
     }
 
-    fn get_blocks(&mut self) -> Vec<Block> {
+    fn get_commands(&mut self) -> Commands {
         let input = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE");
         let mut buff = BufReader::new(input);
         let mut header = String::new();
         buff.read_line(&mut header)
             .expect("CANNOT READ THE HEADER FILE");
         self.check_nexus(&header.trim());
+        self.parse_blocks(buff)
+    }
+
+    fn parse_blocks<R: Read>(&self, buff: R) -> Commands {
         let reader = NexusReader::new(buff);
-        reader.into_iter().collect()
+        let mut commands = Commands::new();
+        reader.into_iter().for_each(|read| {
+            match read.to_lowercase() {
+                command if command.starts_with("dimensions") => {
+                    commands.dimensions.push_str(&read.trim().to_lowercase())
+                }
+                command if command.starts_with("format") => {
+                    commands.format.push_str(&read.trim().to_lowercase())
+                }
+                command if command.starts_with("matrix") => commands.matrix.push_str(&read.trim()),
+                _ => (),
+            };
+        });
+
+        commands
     }
 
-    fn parse_dimensions(&mut self, blocks: &[String]) {
-        blocks.iter().for_each(|dimension| match dimension {
-            tag if tag.starts_with("ntax") => self.header.ntax = self.parse_ntax(&dimension),
-            tag if tag.starts_with("nchar") => {
-                self.header.nchar = self.parse_characters(&dimension)
-            }
-            _ => (),
-        });
+    fn parse_dimensions(&mut self, input: &mut String) {
+        input.pop();
+        let dimensions: Vec<&str> = input.split_whitespace().collect();
+        dimensions
+            .iter()
+            .map(|d| d.trim())
+            .for_each(|dimension| match dimension {
+                tag if tag.starts_with("ntax") => self.header.ntax = self.parse_ntax(&dimension),
+                tag if tag.starts_with("nchar") => {
+                    self.header.nchar = self.parse_characters(&dimension)
+                }
+                _ => (),
+            });
     }
 
-    fn parse_format(&mut self, blocks: &[String]) {
-        blocks.iter().for_each(|format| match format {
-            token if token.starts_with("datatype") => {
-                self.header.datatype = self.parse_datatype(&format)
-            }
-            token if token.starts_with("missing") => {
-                self.header.missing = self.parse_missing(&format)
-            }
-            token if token.starts_with("gap") => self.header.gap = self.parse_gap(&format),
-            token if token.starts_with("interleave") => self.parse_interleave(&format),
-            _ => (),
-        });
+    fn parse_format(&mut self, input: &mut String) {
+        input.pop();
+        let formats: Vec<&str> = input.split_whitespace().collect();
+        formats
+            .iter()
+            .map(|f| f.trim())
+            .filter(|f| !f.is_empty())
+            .for_each(|format| match format {
+                tag if tag.starts_with("datatype") => {
+                    self.header.datatype = self.parse_datatype(&format)
+                }
+                tag if tag.starts_with("missing") => {
+                    self.header.missing = self.parse_missing(&format)
+                }
+                tag if tag.starts_with("gap") => self.header.gap = self.parse_gap(&format),
+                "interleave=yes" => self.interleave = true,
+                "interleave" => self.interleave = true,
+                _ => (),
+            });
     }
 
-    fn parse_matrix(&mut self, matrix: &[(String, String)]) {
-        matrix.iter().for_each(|(id, seq)| {
-            common::check_valid_dna(&self.input, &id, &seq);
-            if self.interleave {
-                self.insert_matrix_interleave(id.to_string(), seq.to_string());
-            } else {
-                self.insert_matrix(id.to_string(), seq.to_string());
-            }
-        });
+    fn parse_matrix_id(&mut self, read: &mut String) -> IndexSet<String> {
+        read.pop(); // remove terminated semicolon.
+        let matrix: Vec<&str> = read.split('\n').collect();
+        let mut ids = IndexSet::new();
+        matrix[1..]
+            .iter()
+            .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
+            .for_each(|line| {
+                let seq: Vec<&str> = line.split_whitespace().collect();
+                if seq.len() == 2 && !ids.contains(seq[0]) {
+                    ids.insert(seq[0].to_string());
+                }
+            });
+        read.clear();
+        ids
+    }
+
+    fn parse_matrix(&mut self, read: &mut String) {
+        read.pop(); // remove terminated semicolon.
+        let matrix: Vec<&str> = read.split('\n').collect();
+        matrix[1..]
+            .iter()
+            .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
+            .for_each(|line| {
+                let (id, dna) = self.parse_sequence(line);
+                if self.interleave {
+                    self.insert_matrix_interleave(id, dna);
+                } else {
+                    self.insert_matrix(id, dna);
+                }
+            });
+        read.clear();
     }
 
     fn insert_matrix(&mut self, id: String, dna: String) {
@@ -139,13 +181,13 @@ impl<'a> Nexus<'a> {
         }
     }
 
-    fn parse_interleave(&mut self, tokens: &str) {
-        match tokens {
-            "interleave=yes" => self.interleave = true,
-            "interleave" => self.interleave = true,
-            "interleave=no" => self.interleave = true,
-            _ => (),
-        }
+    fn parse_sequence(&self, line: &str) -> (String, String) {
+        let seq: Vec<&str> = line.split_whitespace().collect();
+        self.check_seq_len(seq.len());
+        let id = seq[0].to_string();
+        let dna = seq[1].to_string();
+        common::check_valid_dna(&self.input, &id, &dna);
+        (id, dna)
     }
 
     fn parse_datatype(&self, input: &str) -> String {
@@ -206,6 +248,16 @@ impl<'a> Nexus<'a> {
         }
     }
 
+    fn check_seq_len(&self, len: usize) {
+        if len != 2 {
+            panic!(
+                "THE FILE {} IS UNSUPPORTED NEXUS FORMAT. \
+            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs",
+                self.input.display()
+            );
+        }
+    }
+
     fn check_ntax_matches(&self) {
         if self.matrix.len() != self.header.ntax {
             panic!(
@@ -235,11 +287,20 @@ impl<'a> Nexus<'a> {
     }
 }
 
-enum Block {
-    Dimensions(Vec<String>),
-    Format(Vec<String>),
-    Matrix(Box<Vec<(String, String)>>),
-    Undetermined,
+struct Commands {
+    matrix: String,
+    dimensions: String,
+    format: String,
+}
+
+impl Commands {
+    fn new() -> Self {
+        Self {
+            matrix: String::new(),
+            dimensions: String::new(),
+            format: String::new(),
+        }
+    }
 }
 
 struct NexusReader<R> {
@@ -255,7 +316,7 @@ impl<R: Read> NexusReader<R> {
         }
     }
 
-    fn next_block(&mut self) -> Option<Block> {
+    fn next_block(&mut self) -> Option<String> {
         self.buffer.clear();
         let bytes = self
             .reader
@@ -264,50 +325,19 @@ impl<R: Read> NexusReader<R> {
         if bytes == 0 {
             None
         } else {
-            let mut block: String = std::str::from_utf8(&self.buffer)
-                .expect("Failed parsing nexus block")
-                .trim()
-                .to_string();
-            block.pop(); // remove terminated semicolon
-            match block.to_lowercase() {
-                b if b.starts_with("dimensions") => {
-                    Some(Block::Dimensions(self.parse_header(&block)))
-                }
-                b if b.starts_with("format") => Some(Block::Format(self.parse_header(&block))),
-                b if b.starts_with("matrix") => Some(Block::Matrix(self.parse_matrix(&block))),
-                _ => Some(Block::Undetermined),
+            let mut token = String::new();
+            if let Ok(tok) = std::str::from_utf8(&self.buffer) {
+                token.push_str(tok.trim());
             }
+            Some(token)
         }
-    }
-
-    fn parse_header(&self, block: &str) -> Vec<String> {
-        let headers: Vec<&str> = block.split_whitespace().collect();
-        let mut tokens: Vec<String> = Vec::new();
-        headers[1..]
-            .iter()
-            .filter(|h| !h.is_empty())
-            .for_each(|h| tokens.push(h.to_lowercase().to_string()));
-        tokens
-    }
-
-    fn parse_matrix(&self, block: &str) -> Box<Vec<(String, String)>> {
-        let matrix: Vec<&str> = block.split('\n').collect();
-        let mut sequence = Vec::new();
-        matrix[1..].iter().filter(|s| !s.is_empty()).for_each(|s| {
-            let seq: Vec<&str> = s.split_whitespace().collect();
-            if seq.len() == 2 {
-                sequence.push((seq[0].to_string(), seq[1].to_string()));
-            }
-        });
-
-        Box::new(sequence)
     }
 }
 
 // Iterate over the file.
 // Collect each of the nexus block terminated by semi-colon.
 impl<R: Read> Iterator for NexusReader<R> {
-    type Item = Block;
+    type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_block()
