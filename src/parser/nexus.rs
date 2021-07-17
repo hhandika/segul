@@ -282,7 +282,7 @@ impl<R: Read> NexusReader<R> {
     fn parse_header(&self, block: &str) -> Vec<String> {
         let headers: Vec<&str> = block.split_whitespace().collect();
         let mut tokens: Vec<String> = Vec::new();
-        headers[1..]
+        headers[1..] // ignore NEXUS commands
             .iter()
             .filter(|h| !h.is_empty())
             .for_each(|h| tokens.push(h.to_lowercase()));
