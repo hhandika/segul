@@ -3,6 +3,9 @@ use std::time::Instant;
 
 use clap::crate_version;
 
+#[macro_use]
+extern crate lazy_static;
+
 mod args;
 mod cli;
 mod core;

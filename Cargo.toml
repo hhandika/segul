@@ -13,8 +13,10 @@ clap = "2.*"
 glob = "*"
 indexmap = "1.6.*"
 indicatif = "0.16.*"
+lazy_static = "1.4.0"
 nom = "6.*"
 num-format = "0.4.*"
 rayon = "*"
+regex = "1.4.5"
 
 

@@ -5,6 +5,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 use nom::{bytes::complete, character, sequence, IResult};
+use regex::Regex;
 
 use crate::helper::common::{self, Header, SeqCheck};
 
@@ -268,12 +269,11 @@ impl<R: Read> NexusReader<R> {
                 .trim()
                 .to_string();
             block.pop(); // remove terminated semicolon
-            match block.to_lowercase() {
-                b if b.starts_with("dimensions") => {
-                    Some(Block::Dimensions(self.parse_header(&block)))
-                }
-                b if b.starts_with("format") => Some(Block::Format(self.parse_header(&block))),
-                b if b.starts_with("matrix") => Some(Block::Matrix(self.parse_matrix(&block))),
+            let commands = get_commands(&block);
+            match commands.as_str() {
+                "dimensions" => Some(Block::Dimensions(self.parse_header(&block))),
+                "format" => Some(Block::Format(self.parse_header(&block))),
+                "matrix" => Some(Block::Matrix(self.parse_matrix(&block))),
                 _ => Some(Block::Undetermined),
             }
         }
@@ -310,6 +310,17 @@ impl<R: Read> Iterator for NexusReader<R> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_block()
+    }
+}
+
+fn get_commands(file: &str) -> String {
+    lazy_static! { // Match the first word in the block
+        static ref RE: Regex = Regex::new(r"^(\w+)").expect("Failed capturing nexus commands");
+    }
+
+    match RE.captures(file) {
+        Some(word) => word[0].to_lowercase(),
+        None => String::from(""),
     }
 }
 
