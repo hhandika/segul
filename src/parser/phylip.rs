@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Result};
 use std::path::Path;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 use nom::{character::complete, sequence, IResult};
 
 use crate::helper::common::{self, Header, SeqCheck};
@@ -37,17 +37,17 @@ impl<'a> Phylip<'a> {
         Ok(())
     }
 
-    pub fn parse_only_id(&mut self) -> IndexSet<String> {
+    pub fn parse_only_id(&mut self) -> Vec<String> {
         let file = File::open(self.input).expect("CANNOT READ THE FILE");
         let mut buff = BufReader::new(file);
         let mut header_line = String::new();
         buff.read_line(&mut header_line).unwrap();
         self.parse_header(&header_line.trim());
-        let mut ids = IndexSet::new();
+        let mut ids = Vec::new();
         buff.lines().filter_map(|ok| ok.ok()).for_each(|line| {
             let seq: Vec<&str> = line.split_whitespace().collect();
             if seq.len() == 2 {
-                ids.insert(seq[0].to_string());
+                ids.push(seq[0].to_string());
             }
         });
         assert!(

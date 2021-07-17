@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Read, Result};
 use std::path::Path;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 use nom::{bytes::complete, character, sequence, IResult};
 
 use crate::helper::common::{self, Header, SeqCheck};
@@ -43,18 +43,17 @@ impl<'a> Nexus<'a> {
         Ok(())
     }
 
-    pub fn parse_only_id(&mut self) -> IndexSet<String> {
+    pub fn parse_only_id(&mut self) -> Vec<String> {
         let blocks = self.get_blocks();
-        let mut ids = IndexSet::new();
+        let mut ids = Vec::new();
         blocks.iter().for_each(|block| match block {
             Block::Dimensions(dimensions) => self.parse_dimensions(dimensions),
-            Block::Format(format) => self.parse_format(&format),
             Block::Matrix(matrix) => {
                 matrix.iter().for_each(|(id, _)| {
-                    ids.insert(id.to_string());
+                    ids.push(id.to_string());
                 });
             }
-            Block::Undetermined => (),
+            _ => (),
         });
         assert!(
             ids.len() == self.header.ntax,
