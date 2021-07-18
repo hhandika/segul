@@ -190,19 +190,20 @@ impl<R: Read> Reader<R> {
 
     fn next_seq(&mut self) -> Option<Records> {
         if let Some(Ok(lines)) = self.reader.by_ref().next() {
+            let line = lines.trim();
             let mut records = Records::new();
             if !self.interleave {
-                let seq: Vec<&str> = lines.split_whitespace().collect();
+                let seq: Vec<&str> = line.split_whitespace().collect();
                 if seq.len() == 2 {
                     records.id = Some(seq[0].trim().to_string());
                     records.seq = seq[1].trim().to_string();
                 }
             } else {
                 records.id = None;
-                records.seq = lines.trim().to_string();
+                records.seq = line.to_string();
             }
 
-            if !lines.is_empty() {
+            if !line.is_empty() {
                 records.pos = self.pos;
                 self.pos += 1;
             }
