@@ -7,7 +7,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::helper::common::{Header, SeqCheck};
+use crate::helper::common::{self, Header, SeqCheck};
 
 pub struct Fasta<'a> {
     input: &'a Path,
@@ -63,6 +63,7 @@ impl<'a> Fasta<'a> {
                     fas.id
                 ),
                 None => {
+                    common::check_valid_dna(&self.input, &fas.id, &fas.seq);
                     self.matrix.insert(fas.id, fas.seq);
                 }
             });
