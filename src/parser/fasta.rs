@@ -7,14 +7,7 @@ use std::path::Path;
 
 use indexmap::{IndexMap, IndexSet};
 
-use crate::helper::common::{self, Header, SeqCheck};
-
-pub struct Fasta<'a> {
-    input: &'a Path,
-    pub matrix: IndexMap<String, String>,
-    pub is_alignment: bool,
-    pub header: Header,
-}
+use crate::helper::common::{self, DataType, Header, SeqCheck};
 
 pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("Failed opening a fasta file.");
@@ -31,10 +24,19 @@ pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     ids
 }
 
+pub struct Fasta<'a> {
+    input: &'a Path,
+    datatype: &'a DataType,
+    pub matrix: IndexMap<String, String>,
+    pub is_alignment: bool,
+    pub header: Header,
+}
+
 impl<'a> Fasta<'a> {
-    pub fn new(input: &'a Path) -> Self {
+    pub fn new(input: &'a Path, datatype: &'a DataType) -> Self {
         Self {
             input,
+            datatype,
             matrix: IndexMap::new(),
             is_alignment: false,
             header: Header::new(),
@@ -63,7 +65,7 @@ impl<'a> Fasta<'a> {
                     fas.id
                 ),
                 None => {
-                    common::check_valid_dna(&self.input, &fas.id, &fas.seq);
+                    common::check_valid_seq(&self.input, &self.datatype, &fas.id, &fas.seq);
                     self.matrix.insert(fas.id, fas.seq);
                 }
             });
@@ -146,10 +148,13 @@ impl<R: Read> Iterator for FastaReader<R> {
 mod test {
     use super::*;
 
+    const DNA: DataType = DataType::Dna;
+    const AA: DataType = DataType::Aa;
+
     #[test]
     fn read_fasta_simple_test() {
         let path = Path::new("test_files/simple.fas");
-        let mut fasta = Fasta::new(path);
+        let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
         assert_eq!(2, fasta.matrix.len());
@@ -158,7 +163,7 @@ mod test {
     #[test]
     fn check_is_alignment_test() {
         let path = Path::new("test_files/simple.fas");
-        let mut fasta = Fasta::new(path);
+        let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
         assert_eq!(true, fasta.is_alignment);
@@ -167,7 +172,7 @@ mod test {
     #[test]
     fn check_isnot_alignment_test() {
         let path = Path::new("test_files/unaligned.fas");
-        let mut fasta = Fasta::new(path);
+        let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
         assert_eq!(false, fasta.is_alignment);
@@ -187,5 +192,15 @@ mod test {
         let res_2 = String::from("AGTATGATGTATAAAAAA");
         assert_eq!(Some(&res), seq.get("ABCD"));
         assert_eq!(Some(&res_2), seq.get("ABCE"));
+    }
+
+    #[test]
+    fn simple_aa_fas_test() {
+        let sample = Path::new("test_files/simple_aa.fas");
+        let mut fas = Fasta::new(sample, &AA);
+        fas.parse();
+        let key = String::from("ABCE");
+        let res = String::from("MAYPMQLGFQDATSPI");
+        assert_eq!(Some(&res), fas.matrix.get(&key));
     }
 }

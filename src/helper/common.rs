@@ -29,6 +29,13 @@ pub enum PartitionFmt {
     None,
 }
 
+#[derive(Clone)]
+pub enum DataType {
+    Dna,
+    Aa,
+    Ignore,
+}
+
 pub struct Partition {
     pub gene: String,
     pub start: usize,
@@ -132,18 +139,46 @@ impl SeqCheck {
 pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
     if !is_valid_dna(dna) {
         panic!(
-            "Ups... The {} is not a dna sequence. Found in file {}",
+            "Ups... The {} is not a dna sequence. Found {} in file {}",
             id,
+            dna,
+            input.display()
+        );
+    }
+}
+
+pub fn check_valid_seq(input: &Path, datatype: &DataType, id: &str, seq: &str) {
+    match datatype {
+        DataType::Dna => check_valid_dna(input, id, seq),
+        DataType::Aa => check_valid_aa(input, id, seq),
+        DataType::Ignore => (),
+    }
+}
+
+fn check_valid_aa(input: &Path, id: &str, aa: &str) {
+    if !is_valid_aa(aa) {
+        panic!(
+            "Ups... The {} is not an amino acid sequence. Found {} in file {}",
+            id,
+            aa,
             input.display()
         );
     }
 }
 
 // Alphabeth for dna.
-// Include IUPAC characters plus missing symbol (?)
+// Include IUPAC characters plus missing symbols and gaps (?, -, and *)
 fn is_valid_dna(dna: &str) -> bool {
-    let valid_chars = String::from("ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?");
-    dna.chars().all(|char| valid_chars.contains(char))
+    let valid_dna = String::from("ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?");
+    dna.chars().all(|char| valid_dna.contains(char))
+}
+
+// Alphabeth for amino acid.
+// Include IUPAC characters plus missing symbols and gaps (X,?,-,.,~, and *)
+// Missing follow: http://www.iqtree.org/doc/Frequently-Asked-Questions
+fn is_valid_aa(aa: &str) -> bool {
+    let valid_aa = String::from("ABCDEFGHIKLMNPQRSTVWYX?-.~*");
+    aa.chars().all(|char| valid_aa.contains(char))
 }
 
 #[cfg(test)]

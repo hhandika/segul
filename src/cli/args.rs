@@ -83,6 +83,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                         ]),
                 )
                 .arg(
+                    Arg::with_name("datatype")
+                        .long("dt")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
+                )
+                .arg(
                     Arg::with_name("sort")
                         .long("sort")
                         .help("Sorts the alignments")
@@ -167,6 +178,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                         ]),
                 )
                 .arg(
+                    Arg::with_name("datatype")
+                        .long("dt")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
+                )
+                .arg(
                     Arg::with_name("codon")
                         .long("codon")
                         .help("Sets codon model partition format")
@@ -200,6 +222,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "nexus",
                             "phylip",
                         ]),
+                )
+                .arg(
+                    Arg::with_name("datatype")
+                        .long("dt")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
                     Arg::with_name("percent")
@@ -322,6 +355,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                         ]),
                 )
                 .arg(
+                    Arg::with_name("datatype")
+                        .long("dt")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
+                )
+                .arg(
                     Arg::with_name("output")
                         .short("o")
                         .long("output")
@@ -390,6 +434,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .required(true)
                         .default_value("SEGUL-stats")
                         .value_name("OUTPUT"),
+                )
+                .arg(
+                    Arg::with_name("datatype")
+                        .long("dt")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
                     Arg::with_name("comp-interval")

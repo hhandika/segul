@@ -7,10 +7,11 @@ use indexmap::{IndexMap, IndexSet};
 use nom::{bytes::complete, character, sequence, IResult};
 use regex::Regex;
 
-use crate::helper::common::{self, Header, SeqCheck};
+use crate::helper::common::{self, DataType, Header, SeqCheck};
 
 pub struct Nexus<'a> {
     input: &'a Path,
+    datatype: &'a DataType,
     pub matrix: IndexMap<String, String>,
     pub header: Header,
     pub interleave: bool,
@@ -18,9 +19,10 @@ pub struct Nexus<'a> {
 }
 
 impl<'a> Nexus<'a> {
-    pub fn new(input: &'a Path) -> Self {
+    pub fn new(input: &'a Path, datatype: &'a DataType) -> Self {
         Self {
             input,
+            datatype,
             matrix: IndexMap::new(),
             header: Header::new(),
             interleave: false,
@@ -119,7 +121,7 @@ impl<'a> Nexus<'a> {
 
     fn parse_matrix(&mut self, matrix: &[(String, String)]) {
         matrix.iter().for_each(|(id, seq)| {
-            common::check_valid_dna(&self.input, &id, &seq);
+            common::check_valid_seq(&self.input, &self.datatype, &id, &seq);
             if self.interleave {
                 self.insert_matrix_interleave(id.to_string(), seq.to_string());
             } else {
@@ -339,10 +341,13 @@ fn get_commands(file: &str) -> String {
 mod test {
     use super::*;
 
+    const DNA: DataType = DataType::Dna;
+    const AA: DataType = DataType::Aa;
+
     #[test]
     fn nexus_reading_simple_test() {
         let sample = Path::new("test_files/simple.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
         assert_eq!(1, nex.matrix.len());
     }
@@ -350,7 +355,7 @@ mod test {
     #[test]
     fn nexus_reading_complete_test() {
         let sample = Path::new("test_files/complete.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
         assert_eq!(5, nex.matrix.len());
     }
@@ -358,7 +363,7 @@ mod test {
     #[test]
     fn nexus_reading_tabulated_test() {
         let sample = Path::new("test_files/tabulated.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
         assert_eq!(2, nex.matrix.len());
     }
@@ -366,7 +371,7 @@ mod test {
     #[test]
     fn nexus_parsing_object_test() {
         let sample = Path::new("test_files/complete.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
         assert_eq!(5, nex.header.ntax);
         assert_eq!(802, nex.header.nchar);
@@ -379,7 +384,7 @@ mod test {
     fn nexus_parse_ntax_test() {
         let sample = Path::new(".");
         let tax = "ntax=5";
-        let nex = Nexus::new(sample);
+        let nex = Nexus::new(sample, &DNA);
         let res = nex.parse_ntax(tax);
         assert_eq!(5, res);
     }
@@ -387,7 +392,7 @@ mod test {
     #[test]
     fn check_match_ntax_test() {
         let sample = Path::new("test_files/simple.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
     }
 
@@ -395,7 +400,7 @@ mod test {
     #[should_panic]
     fn check_match_ntax_panic_test() {
         let sample = Path::new("test_files/unmatched_block.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
     }
 
@@ -403,7 +408,7 @@ mod test {
     #[should_panic]
     fn check_invalid_nexus_test() {
         let sample = Path::new("test_files/simple.fas");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
     }
 
@@ -411,7 +416,7 @@ mod test {
     #[should_panic]
     fn nexus_duplicate_panic_test() {
         let sample = Path::new("test_files/duplicates.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
     }
 
@@ -419,7 +424,7 @@ mod test {
     #[should_panic]
     fn nexus_id_duplicate_panic_test() {
         let sample = Path::new("test_files/duplicates.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse_only_id();
     }
 
@@ -427,14 +432,14 @@ mod test {
     #[should_panic]
     fn nexus_space_panic_test() {
         let sample = Path::new("test_files/idspaces.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
     }
 
     #[test]
     fn nexus_sequence_test() {
         let sample = Path::new("test_files/tabulated.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
         let key = String::from("ABEF");
         let res = String::from("gatata---");
@@ -444,7 +449,7 @@ mod test {
     #[test]
     fn nexus_parse_interleave() {
         let sample = Path::new("test_files/interleave.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
         assert_eq!(3, nex.matrix.len());
     }
@@ -452,10 +457,20 @@ mod test {
     #[test]
     fn nexus_parse_interleave_res_test() {
         let sample = Path::new("test_files/interleave.nex");
-        let mut nex = Nexus::new(sample);
+        let mut nex = Nexus::new(sample, &DNA);
         nex.parse().unwrap();
         let key = String::from("ABCD");
         let res = String::from("gatatagatatt");
+        assert_eq!(Some(&res), nex.matrix.get(&key));
+    }
+
+    #[test]
+    fn nexus_simple_aa_test() {
+        let sample = Path::new("test_files/simple_aa.nex");
+        let mut nex = Nexus::new(sample, &AA);
+        nex.parse().unwrap();
+        let key = String::from("ABCE");
+        let res = String::from("MAYPMQLGFQDATSPI");
         assert_eq!(Some(&res), nex.matrix.get(&key));
     }
 }

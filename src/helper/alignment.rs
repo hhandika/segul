@@ -2,7 +2,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::helper::common::{self, Header, InputFmt};
+use crate::helper::common::{self, DataType, Header, InputFmt};
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -22,36 +22,36 @@ impl Alignment {
         }
     }
 
-    pub fn get_aln_any(&mut self, file: &Path, input_fmt: &InputFmt) {
+    pub fn get_aln_any(&mut self, file: &Path, input_fmt: &InputFmt, datatype: &DataType) {
         self.name
             .push_str(&file.file_stem().unwrap().to_string_lossy());
         match input_fmt {
-            InputFmt::Nexus => self.get_aln_from_nexus(file),
-            InputFmt::Phylip => self.get_aln_from_phylip(file),
-            InputFmt::Fasta => self.get_aln_from_fasta(file),
+            InputFmt::Nexus => self.get_aln_from_nexus(file, datatype),
+            InputFmt::Phylip => self.get_aln_from_phylip(file, datatype),
+            InputFmt::Fasta => self.get_aln_from_fasta(file, datatype),
             InputFmt::Auto => {
                 let input_fmt = common::infer_input_auto(file);
-                self.get_aln_any(file, &input_fmt);
+                self.get_aln_any(file, &input_fmt, datatype);
             }
         }
     }
 
-    fn get_aln_from_nexus(&mut self, file: &Path) {
-        let mut nex = Nexus::new(file);
+    fn get_aln_from_nexus(&mut self, file: &Path, datatype: &DataType) {
+        let mut nex = Nexus::new(file, datatype);
         nex.parse().expect("Failed reading a nexus file");
         self.check_is_alignment(&file, nex.is_alignment);
         self.get_alignment(nex.matrix, nex.header)
     }
 
-    fn get_aln_from_phylip(&mut self, file: &Path) {
-        let mut phy = Phylip::new(file);
+    fn get_aln_from_phylip(&mut self, file: &Path, datatype: &DataType) {
+        let mut phy = Phylip::new(file, datatype);
         phy.parse().expect("Failed reading a phylip file");
         self.check_is_alignment(file, phy.is_alignment);
         self.get_alignment(phy.matrix, phy.header);
     }
 
-    fn get_aln_from_fasta(&mut self, file: &Path) {
-        let mut fas = Fasta::new(file);
+    fn get_aln_from_fasta(&mut self, file: &Path, datatype: &DataType) {
+        let mut fas = Fasta::new(file, datatype);
         fas.parse();
         self.check_is_alignment(file, fas.is_alignment);
         self.get_alignment(fas.matrix, fas.header);

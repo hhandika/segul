@@ -9,7 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
 use crate::helper::alignment::Alignment;
-use crate::helper::common::{Header, InputFmt, OutputFmt, Partition, PartitionFmt};
+use crate::helper::common::{DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt};
 use crate::helper::finder::IDs;
 use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
@@ -36,8 +36,8 @@ impl<'a> MSAlignment<'a> {
         }
     }
 
-    pub fn concat_alignment(&self, files: &mut [PathBuf]) {
-        let mut concat = Concat::new(files, &self.input_fmt);
+    pub fn concat_alignment(&self, files: &mut [PathBuf], datatype: &DataType) {
+        let mut concat = Concat::new(files, &self.input_fmt, datatype);
         let spin = utils::set_spinner();
         self.write_alignment(&mut concat, &spin);
     }
@@ -79,15 +79,17 @@ impl<'a> MSAlignment<'a> {
 struct Concat<'a> {
     input_fmt: &'a InputFmt,
     alignment: IndexMap<String, String>,
+    datatype: &'a DataType,
     header: Header,
     partition: Vec<Partition>,
     files: &'a mut [PathBuf],
 }
 
 impl<'a> Concat<'a> {
-    fn new(files: &'a mut [PathBuf], input_fmt: &'a InputFmt) -> Self {
+    fn new(files: &'a mut [PathBuf], input_fmt: &'a InputFmt, datatype: &'a DataType) -> Self {
         Self {
             input_fmt,
+            datatype,
             alignment: IndexMap::new(),
             header: Header::new(),
             partition: Vec::new(),
@@ -98,7 +100,7 @@ impl<'a> Concat<'a> {
     fn concat_alignment(&mut self, spin: &ProgressBar) {
         alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
-        let id = IDs::new(&self.files, &self.input_fmt).get_id_all();
+        let id = IDs::new(&self.files, &self.input_fmt, self.datatype).get_id_all();
         spin.set_message("Concatenating alignments...");
         let (alignment, nchar, partition) = self.concat(&id);
         self.alignment = alignment;
@@ -109,7 +111,7 @@ impl<'a> Concat<'a> {
 
     fn get_alignment(&self, file: &Path) -> Alignment {
         let mut aln = Alignment::new();
-        aln.get_aln_any(file, &self.input_fmt);
+        aln.get_aln_any(file, &self.input_fmt, self.datatype);
         assert!(
             aln.header.ntax != 0,
             "Alignment failed is empty {}",
@@ -177,11 +179,13 @@ mod test {
     use super::*;
     use crate::helper::finder::Files;
 
+    const DNA: DataType = DataType::Dna;
+
     #[test]
     fn concat_nexus_test() {
         let path = "test_files/concat/";
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
-        let mut concat = Concat::new(&mut files, &InputFmt::Nexus);
+        let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
         assert_eq!(3, concat.alignment.len());
@@ -192,7 +196,7 @@ mod test {
     fn get_alignment_panic_test() {
         let path = "test_files/concat/";
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
-        let concat = Concat::new(&mut files, &InputFmt::Nexus);
+        let concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         concat.get_alignment(Path::new("."));
     }
 
@@ -200,7 +204,7 @@ mod test {
     fn concat_check_result_test() {
         let path = "test_files/concat/";
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
-        let mut concat = Concat::new(&mut files, &InputFmt::Nexus);
+        let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
         let abce = concat.alignment.get("ABCE").unwrap();
@@ -212,7 +216,7 @@ mod test {
     fn concat_partition_test() {
         let path = "test_files/concat/";
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
-        let mut concat = Concat::new(&mut files, &InputFmt::Nexus);
+        let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
         assert_eq!(1, concat.partition[0].start);
@@ -231,7 +235,7 @@ mod test {
         let gaps = "?????";
         assert_eq!(
             gaps,
-            Concat::new(&mut [PathBuf::from(".")], &InputFmt::Fasta).get_missings(len)
+            Concat::new(&mut [PathBuf::from(".")], &InputFmt::Fasta, &DNA).get_missings(len)
         )
     }
 }

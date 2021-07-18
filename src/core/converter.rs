@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use crate::writer::seqwriter::SeqWriter;
 
-use crate::helper::common::{self, Header, InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::common::{self, DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -14,15 +14,22 @@ pub struct Converter<'a> {
     output: &'a Path,
     output_fmt: &'a OutputFmt,
     is_dir: bool,
+    datatype: &'a DataType,
 }
 
 impl<'a> Converter<'a> {
-    pub fn new(input: &'a Path, output: &'a Path, output_fmt: &'a OutputFmt, is_dir: bool) -> Self {
+    pub fn new(
+        input: &'a Path,
+        output: &'a Path,
+        output_fmt: &'a OutputFmt,
+        datatype: &'a DataType,
+    ) -> Self {
         Self {
             input,
             output,
             output_fmt,
-            is_dir,
+            datatype,
+            is_dir: false,
         }
     }
 
@@ -35,6 +42,10 @@ impl<'a> Converter<'a> {
         let (mut matrix, header) = self.get_sequence(input_fmt);
         matrix.sort_keys();
         self.convert(&matrix, header)
+    }
+
+    pub fn set_isdir(&mut self, is_dir: bool) {
+        self.is_dir = is_dir;
     }
 
     fn get_sequence(&mut self, input_fmt: &InputFmt) -> (IndexMap<String, String>, Header) {
@@ -50,20 +61,20 @@ impl<'a> Converter<'a> {
     }
 
     fn convert_fasta(&mut self) -> (IndexMap<String, String>, Header) {
-        let mut fas = Fasta::new(self.input);
+        let mut fas = Fasta::new(self.input, &self.datatype);
         fas.parse();
         (fas.matrix, fas.header)
     }
 
     fn convert_nexus(&mut self) -> (IndexMap<String, String>, Header) {
-        let mut nex = Nexus::new(self.input);
+        let mut nex = Nexus::new(self.input, &self.datatype);
         nex.parse().expect("Failed parsing a nexus file");
         (nex.matrix, nex.header)
     }
 
     fn convert_phylip(&mut self) -> (IndexMap<String, String>, Header) {
         let input = Path::new(self.input);
-        let mut phy = Phylip::new(input);
+        let mut phy = Phylip::new(input, &self.datatype);
         phy.parse().expect("Failed parsing a phylip file");
         (phy.matrix, phy.header)
     }

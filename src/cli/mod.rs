@@ -6,14 +6,15 @@ use clap::ArgMatches;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
-use crate::args;
 use crate::core::converter::Converter;
 use crate::core::filter;
 use crate::core::msa;
 use crate::core::summary::SeqStats;
-use crate::helper::common::{InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::common::{DataType, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::finder::{Files, IDs};
 use crate::helper::utils;
+
+mod args;
 
 pub fn parse_cli(version: &str) {
     let args = args::get_args(version);
@@ -113,6 +114,19 @@ trait Cli {
             ),
         }
     }
+
+    fn get_datatype(&self, matches: &ArgMatches) -> DataType {
+        let datatype = matches
+            .value_of("datatype")
+            .expect("Failed parsing dataype value");
+
+        match datatype {
+            "aa" => DataType::Aa,
+            "dna" => DataType::Dna,
+            "ignore" => DataType::Ignore,
+            _ => unreachable!(),
+        }
+    }
 }
 
 enum InputType {
@@ -128,6 +142,7 @@ struct ConvertParser<'a> {
     input_fmt: InputFmt,
     output: PathBuf,
     output_fmt: OutputFmt,
+    datatype: DataType,
     is_dir: bool,
 }
 
@@ -136,6 +151,7 @@ impl<'a> ConvertParser<'a> {
         Self {
             matches,
             input_fmt: InputFmt::Auto,
+            datatype: DataType::Dna,
             output: PathBuf::new(),
             output_fmt: OutputFmt::Nexus,
             is_dir: false,
@@ -146,6 +162,7 @@ impl<'a> ConvertParser<'a> {
         self.input_fmt = self.get_input_fmt(&self.matches);
         self.output = self.get_output_path(self.matches);
         self.output_fmt = self.get_output_fmt(self.matches);
+        self.datatype = self.get_datatype(&self.matches);
         let input_type = self.get_input_type(&self.matches);
         match input_type {
             InputType::File => self.convert_file(),
@@ -181,7 +198,8 @@ impl<'a> ConvertParser<'a> {
     }
 
     fn convert_any(&self, input: &Path, output: &Path, output_fmt: &OutputFmt) {
-        let mut convert = Converter::new(input, output, output_fmt, self.is_dir);
+        let mut convert = Converter::new(input, output, output_fmt, &self.datatype);
+        convert.set_isdir(self.is_dir);
         if self.is_sort() {
             convert.convert_sorted(&self.input_fmt);
         } else {
@@ -279,6 +297,7 @@ struct ConcatParser<'a> {
     input_type: InputType,
     output_fmt: OutputFmt,
     part_fmt: PartitionFmt,
+    datatype: DataType,
 }
 
 impl<'a> ConcatParser<'a> {
@@ -289,12 +308,14 @@ impl<'a> ConcatParser<'a> {
             input_type: InputType::Dir,
             output_fmt: OutputFmt::Nexus,
             part_fmt: PartitionFmt::Charset,
+            datatype: DataType::Dna,
         }
     }
 
     fn concat(&mut self) {
         self.input_fmt = self.get_input_fmt(self.matches);
         self.input_type = self.get_input_type(self.matches);
+        self.datatype = self.get_datatype(self.matches);
         let output = self.get_output(self.matches);
         self.output_fmt = self.get_output_fmt(self.matches);
         self.part_fmt = self.parse_partition_fmt(self.matches);
@@ -309,7 +330,7 @@ impl<'a> ConcatParser<'a> {
         let concat =
             msa::MSAlignment::new(&self.input_fmt, output, &self.output_fmt, &self.part_fmt);
 
-        concat.concat_alignment(&mut files);
+        concat.concat_alignment(&mut files, &self.datatype);
     }
 
     fn is_input_wcard(&self) -> bool {
@@ -344,6 +365,7 @@ struct FilterParser<'a> {
     params: filter::Params,
     ntax: usize,
     percent: f64,
+    datatype: DataType,
 }
 
 impl<'a> FilterParser<'a> {
@@ -356,11 +378,13 @@ impl<'a> FilterParser<'a> {
             params: filter::Params::MinTax(0),
             ntax: 0,
             percent: 0.0,
+            datatype: DataType::Dna,
         }
     }
 
     fn filter(&mut self) {
         self.input_fmt = self.get_input_fmt(self.matches);
+        self.datatype = self.get_datatype(self.matches);
         let dir = self.get_dir_input(self.matches);
         self.print_input().expect("CANNOT DISPLAY TO STDOUT");
         self.files = if self.is_input_dir() {
@@ -396,8 +420,13 @@ impl<'a> FilterParser<'a> {
     }
 
     fn filter_aln(&self) {
-        let mut filter =
-            filter::SeqFilter::new(&self.files, &self.input_fmt, &self.output_dir, &self.params);
+        let mut filter = filter::SeqFilter::new(
+            &self.files,
+            &self.input_fmt,
+            &self.datatype,
+            &self.output_dir,
+            &self.params,
+        );
         match self.check_concat() {
             Some(part_fmt) => {
                 let output_fmt = if self.matches.is_present("output-format") {
@@ -467,7 +496,9 @@ impl<'a> FilterParser<'a> {
         self.ntax = if self.matches.is_present("ntax") {
             self.parse_ntax()
         } else {
-            IDs::new(&self.files, &self.input_fmt).get_id_all().len()
+            IDs::new(&self.files, &self.input_fmt, &self.datatype)
+                .get_id_all()
+                .len()
         };
     }
 
@@ -603,8 +634,8 @@ impl<'a> IdParser<'a> {
     }
 
     fn get_id(&self) {
-        // let input_type = self.get_input_type(&self.matches);
         let input_fmt = self.get_input_fmt(&self.matches);
+        let datatype = self.get_datatype(self.matches);
         let files = if self.is_input_dir() {
             let dir = self.get_dir_input(self.matches);
             self.get_files(dir, &input_fmt)
@@ -614,7 +645,7 @@ impl<'a> IdParser<'a> {
         self.print_input().unwrap();
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
-        let ids = IDs::new(&files, &input_fmt).get_id_all();
+        let ids = IDs::new(&files, &input_fmt, &datatype).get_id_all();
         spin.finish_with_message("DONE!");
         self.write_results(&ids);
     }
@@ -666,6 +697,7 @@ struct StatsParser<'a> {
     matches: &'a ArgMatches<'a>,
     interval: usize,
     input_fmt: InputFmt,
+    datatype: DataType,
 }
 
 impl<'a> StatsParser<'a> {
@@ -674,6 +706,7 @@ impl<'a> StatsParser<'a> {
             matches,
             interval: 0,
             input_fmt: InputFmt::Fasta,
+            datatype: DataType::Dna,
         }
     }
 
@@ -698,7 +731,7 @@ impl<'a> StatsParser<'a> {
 
     fn get_stats_multiple(&self, files: &[PathBuf]) {
         let output = self.get_output(&self.matches);
-        SeqStats::new(&self.input_fmt, output, self.interval).get_stats_dir(&files);
+        SeqStats::new(&self.input_fmt, output, self.interval, &self.datatype).get_stats_dir(&files);
     }
 
     fn get_stats_file(&self) {
@@ -706,7 +739,8 @@ impl<'a> StatsParser<'a> {
         let input = Path::new(self.get_file_input(self.matches));
         let output = self.get_output(&self.matches);
         self.print_input_file().unwrap();
-        SeqStats::new(&self.input_fmt, output, self.interval).get_seq_stats_file(input);
+        SeqStats::new(&self.input_fmt, output, self.interval, &self.datatype)
+            .get_seq_stats_file(input);
     }
 
     fn parse_interval(&self) -> usize {

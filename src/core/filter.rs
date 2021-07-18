@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use crate::core::msa::MSAlignment;
 use crate::core::summary;
 use crate::helper::alignment::Alignment;
-use crate::helper::common::{Header, InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::common::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
 
 pub enum Params {
@@ -20,6 +20,7 @@ pub enum Params {
 pub struct SeqFilter<'a> {
     files: &'a [PathBuf],
     input_fmt: &'a InputFmt,
+    datatype: &'a DataType,
     output: &'a Path,
     params: &'a Params,
     concat: Option<(&'a OutputFmt, &'a PartitionFmt)>,
@@ -29,12 +30,14 @@ impl<'a> SeqFilter<'a> {
     pub fn new(
         files: &'a [PathBuf],
         input_fmt: &'a InputFmt,
+        datatype: &'a DataType,
         output: &'a Path,
         params: &'a Params,
     ) -> Self {
         Self {
             files,
             input_fmt,
+            datatype,
             output,
             params,
             concat: None,
@@ -100,7 +103,7 @@ impl<'a> SeqFilter<'a> {
     ) {
         let output = self.output.to_string_lossy();
         let concat = MSAlignment::new(self.input_fmt, &output, output_fmt, part_fmt);
-        concat.concat_alignment(ftr_files);
+        concat.concat_alignment(ftr_files, &self.datatype);
     }
 
     fn copy_files(&self, origin: &Path) -> Result<()> {
@@ -134,7 +137,7 @@ impl<'a> SeqFilter<'a> {
 
     fn get_alignment(&self, file: &Path) -> Alignment {
         let mut aln = Alignment::new();
-        aln.get_aln_any(file, self.input_fmt);
+        aln.get_aln_any(file, self.input_fmt, &self.datatype);
         aln
     }
 }

@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::helper::alignment::Alignment;
-use crate::helper::common::InputFmt;
+use crate::helper::common::{DataType, InputFmt};
 use crate::helper::finder::IDs;
 use crate::helper::utils;
 use crate::writer::sumwriter;
@@ -21,17 +21,24 @@ pub fn get_pars_inf(matrix: &IndexMap<String, String>) -> usize {
 pub struct SeqStats<'a> {
     input_format: &'a InputFmt,
     output: &'a str,
+    datatype: &'a DataType,
     ntax: usize,
     interval: usize,
 }
 
 impl<'a> SeqStats<'a> {
-    pub fn new(input_format: &'a InputFmt, output: &'a str, interval: usize) -> Self {
+    pub fn new(
+        input_format: &'a InputFmt,
+        output: &'a str,
+        interval: usize,
+        datatype: &'a DataType,
+    ) -> Self {
         Self {
             input_format,
             output,
             ntax: 0,
             interval,
+            datatype,
         }
     }
 
@@ -65,7 +72,9 @@ impl<'a> SeqStats<'a> {
     }
 
     fn get_ntax(&mut self, files: &[PathBuf]) {
-        self.ntax = IDs::new(files, self.input_format).get_id_all().len();
+        self.ntax = IDs::new(files, self.input_format, self.datatype)
+            .get_id_all()
+            .len();
     }
 
     fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, Dna)> {
@@ -78,7 +87,7 @@ impl<'a> SeqStats<'a> {
 
     fn get_stats(&self, path: &Path) -> (Sites, Dna) {
         let mut aln = Alignment::new();
-        aln.get_aln_any(path, self.input_format);
+        aln.get_aln_any(path, self.input_format, self.datatype);
         let mut dna = Dna::new();
         dna.count_chars(&aln);
         let mut sites = Sites::new();
@@ -503,6 +512,8 @@ impl Dna {
 mod test {
     use super::*;
 
+    const DNA: DataType = DataType::Dna;
+
     fn get_matrix(id: &[&str], seq: &[&str]) -> IndexMap<String, String> {
         let mut matrix = IndexMap::new();
         id.iter().zip(seq.iter()).for_each(|(i, s)| {
@@ -561,7 +572,7 @@ mod test {
         let path = Path::new("test_files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let mut aln = Alignment::new();
-        aln.get_aln_any(path, &input_format);
+        aln.get_aln_any(path, &input_format, &DNA);
         let mut site = Sites::new();
         let smat = site.index_sites(&aln.alignment);
         site.get_site_stats(&smat);
@@ -582,7 +593,7 @@ mod test {
         let path = Path::new("test_files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let mut aln = Alignment::new();
-        aln.get_aln_any(path, &input_format);
+        aln.get_aln_any(path, &input_format, &DNA);
         let mut dna = Dna::new();
         dna.count_chars(&aln);
         assert_eq!(4, dna.ntax);

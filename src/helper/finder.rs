@@ -7,7 +7,7 @@ use glob::glob;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
-use crate::helper::common::{self, InputFmt};
+use crate::helper::common::{self, DataType, InputFmt};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -66,11 +66,16 @@ impl<'a> Files<'a> {
 pub struct IDs<'a> {
     files: &'a [PathBuf],
     input_fmt: &'a InputFmt,
+    datatype: &'a DataType,
 }
 
 impl<'a> IDs<'a> {
-    pub fn new(files: &'a [PathBuf], input_fmt: &'a InputFmt) -> Self {
-        Self { files, input_fmt }
+    pub fn new(files: &'a [PathBuf], input_fmt: &'a InputFmt, datatype: &'a DataType) -> Self {
+        Self {
+            files,
+            input_fmt,
+            datatype,
+        }
     }
 
     pub fn get_id_all(&self) -> IndexSet<String> {
@@ -89,8 +94,12 @@ impl<'a> IDs<'a> {
             let input_fmt = common::infer_input_auto(file);
             match input_fmt {
                 InputFmt::Fasta => s.send(fasta::parse_only_id(file)).unwrap(),
-                InputFmt::Nexus => s.send(Nexus::new(file).parse_only_id()).unwrap(),
-                InputFmt::Phylip => s.send(Phylip::new(file).parse_only_id()).unwrap(),
+                InputFmt::Nexus => s
+                    .send(Nexus::new(file, self.datatype).parse_only_id())
+                    .unwrap(),
+                InputFmt::Phylip => s
+                    .send(Phylip::new(file, self.datatype).parse_only_id())
+                    .unwrap(),
                 _ => unreachable!(),
             }
         });
@@ -100,7 +109,8 @@ impl<'a> IDs<'a> {
     fn get_id_from_phylip(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(Phylip::new(file).parse_only_id()).unwrap();
+            s.send(Phylip::new(file, self.datatype).parse_only_id())
+                .unwrap();
         });
         receiver.iter().collect()
     }
@@ -108,7 +118,8 @@ impl<'a> IDs<'a> {
     fn get_id_from_nexus(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(Nexus::new(file).parse_only_id()).unwrap();
+            s.send(Nexus::new(file, self.datatype).parse_only_id())
+                .unwrap();
         });
         receiver.iter().collect()
     }
