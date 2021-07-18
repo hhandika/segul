@@ -78,7 +78,7 @@ impl<'a> IDs<'a> {
         self.get_id(&all_ids)
     }
 
-    fn get_id_auto(&self) -> Vec<Vec<String>> {
+    fn get_id_auto(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
             let input_fmt = common::infer_input_auto(file);
@@ -92,7 +92,7 @@ impl<'a> IDs<'a> {
         receiver.iter().collect()
     }
 
-    fn get_id_from_phylip(&self) -> Vec<Vec<String>> {
+    fn get_id_from_phylip(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
             s.send(Phylip::new(file).parse_only_id()).unwrap();
@@ -100,7 +100,7 @@ impl<'a> IDs<'a> {
         receiver.iter().collect()
     }
 
-    fn get_id_from_nexus(&self) -> Vec<Vec<String>> {
+    fn get_id_from_nexus(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
             s.send(Nexus::new(file).parse_only_id()).unwrap();
@@ -108,7 +108,7 @@ impl<'a> IDs<'a> {
         receiver.iter().collect()
     }
 
-    fn get_id_from_fasta(&self) -> Vec<Vec<String>> {
+    fn get_id_from_fasta(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
             s.send(fasta::parse_only_id(file)).unwrap();
@@ -116,7 +116,7 @@ impl<'a> IDs<'a> {
         receiver.iter().collect()
     }
 
-    fn get_id(&self, all_ids: &[Vec<String>]) -> IndexSet<String> {
+    fn get_id(&self, all_ids: &[IndexSet<String>]) -> IndexSet<String> {
         let mut id = IndexSet::new();
         all_ids.iter().for_each(|ids| {
             ids.iter().for_each(|val| {

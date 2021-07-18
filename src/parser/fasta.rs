@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 
 use crate::helper::common::{self, Header, SeqCheck};
 
@@ -16,16 +16,16 @@ pub struct Fasta<'a> {
     pub header: Header,
 }
 
-pub fn parse_only_id(input: &Path) -> Vec<String> {
+pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("CANNOT READ A FASTA FILE");
     let buff = BufReader::new(file);
-    let mut ids: Vec<String> = Vec::new();
+    let mut ids = IndexSet::new();
     buff.lines()
         .filter_map(|ok| ok.ok())
         .filter(|line| line.starts_with('>'))
         .for_each(|line| {
             if let Some(id) = line.strip_prefix('>') {
-                ids.push(id.trim().to_string());
+                ids.insert(id.trim().to_string());
             }
         });
     ids

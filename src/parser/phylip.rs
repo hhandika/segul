@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Lines, Result};
 use std::path::Path;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 
 use crate::helper::common::{self, Header, SeqCheck};
@@ -35,26 +35,33 @@ impl<'a> Phylip<'a> {
         Ok(())
     }
 
-    pub fn parse_only_id(&mut self) -> Vec<String> {
+    pub fn parse_only_id(&mut self) -> IndexSet<String> {
         let buff = self.get_header().expect("CANNOT READ THE FILE");
         let records = Reader::new(buff, self.header.ntax);
-        let mut ids = Vec::new();
-        records.into_iter().for_each(|rec| {
-            if let Some(id) = rec.id {
-                ids.push(id);
-            }
-        });
+        let mut ids = IndexSet::new();
+        records
+            .into_iter()
+            .take_while(|rec| !rec.interleave)
+            .for_each(|rec| {
+                if let Some(id) = rec.id {
+                    ids.insert(id);
+                }
+            });
+
         assert!(
             ids.len() == self.header.ntax,
-            "FAILED PARSING {}. \
-        THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE HEADER.\
-            IN THE HEADER: {} \
-            AND TAXA FOUND: {}
+            "Failed parsing {}. \
+        The number of taxa does not match the information in the header.\
+            In the header: {} \
+            and taxa found: {}. \
+            Please check if the header matches the sample count in the phylip file. \
+            Or no duplicate IDs are present.
         ",
             self.input.display(),
             self.header.ntax,
             ids.len()
         );
+
         ids
     }
 
@@ -160,6 +167,7 @@ struct Records {
     id: Option<String>,
     seq: String,
     pos: usize,
+    interleave: bool,
 }
 
 impl Records {
@@ -168,6 +176,7 @@ impl Records {
             id: None,
             seq: String::new(),
             pos: 0,
+            interleave: false,
         }
     }
 }
@@ -205,6 +214,7 @@ impl<R: Read> Reader<R> {
                     records.seq = line.to_string();
                 }
 
+                records.interleave = self.interleave;
                 records.pos = self.pos;
                 self.pos += 1;
 
@@ -306,5 +316,13 @@ mod test {
         let path = Path::new("test_files/invalid_interleave.phy");
         let mut phy = Phylip::new(path);
         phy.parse().unwrap();
+    }
+
+    #[test]
+    fn read_interleave_phylip_id_test() {
+        let path = Path::new("test_files/interleave.phy");
+        let mut phy = Phylip::new(path);
+        let res = phy.parse_only_id();
+        assert_eq!(2, res.len());
     }
 }
