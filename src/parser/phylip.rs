@@ -36,16 +36,12 @@ impl<'a> Phylip<'a> {
     }
 
     pub fn parse_only_id(&mut self) -> Vec<String> {
-        let file = File::open(self.input).expect("CANNOT READ THE FILE");
-        let mut buff = BufReader::new(file);
-        let mut header_line = String::new();
-        buff.read_line(&mut header_line).unwrap();
-        self.parse_header(&header_line.trim());
+        let buff = self.get_header().expect("CANNOT READ THE FILE");
+        let records = Reader::new(buff, self.header.ntax);
         let mut ids = Vec::new();
-        buff.lines().filter_map(|ok| ok.ok()).for_each(|line| {
-            let seq: Vec<&str> = line.split_whitespace().collect();
-            if seq.len() == 2 {
-                ids.push(seq[0].to_string());
+        records.into_iter().for_each(|rec| {
+            if let Some(id) = rec.id {
+                ids.push(id);
             }
         });
         assert!(
@@ -63,11 +59,7 @@ impl<'a> Phylip<'a> {
     }
 
     fn parse_matrix(&mut self) -> Result<()> {
-        let file = File::open(self.input)?;
-        let mut buff = BufReader::new(file);
-        let mut header_line = String::new();
-        buff.read_line(&mut header_line)?;
-        self.parse_header(&header_line.trim());
+        let buff = self.get_header()?;
         let records = Reader::new(buff, self.header.ntax);
         let mut ids: IndexMap<usize, String> = IndexMap::new();
         records.into_iter().for_each(|rec| match rec.id {
@@ -87,6 +79,18 @@ impl<'a> Phylip<'a> {
         });
 
         Ok(())
+    }
+
+    // We return the buffer after reading the header.
+    // So we can use the buffer to read the rest of the file.
+    fn get_header(&mut self) -> Result<BufReader<File>> {
+        let file = File::open(self.input)?;
+        let mut buff = BufReader::new(file);
+        let mut header_line = String::new();
+        buff.read_line(&mut header_line)?;
+        self.parse_header(&header_line.trim());
+
+        Ok(buff)
     }
 
     fn insert_matrix(&mut self, id: String, dna: String) {
