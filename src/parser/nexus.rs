@@ -74,11 +74,11 @@ impl<'a> Nexus<'a> {
     }
 
     fn get_blocks(&mut self) -> Vec<Block> {
-        let input = File::open(self.input).expect("CANNOT OPEN THE INPUT FILE");
+        let input = File::open(self.input).expect("Failed opening nexus file");
         let mut buff = BufReader::new(input);
         let mut header = String::new();
         buff.read_line(&mut header)
-            .expect("CANNOT READ THE HEADER FILE");
+            .expect("Failed reading nexus header file");
         self.check_nexus(&header.trim());
         let reader = NexusReader::new(buff);
         reader.into_iter().collect()
@@ -131,7 +131,7 @@ impl<'a> Nexus<'a> {
     fn insert_matrix(&mut self, id: String, dna: String) {
         match self.matrix.get(&id) {
             Some(_) => panic!(
-                "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
+                "Found duplicate samples for file {}. First duplicate found: {}",
                 self.input.display(),
                 id
             ),
@@ -182,7 +182,8 @@ impl<'a> Nexus<'a> {
     }
 
     fn parse_char(&self, text: &str) -> char {
-        text.parse::<char>().expect("CANNOT PARSE TAG TO CHAR")
+        text.parse::<char>()
+            .expect("Gaps or missing tags are not a char")
     }
 
     fn parse_ntax(&self, input: &str) -> usize {
@@ -200,30 +201,29 @@ impl<'a> Nexus<'a> {
     fn parse_usize(&self, tag: IResult<&str, &str>) -> usize {
         let mut text = String::new();
         self.convert_nomtag_to_string(tag, &mut text);
-        text.parse::<usize>()
-            .expect("HEADER TAXA NUMBER IS NOT A NUMBER")
+        text.parse::<usize>().expect("Header taxa is not a number")
     }
 
     fn convert_nomtag_to_string(&self, tag: IResult<&str, &str>, text: &mut String) {
         match tag {
             Ok((_, out)) => text.push_str(out.trim()),
-            Err(_) => eprintln!("CANNOT PARSE NEXUS TAG"),
+            Err(_) => eprintln!("Failed parsing nexus header"),
         }
     }
 
     fn check_nexus(&self, line: &str) {
         if !line.to_lowercase().starts_with("#nexus") {
-            panic!("THE FILE {} IS INVALID NEXUS FORMAT", self.input.display());
+            panic!("The file {} is invalid nexus format.", self.input.display());
         }
     }
 
     fn check_ntax_matches(&self) {
         if self.matrix.len() != self.header.ntax {
             panic!(
-                "ERROR READING NEXUS FILE: {}. \
-            THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE BLOCK.\
-            IN THE BLOCK: {} \
-            AND TAXA FOUND: {}",
+                "Error reading nexus file: {}. \
+            The number of taxa does not match the information in the block.\
+            In the block: {} \
+            and taxa found: {}",
                 self.input.display(),
                 self.header.ntax,
                 self.matrix.len()
@@ -234,10 +234,10 @@ impl<'a> Nexus<'a> {
     fn check_nchar_matches(&self, longest: usize) {
         if self.header.nchar != longest {
             panic!(
-                "ERROR READING NEXUS FILE {}, \
-            THE NCHAR VALUE IN THE BLOCK DOES NOT MATCH THE SEQUENCE LENGTH. \
-            THE VALUE IN THE BLOCK {}. \
-            THE SEQUENCE LENGTH {}.",
+                "Error reading nexus file {}, \
+            the data matrix length value in the header does not match the sequence length. \
+            the value in the block {}. \
+            the sequence length {}.",
                 self.input.display(),
                 self.header.nchar,
                 longest
@@ -271,7 +271,7 @@ impl<R: Read> NexusReader<R> {
         let bytes = self
             .reader
             .read_until(b';', &mut self.buffer)
-            .expect("ERROR READING FILES");
+            .expect("Failed reading nexus file");
         if bytes == 0 {
             None
         } else {
