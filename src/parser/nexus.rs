@@ -84,8 +84,8 @@ impl<'a> Nexus<'a> {
 
     fn parse_dimensions(&mut self, blocks: &[String]) {
         blocks.iter().for_each(|dimension| match dimension {
-            tag if tag.starts_with("ntax") => self.header.ntax = self.parse_ntax(&dimension),
-            tag if tag.starts_with("nchar") => {
+            token if token.starts_with("ntax") => self.header.ntax = self.parse_ntax(&dimension),
+            token if token.starts_with("nchar") => {
                 self.header.nchar = self.parse_characters(&dimension)
             }
             _ => (),
