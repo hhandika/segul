@@ -284,7 +284,7 @@ impl CharSummary {
 
     fn compute_gc_content(&mut self, chars: &[Chars]) {
         let gc_count: usize = chars.iter().map(|c| c.gc_count).sum();
-        self.at_content = gc_count as f64 / self.total_chars as f64;
+        self.gc_content = gc_count as f64 / self.total_chars as f64;
     }
 
     fn compute_at_content(&mut self, chars: &[Chars]) {
