@@ -1,5 +1,5 @@
 //! A module for sequence statistics.
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
 use std::path::{Path, PathBuf};
@@ -47,7 +47,7 @@ impl<'a> SeqStats<'a> {
         spin.set_message("Getting alignments...");
         let (site, dna) = self.get_stats(path);
         spin.finish_with_message("DONE!\n");
-        sumwriter::CsvWriter::new(self.output)
+        sumwriter::CsvWriter::new(self.output, self.datatype)
             .write_summary_file(&site, &dna)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
         sumwriter::print_stats(&site, &dna).unwrap();
@@ -58,13 +58,13 @@ impl<'a> SeqStats<'a> {
         spin.set_message("Indexing alignments...");
         self.get_ntax(files);
         spin.set_message("Getting summary stats...");
-        let mut stats: Vec<(Sites, Dna)> = self.par_get_stats(files);
+        let mut stats: Vec<(Sites, Chars)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
-        sumwriter::CsvWriter::new(self.output)
+        sumwriter::CsvWriter::new(self.output, self.datatype)
             .write_summary_dir(&stats)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
-        let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete);
+        let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete, self.datatype);
         sum.write_sum_to_file(self.output)
             .expect("CANNOT CREATE FILE FOR SUMMARY OUPUT");
         spin.finish_with_message("DONE!\n");
@@ -77,7 +77,7 @@ impl<'a> SeqStats<'a> {
             .len();
     }
 
-    fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, Dna)> {
+    fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, Chars)> {
         let (send, rec) = channel();
         files.par_iter().for_each_with(send, |s, file| {
             s.send(self.get_stats(file)).unwrap();
@@ -85,10 +85,10 @@ impl<'a> SeqStats<'a> {
         rec.iter().collect()
     }
 
-    fn get_stats(&self, path: &Path) -> (Sites, Dna) {
+    fn get_stats(&self, path: &Path) -> (Sites, Chars) {
         let mut aln = Alignment::new();
         aln.get_aln_any(path, self.input_format, self.datatype);
-        let mut dna = Dna::new();
+        let mut dna = Chars::new();
         dna.count_chars(&aln);
         let mut sites = Sites::new();
         sites.get_stats(path, &aln.alignment);
@@ -96,12 +96,15 @@ impl<'a> SeqStats<'a> {
         (sites, dna)
     }
 
-    fn get_summary_dna(&self, stats: &[(Sites, Dna)]) -> (SiteSummary, DnaSummary, Completeness) {
-        let (sites, dna): (Vec<Sites>, Vec<Dna>) =
+    fn get_summary_dna(
+        &self,
+        stats: &[(Sites, Chars)],
+    ) -> (SiteSummary, CharSummary, Completeness) {
+        let (sites, dna): (Vec<Sites>, Vec<Chars>) =
             stats.par_iter().map(|p| (p.0.clone(), p.1.clone())).unzip();
         let mut sum_sites = SiteSummary::new();
         sum_sites.get_summary(&sites);
-        let mut sum_dna = DnaSummary::new();
+        let mut sum_dna = CharSummary::new();
         sum_dna.get_summary(&dna);
         let mut mat_comp = Completeness::new(&self.ntax, self.interval);
         mat_comp.matrix_completeness(&dna);
@@ -219,7 +222,7 @@ impl SiteSummary {
     }
 }
 
-pub struct DnaSummary {
+pub struct CharSummary {
     pub min_tax: usize,
     pub max_tax: usize,
     pub mean_tax: f64,
@@ -229,17 +232,10 @@ pub struct DnaSummary {
     pub prop_missing_data: f64,
     pub total_chars: usize,
     pub total_nucleotides: usize,
-    pub total_a: usize,
-    pub total_c: usize,
-    pub total_g: usize,
-    pub total_t: usize,
-    pub total_n: usize,
-    pub total_missings: usize,
-    pub total_gaps: usize,
-    pub total_undetermined: usize,
+    pub chars: BTreeMap<char, usize>,
 }
 
-impl DnaSummary {
+impl CharSummary {
     fn new() -> Self {
         Self {
             total_chars: 0,
@@ -251,51 +247,58 @@ impl DnaSummary {
             missing_data: 0,
             prop_missing_data: 0.0,
             total_nucleotides: 0,
-            total_a: 0,
-            total_c: 0,
-            total_g: 0,
-            total_t: 0,
-            total_n: 0,
-            total_missings: 0,
-            total_gaps: 0,
-            total_undetermined: 0,
+            chars: BTreeMap::new(),
         }
     }
 
-    fn get_summary(&mut self, dna: &[Dna]) {
-        self.min_tax = dna.iter().map(|d| d.ntax).min().unwrap();
-        self.max_tax = dna.iter().map(|d| d.ntax).max().unwrap();
-        let sum_tax: usize = dna.iter().map(|d| d.ntax).sum();
-        self.mean_tax = sum_tax as f64 / dna.len() as f64;
-        self.total_chars = dna.iter().map(|d| d.total_chars).sum();
-        self.count_chars(dna);
-        self.get_total_nucleotides();
-        self.count_gc_at_content();
+    fn get_summary(&mut self, chars: &[Chars]) {
+        self.min_tax = chars.iter().map(|d| d.ntax).min().unwrap();
+        self.max_tax = chars.iter().map(|d| d.ntax).max().unwrap();
+        let sum_tax: usize = chars.iter().map(|d| d.ntax).sum();
+        self.mean_tax = sum_tax as f64 / chars.len() as f64;
+        self.total_chars = chars.iter().map(|d| d.total_chars).sum();
+        self.count_chars(chars);
+        self.count_nucleotides();
+        self.compute_gc_content(chars);
+        self.compute_at_content(chars);
         self.count_missing_data();
     }
 
-    fn count_chars(&mut self, dna: &[Dna]) {
-        self.total_a = dna.iter().map(|d| d.a_count).sum();
-        self.total_t = dna.iter().map(|d| d.t_count).sum();
-        self.total_g = dna.iter().map(|d| d.g_count).sum();
-        self.total_c = dna.iter().map(|d| d.c_count).sum();
-        self.total_n = dna.iter().map(|d| d.n_count).sum();
-        self.total_missings = dna.iter().map(|d| d.missings).sum();
-        self.total_gaps = dna.iter().map(|d| d.gaps).sum();
-        self.total_undetermined = dna.iter().map(|d| d.undetermined).sum();
+    fn count_chars(&mut self, chars: &[Chars]) {
+        chars
+            .iter()
+            .flat_map(|ch| ch.chars.iter())
+            .for_each(|(ch, count)| {
+                *self.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += count;
+            });
     }
 
-    fn get_total_nucleotides(&mut self) {
-        self.total_nucleotides = self.total_a + self.total_t + self.total_g + self.total_c
+    fn count_nucleotides(&mut self) {
+        self.total_nucleotides = self
+            .chars
+            .iter()
+            .filter(|&(k, _)| *k == 'A' || *k == 'C' || *k == 'G' || *k == 'T')
+            .map(|(_, count)| count)
+            .sum();
     }
 
-    fn count_gc_at_content(&mut self) {
-        self.gc_content = (self.total_g + self.total_c) as f64 / self.total_chars as f64;
-        self.at_content = (self.total_g + self.total_c) as f64 / self.total_chars as f64;
+    fn compute_gc_content(&mut self, chars: &[Chars]) {
+        let gc_count: usize = chars.iter().map(|c| c.gc_count).sum();
+        self.at_content = gc_count as f64 / self.total_chars as f64;
+    }
+
+    fn compute_at_content(&mut self, chars: &[Chars]) {
+        let at_count: usize = chars.iter().map(|c| c.at_count).sum();
+        self.at_content = at_count as f64 / self.total_chars as f64;
     }
 
     fn count_missing_data(&mut self) {
-        self.missing_data = self.total_missings + self.total_gaps + self.total_n;
+        self.missing_data = self
+            .chars
+            .iter()
+            .filter(|&(k, _)| *k == '-' || *k == '?' || *k == 'N')
+            .map(|(_, count)| count)
+            .sum();
         self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
     }
 }
@@ -315,8 +318,8 @@ impl Completeness {
         }
     }
 
-    fn matrix_completeness(&mut self, dna: &[Dna]) {
-        let ntax: Vec<usize> = dna.iter().map(|d| d.ntax).collect();
+    fn matrix_completeness(&mut self, chars: &[Chars]) {
+        let ntax: Vec<usize> = chars.iter().map(|d| d.ntax).collect();
         let mut values: usize = 100;
 
         while values > 0 {
@@ -448,34 +451,24 @@ impl Sites {
 }
 
 #[derive(Debug, Clone)]
-pub struct Dna {
-    pub a_count: usize,
-    pub c_count: usize,
-    pub g_count: usize,
-    pub t_count: usize,
-    pub n_count: usize,
-    pub missings: usize,
-    pub gaps: usize,
-    pub undetermined: usize,
+pub struct Chars {
     pub total_chars: usize,
     pub ntax: usize,
+    pub chars: BTreeMap<char, usize>,
+    pub gc_count: usize,
+    pub at_count: usize,
     pub missing_data: usize,
     pub prop_missing_data: f64,
 }
 
-impl Dna {
+impl Chars {
     fn new() -> Self {
         Self {
-            a_count: 0,
-            c_count: 0,
-            g_count: 0,
-            t_count: 0,
-            n_count: 0,
-            missings: 0,
-            gaps: 0,
-            undetermined: 0,
             total_chars: 0,
             ntax: 0,
+            chars: BTreeMap::new(),
+            gc_count: 0,
+            at_count: 0,
             missing_data: 0,
             prop_missing_data: 0.0,
         }
@@ -486,24 +479,40 @@ impl Dna {
         self.total_chars = aln.header.nchar * self.ntax;
         aln.alignment
             .values()
-            .flat_map(|seqs| seqs.bytes())
-            .for_each(|ch| match ch {
-                b'a' | b'A' => self.a_count += 1,
-                b'c' | b'C' => self.c_count += 1,
-                b'g' | b'G' => self.g_count += 1,
-                b't' | b'T' => self.t_count += 1,
-                b'n' | b'N' => self.n_count += 1,
-                b'?' | b'.' | b'~' => self.missings += 1,
-                b'O' | b'o' | b'X' | b'x' => self.missings += 1, // Following iqtree treatments
-                b'-' => self.gaps += 1,
-                _ => self.undetermined += 1,
+            .flat_map(|seqs| seqs.chars())
+            .for_each(|ch| {
+                *self.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += 1;
             });
-
+        self.count_gc();
+        self.count_at();
         self.count_missing_data();
     }
 
+    fn count_gc(&mut self) {
+        self.gc_count = self
+            .chars
+            .iter()
+            .filter(|&(k, _)| *k == 'G' || *k == 'C')
+            .map(|(_, v)| v)
+            .sum();
+    }
+
+    fn count_at(&mut self) {
+        self.at_count = self
+            .chars
+            .iter()
+            .filter(|&(k, _)| *k == 'A' || *k == 'T')
+            .map(|(_, v)| v)
+            .sum();
+    }
+
     fn count_missing_data(&mut self) {
-        self.missing_data = self.missings + self.gaps + self.n_count;
+        self.missing_data = self
+            .chars
+            .iter()
+            .filter(|&(ch, _)| *ch == '-' || *ch == '?' || *ch == 'N' || *ch == 'n')
+            .map(|(_, count)| count)
+            .sum();
         self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
     }
 }
@@ -594,17 +603,16 @@ mod test {
         let input_format = InputFmt::Fasta;
         let mut aln = Alignment::new();
         aln.get_aln_any(path, &input_format, &DNA);
-        let mut dna = Dna::new();
+        let mut dna = Chars::new();
         dna.count_chars(&aln);
         assert_eq!(4, dna.ntax);
         assert_eq!(104, dna.total_chars);
-        assert_eq!(48, dna.a_count);
-        assert_eq!(22, dna.t_count);
-        assert_eq!(10, dna.g_count);
-        assert_eq!(0, dna.c_count);
-        assert_eq!(24, dna.missings);
+        assert_eq!(Some(&48), dna.chars.get(&'A'));
+        assert_eq!(Some(&22), dna.chars.get(&'T'));
+        assert_eq!(Some(&10), dna.chars.get(&'G'));
+        assert_eq!(None, dna.chars.get(&'C'));
+        assert_eq!(Some(&24), dna.chars.get(&'?'));
         assert_eq!(24, dna.missing_data);
-        assert_eq!(0, dna.undetermined);
-        assert_eq!(0, dna.gaps);
+        assert_eq!(None, dna.chars.get(&'-'));
     }
 }

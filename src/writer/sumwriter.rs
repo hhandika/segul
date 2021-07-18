@@ -5,10 +5,11 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::core::summary::{Completeness, Dna, DnaSummary, SiteSummary, Sites};
+use crate::core::summary::{CharSummary, Chars, Completeness, SiteSummary, Sites};
+use crate::helper::common::DataType;
 use crate::helper::utils;
 
-pub fn print_stats(site: &Sites, dna: &Dna) -> Result<()> {
+pub fn print_stats(site: &Sites, dna: &Chars) -> Result<()> {
     let io = io::stdout();
     let mut writer = BufWriter::new(io);
 
@@ -40,48 +41,51 @@ pub fn print_stats(site: &Sites, dna: &Dna) -> Result<()> {
         "Prop. missing \t: {:.2}%",
         &dna.prop_missing_data * 100.0
     )?;
-    writeln!(writer, "A\t\t: {}", utils::fmt_num(&dna.a_count))?;
-    writeln!(writer, "C\t\t: {}", utils::fmt_num(&dna.c_count))?;
-    writeln!(writer, "G\t\t: {}", utils::fmt_num(&dna.g_count))?;
-    writeln!(writer, "T\t\t: {}", utils::fmt_num(&dna.t_count))?;
-    writeln!(writer, "N\t\t: {}", utils::fmt_num(&dna.n_count))?;
-    writeln!(writer, "?\t\t: {}", utils::fmt_num(&dna.missings))?;
-    writeln!(writer, "-\t\t: {}", utils::fmt_num(&dna.gaps))?;
+
+    dna.chars.iter().for_each(|(ch, count)| {
+        writeln!(writer, "{}\t\t: {}", ch, utils::fmt_num(&count)).unwrap()
+    });
     writer.flush()?;
     Ok(())
 }
 
-pub struct CsvWriter {
+pub struct CsvWriter<'a> {
     output: String,
+    datatype: &'a DataType,
 }
 
-impl CsvWriter {
-    pub fn new(output: &str) -> Self {
+impl<'a> CsvWriter<'a> {
+    pub fn new(output: &str, datatype: &'a DataType) -> Self {
         Self {
             output: String::from(output),
+            datatype,
         }
     }
 
-    pub fn write_summary_dir(&mut self, stats: &[(Sites, Dna)]) -> Result<()> {
+    pub fn write_summary_dir(&mut self, stats: &[(Sites, Chars)]) -> Result<()> {
         self.get_ouput_fname();
         let file = File::create(&self.output)
             .with_context(|| format!("Failed creating file {}", self.output))?;
         let mut writer = BufWriter::new(file);
-        self.write_csv_header(&mut writer)?;
-        stats.iter().for_each(|(site, dna)| {
-            self.write_csv_content(&mut writer, site, dna).unwrap();
+        let alphabet = self.get_alphabet();
+        self.write_csv_header(&mut writer, alphabet)?;
+        stats.iter().for_each(|(site, chars)| {
+            self.write_csv_content(&mut writer, site, chars, alphabet)
+                .unwrap();
         });
 
         Ok(())
     }
 
-    pub fn write_summary_file(&mut self, site: &Sites, dna: &Dna) -> Result<()> {
+    pub fn write_summary_file(&mut self, site: &Sites, chars: &Chars) -> Result<()> {
         self.get_ouput_fname();
         let file = File::create(&self.output)
             .with_context(|| format!("Failed creating file {}", self.output))?;
         let mut writer = BufWriter::new(file);
-        self.write_csv_header(&mut writer)?;
-        self.write_csv_content(&mut writer, site, dna).unwrap();
+        let alphabet = self.get_alphabet();
+        self.write_csv_header(&mut writer, alphabet)?;
+        self.write_csv_content(&mut writer, site, chars, alphabet)
+            .unwrap();
 
         Ok(())
     }
@@ -90,36 +94,40 @@ impl CsvWriter {
         self.output.push_str("_per_locus.csv")
     }
 
-    fn write_csv_header<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(
+    fn write_csv_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {
+        write!(
             writer,
             "path,\
-        locus,\
-        ntaxa,\
-        chars_count,\
-        site_count,\
-        conserved_sites,\
-        proportion_cons_sites,\
-        variable_sites,\
-        proportion_var_sites,\
-        parsimony_informative_sites,\
-        proportion_pars_inf_sites,\
-        missing_data,\
-        proportion_missing_data,\
-        AT_content,\
-        GC_content,\
-        A_counts,\
-        T_counts,\
-        G_counts,\
-        C_counts,\
-        gap_counts,\
-        missing_counts,\
-    "
+            locus,\
+            ntaxa,\
+            chars_count,\
+            site_count,\
+            conserved_sites,\
+            proportion_cons_sites,\
+            variable_sites,\
+            proportion_var_sites,\
+            parsimony_informative_sites,\
+            proportion_pars_inf_sites,\
+            missing_data,\
+            proportion_missing_data,\
+            gc_content,\
+            at_content,\
+        "
         )?;
+        alphabet
+            .chars()
+            .for_each(|ch| write!(writer, "{},", ch).unwrap());
+        writeln!(writer)?;
         Ok(())
     }
 
-    fn write_csv_content<W: Write>(&self, writer: &mut W, site: &Sites, dna: &Dna) -> Result<()> {
+    fn write_csv_content<W: Write>(
+        &self,
+        writer: &mut W,
+        site: &Sites,
+        chars: &Chars,
+        alphabet: &str,
+    ) -> Result<()> {
         write!(
             writer,
             "{},{},{},{},",
@@ -131,8 +139,8 @@ impl CsvWriter {
                     "Failed getting locus name for {}",
                     site.path.display()
                 ))?,
-            dna.ntax,
-            dna.total_chars
+            chars.ntax,
+            chars.total_chars
         )?;
 
         // Site stats
@@ -149,47 +157,66 @@ impl CsvWriter {
         )?;
 
         // Missing data
-        write!(writer, "{},", dna.missing_data)?;
-        write!(writer, "{},", dna.prop_missing_data)?;
+        write!(writer, "{},", chars.missing_data)?;
+        write!(writer, "{},", chars.prop_missing_data)?;
 
         // GC content
         write!(
             writer,
             "{},",
-            (dna.g_count as f64 + dna.c_count as f64) / dna.total_chars as f64
+            chars.gc_count as f64 / chars.total_chars as f64
         )?;
 
         // AT content
         write!(
             writer,
             "{},",
-            (dna.a_count as f64 + dna.t_count as f64) / dna.total_chars as f64
+            chars.at_count as f64 / chars.total_chars as f64
         )?;
 
         // Characters
-        writeln!(
-            writer,
-            "{},{},{},{},{},{}",
-            dna.a_count, dna.t_count, dna.g_count, dna.c_count, dna.gaps, dna.missings
-        )?;
+        alphabet.chars().for_each(|ch| {
+            let count = chars.chars.get(&ch);
+            match count {
+                // Some(_) => (),
+                Some(count) => write!(writer, "{},", count).unwrap(),
+                None => write!(writer, "0,").unwrap(),
+            }
+        });
+        writeln!(writer)?;
 
         writer.flush()?;
         Ok(())
+    }
+
+    fn get_alphabet(&self) -> &str {
+        match self.datatype {
+            DataType::Dna => "-?ACGTNRYSWKMBDHV.",
+            DataType::Aa => "?-ARNDCQEGHILKMFPSTWYVYXBZJU.~*",
+            _ => panic!("Please specify datatype"),
+        }
     }
 }
 
 pub struct SummaryWriter<'s> {
     site: &'s SiteSummary,
-    dna: &'s DnaSummary,
+    chars: &'s CharSummary,
     complete: &'s Completeness,
+    datatype: &'s DataType,
 }
 
 impl<'s> SummaryWriter<'s> {
-    pub fn new(site: &'s SiteSummary, dna: &'s DnaSummary, complete: &'s Completeness) -> Self {
+    pub fn new(
+        site: &'s SiteSummary,
+        chars: &'s CharSummary,
+        complete: &'s Completeness,
+        datatype: &'s DataType,
+    ) -> Self {
         Self {
             site,
-            dna,
+            chars,
             complete,
+            datatype,
         }
     }
 
@@ -274,29 +301,40 @@ impl<'s> SummaryWriter<'s> {
             "Total sites\t: {}",
             utils::fmt_num(&self.site.total_sites)
         )?;
-        writeln!(writer, "GC content\t: {:.2}", self.dna.gc_content)?;
-        writeln!(writer, "AT content\t: {:.2}", self.dna.at_content)?;
+        writeln!(
+            writer,
+            "Missing data\t: {}",
+            utils::fmt_num(&self.chars.missing_data)
+        )?;
+        writeln!(
+            writer,
+            "%Missing data\t: {:.2}%",
+            &self.chars.prop_missing_data * 100.0
+        )?;
+
+        match self.datatype {
+            DataType::Dna => self.write_dna_sum(writer)?,
+            DataType::Aa => (),
+            _ => panic!("Please specify datatype"),
+        }
+        writeln!(writer)?;
+
+        Ok(())
+    }
+
+    fn write_dna_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
+        writeln!(writer, "GC content\t: {:.2}", self.chars.gc_content)?;
+        writeln!(writer, "AT content\t: {:.2}", self.chars.at_content)?;
         writeln!(
             writer,
             "Characters\t: {}",
-            utils::fmt_num(&self.dna.total_chars)
+            utils::fmt_num(&self.chars.total_chars)
         )?;
         writeln!(
             writer,
             "Nucleotides\t: {}",
-            utils::fmt_num(&self.dna.total_nucleotides)
+            utils::fmt_num(&self.chars.total_nucleotides)
         )?;
-        writeln!(
-            writer,
-            "Missing data\t: {}",
-            utils::fmt_num(&self.dna.missing_data)
-        )?;
-        writeln!(
-            writer,
-            "%Missing data\t: {:.2}%\n",
-            &self.dna.prop_missing_data * 100.0
-        )?;
-
         Ok(())
     }
 
@@ -316,31 +354,26 @@ impl<'s> SummaryWriter<'s> {
     }
 
     fn write_tax_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(writer, "Min taxa\t: {}", utils::fmt_num(&self.dna.min_tax))?;
-        writeln!(writer, "Max taxa\t: {}", utils::fmt_num(&self.dna.max_tax))?;
-        writeln!(writer, "Mean taxa\t: {:.2}\n", self.dna.mean_tax)?;
+        writeln!(
+            writer,
+            "Min taxa\t: {}",
+            utils::fmt_num(&self.chars.min_tax)
+        )?;
+        writeln!(
+            writer,
+            "Max taxa\t: {}",
+            utils::fmt_num(&self.chars.max_tax)
+        )?;
+        writeln!(writer, "Mean taxa\t: {:.2}\n", self.chars.mean_tax)?;
 
         Ok(())
     }
 
     fn write_char_count<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(writer, "A\t\t: {}", utils::fmt_num(&self.dna.total_a))?;
-        writeln!(writer, "C\t\t: {}", utils::fmt_num(&self.dna.total_c))?;
-        writeln!(writer, "G\t\t: {}", utils::fmt_num(&self.dna.total_g))?;
-        writeln!(writer, "T\t\t: {}", utils::fmt_num(&self.dna.total_t))?;
-        writeln!(writer, "N\t\t: {}", utils::fmt_num(&self.dna.total_n))?;
-        writeln!(
-            writer,
-            "?\t\t: {}",
-            utils::fmt_num(&self.dna.total_missings)
-        )?;
-        writeln!(writer, "-\t\t: {}", utils::fmt_num(&self.dna.total_gaps))?;
-        writeln!(
-            writer,
-            "Undetermined\t: {}\n",
-            utils::fmt_num(&self.dna.total_undetermined)
-        )?;
-
+        self.chars.chars.iter().for_each(|(ch, count)| {
+            writeln!(writer, "{}\t\t: {}", ch, utils::fmt_num(&count)).unwrap()
+        });
+        writeln!(writer)?;
         Ok(())
     }
 
