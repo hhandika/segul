@@ -30,7 +30,7 @@ impl<'a> Files<'a> {
     pub fn get_files(&mut self) -> Vec<PathBuf> {
         self.get_pattern();
         let files = glob(&self.pattern)
-            .expect("COULD NOT FIND FILES")
+            .expect("Failed globbing files")
             .filter_map(|ok| ok.ok())
             .collect::<Vec<PathBuf>>();
         self.check_glob_results(&files);
@@ -40,7 +40,11 @@ impl<'a> Files<'a> {
 
     fn check_glob_results(&self, files: &[PathBuf]) {
         if files.is_empty() {
-            panic!("NO ALIGNMENT FILES FOUND THAT MATCH {}", self.pattern);
+            panic!(
+                "Failed finding files that match {}. \
+            Maybe try using wildcard option -c or --wcard",
+                self.pattern
+            );
         }
     }
 
@@ -50,9 +54,10 @@ impl<'a> Files<'a> {
             InputFmt::Nexus => format!("{}/*.nex*", self.dir),
             InputFmt::Phylip => format!("{}/*.phy*", self.dir),
             InputFmt::Auto => panic!(
-                "YOUR INPUT FORMAT IS THE DEFAULT AUTO. \
-            THE PROGRAM CANNOT USE AUTO FOR DIR INPUT. PLEASE, \
-            SPECIFY INPUT FORMAT USING THE OPTION -f or --format OR USE USE WILDCARD."
+                "The input format is the default auto. \
+            The program cannot use auto for dir input. \
+            Try to specify input format using the option -f or --format \
+            or use the wildcard option -c or --wcard."
             ),
         };
     }

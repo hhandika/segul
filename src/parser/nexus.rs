@@ -235,7 +235,7 @@ impl<'a> Nexus<'a> {
         if self.header.nchar != longest {
             panic!(
                 "Error reading nexus file {}, \
-            the data matrix length value in the header does not match the sequence length. \
+            the NCHAR value in the header does not match the sequence length. \
             the value in the block {}. \
             the sequence length {}.",
                 self.input.display(),

@@ -17,7 +17,7 @@ pub struct Fasta<'a> {
 }
 
 pub fn parse_only_id(input: &Path) -> IndexSet<String> {
-    let file = File::open(input).expect("CANNOT READ A FASTA FILE");
+    let file = File::open(input).expect("Failed opening a fasta file.");
     let buff = BufReader::new(file);
     let mut ids = IndexSet::new();
     buff.lines()
@@ -42,7 +42,7 @@ impl<'a> Fasta<'a> {
     }
 
     pub fn parse(&mut self) {
-        let file = File::open(self.input).expect("CANNOT OPEN THE FILE");
+        let file = File::open(self.input).expect("Failed opening a fasta file");
         let buff = BufReader::new(file);
         self.parse_matrix(buff);
         let mut seq_info = SeqCheck::new();
@@ -58,7 +58,7 @@ impl<'a> Fasta<'a> {
             .into_iter()
             .for_each(|fas| match self.matrix.get(&fas.id) {
                 Some(_) => panic!(
-                    "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
+                    "Found duplicat samples for {}. First duplicate found: {}",
                     self.input.display(),
                     fas.id
                 ),

@@ -185,7 +185,7 @@ impl<'a> SeqWriter<'a> {
         writeln!(writer)?;
         self.matrix.iter().for_each(|(taxa, seq)| {
             self.write_padded_seq(writer, taxa, seq)
-                .expect("CANNOT WRITE SEQ MATRIX")
+                .expect("Failed writing nexus data matrix")
         });
 
         Ok(())
@@ -197,7 +197,7 @@ impl<'a> SeqWriter<'a> {
             writeln!(writer).unwrap(); // insert newline before each group.
             seq.iter().for_each(|s| {
                 self.write_padded_seq(writer, &s.id, &s.seq)
-                    .expect("CANNOT WRITE PADDED SEQ MATRIX");
+                    .expect("Failed writing nexus interleave data matrix");
             });
         });
     }
@@ -209,7 +209,7 @@ impl<'a> SeqWriter<'a> {
             seq.iter().for_each(|s| match idx {
                 0 => self
                     .write_padded_seq(writer, &s.id, &s.seq)
-                    .expect("CANNOT WRITE PADDED SEQ MATRIX"),
+                    .expect("Failed writing phylip data matrix"),
                 _ => writeln!(writer, "{}", s.seq).unwrap(),
             });
         });
@@ -303,7 +303,7 @@ impl<'a> SeqWriter<'a> {
                     .unwrap();
                 }
             }),
-            None => panic!("CANNOT READ PARTITION DATA"),
+            None => panic!("Failed parsing partition data"),
         }
         writeln!(writer, "end;")?;
         Ok(())

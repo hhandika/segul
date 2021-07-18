@@ -103,7 +103,7 @@ impl<'a> Phylip<'a> {
     fn insert_matrix(&mut self, id: String, dna: String) {
         match self.matrix.get(&id) {
             Some(_) => panic!(
-                "DUPLICATE SAMPLES FOR FILE {}. FIRST DUPLICATE FOUND: {}",
+                "Found uplicate samples for file {}. First duplicate found: {}",
                 self.input.display(),
                 id
             ),
@@ -121,26 +121,26 @@ impl<'a> Phylip<'a> {
 
         match header {
             Ok((_, (tax, chars))) => self.parse_num(tax, chars),
-            Err(_) => eprintln!("UNKNOWN HEADER! FAILED TO PARSE"),
+            Err(_) => eprintln!("Unknown header! Failed to parse. Ignoring it..."),
         };
     }
 
     fn parse_num(&mut self, tax: &str, seq: &str) {
         self.header.ntax = tax
             .parse::<usize>()
-            .expect("HEADER TAXA NUMBER IS NOT A NUMBER");
+            .expect("Header taxa number is not a number.");
         self.header.nchar = seq
             .parse::<usize>()
-            .expect("HEADER CHARS LENGTH IS NOT A NUMBER");
+            .expect("Header char length is not a number.");
     }
 
     fn check_ntax_matches(&self) {
         if self.matrix.len() != self.header.ntax {
             panic!(
-                "ERROR READING PHYLIP FILE: {}. \
-            THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE HEADER.\
-            IN THE HEADER: {} \
-            AND TAXA FOUND: {}",
+                "Error reading phylip file: {}. \
+            The number of taxa does not match the information in the header.\
+            In the header: {} \
+            and taxa found: {}",
                 self.input.display(),
                 self.header.ntax,
                 self.matrix.len()
@@ -151,10 +151,10 @@ impl<'a> Phylip<'a> {
     fn check_nchar_matches(&self, longest: usize) {
         if self.header.nchar != longest {
             panic!(
-                "ERROR READING PHYLIP FILE {}, \
-            THE NCHAR VALUE IN THE HEADER DOES NOT MATCH THE SEQUENCE LENGTH. \
-            THE VALUE IN THE HEADER {}. \
-            THE SEQUENCE LENGTH {}.",
+                "Error reading phylip file {}, \
+            The NCHAR value in the header does not match the sequence length. \
+            The value in the header {}. \
+            The sequence length {}.",
                 self.input.display(),
                 self.header.nchar,
                 longest

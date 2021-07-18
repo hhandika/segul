@@ -45,7 +45,7 @@ pub fn print_divider() {
     let divider: String = iter::repeat('-').take(52).collect();
     let io = io::stdout();
     let mut writer = BufWriter::new(io);
-    writeln!(writer, "\n\x1b[0;33m{}\x1b[0m", divider).expect("CANNOT WRITE TO STDOUT");
+    writeln!(writer, "\n\x1b[0;33m{}\x1b[0m", divider).expect("Failed writing to stdout");
 }
 
 struct PrettyDivider {
