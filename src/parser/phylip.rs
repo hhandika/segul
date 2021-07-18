@@ -197,8 +197,8 @@ impl<R: Read> Reader<R> {
                 if !self.interleave {
                     let seq: Vec<&str> = line.split_whitespace().collect();
                     if seq.len() == 2 {
-                        records.id = Some(seq[0].trim().to_string());
-                        records.seq = seq[1].trim().to_string();
+                        records.id = Some(seq[0].to_string());
+                        records.seq = seq[1].to_string();
                     }
                 } else {
                     records.id = None;
