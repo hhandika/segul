@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Read, Result};
 use std::path::Path;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use nom::{bytes::complete, character, sequence, IResult};
 use regex::Regex;
 
@@ -30,12 +30,7 @@ impl<'a> Nexus<'a> {
 
     pub fn parse(&mut self) -> Result<()> {
         let blocks = self.get_blocks();
-        blocks.iter().for_each(|block| match block {
-            Block::Dimensions(dimensions) => self.parse_dimensions(&dimensions),
-            Block::Format(format) => self.parse_format(&format),
-            Block::Matrix(matrix) => self.parse_matrix(&matrix),
-            Block::Undetermined => (),
-        });
+        self.parse_blocks(&blocks);
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
         self.is_alignment = seq_info.is_alignment;
@@ -44,24 +39,31 @@ impl<'a> Nexus<'a> {
         Ok(())
     }
 
-    pub fn parse_only_id(&mut self) -> Vec<String> {
+    pub fn parse_only_id(&mut self) -> IndexSet<String> {
         let blocks = self.get_blocks();
-        let mut ids = Vec::new();
+        let mut ids = IndexSet::new();
         blocks.iter().for_each(|block| match block {
             Block::Dimensions(dimensions) => self.parse_dimensions(dimensions),
             Block::Matrix(matrix) => {
-                matrix.iter().for_each(|(id, _)| {
-                    ids.push(id.to_string());
-                });
+                for (id, _) in matrix.iter() {
+                    if !ids.contains(id) {
+                        ids.insert(id.to_string());
+                    } else {
+                        break;
+                    }
+                }
             }
             _ => (),
         });
+
         assert!(
             ids.len() == self.header.ntax,
-            "FAILED PARSING {}. \
-        THE NUMBER OF TAXA DOES NOT MATCH THE INFORMATION IN THE HEADER.\
-            IN THE HEADER: {} \
-            AND TAXA FOUND: {}
+            "Failed parsing {}. \
+        The number of taxa does not match the information in the header.\
+            In the header: {} \
+            and taxa found: {}. \
+            Please check if the header matches the sample count in the nexus file. \
+            Or no duplicate IDs are present.
         ",
             self.input.display(),
             self.header.ntax,
@@ -80,6 +82,15 @@ impl<'a> Nexus<'a> {
         self.check_nexus(&header.trim());
         let reader = NexusReader::new(buff);
         reader.into_iter().collect()
+    }
+
+    fn parse_blocks(&mut self, blocks: &[Block]) {
+        blocks.iter().for_each(|block| match block {
+            Block::Dimensions(dimensions) => self.parse_dimensions(&dimensions),
+            Block::Format(format) => self.parse_format(&format),
+            Block::Matrix(matrix) => self.parse_matrix(&matrix),
+            Block::Undetermined => (),
+        });
     }
 
     fn parse_dimensions(&mut self, blocks: &[String]) {
@@ -402,6 +413,14 @@ mod test {
         let sample = Path::new("test_files/duplicates.nex");
         let mut nex = Nexus::new(sample);
         nex.parse().unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn nexus_id_duplicate_panic_test() {
+        let sample = Path::new("test_files/duplicates.nex");
+        let mut nex = Nexus::new(sample);
+        nex.parse_only_id();
     }
 
     #[test]
