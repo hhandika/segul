@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Result};
+use std::io::{BufReader, Lines, Result};
 use std::path::Path;
 
 use indexmap::IndexMap;
@@ -68,44 +68,28 @@ impl<'a> Phylip<'a> {
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
         self.parse_header(&header_line.trim());
-        let mut pos: usize = 1;
+        let records = Reader::new(buff, self.header.ntax);
         let mut ids: IndexMap<usize, String> = IndexMap::new();
-        let mut seq = false;
-        buff.lines()
-            .filter_map(|ok| ok.ok())
-            .filter(|l| !l.is_empty())
-            .for_each(|line| {
-                if !seq {
-                    // then, the line contains the sequence id.
-                    let (id, dna) = self.parse_sequence(line.trim());
-                    ids.insert(pos, id.clone());
-                    self.insert_matrix(id, dna);
-                    pos += 1;
-                } else if let Some(id) = ids.get(&pos) {
-                    if let Some(value) = self.matrix.get_mut(id) {
-                        value.push_str(line.trim());
-                        pos += 1;
-                    }
+        records
+            .into_iter()
+            .filter(|rec| !rec.seq.is_empty())
+            .for_each(|rec| match rec.id {
+                Some(id) => {
+                    common::check_valid_dna(&self.input, &id, &rec.seq);
+                    ids.insert(rec.pos, id.clone());
+                    self.insert_matrix(id, rec.seq);
                 }
-
-                // We reset the pos position after reaching
-                // the end of the id lines.
-                if pos == self.header.ntax + 1 {
-                    pos = 1;
-                    seq = true;
+                None => {
+                    if let Some(id) = ids.get(&rec.pos) {
+                        if let Some(value) = self.matrix.get_mut(id) {
+                            common::check_valid_dna(&self.input, &id, &rec.seq);
+                            value.push_str(&rec.seq);
+                        }
+                    }
                 }
             });
 
         Ok(())
-    }
-
-    fn parse_sequence(&self, line: &str) -> (String, String) {
-        let seq: Vec<&str> = line.split_whitespace().collect();
-        self.check_seq_len(seq.len());
-        let id = seq[0].to_string();
-        let dna = seq[1].to_string();
-        common::check_valid_dna(&self.input, &id, &dna);
-        (id, dna)
     }
 
     fn insert_matrix(&mut self, id: String, dna: String) {
@@ -118,18 +102,6 @@ impl<'a> Phylip<'a> {
             None => {
                 self.matrix.insert(id, dna);
             }
-        }
-    }
-
-    fn check_seq_len(&self, len: usize) {
-        if len != 2 {
-            panic!(
-                "CAN'T PARSE {}. \
-            MAKE SURE THERE IS NO SPACE IN THE SAMPLE IDs. \
-            OR YOUR FILES MAY BE IN INTERLEAVED FORMAT. \
-            TRY USING --interleave FLAG. ",
-                self.input.display()
-            );
         }
     }
 
@@ -180,6 +152,78 @@ impl<'a> Phylip<'a> {
                 longest
             );
         }
+    }
+}
+
+struct Records {
+    id: Option<String>,
+    seq: String,
+    pos: usize,
+}
+
+impl Records {
+    fn new() -> Self {
+        Self {
+            id: None,
+            seq: String::new(),
+            pos: 0,
+        }
+    }
+}
+
+struct Reader<R> {
+    reader: Lines<BufReader<R>>,
+    interleave: bool,
+    pos: usize,
+    ntax: usize,
+}
+
+impl<R: Read> Reader<R> {
+    fn new(file: R, ntax: usize) -> Self {
+        Self {
+            reader: BufReader::new(file).lines(),
+            interleave: false,
+            pos: 1,
+            ntax,
+        }
+    }
+
+    fn next_seq(&mut self) -> Option<Records> {
+        if let Some(Ok(lines)) = self.reader.by_ref().next() {
+            let mut records = Records::new();
+            if !self.interleave {
+                let seq: Vec<&str> = lines.split_whitespace().collect();
+                if seq.len() == 2 {
+                    records.id = Some(seq[0].trim().to_string());
+                    records.seq = seq[1].trim().to_string();
+                }
+            } else {
+                records.id = None;
+                records.seq = lines.trim().to_string();
+            }
+
+            if !lines.is_empty() {
+                records.pos = self.pos;
+                self.pos += 1;
+            }
+
+            if self.pos == self.ntax + 1 {
+                self.pos = 1;
+                self.interleave = true;
+            }
+
+            Some(records)
+        } else {
+            None
+        }
+    }
+}
+
+impl<R: Read> Iterator for Reader<R> {
+    type Item = Records;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_seq()
     }
 }
 
