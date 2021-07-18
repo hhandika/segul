@@ -70,24 +70,21 @@ impl<'a> Phylip<'a> {
         self.parse_header(&header_line.trim());
         let records = Reader::new(buff, self.header.ntax);
         let mut ids: IndexMap<usize, String> = IndexMap::new();
-        records
-            .into_iter()
-            .filter(|rec| !rec.seq.is_empty())
-            .for_each(|rec| match rec.id {
-                Some(id) => {
-                    common::check_valid_dna(&self.input, &id, &rec.seq);
-                    ids.insert(rec.pos, id.clone());
-                    self.insert_matrix(id, rec.seq);
-                }
-                None => {
-                    if let Some(id) = ids.get(&rec.pos) {
-                        if let Some(value) = self.matrix.get_mut(id) {
-                            common::check_valid_dna(&self.input, &id, &rec.seq);
-                            value.push_str(&rec.seq);
-                        }
+        records.into_iter().for_each(|rec| match rec.id {
+            Some(id) => {
+                common::check_valid_dna(&self.input, &id, &rec.seq);
+                ids.insert(rec.pos, id.clone());
+                self.insert_matrix(id, rec.seq);
+            }
+            None => {
+                if let Some(id) = ids.get(&rec.pos) {
+                    if let Some(value) = self.matrix.get_mut(id) {
+                        common::check_valid_dna(&self.input, &id, &rec.seq);
+                        value.push_str(&rec.seq);
                     }
                 }
-            });
+            }
+        });
 
         Ok(())
     }
@@ -189,34 +186,34 @@ impl<R: Read> Reader<R> {
     }
 
     fn next_seq(&mut self) -> Option<Records> {
-        if let Some(Ok(lines)) = self.reader.by_ref().next() {
+        while let Some(Ok(lines)) = self.reader.by_ref().next() {
             let line = lines.trim();
-            let mut records = Records::new();
-            if !self.interleave {
-                let seq: Vec<&str> = line.split_whitespace().collect();
-                if seq.len() == 2 {
-                    records.id = Some(seq[0].trim().to_string());
-                    records.seq = seq[1].trim().to_string();
-                }
-            } else {
-                records.id = None;
-                records.seq = line.to_string();
-            }
-
             if !line.is_empty() {
+                let mut records = Records::new();
+                if !self.interleave {
+                    let seq: Vec<&str> = line.split_whitespace().collect();
+                    if seq.len() == 2 {
+                        records.id = Some(seq[0].trim().to_string());
+                        records.seq = seq[1].trim().to_string();
+                    }
+                } else {
+                    records.id = None;
+                    records.seq = line.to_string();
+                }
+
                 records.pos = self.pos;
                 self.pos += 1;
-            }
 
-            if self.pos == self.ntax + 1 {
-                self.pos = 1;
-                self.interleave = true;
-            }
+                if self.pos == self.ntax + 1 {
+                    self.pos = 1;
+                    self.interleave = true;
+                }
 
-            Some(records)
-        } else {
-            None
+                return Some(records);
+            }
+            continue;
         }
+        None
     }
 }
 
