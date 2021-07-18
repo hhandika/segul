@@ -84,7 +84,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::with_name("datatype")
-                        .long("dt")
                         .long("datatype")
                         .help("Sets data type")
                         .takes_value(true)
@@ -179,7 +178,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::with_name("datatype")
-                        .long("dt")
                         .long("datatype")
                         .help("Sets data type")
                         .takes_value(true)
@@ -225,7 +223,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::with_name("datatype")
-                        .long("dt")
                         .long("datatype")
                         .help("Sets data type")
                         .takes_value(true)
@@ -356,7 +353,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::with_name("datatype")
-                        .long("dt")
                         .long("datatype")
                         .help("Sets data type")
                         .takes_value(true)
@@ -437,7 +433,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::with_name("datatype")
-                        .long("dt")
                         .long("datatype")
                         .help("Sets data type")
                         .takes_value(true)

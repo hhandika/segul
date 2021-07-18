@@ -119,7 +119,6 @@ trait Cli {
         let datatype = matches
             .value_of("datatype")
             .expect("Failed parsing dataype value");
-
         match datatype {
             "aa" => DataType::Aa,
             "dna" => DataType::Dna,
@@ -713,6 +712,7 @@ impl<'a> StatsParser<'a> {
     fn stats(&mut self) {
         self.input_fmt = self.get_input_fmt(&self.matches);
         self.interval = self.parse_interval();
+        self.datatype = self.get_datatype(self.matches);
         self.print_input_file().unwrap();
         let input_type = self.get_input_type(&self.matches);
         match input_type {

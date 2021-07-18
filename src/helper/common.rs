@@ -167,17 +167,19 @@ fn check_valid_aa(input: &Path, id: &str, aa: &str) {
 }
 
 // Alphabeth for dna.
-// Include IUPAC characters plus missing symbols and gaps (?, -, and *)
+// Include IUPAC characters plus missing, and gaps characters (?, -, *, etc.)
+// Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
 fn is_valid_dna(dna: &str) -> bool {
     let valid_dna = String::from("ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?");
     dna.chars().all(|char| valid_dna.contains(char))
 }
 
 // Alphabeth for amino acid.
-// Include IUPAC characters plus missing symbols and gaps (X,?,-,.,~, and *)
-// Missing follow: http://www.iqtree.org/doc/Frequently-Asked-Questions
+// Include 20 IUPAC characters,
+// ambiguous, missing, and gaps characters (X,?,-,.,~, *, etc.)
+// Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
 fn is_valid_aa(aa: &str) -> bool {
-    let valid_aa = String::from("ABCDEFGHIKLMNPQRSTVWYX?-.~*");
+    let valid_aa = String::from("ARNDCQEGHILKMFPSTWYVYXBZJU?-.~*");
     aa.chars().all(|char| valid_aa.contains(char))
 }
 
