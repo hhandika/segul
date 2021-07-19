@@ -8,13 +8,13 @@ use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
 
-pub struct Alignment {
+pub struct Sequence {
     pub alignment: IndexMap<String, String>,
     pub header: Header,
     pub name: String,
 }
 
-impl Alignment {
+impl Sequence {
     pub fn new() -> Self {
         Self {
             alignment: IndexMap::new(),
@@ -39,36 +39,35 @@ impl Alignment {
                 self.get_aln_any(file, &input_fmt, datatype);
             }
         }
+
+        self.check_is_alignment(file);
     }
 
     fn from_nexus(&mut self, file: &Path, datatype: &DataType) {
         let mut nex = Nexus::new(file, datatype);
         nex.parse().expect("Failed reading a nexus file");
-        self.check_is_alignment(&file, nex.is_alignment);
-        self.get_alignment(nex.matrix, nex.header)
+        self.get(nex.matrix, nex.header)
     }
 
     fn from_phylip(&mut self, file: &Path, datatype: &DataType) {
         let mut phy = Phylip::new(file, datatype);
         phy.parse().expect("Failed reading a phylip file");
-        self.check_is_alignment(file, phy.is_alignment);
-        self.get_alignment(phy.matrix, phy.header);
+        self.get(phy.matrix, phy.header);
     }
 
     fn from_fasta(&mut self, file: &Path, datatype: &DataType) {
         let mut fas = Fasta::new(file, datatype);
         fas.parse();
-        self.check_is_alignment(file, fas.is_alignment);
-        self.get_alignment(fas.matrix, fas.header);
+        self.get(fas.matrix, fas.header);
     }
 
-    fn get_alignment(&mut self, alignment: IndexMap<String, String>, header: Header) {
+    fn get(&mut self, alignment: IndexMap<String, String>, header: Header) {
         self.alignment = alignment;
         self.header = header;
     }
 
-    fn check_is_alignment(&self, file: &Path, aligned: bool) {
-        if !aligned {
+    fn check_is_alignment(&self, file: &Path) {
+        if !self.header.aligned {
             panic!(
                 "Ups. Something is wrong. {} is not an alignment",
                 file.display()
@@ -83,7 +82,7 @@ mod test {
 
     #[test]
     fn alignment_simple_test() {
-        let mut aln = Alignment::new();
+        let mut aln = Sequence::new();
         let mut file = Path::new("test_files/simple.nex");
         let datatype = DataType::Dna;
         let input_fmt = InputFmt::Nexus;

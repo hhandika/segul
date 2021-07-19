@@ -58,6 +58,7 @@ pub struct Header {
     pub datatype: String,
     pub missing: char,
     pub gap: char,
+    pub aligned: bool,
 }
 
 impl Header {
@@ -68,6 +69,7 @@ impl Header {
             datatype: String::from("dna"),
             missing: '?',
             gap: '-',
+            aligned: false,
         }
     }
 }

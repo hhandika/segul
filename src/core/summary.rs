@@ -8,9 +8,9 @@ use std::sync::mpsc::channel;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::helper::alignment::Alignment;
 use crate::helper::common::{DataType, InputFmt};
 use crate::helper::finder::IDs;
+use crate::helper::sequence::Sequence;
 use crate::helper::utils;
 use crate::writer::sumwriter;
 
@@ -90,7 +90,7 @@ impl<'a> SeqStats<'a> {
     }
 
     fn get_stats(&self, path: &Path) -> (Sites, Chars) {
-        let mut aln = Alignment::new();
+        let mut aln = Sequence::new();
         aln.get_aln_any(path, self.input_format, self.datatype);
         let mut dna = Chars::new();
         dna.count_chars(&aln);
@@ -530,7 +530,7 @@ impl Chars {
         }
     }
 
-    fn count_chars(&mut self, aln: &Alignment) {
+    fn count_chars(&mut self, aln: &Sequence) {
         self.ntax = aln.header.ntax;
         self.total_chars = aln.header.nchar * self.ntax;
         aln.alignment
@@ -636,7 +636,7 @@ mod test {
     fn get_site_stats_test() {
         let path = Path::new("test_files/concat.fasta");
         let input_format = InputFmt::Fasta;
-        let mut aln = Alignment::new();
+        let mut aln = Sequence::new();
         aln.get_aln_any(path, &input_format, &DNA);
         let mut site = Sites::new();
         let smat = site.index_sites(&aln.alignment, &DNA);
@@ -657,7 +657,7 @@ mod test {
     fn dna_count_test() {
         let path = Path::new("test_files/concat.fasta");
         let input_format = InputFmt::Fasta;
-        let mut aln = Alignment::new();
+        let mut aln = Sequence::new();
         aln.get_aln_any(path, &input_format, &DNA);
         let mut dna = Chars::new();
         dna.count_chars(&aln);

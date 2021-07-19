@@ -28,7 +28,6 @@ pub struct Fasta<'a> {
     input: &'a Path,
     datatype: &'a DataType,
     pub matrix: IndexMap<String, String>,
-    pub is_alignment: bool,
     pub header: Header,
 }
 
@@ -38,7 +37,6 @@ impl<'a> Fasta<'a> {
             input,
             datatype,
             matrix: IndexMap::new(),
-            is_alignment: false,
             header: Header::new(),
         }
     }
@@ -49,7 +47,7 @@ impl<'a> Fasta<'a> {
         self.parse_matrix(buff);
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
-        self.is_alignment = seq_info.is_alignment;
+        self.header.aligned = seq_info.is_alignment;
         self.header.nchar = seq_info.longest;
         self.header.ntax = self.matrix.len();
     }
@@ -166,7 +164,7 @@ mod test {
         let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
-        assert_eq!(true, fasta.is_alignment);
+        assert_eq!(true, fasta.header.aligned);
     }
 
     #[test]
@@ -175,7 +173,7 @@ mod test {
         let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
-        assert_eq!(false, fasta.is_alignment);
+        assert_eq!(false, fasta.header.aligned);
     }
 
     #[test]

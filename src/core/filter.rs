@@ -7,8 +7,8 @@ use rayon::prelude::*;
 
 use crate::core::msa::MSAlignment;
 use crate::core::summary;
-use crate::helper::alignment::Alignment;
 use crate::helper::common::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::sequence::Sequence;
 use crate::helper::utils;
 
 pub enum Params {
@@ -135,8 +135,8 @@ impl<'a> SeqFilter<'a> {
         aln.header
     }
 
-    fn get_alignment(&self, file: &Path) -> Alignment {
-        let mut aln = Alignment::new();
+    fn get_alignment(&self, file: &Path) -> Sequence {
+        let mut aln = Sequence::new();
         aln.get_aln_any(file, self.input_fmt, &self.datatype);
         aln
     }

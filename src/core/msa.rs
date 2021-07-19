@@ -8,9 +8,9 @@ use std::path::{Path, PathBuf};
 use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
-use crate::helper::alignment::Alignment;
 use crate::helper::common::{DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt};
 use crate::helper::finder::IDs;
+use crate::helper::sequence::Sequence;
 use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
 
@@ -109,8 +109,8 @@ impl<'a> Concat<'a> {
         self.partition = partition;
     }
 
-    fn get_alignment(&self, file: &Path) -> Alignment {
-        let mut aln = Alignment::new();
+    fn get_alignment(&self, file: &Path) -> Sequence {
+        let mut aln = Sequence::new();
         aln.get_aln_any(file, &self.input_fmt, self.datatype);
         assert!(
             aln.header.ntax != 0,
