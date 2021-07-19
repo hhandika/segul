@@ -1,4 +1,4 @@
-//! A module for sequence statistics.
+// A module for sequence statistics.
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
