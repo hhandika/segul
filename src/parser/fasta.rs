@@ -71,9 +71,8 @@ impl<'a> Fasta<'a> {
     }
 
     fn match_header_datatype(&mut self) {
-        match self.datatype {
-            DataType::Aa => self.header.datatype = String::from("protein"),
-            _ => (),
+        if let DataType::Aa = self.datatype {
+            self.header.datatype = String::from("protein")
         };
     }
 }
