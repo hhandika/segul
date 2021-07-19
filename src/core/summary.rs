@@ -261,11 +261,12 @@ impl CharSummary {
         let sum_tax: usize = chars.iter().map(|d| d.ntax).sum();
         self.mean_tax = sum_tax as f64 / chars.len() as f64;
         self.total_chars = chars.iter().map(|d| d.total_chars).sum();
+        self.missing_data = chars.iter().map(|d| d.missing_data).sum();
+        self.total_nucleotides = chars.iter().map(|d| d.nucleotides).sum();
         self.count_chars(chars);
-        self.count_nucleotides();
         self.compute_gc_content(chars);
         self.compute_at_content(chars);
-        self.count_missing_data();
+        self.count_prop_missing_data();
     }
 
     fn count_chars(&mut self, chars: &[Chars]) {
@@ -275,15 +276,6 @@ impl CharSummary {
             .for_each(|(ch, count)| {
                 *self.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += count;
             });
-    }
-
-    fn count_nucleotides(&mut self) {
-        self.total_nucleotides = self
-            .chars
-            .iter()
-            .filter(|&(k, _)| *k == 'A' || *k == 'C' || *k == 'G' || *k == 'T')
-            .map(|(_, count)| count)
-            .sum();
     }
 
     fn compute_gc_content(&mut self, chars: &[Chars]) {
@@ -296,13 +288,8 @@ impl CharSummary {
         self.at_content = at_count as f64 / self.total_chars as f64;
     }
 
-    fn count_missing_data(&mut self) {
-        self.missing_data = self
-            .chars
-            .iter()
-            .filter(|&(k, _)| *k == '-' || *k == '?' || *k == 'N')
-            .map(|(_, count)| count)
-            .sum();
+    #[inline]
+    fn count_prop_missing_data(&mut self) {
         self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
     }
 }
@@ -513,6 +500,7 @@ pub struct Chars {
     pub chars: BTreeMap<char, usize>,
     pub gc_count: usize,
     pub at_count: usize,
+    pub nucleotides: usize,
     pub missing_data: usize,
     pub prop_missing_data: f64,
 }
@@ -525,6 +513,7 @@ impl Chars {
             chars: BTreeMap::new(),
             gc_count: 0,
             at_count: 0,
+            nucleotides: 0,
             missing_data: 0,
             prop_missing_data: 0.0,
         }
@@ -541,6 +530,7 @@ impl Chars {
             });
         self.count_gc();
         self.count_at();
+        self.count_nucleotides();
         self.count_missing_data();
     }
 
@@ -560,6 +550,10 @@ impl Chars {
             .filter(|&(k, _)| *k == 'A' || *k == 'T')
             .map(|(_, v)| v)
             .sum();
+    }
+
+    fn count_nucleotides(&mut self) {
+        self.nucleotides = self.gc_count + self.at_count;
     }
 
     fn count_missing_data(&mut self) {
