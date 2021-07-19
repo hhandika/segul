@@ -5,9 +5,7 @@ use indexmap::IndexMap;
 use crate::writer::seqwriter::SeqWriter;
 
 use crate::helper::common::{self, DataType, Header, InputFmt, OutputFmt, PartitionFmt};
-use crate::parser::fasta::Fasta;
-use crate::parser::nexus::Nexus;
-use crate::parser::phylip::Phylip;
+use crate::helper::sequence::Sequence;
 
 pub struct Converter<'a> {
     input: &'a Path,
@@ -34,49 +32,24 @@ impl<'a> Converter<'a> {
     }
 
     pub fn convert_unsorted(&mut self, input_fmt: &InputFmt) {
-        let (matrix, header) = self.get_sequence(input_fmt);
-        self.convert(&matrix, header);
+        let seq = self.get(input_fmt);
+        self.convert(&seq.matrix, seq.header);
     }
 
     pub fn convert_sorted(&mut self, input_fmt: &InputFmt) {
-        let (mut matrix, header) = self.get_sequence(input_fmt);
-        matrix.sort_keys();
-        self.convert(&matrix, header)
+        let seq = self.get(input_fmt);
+        seq.matrix.sort_keys();
+        self.convert(&seq.matrix, seq.header)
     }
 
     pub fn set_isdir(&mut self, is_dir: bool) {
         self.is_dir = is_dir;
     }
 
-    fn get_sequence(&mut self, input_fmt: &InputFmt) -> (IndexMap<String, String>, Header) {
-        match input_fmt {
-            InputFmt::Fasta => self.convert_fasta(),
-            InputFmt::Nexus => self.convert_nexus(),
-            InputFmt::Phylip => self.convert_phylip(),
-            InputFmt::Auto => {
-                let input_fmt = common::infer_input_auto(self.input);
-                self.get_sequence(&input_fmt)
-            }
-        }
-    }
-
-    fn convert_fasta(&mut self) -> (IndexMap<String, String>, Header) {
-        let mut fas = Fasta::new(self.input, &self.datatype);
-        fas.parse();
-        (fas.matrix, fas.header)
-    }
-
-    fn convert_nexus(&mut self) -> (IndexMap<String, String>, Header) {
-        let mut nex = Nexus::new(self.input, &self.datatype);
-        nex.parse().expect("Failed parsing a nexus file");
-        (nex.matrix, nex.header)
-    }
-
-    fn convert_phylip(&mut self) -> (IndexMap<String, String>, Header) {
-        let input = Path::new(self.input);
-        let mut phy = Phylip::new(input, &self.datatype);
-        phy.parse().expect("Failed parsing a phylip file");
-        (phy.matrix, phy.header)
+    fn get(&mut self, input_fmt: &InputFmt) -> Sequence {
+        let sequence = Sequence::new();
+        sequence.get_sequence(self.input, input_fmt, self.datatype);
+        sequence
     }
 
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
