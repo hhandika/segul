@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::path::Path;
 
 use indexmap::IndexMap;
@@ -23,8 +24,11 @@ impl Alignment {
     }
 
     pub fn get_aln_any(&mut self, file: &Path, input_fmt: &InputFmt, datatype: &DataType) {
-        self.name
-            .push_str(&file.file_stem().unwrap().to_string_lossy());
+        self.name.push_str(
+            file.file_stem()
+                .and_then(OsStr::to_str)
+                .expect("Failed getting alignment name from the file"),
+        );
         match input_fmt {
             InputFmt::Nexus => self.get_aln_from_nexus(file, datatype),
             InputFmt::Phylip => self.get_aln_from_phylip(file, datatype),
