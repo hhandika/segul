@@ -73,11 +73,6 @@ impl Header {
     }
 }
 
-/// We only match to interleave for phylip input.
-/// The rest of the input format won't matter
-/// since the parsers handles
-/// interleave and non-interleave in the same way.
-/// This treatment is similar to cli parser.
 pub fn infer_input_auto(input: &Path) -> InputFmt {
     let ext: &str = input
         .extension()
