@@ -95,7 +95,7 @@ impl<'a> SeqStats<'a> {
         let mut dna = Chars::new();
         dna.count_chars(&aln);
         let mut sites = Sites::new();
-        sites.get_stats(path, &aln.alignment, self.datatype);
+        sites.get_stats(path, &aln.matrix, self.datatype);
 
         (sites, dna)
     }
@@ -533,7 +533,7 @@ impl Chars {
     fn count_chars(&mut self, aln: &Sequence) {
         self.ntax = aln.header.ntax;
         self.total_chars = aln.header.nchar * self.ntax;
-        aln.alignment
+        aln.matrix
             .values()
             .flat_map(|seqs| seqs.chars())
             .for_each(|ch| {
@@ -639,7 +639,7 @@ mod test {
         let mut aln = Sequence::new();
         aln.get_alignment(path, &input_format, &DNA);
         let mut site = Sites::new();
-        let smat = site.index_sites(&aln.alignment, &DNA);
+        let smat = site.index_sites(&aln.matrix, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(18, site.conserved);
         assert_eq!(8, site.variable);

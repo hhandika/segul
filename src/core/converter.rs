@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use crate::writer::seqwriter::SeqWriter;
 
-use crate::helper::common::{self, DataType, Header, InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::common::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::sequence::Sequence;
 
 pub struct Converter<'a> {
@@ -32,12 +32,12 @@ impl<'a> Converter<'a> {
     }
 
     pub fn convert_unsorted(&mut self, input_fmt: &InputFmt) {
-        let seq = self.get(input_fmt);
+        let seq = self.get_sequence(input_fmt);
         self.convert(&seq.matrix, seq.header);
     }
 
     pub fn convert_sorted(&mut self, input_fmt: &InputFmt) {
-        let seq = self.get(input_fmt);
+        let mut seq = self.get_sequence(input_fmt);
         seq.matrix.sort_keys();
         self.convert(&seq.matrix, seq.header)
     }
@@ -46,9 +46,9 @@ impl<'a> Converter<'a> {
         self.is_dir = is_dir;
     }
 
-    fn get(&mut self, input_fmt: &InputFmt) -> Sequence {
-        let sequence = Sequence::new();
-        sequence.get_sequence(self.input, input_fmt, self.datatype);
+    fn get_sequence(&mut self, input_fmt: &InputFmt) -> Sequence {
+        let mut sequence = Sequence::new();
+        sequence.get(self.input, input_fmt, self.datatype);
         sequence
     }
 

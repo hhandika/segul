@@ -9,7 +9,7 @@ use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
 
 pub struct Sequence {
-    pub alignment: IndexMap<String, String>,
+    pub matrix: IndexMap<String, String>,
     pub header: Header,
     pub name: String,
 }
@@ -17,7 +17,7 @@ pub struct Sequence {
 impl Sequence {
     pub fn new() -> Self {
         Self {
-            alignment: IndexMap::new(),
+            matrix: IndexMap::new(),
             header: Header::new(),
             name: String::new(),
         }
@@ -25,11 +25,11 @@ impl Sequence {
 
     #[inline]
     pub fn get_alignment(&mut self, file: &Path, input_fmt: &InputFmt, datatype: &DataType) {
-        self.get_sequence(file, input_fmt, datatype);
+        self.get(file, input_fmt, datatype);
         self.check_is_alignment(file);
     }
 
-    pub fn get_sequence(&mut self, file: &Path, input_fmt: &InputFmt, datatype: &DataType) {
+    pub fn get(&mut self, file: &Path, input_fmt: &InputFmt, datatype: &DataType) {
         self.name.push_str(
             file.file_stem()
                 .and_then(OsStr::to_str)
@@ -42,7 +42,7 @@ impl Sequence {
             InputFmt::Fasta => self.from_fasta(file, datatype),
             InputFmt::Auto => {
                 let input_fmt = common::infer_input_auto(file);
-                self.get_sequence(file, &input_fmt, datatype);
+                self.get(file, &input_fmt, datatype);
             }
         }
     }
@@ -50,24 +50,24 @@ impl Sequence {
     fn from_nexus(&mut self, file: &Path, datatype: &DataType) {
         let mut nex = Nexus::new(file, datatype);
         nex.parse().expect("Failed reading a nexus file");
-        self.get(nex.matrix, nex.header)
+        self.get_sequence(nex.matrix, nex.header)
     }
 
     fn from_phylip(&mut self, file: &Path, datatype: &DataType) {
         let mut phy = Phylip::new(file, datatype);
         phy.parse().expect("Failed reading a phylip file");
-        self.get(phy.matrix, phy.header);
+        self.get_sequence(phy.matrix, phy.header);
     }
 
     fn from_fasta(&mut self, file: &Path, datatype: &DataType) {
         let mut fas = Fasta::new(file, datatype);
         fas.parse();
-        self.get(fas.matrix, fas.header);
+        self.get_sequence(fas.matrix, fas.header);
     }
 
     #[inline]
-    fn get(&mut self, alignment: IndexMap<String, String>, header: Header) {
-        self.alignment = alignment;
+    fn get_sequence(&mut self, matrix: IndexMap<String, String>, header: Header) {
+        self.matrix = matrix;
         self.header = header;
     }
 
@@ -95,6 +95,6 @@ mod test {
         assert_eq!(String::from("simple"), aln.name);
         assert_eq!(1, aln.header.ntax);
         assert_eq!(6, aln.header.nchar);
-        assert_eq!(1, aln.alignment.len());
+        assert_eq!(1, aln.matrix.len());
     }
 }

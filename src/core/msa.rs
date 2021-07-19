@@ -133,7 +133,7 @@ impl<'a> Concat<'a> {
             nchar += aln.header.nchar; // increment sequence length using the value from parser
             self.get_partition(&mut partition, &aln.name, gene_start, nchar);
             gene_start = nchar + 1;
-            id.iter().for_each(|id| match aln.alignment.get(id) {
+            id.iter().for_each(|id| match aln.matrix.get(id) {
                 Some(seq) => {
                     self.insert_alignment(&mut alignment, id, seq);
                 }
