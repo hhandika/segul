@@ -13,7 +13,6 @@ pub struct Phylip<'a> {
     datatype: &'a DataType,
     pub matrix: IndexMap<String, String>,
     pub header: Header,
-    pub is_alignment: bool,
 }
 
 impl<'a> Phylip<'a> {
@@ -23,7 +22,6 @@ impl<'a> Phylip<'a> {
             datatype,
             matrix: IndexMap::new(),
             header: Header::new(),
-            is_alignment: false,
         }
     }
 
@@ -31,7 +29,7 @@ impl<'a> Phylip<'a> {
         self.parse_matrix()?;
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
-        self.is_alignment = seq_info.is_alignment;
+        self.header.aligned = seq_info.is_alignment;
         self.check_ntax_matches();
         self.check_nchar_matches(seq_info.longest);
         Ok(())

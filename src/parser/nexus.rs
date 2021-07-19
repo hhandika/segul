@@ -15,7 +15,6 @@ pub struct Nexus<'a> {
     pub matrix: IndexMap<String, String>,
     pub header: Header,
     pub interleave: bool,
-    pub is_alignment: bool,
 }
 
 impl<'a> Nexus<'a> {
@@ -26,7 +25,6 @@ impl<'a> Nexus<'a> {
             matrix: IndexMap::new(),
             header: Header::new(),
             interleave: false,
-            is_alignment: false,
         }
     }
 
@@ -35,7 +33,7 @@ impl<'a> Nexus<'a> {
         self.parse_blocks(&blocks);
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
-        self.is_alignment = seq_info.is_alignment;
+        self.header.aligned = seq_info.is_alignment;
         self.check_ntax_matches();
         self.check_nchar_matches(seq_info.longest);
         Ok(())
