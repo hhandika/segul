@@ -345,5 +345,6 @@ mod test {
         let key = String::from("ABCE");
         let res = String::from("MAYPMQLGFQDATSPI");
         assert_eq!(Some(&res), phy.matrix.get(&key));
+        assert_eq!(String::from("protein"), phy.header.datatype);
     }
 }
