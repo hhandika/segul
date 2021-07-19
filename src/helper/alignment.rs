@@ -75,3 +75,21 @@ impl Alignment {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn alignment_simple_test() {
+        let mut aln = Alignment::new();
+        let mut file = Path::new("test_files/simple.nex");
+        let datatype = DataType::Dna;
+        let input_fmt = InputFmt::Nexus;
+        aln.get_aln_any(&mut file, &input_fmt, &datatype);
+        assert_eq!(String::from("simple"), aln.name);
+        assert_eq!(1, aln.header.ntax);
+        assert_eq!(6, aln.header.nchar);
+        assert_eq!(1, aln.alignment.len());
+    }
+}
