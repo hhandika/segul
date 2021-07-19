@@ -162,7 +162,7 @@ fn check_valid_aa(input: &Path, id: &str, aa: &str) {
 }
 
 // Alphabeth for dna.
-// Include IUPAC characters plus missing, and gaps characters (?, -, *, etc.)
+// Include IUPAC characters plus ambiguous, missing, and gap characters (?, -, *, etc.)
 // Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
 fn is_valid_dna(dna: &str) -> bool {
     let valid_dna = b"ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?";
@@ -171,7 +171,7 @@ fn is_valid_dna(dna: &str) -> bool {
 
 // Alphabeth for amino acid.
 // Include 20 IUPAC characters,
-// ambiguous, missing, and gaps characters (X,?,-,.,~, *, etc.)
+// ambiguous, missing, and gap characters (X,?,-,.,~, *, etc.)
 // Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
 fn is_valid_aa(aa: &str) -> bool {
     let valid_aa = b"ARNDCQEGHILKMFPSTWYVYXBZJU?-.~*";
