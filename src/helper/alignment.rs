@@ -29,10 +29,11 @@ impl Alignment {
                 .and_then(OsStr::to_str)
                 .expect("Failed getting alignment name from the file"),
         );
+
         match input_fmt {
-            InputFmt::Nexus => self.get_aln_from_nexus(file, datatype),
-            InputFmt::Phylip => self.get_aln_from_phylip(file, datatype),
-            InputFmt::Fasta => self.get_aln_from_fasta(file, datatype),
+            InputFmt::Nexus => self.from_nexus(file, datatype),
+            InputFmt::Phylip => self.from_phylip(file, datatype),
+            InputFmt::Fasta => self.from_fasta(file, datatype),
             InputFmt::Auto => {
                 let input_fmt = common::infer_input_auto(file);
                 self.get_aln_any(file, &input_fmt, datatype);
@@ -40,21 +41,21 @@ impl Alignment {
         }
     }
 
-    fn get_aln_from_nexus(&mut self, file: &Path, datatype: &DataType) {
+    fn from_nexus(&mut self, file: &Path, datatype: &DataType) {
         let mut nex = Nexus::new(file, datatype);
         nex.parse().expect("Failed reading a nexus file");
         self.check_is_alignment(&file, nex.is_alignment);
         self.get_alignment(nex.matrix, nex.header)
     }
 
-    fn get_aln_from_phylip(&mut self, file: &Path, datatype: &DataType) {
+    fn from_phylip(&mut self, file: &Path, datatype: &DataType) {
         let mut phy = Phylip::new(file, datatype);
         phy.parse().expect("Failed reading a phylip file");
         self.check_is_alignment(file, phy.is_alignment);
         self.get_alignment(phy.matrix, phy.header);
     }
 
-    fn get_aln_from_fasta(&mut self, file: &Path, datatype: &DataType) {
+    fn from_fasta(&mut self, file: &Path, datatype: &DataType) {
         let mut fas = Fasta::new(file, datatype);
         fas.parse();
         self.check_is_alignment(file, fas.is_alignment);
