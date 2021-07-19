@@ -127,7 +127,7 @@ impl<'a> SeqFilter<'a> {
 
     fn get_pars_inf(&self, file: &Path) -> usize {
         let aln = self.get_alignment(file);
-        summary::get_pars_inf(&aln.alignment)
+        summary::get_pars_inf(&aln.alignment, self.datatype)
     }
 
     fn get_header(&self, file: &Path) -> Header {

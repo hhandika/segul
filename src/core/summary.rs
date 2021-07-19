@@ -14,8 +14,8 @@ use crate::helper::finder::IDs;
 use crate::helper::utils;
 use crate::writer::sumwriter;
 
-pub fn get_pars_inf(matrix: &IndexMap<String, String>) -> usize {
-    Sites::new().get_pars_inf_only(matrix)
+pub fn get_pars_inf(matrix: &IndexMap<String, String>, datatype: &DataType) -> usize {
+    Sites::new().get_pars_inf_only(matrix, datatype)
 }
 
 pub struct SeqStats<'a> {
@@ -91,7 +91,7 @@ impl<'a> SeqStats<'a> {
         let mut dna = Chars::new();
         dna.count_chars(&aln);
         let mut sites = Sites::new();
-        sites.get_stats(path, &aln.alignment);
+        sites.get_stats(path, &aln.alignment, self.datatype);
 
         (sites, dna)
     }
@@ -371,40 +371,92 @@ impl Sites {
         }
     }
 
-    fn get_stats(&mut self, path: &Path, matrix: &IndexMap<String, String>) {
+    fn get_stats(&mut self, path: &Path, matrix: &IndexMap<String, String>, datatype: &DataType) {
         self.path = path.to_path_buf();
-        let site_matrix = self.index_sites(matrix);
+        let site_matrix = self.index_sites(matrix, datatype);
         self.get_site_stats(&site_matrix);
         self.count_sites();
         self.get_proportion();
     }
 
-    fn get_pars_inf_only(&mut self, matrix: &IndexMap<String, String>) -> usize {
-        let site_matrix = self.index_sites(matrix);
+    fn get_pars_inf_only(
+        &mut self,
+        matrix: &IndexMap<String, String>,
+        datatype: &DataType,
+    ) -> usize {
+        let site_matrix = self.index_sites(matrix, datatype);
         self.get_site_stats(&site_matrix);
         self.pars_inf
     }
 
-    fn index_sites(&mut self, matrix: &IndexMap<String, String>) -> HashMap<usize, Vec<u8>> {
+    fn index_sites(
+        &self,
+        matrix: &IndexMap<String, String>,
+        datatype: &DataType,
+    ) -> HashMap<usize, Vec<u8>> {
+        match datatype {
+            DataType::Dna => self.index_site_dna(matrix),
+            DataType::Aa => self.index_site_aa(matrix),
+            _ => unreachable!(),
+        }
+    }
+
+    fn index_site_dna(&self, matrix: &IndexMap<String, String>) -> HashMap<usize, Vec<u8>> {
         let mut site_matrix: HashMap<usize, Vec<u8>> = HashMap::new();
         matrix.values().for_each(|seq| {
-            seq.bytes().enumerate().for_each(|(idx, dna)| {
-                match site_matrix.get_mut(&idx) {
-                    Some(value) => match dna {
-                        b'a' | b'g' | b't' | b'c' | b'A' | b'G' | b'T' | b'C' => value.push(dna),
-                        _ => (), // ignore ambiguous characters
-                    },
-                    None => match dna {
-                        b'a' | b'g' | b't' | b'c' | b'A' | b'G' | b'T' | b'C' => {
+            seq.bytes()
+                .enumerate()
+                .for_each(|(idx, dna)| match site_matrix.get_mut(&idx) {
+                    Some(value) => {
+                        // ignore ambiguous characters
+                        if self.is_non_ambiguous_dna(&dna) {
+                            value.push(dna);
+                        }
+                    }
+                    None => {
+                        if self.is_non_ambiguous_dna(&dna) {
                             site_matrix.insert(idx, vec![dna]);
                         }
-                        _ => (),
-                    },
+                    }
+                })
+        });
+
+        site_matrix
+    }
+
+    fn index_site_aa(&self, matrix: &IndexMap<String, String>) -> HashMap<usize, Vec<u8>> {
+        let mut site_matrix: HashMap<usize, Vec<u8>> = HashMap::new();
+        matrix.values().for_each(|seq| {
+            seq.bytes().enumerate().for_each(|(idx, aa)| {
+                match site_matrix.get_mut(&idx) {
+                    Some(value) => {
+                        // ignore ambiguous characters
+                        if !self.is_ambiguous_aa(&aa) {
+                            value.push(aa)
+                        }
+                    }
+                    None => {
+                        if !self.is_ambiguous_aa(&aa) {
+                            site_matrix.insert(idx, vec![aa]);
+                        }
+                    }
                 }
             })
         });
 
         site_matrix
+    }
+
+    fn is_non_ambiguous_dna(&self, ch: &u8) -> bool {
+        let non_ambiguous_dna = b"acgtACGT";
+        non_ambiguous_dna.contains(ch)
+    }
+
+    // We match ambiguous for aa because it is shorter
+    // then matching non-ambiguous aa
+    fn is_ambiguous_aa(&self, ch: &u8) -> bool {
+        let ambiguous_aa = b"XBZJU?-.~*";
+        ambiguous_aa.contains(ch)
     }
 
     fn get_site_stats(&mut self, site_matrix: &HashMap<usize, Vec<u8>>) {
@@ -548,7 +600,7 @@ mod test {
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::new();
-        let smat = site.index_sites(&mat);
+        let smat = site.index_sites(&mat, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
     }
@@ -559,7 +611,7 @@ mod test {
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::new();
-        let smat = site.index_sites(&mat);
+        let smat = site.index_sites(&mat, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
     }
@@ -570,7 +622,7 @@ mod test {
         let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::new();
-        let smat = site.index_sites(&mat);
+        let smat = site.index_sites(&mat, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
         assert_eq!(3, site.variable);
@@ -583,7 +635,7 @@ mod test {
         let mut aln = Alignment::new();
         aln.get_aln_any(path, &input_format, &DNA);
         let mut site = Sites::new();
-        let smat = site.index_sites(&aln.alignment);
+        let smat = site.index_sites(&aln.alignment, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(18, site.conserved);
         assert_eq!(8, site.variable);

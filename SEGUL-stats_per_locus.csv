@@ -1,2 +1,2 @@
-path,locus,ntaxa,chars_count,site_count,conserved_sites,proportion_cons_sites,variable_sites,proportion_var_sites,parsimony_informative_sites,proportion_pars_inf_sites,missing_data,proportion_missing_data,AT_content,GC_content,A_counts,T_counts,G_counts,C_counts,gap_counts,missing_counts,
-test_files/interleave_whitespaces.phy,interleave_whitespaces,2,20,10,4,0.4,6,0.6,0,0,0,0,0.7,0.3,4,2,5,9,0,0
+path,locus,ntaxa,chars_count,site_count,conserved_sites,proportion_cons_sites,variable_sites,proportion_var_sites,parsimony_informative_sites,proportion_pars_inf_sites,missing_data,proportion_missing_data,gc_content,at_content,-,?,A,C,G,T,N,R,Y,S,W,K,M,B,D,H,V,.,
+test_files/concat.fasta,concat,4,104,26,12,0.46153846153846156,14,0.5384615384615384,2,0.07692307692307693,24,0.23076923076923078,0.09615384615384616,0.6730769230769231,0,24,48,0,10,22,0,0,0,0,0,0,0,0,0,0,0,0,
