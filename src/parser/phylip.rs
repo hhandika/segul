@@ -30,6 +30,7 @@ impl<'a> Phylip<'a> {
         let mut seq_info = SeqCheck::new();
         seq_info.get_sequence_info(&self.matrix);
         self.header.aligned = seq_info.is_alignment;
+        self.match_header_datatype();
         self.check_ntax_matches();
         self.check_nchar_matches(seq_info.longest);
         Ok(())
@@ -132,6 +133,13 @@ impl<'a> Phylip<'a> {
         self.header.nchar = seq
             .parse::<usize>()
             .expect("Header char length is not a number.");
+    }
+
+    fn match_header_datatype(&mut self) {
+        match self.datatype {
+            DataType::Aa => self.header.datatype = String::from("protein"),
+            _ => (),
+        };
     }
 
     fn check_ntax_matches(&self) {

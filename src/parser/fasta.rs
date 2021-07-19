@@ -50,6 +50,7 @@ impl<'a> Fasta<'a> {
         self.header.aligned = seq_info.is_alignment;
         self.header.nchar = seq_info.longest;
         self.header.ntax = self.matrix.len();
+        self.match_header_datatype();
     }
 
     fn parse_matrix<R: Read>(&mut self, buff: R) {
@@ -67,6 +68,13 @@ impl<'a> Fasta<'a> {
                     self.matrix.insert(fas.id, fas.seq);
                 }
             });
+    }
+
+    fn match_header_datatype(&mut self) {
+        match self.datatype {
+            DataType::Aa => self.header.datatype = String::from("protein"),
+            _ => (),
+        };
     }
 }
 
