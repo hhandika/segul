@@ -114,7 +114,7 @@ impl<'a> Concat<'a> {
         aln.get_aln_any(file, &self.input_fmt, self.datatype);
         assert!(
             aln.header.ntax != 0,
-            "Alignment failed is empty {}",
+            "Found an empty alignment {}",
             file.display()
         );
         aln
