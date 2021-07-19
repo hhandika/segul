@@ -57,18 +57,22 @@ impl<'a> SeqStats<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Indexing alignments...");
         self.get_ntax(files);
+
         spin.set_message("Getting summary stats...");
         let mut stats: Vec<(Sites, Chars)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
+
+        spin.set_message("Writing output files...");
         sumwriter::CsvWriter::new(self.output, self.datatype)
             .write_summary_dir(&stats)
-            .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
+            .expect("Failed writing a per locus csv file");
+
         let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete, self.datatype);
         sum.write_sum_to_file(self.output)
-            .expect("CANNOT CREATE FILE FOR SUMMARY OUPUT");
+            .expect("File writing a summary statistics file");
         spin.finish_with_message("DONE!\n");
-        sum.print_summary().expect("CANNOT WRITE SUMMARY TO STDOUT");
+        sum.print_summary().expect("Failed writing to stdout");
     }
 
     fn get_ntax(&mut self, files: &[PathBuf]) {
