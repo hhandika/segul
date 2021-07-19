@@ -91,7 +91,7 @@ impl<'a> SeqStats<'a> {
 
     fn get_stats(&self, path: &Path) -> (Sites, Chars) {
         let mut aln = Sequence::new();
-        aln.get_aln_any(path, self.input_format, self.datatype);
+        aln.get_alignment(path, self.input_format, self.datatype);
         let mut dna = Chars::new();
         dna.count_chars(&aln);
         let mut sites = Sites::new();
@@ -637,7 +637,7 @@ mod test {
         let path = Path::new("test_files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let mut aln = Sequence::new();
-        aln.get_aln_any(path, &input_format, &DNA);
+        aln.get_alignment(path, &input_format, &DNA);
         let mut site = Sites::new();
         let smat = site.index_sites(&aln.alignment, &DNA);
         site.get_site_stats(&smat);
@@ -658,7 +658,7 @@ mod test {
         let path = Path::new("test_files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let mut aln = Sequence::new();
-        aln.get_aln_any(path, &input_format, &DNA);
+        aln.get_alignment(path, &input_format, &DNA);
         let mut dna = Chars::new();
         dna.count_chars(&aln);
         assert_eq!(4, dna.ntax);

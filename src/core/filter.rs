@@ -137,13 +137,7 @@ impl<'a> SeqFilter<'a> {
 
     fn get_alignment(&self, file: &Path) -> Sequence {
         let mut aln = Sequence::new();
-        aln.get_aln_any(file, self.input_fmt, &self.datatype);
+        aln.get_alignment(file, self.input_fmt, &self.datatype);
         aln
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-
-// }

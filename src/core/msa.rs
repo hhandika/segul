@@ -111,7 +111,7 @@ impl<'a> Concat<'a> {
 
     fn get_alignment(&self, file: &Path) -> Sequence {
         let mut aln = Sequence::new();
-        aln.get_aln_any(file, &self.input_fmt, self.datatype);
+        aln.get_alignment(file, &self.input_fmt, self.datatype);
         assert!(
             aln.header.ntax != 0,
             "Found an empty alignment {}",
