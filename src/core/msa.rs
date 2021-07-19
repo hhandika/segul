@@ -169,6 +169,7 @@ impl<'a> Concat<'a> {
         }
     }
 
+    #[inline]
     fn get_missings(&self, len: usize) -> String {
         iter::repeat('?').take(len).collect()
     }

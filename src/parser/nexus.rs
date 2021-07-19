@@ -181,6 +181,7 @@ impl<'a> Nexus<'a> {
         text
     }
 
+    #[inline]
     fn parse_char(&self, text: &str) -> char {
         text.parse::<char>()
             .expect("Gaps or missing tags are not a char")
