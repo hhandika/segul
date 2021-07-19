@@ -29,7 +29,6 @@ pub enum PartitionFmt {
     None,
 }
 
-#[derive(Clone)]
 pub enum DataType {
     Dna,
     Aa,
