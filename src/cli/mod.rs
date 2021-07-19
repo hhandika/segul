@@ -44,14 +44,14 @@ enum InputType {
     Wildcard,
 }
 
-trait Cli {
-    fn get_file_input<'a>(&self, matches: &'a ArgMatches) -> &'a str {
+trait InputCli {
+    fn parse_file_input<'a>(&self, matches: &'a ArgMatches) -> &'a str {
         matches
             .value_of("input")
             .expect("CANNOT FIND AN INPUT FILE")
     }
 
-    fn get_dir_input<'a>(&self, matches: &'a ArgMatches) -> &'a str {
+    fn parse_dir_input<'a>(&self, matches: &'a ArgMatches) -> &'a str {
         matches.value_of("dir").expect("CANNOT READ DIR PATH")
     }
 
@@ -67,7 +67,7 @@ trait Cli {
         Files::new(dir, input_fmt).get_files()
     }
 
-    fn get_input_type(&self, matches: &ArgMatches) -> InputType {
+    fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
         if matches.is_present("input") {
             InputType::File
         } else if matches.is_present("dir") {
@@ -77,20 +77,7 @@ trait Cli {
         }
     }
 
-    fn get_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
-        matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
-    }
-
-    fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
-        if matches.is_present("output") {
-            let output = self.get_output(matches);
-            PathBuf::from(output)
-        } else {
-            PathBuf::from(".")
-        }
-    }
-
-    fn get_input_fmt(&self, matches: &ArgMatches) -> InputFmt {
+    fn parse_input_fmt(&self, matches: &ArgMatches) -> InputFmt {
         let input_fmt = matches
             .value_of("format")
             .expect("CANNOT READ FORMAT INPUT");
@@ -109,7 +96,34 @@ trait Cli {
         }
     }
 
-    fn get_output_fmt(&self, matches: &ArgMatches) -> OutputFmt {
+    fn parse_datatype(&self, matches: &ArgMatches) -> DataType {
+        let datatype = matches
+            .value_of("datatype")
+            .expect("Failed parsing dataype value");
+        match datatype {
+            "aa" => DataType::Aa,
+            "dna" => DataType::Dna,
+            "ignore" => DataType::Ignore,
+            _ => unreachable!(),
+        }
+    }
+}
+
+trait OutputCli {
+    fn parse_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
+        matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
+    }
+
+    fn parse_output_path(&self, matches: &ArgMatches) -> PathBuf {
+        if matches.is_present("output") {
+            let output = self.parse_output(matches);
+            PathBuf::from(output)
+        } else {
+            PathBuf::from(".")
+        }
+    }
+
+    fn parse_output_fmt(&self, matches: &ArgMatches) -> OutputFmt {
         let output_fmt = matches
             .value_of("output-format")
             .expect("CANNOT READ FORMAT INPUT");
@@ -126,18 +140,6 @@ trait Cli {
         YOUR INPUT: {} ",
                 output_fmt
             ),
-        }
-    }
-
-    fn get_datatype(&self, matches: &ArgMatches) -> DataType {
-        let datatype = matches
-            .value_of("datatype")
-            .expect("Failed parsing dataype value");
-        match datatype {
-            "aa" => DataType::Aa,
-            "dna" => DataType::Dna,
-            "ignore" => DataType::Ignore,
-            _ => unreachable!(),
         }
     }
 }
@@ -199,6 +201,6 @@ mod test {
             .get_matches();
         let id = IdParser::new(&arg);
         let res = PathBuf::from("./test_dir.txt");
-        assert_eq!(res, id.get_output_path(&arg));
+        assert_eq!(res, id.parse_output_path(&arg));
     }
 }

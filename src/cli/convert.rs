@@ -4,7 +4,8 @@ use clap::ArgMatches;
 use crate::cli::*;
 use crate::helper::common::{DataType, InputFmt, OutputFmt};
 
-impl Cli for ConvertParser<'_> {}
+impl InputCli for ConvertParser<'_> {}
+impl OutputCli for ConvertParser<'_> {}
 
 pub(in crate::cli) struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -28,15 +29,15 @@ impl<'a> ConvertParser<'a> {
     }
 
     pub(in crate::cli) fn convert(&mut self) {
-        self.input_fmt = self.get_input_fmt(&self.matches);
-        self.output = self.get_output_path(self.matches);
-        self.output_fmt = self.get_output_fmt(self.matches);
-        self.datatype = self.get_datatype(&self.matches);
-        let input_type = self.get_input_type(&self.matches);
+        self.input_fmt = self.parse_input_fmt(self.matches);
+        self.output = self.parse_output_path(self.matches);
+        self.output_fmt = self.parse_output_fmt(self.matches);
+        self.datatype = self.parse_datatype(self.matches);
+        let input_type = self.parse_input_type(self.matches);
         match input_type {
             InputType::File => self.convert_file(),
             InputType::Dir => {
-                let dir = self.get_dir_input(self.matches);
+                let dir = self.parse_dir_input(self.matches);
                 let files = self.get_files(dir, &self.input_fmt);
                 self.convert_multiple_files(&files);
                 self.print_input_dir(Path::new(dir), files.len(), &self.output)
@@ -50,7 +51,7 @@ impl<'a> ConvertParser<'a> {
     }
 
     fn convert_file(&mut self) {
-        let input = Path::new(self.get_file_input(self.matches));
+        let input = Path::new(self.parse_file_input(self.matches));
         self.print_input_file(input).unwrap();
         self.convert_any(input, &self.output, &self.output_fmt);
     }

@@ -4,7 +4,8 @@ use crate::cli::*;
 use crate::core::filter;
 use crate::helper::common::{DataType, InputFmt, OutputFmt};
 
-impl Cli for FilterParser<'_> {}
+impl InputCli for FilterParser<'_> {}
+impl OutputCli for FilterParser<'_> {}
 impl PartCLi for FilterParser<'_> {}
 
 pub(in crate::cli) struct FilterParser<'a> {
@@ -33,12 +34,12 @@ impl<'a> FilterParser<'a> {
     }
 
     pub(in crate::cli) fn filter(&mut self) {
-        self.input_fmt = self.get_input_fmt(self.matches);
-        self.datatype = self.get_datatype(self.matches);
-        let dir = self.get_dir_input(self.matches);
+        self.input_fmt = self.parse_input_fmt(self.matches);
+        self.datatype = self.parse_datatype(self.matches);
+        let dir = self.parse_dir_input(self.matches);
         self.print_input().expect("CANNOT DISPLAY TO STDOUT");
         self.files = if self.is_input_dir() {
-            let dir = self.get_dir_input(self.matches);
+            let dir = self.parse_dir_input(self.matches);
             self.get_files(dir, &self.input_fmt)
         } else {
             self.parse_input_wcard(&self.matches)
@@ -80,7 +81,7 @@ impl<'a> FilterParser<'a> {
         match self.check_concat() {
             Some(part_fmt) => {
                 let output_fmt = if self.matches.is_present("output-format") {
-                    self.get_output_fmt(self.matches)
+                    self.parse_output_fmt(self.matches)
                 } else {
                     OutputFmt::Nexus
                 };
@@ -193,7 +194,7 @@ impl<'a> FilterParser<'a> {
 
     fn set_output_path<P: AsRef<Path>>(&mut self, dir: P) {
         if self.matches.is_present("output") {
-            self.output_dir = PathBuf::from(self.get_output(self.matches));
+            self.output_dir = PathBuf::from(self.parse_output(self.matches));
         } else {
             self.output_dir = self.fmt_output_path(dir.as_ref());
         }
@@ -201,7 +202,7 @@ impl<'a> FilterParser<'a> {
 
     fn set_multi_output_path<P: AsRef<Path>>(&mut self, dir: P) {
         if self.matches.is_present("output") {
-            let output_dir = PathBuf::from(self.get_output(self.matches));
+            let output_dir = PathBuf::from(self.parse_output(self.matches));
             self.output_dir = self.fmt_output_path(&output_dir)
         } else {
             self.output_dir = self.fmt_output_path(dir.as_ref());
@@ -230,7 +231,7 @@ impl<'a> FilterParser<'a> {
             writeln!(
                 writer,
                 "Input dir\t: {}\n",
-                self.get_dir_input(self.matches)
+                self.parse_dir_input(self.matches)
             )?;
         } else {
             writeln!(writer, "Input\t\t: WILDCARD",)?;

@@ -4,21 +4,23 @@ use clap::ArgMatches;
 
 use crate::cli::*;
 
-impl Cli for IdParser<'_> {
-    fn get_input_type(&self, matches: &ArgMatches) -> InputType {
+impl InputCli for IdParser<'_> {
+    fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
         if matches.is_present("dir") {
             InputType::Dir
         } else {
             InputType::Wildcard
         }
     }
+}
 
-    fn get_output_path(&self, matches: &ArgMatches) -> PathBuf {
+impl OutputCli for IdParser<'_> {
+    fn parse_output_path(&self, matches: &ArgMatches) -> PathBuf {
         if matches.is_present("output") {
-            let output = self.get_output(matches);
+            let output = self.parse_output(matches);
             PathBuf::from(output).with_extension("txt")
         } else {
-            let input = Path::new(self.get_dir_input(matches));
+            let input = Path::new(self.parse_dir_input(matches));
             input.with_extension("txt")
         }
     }
@@ -34,10 +36,10 @@ impl<'a> IdParser<'a> {
     }
 
     pub(in crate::cli) fn get_id(&self) {
-        let input_fmt = self.get_input_fmt(&self.matches);
-        let datatype = self.get_datatype(self.matches);
+        let input_fmt = self.parse_input_fmt(&self.matches);
+        let datatype = self.parse_datatype(self.matches);
         let files = if self.is_input_dir() {
-            let dir = self.get_dir_input(self.matches);
+            let dir = self.parse_dir_input(self.matches);
             self.get_files(dir, &input_fmt)
         } else {
             self.parse_input_wcard(&self.matches)
@@ -55,7 +57,7 @@ impl<'a> IdParser<'a> {
     }
 
     fn write_results(&self, ids: &IndexSet<String>) {
-        let fname = self.get_output_path(&self.matches);
+        let fname = self.parse_output_path(&self.matches);
         let file = File::create(&fname).expect("CANNOT CREATE AN OUTPUT FILE");
         let mut writer = BufWriter::new(file);
         ids.iter().for_each(|id| {
@@ -73,7 +75,7 @@ impl<'a> IdParser<'a> {
             writeln!(
                 writer,
                 "Input dir\t: {}\n",
-                self.get_dir_input(self.matches)
+                self.parse_dir_input(self.matches)
             )?;
         } else {
             writeln!(writer, "Input\t\t: WILDCARD",)?;
