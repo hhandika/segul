@@ -121,11 +121,11 @@ impl<'a> SeqWriter<'a> {
 
         if self.partition.is_some() {
             match self.part_fmt {
-                PartitionFmt::Nexus => self
-                    .write_part_nexus(&mut writer, false)
+                PartitionFmt::Charset => self
+                    .write_part_charset(&mut writer, false)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
-                PartitionFmt::NexusCodon => self
-                    .write_part_nexus(&mut writer, true)
+                PartitionFmt::CharsetCodon => self
+                    .write_part_charset(&mut writer, true)
                     .expect("CANNOT WRITER NEXUS PARTITION"),
                 _ => self.write_part_sep(),
             }
@@ -255,8 +255,8 @@ impl<'a> SeqWriter<'a> {
 
     fn write_part_sep(&self) {
         match self.part_fmt {
-            PartitionFmt::Charset => self.write_part_nexus_sep(false),
-            PartitionFmt::CharsetCodon => self.write_part_nexus_sep(true),
+            PartitionFmt::Nexus => self.write_part_nexus(false),
+            PartitionFmt::NexusCodon => self.write_part_nexus(true),
             PartitionFmt::Raxml => self.write_part_raxml(false),
             PartitionFmt::RaxmlCodon => self.write_part_raxml(true),
             _ => eprintln!("Ups. Error while parsing partition format"),
@@ -279,16 +279,16 @@ impl<'a> SeqWriter<'a> {
         }
     }
 
-    fn write_part_nexus_sep(&self, codon: bool) {
+    fn write_part_nexus(&self, codon: bool) {
         let mut writer = self
             .create_output_file(&self.part_file)
             .expect("Failed writing a NEXUS formatted partition file");
         writeln!(writer, "#nexus").unwrap();
-        self.write_part_nexus(&mut writer, codon)
+        self.write_part_charset(&mut writer, codon)
             .expect("Failed writing nexus partition");
     }
 
-    fn write_part_nexus<W: Write>(&self, writer: &mut W, codon: bool) -> Result<()> {
+    fn write_part_charset<W: Write>(&self, writer: &mut W, codon: bool) -> Result<()> {
         writeln!(writer, "begin sets;")?;
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
@@ -374,7 +374,7 @@ impl<'a> SeqWriter<'a> {
                     .join(&self.get_part_fname("txt"));
             }
             PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
-                self.part_file = PathBuf::from("in-file")
+                self.part_file = PathBuf::from("Charset (in-file)")
             }
             _ => (),
         }

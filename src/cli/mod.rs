@@ -178,7 +178,7 @@ trait PartCLi {
         match output_fmt {
             OutputFmt::Nexus | OutputFmt::NexusInt => (),
             _ => {
-                if let PartitionFmt::Nexus | PartitionFmt::NexusCodon = part_fmt {
+                if let PartitionFmt::Charset | PartitionFmt::CharsetCodon = part_fmt {
                     panic!(
                         "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
                 MAYBE YOU MEAN TO WRITE THE PARTITION TO 'charset' INSTEAD."
