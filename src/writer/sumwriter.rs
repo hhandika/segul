@@ -233,7 +233,7 @@ impl<'s> SummaryWriter<'s> {
         writeln!(writer, "\x1b[0;33mCharacter Count\x1b[0m")?;
         self.write_char_count(&mut writer)?;
 
-        writeln!(writer, "\x1b[0;33mTaxon Completeness\x1b[0m")?;
+        writeln!(writer, "\x1b[0;33mData Matrix Completeness\x1b[0m")?;
         self.write_matrix_comp(&mut writer)?;
 
         writeln!(writer, "\x1b[0;33mConserved Sequences\x1b[0m")?;
@@ -264,7 +264,7 @@ impl<'s> SummaryWriter<'s> {
         writeln!(writer, "Character Count")?;
         self.write_char_count(&mut writer)?;
 
-        writeln!(writer, "Taxon Completeness")?;
+        writeln!(writer, "Data Matrix Completeness")?;
         self.write_matrix_comp(&mut writer)?;
 
         writeln!(writer, "Conserved Sequences")?;
