@@ -297,8 +297,9 @@ impl<'a> SeqWriter<'a> {
                 } else {
                     writeln!(
                         writer,
-                        "charset {} = {}-{};",
-                        self.get_gene_name(&part.gene),
+                        "charset '{}' = {}-{};",
+                        part.gene,
+                        // self.get_gene_name(&part.gene),
                         part.start,
                         part.end
                     )
@@ -311,13 +312,13 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    fn get_gene_name(&self, name: &str) -> String {
-        if name.contains('-') {
-            name.replace('-', "_")
-        } else {
-            name.to_string()
-        }
-    }
+    // fn get_gene_name(&self, name: &str) -> String {
+    //     if name.contains('-') {
+    //         name.replace('-', "_")
+    //     } else {
+    //         name.to_string()
+    //     }
+    // }
 
     fn write_raxml_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
         writeln!(
