@@ -4,6 +4,7 @@ use std::io::{BufReader, Read, Result};
 use std::path::Path;
 
 use indexmap::{IndexMap, IndexSet};
+use lazy_static::lazy_static;
 use nom::{bytes::complete, character, sequence, IResult};
 use regex::Regex;
 
@@ -325,12 +326,12 @@ impl<R: Read> Iterator for NexusReader<R> {
     }
 }
 
-fn get_commands(file: &str) -> String {
+fn get_commands(text: &str) -> String {
     lazy_static! { // Match the first word in the block
         static ref RE: Regex = Regex::new(r"^(\w+)").expect("Failed capturing nexus commands");
     }
 
-    match RE.captures(file) {
+    match RE.captures(text) {
         Some(word) => word[0].to_lowercase(),
         None => String::from(""),
     }
@@ -471,5 +472,11 @@ mod test {
         let key = String::from("ABCE");
         let res = String::from("MAYPMQLGFQDATSPI");
         assert_eq!(Some(&res), nex.matrix.get(&key));
+    }
+
+    #[test]
+    fn regex_command_test() {
+        let text = "Matrix\n ABCD AGTC";
+        assert_eq!(String::from("matrix"), get_commands(text));
     }
 }
