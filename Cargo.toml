@@ -19,4 +19,5 @@ num-format = "0.4.*"
 rayon = "*"
 regex = "1.4.5"
 
-
+[profile.release]
+lto = "fat"
