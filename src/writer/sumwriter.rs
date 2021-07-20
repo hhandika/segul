@@ -49,6 +49,18 @@ pub fn print_stats(site: &Sites, dna: &Chars) -> Result<()> {
     Ok(())
 }
 
+trait Alphabet {
+    fn get_alphabet(&self, datatype: &DataType) -> &str {
+        match datatype {
+            DataType::Dna => "-?ACGTNRYSWKMBDHV.",
+            DataType::Aa => "?-ARNDCQEGHILKMFPSTWYVYXBZJU.~*",
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl Alphabet for CsvWriter<'_> {}
+
 pub struct CsvWriter<'a> {
     output: String,
     datatype: &'a DataType,
@@ -67,7 +79,7 @@ impl<'a> CsvWriter<'a> {
         let file = File::create(&self.output)
             .with_context(|| format!("Failed creating file {}", self.output))?;
         let mut writer = BufWriter::new(file);
-        let alphabet = self.get_alphabet();
+        let alphabet = self.get_alphabet(self.datatype);
         self.write_csv_header(&mut writer, alphabet)?;
         stats.iter().for_each(|(site, chars)| {
             self.write_csv_content(&mut writer, site, chars, alphabet)
@@ -82,7 +94,7 @@ impl<'a> CsvWriter<'a> {
         let file = File::create(&self.output)
             .with_context(|| format!("Failed creating file {}", self.output))?;
         let mut writer = BufWriter::new(file);
-        let alphabet = self.get_alphabet();
+        let alphabet = self.get_alphabet(&self.datatype);
         self.write_csv_header(&mut writer, alphabet)?;
         self.write_csv_content(&mut writer, site, chars, alphabet)
             .unwrap();
@@ -188,15 +200,9 @@ impl<'a> CsvWriter<'a> {
         writer.flush()?;
         Ok(())
     }
-
-    fn get_alphabet(&self) -> &str {
-        match self.datatype {
-            DataType::Dna => "-?ACGTNRYSWKMBDHV.",
-            DataType::Aa => "?-ARNDCQEGHILKMFPSTWYVYXBZJU.~*",
-            _ => panic!("Please specify datatype"),
-        }
-    }
 }
+
+impl Alphabet for SummaryWriter<'_> {}
 
 pub struct SummaryWriter<'s> {
     site: &'s SiteSummary,
@@ -370,8 +376,11 @@ impl<'s> SummaryWriter<'s> {
     }
 
     fn write_char_count<W: Write>(&self, writer: &mut W) -> Result<()> {
-        self.chars.chars.iter().for_each(|(ch, count)| {
-            writeln!(writer, "{}\t\t: {}", ch, utils::fmt_num(&count)).unwrap()
+        let alphabet = self.get_alphabet(self.datatype);
+        alphabet.chars().for_each(|ch| {
+            if let Some(count) = self.chars.chars.get(&ch) {
+                writeln!(writer, "{}\t\t: {}", ch, utils::fmt_num(&count)).unwrap();
+            }
         });
         writeln!(writer)?;
         Ok(())

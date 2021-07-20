@@ -1,10 +1,11 @@
 // A module for sequence statistics.
-use std::collections::{BTreeMap, HashMap};
+// use std::collections::BTreeMap;
 use std::fmt::Debug;
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
+use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
@@ -236,7 +237,7 @@ pub struct CharSummary {
     pub prop_missing_data: f64,
     pub total_chars: usize,
     pub total_nucleotides: usize,
-    pub chars: BTreeMap<char, usize>,
+    pub chars: HashMap<char, usize>,
 }
 
 impl CharSummary {
@@ -251,7 +252,7 @@ impl CharSummary {
             missing_data: 0,
             prop_missing_data: 0.0,
             total_nucleotides: 0,
-            chars: BTreeMap::new(),
+            chars: HashMap::new(),
         }
     }
 
@@ -274,7 +275,7 @@ impl CharSummary {
             .iter()
             .flat_map(|ch| ch.chars.iter())
             .for_each(|(ch, count)| {
-                *self.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += count;
+                *self.chars.entry(*ch).or_insert(0) += count;
             });
     }
 
@@ -497,7 +498,7 @@ impl Sites {
 pub struct Chars {
     pub total_chars: usize,
     pub ntax: usize,
-    pub chars: BTreeMap<char, usize>,
+    pub chars: HashMap<char, usize>,
     pub gc_count: usize,
     pub at_count: usize,
     pub nucleotides: usize,
@@ -510,7 +511,7 @@ impl Chars {
         Self {
             total_chars: 0,
             ntax: 0,
-            chars: BTreeMap::new(),
+            chars: HashMap::new(),
             gc_count: 0,
             at_count: 0,
             nucleotides: 0,
@@ -560,7 +561,7 @@ impl Chars {
         self.missing_data = self
             .chars
             .iter()
-            .filter(|&(ch, _)| *ch == '-' || *ch == '?' || *ch == 'N' || *ch == 'n')
+            .filter(|&(ch, _)| *ch == '-' || *ch == '?')
             .map(|(_, count)| count)
             .sum();
         self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
