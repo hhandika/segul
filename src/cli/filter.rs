@@ -37,13 +37,13 @@ impl<'a> FilterParser<'a> {
         self.input_fmt = self.parse_input_fmt(self.matches);
         self.datatype = self.parse_datatype(self.matches);
         let dir = self.parse_dir_input(self.matches);
-        self.print_input().expect("CANNOT DISPLAY TO STDOUT");
         self.files = if self.is_input_dir() {
             let dir = self.parse_dir_input(self.matches);
             self.get_files(dir, &self.input_fmt)
         } else {
             self.parse_input_wcard(&self.matches)
         };
+
         if self.is_npercent() {
             self.get_min_taxa_npercent(dir);
         } else {
@@ -71,6 +71,7 @@ impl<'a> FilterParser<'a> {
     }
 
     fn filter_aln(&self) {
+        self.print_input().expect("CANNOT DISPLAY TO STDOUT");
         let mut filter = filter::SeqFilter::new(
             &self.files,
             &self.input_fmt,
@@ -230,7 +231,7 @@ impl<'a> FilterParser<'a> {
         if self.is_input_dir() {
             writeln!(
                 writer,
-                "Input dir\t: {}\n",
+                "Input dir\t: {}",
                 self.parse_dir_input(self.matches)
             )?;
         } else {
