@@ -145,7 +145,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets partition format")
                         .takes_value(true)
                         .required(true)
-                        .default_value("charset")
+                        .default_value("nexus")
                         .value_name("FORMAT")
                         .possible_values(&["charset", "nexus", "raxml"]),
                 )

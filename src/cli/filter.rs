@@ -121,7 +121,7 @@ impl<'a> FilterParser<'a> {
         if self.matches.is_present("partition") {
             self.parse_partition_fmt(self.matches)
         } else {
-            PartitionFmt::Charset
+            PartitionFmt::Nexus
         }
     }
 
