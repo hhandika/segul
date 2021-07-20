@@ -360,12 +360,17 @@ impl<'a> SeqWriter<'a> {
     fn get_partition_path(&mut self) {
         match self.part_fmt {
             PartitionFmt::Charset | PartitionFmt::CharsetCodon => {
+                self.part_file = PathBuf::from("charset (in-file)")
+            }
+
+            PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
                 self.part_file = self
                     .output
                     .parent()
                     .unwrap()
                     .join(&self.get_part_fname("nex"));
             }
+
             PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => {
                 self.part_file = self
                     .output
@@ -373,9 +378,7 @@ impl<'a> SeqWriter<'a> {
                     .unwrap()
                     .join(&self.get_part_fname("txt"));
             }
-            PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
-                self.part_file = PathBuf::from("Charset (in-file)")
-            }
+
             _ => (),
         }
     }
