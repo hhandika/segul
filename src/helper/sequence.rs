@@ -31,7 +31,8 @@ impl Sequence {
 
     pub fn get(&mut self, file: &Path, input_fmt: &InputFmt, datatype: &DataType) {
         self.name.push_str(
-            file.file_stem()
+            &file
+                .file_stem()
                 .and_then(OsStr::to_str)
                 .expect("Failed getting alignment name from the file"),
         );

@@ -15,7 +15,7 @@ pub struct SeqWriter<'a> {
     output: PathBuf,
     matrix: &'a IndexMap<String, String>,
     id_len: usize,
-    header: Header,
+    header: &'a Header,
     partition: Option<&'a [Partition]>,
     part_fmt: &'a PartitionFmt,
     part_file: PathBuf,
@@ -25,7 +25,7 @@ impl<'a> SeqWriter<'a> {
     pub fn new(
         path: &'a Path,
         matrix: &'a IndexMap<String, String>,
-        header: Header,
+        header: &'a Header,
         partition: Option<&'a [Partition]>,
         part_fmt: &'a PartitionFmt,
     ) -> Self {
@@ -464,7 +464,7 @@ mod test {
         let id = "ABCDE";
         let matrix = IndexMap::new();
         let header = Header::new();
-        let convert = SeqWriter::new(Path::new("."), &matrix, header, None, &PartitionFmt::None);
+        let convert = SeqWriter::new(Path::new("."), &matrix, &header, None, &PartitionFmt::None);
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 
@@ -473,7 +473,7 @@ mod test {
         let path = Path::new("sanger/cytb");
         let matrix = IndexMap::new();
         let header = Header::new();
-        let mut convert = SeqWriter::new(path, &matrix, header, None, &PartitionFmt::None);
+        let mut convert = SeqWriter::new(path, &matrix, &header, None, &PartitionFmt::None);
         let output = PathBuf::from("sanger/cytb.fas");
         convert.get_output_fname(&OutputFmt::Fasta);
         assert_eq!(output, convert.output);
@@ -484,7 +484,7 @@ mod test {
         let path = Path::new(".");
         let matrix = IndexMap::new();
         let header = Header::new();
-        let convert = SeqWriter::new(path, &matrix, header, None, &PartitionFmt::None);
+        let convert = SeqWriter::new(path, &matrix, &header, None, &PartitionFmt::None);
         let seq = "AGTCAGTC";
         let chunk = String::from("AGTC");
         let chunk2 = String::from("AGTC");
@@ -520,7 +520,7 @@ mod test {
         let res1 = String::from("ATGTGTGTGTGTGTGTAAAA");
 
         matrix.insert(id.clone(), seq);
-        let convert = SeqWriter::new(path, &matrix, header, None, &PartitionFmt::None);
+        let convert = SeqWriter::new(path, &matrix, &header, None, &PartitionFmt::None);
         let int = convert.get_matrix_int();
         let mat_int = int.get(&0).unwrap();
         let mat_int1 = int.get(&1).unwrap();

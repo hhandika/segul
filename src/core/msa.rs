@@ -48,7 +48,7 @@ impl<'a> MSAlignment<'a> {
         let mut save = SeqWriter::new(
             output,
             &concat.alignment,
-            concat.header.clone(),
+            &concat.header,
             Some(&concat.partition),
             &self.part_fmt,
         );

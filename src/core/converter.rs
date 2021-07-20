@@ -53,7 +53,7 @@ impl<'a> Converter<'a> {
     }
 
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
-        let mut convert = SeqWriter::new(self.output, matrix, header, None, &PartitionFmt::None);
+        let mut convert = SeqWriter::new(self.output, matrix, &header, None, &PartitionFmt::None);
         convert
             .write_sequence(self.output_fmt)
             .expect("Failed writing output files");
