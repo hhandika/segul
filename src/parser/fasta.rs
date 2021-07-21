@@ -7,7 +7,8 @@ use std::path::Path;
 
 use indexmap::{IndexMap, IndexSet};
 
-use crate::helper::common::{self, DataType, Header};
+use crate::helper::alphabet;
+use crate::helper::common::{DataType, Header};
 use crate::helper::sequence::SeqCheck;
 
 pub fn parse_only_id(input: &Path) -> IndexSet<String> {
@@ -65,7 +66,7 @@ impl<'a> Fasta<'a> {
                     fas.id
                 ),
                 None => {
-                    common::check_valid_seq(&self.input, &self.datatype, &fas.id, &fas.seq);
+                    alphabet::check_valid_seq(&self.input, &self.datatype, &fas.id, &fas.seq);
                     self.matrix.insert(fas.id, fas.seq);
                 }
             });

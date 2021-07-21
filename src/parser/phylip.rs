@@ -7,7 +7,8 @@ use ahash::AHashMap as HashMap;
 use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 
-use crate::helper::common::{self, DataType, Header};
+use crate::helper::alphabet;
+use crate::helper::common::{DataType, Header};
 use crate::helper::sequence::SeqCheck;
 
 pub struct Phylip<'a> {
@@ -73,13 +74,13 @@ impl<'a> Phylip<'a> {
         let mut ids: HashMap<usize, String> = HashMap::new();
         records.into_iter().for_each(|rec| match rec.id {
             Some(id) => {
-                common::check_valid_seq(&self.input, &self.datatype, &id, &rec.seq);
+                alphabet::check_valid_seq(&self.input, &self.datatype, &id, &rec.seq);
                 ids.insert(rec.pos, id.clone());
                 self.insert_matrix(id, rec.seq);
             }
             None => {
                 if let Some(id) = ids.get(&rec.pos) {
-                    common::check_valid_seq(&self.input, &self.datatype, &id, &rec.seq);
+                    alphabet::check_valid_seq(&self.input, &self.datatype, &id, &rec.seq);
                     if let Some(value) = self.matrix.get_mut(id) {
                         value.push_str(&rec.seq);
                     }

@@ -8,7 +8,8 @@ use lazy_static::lazy_static;
 use nom::{bytes::complete, character, sequence, IResult};
 use regex::Regex;
 
-use crate::helper::common::{self, DataType, Header};
+use crate::helper::alphabet;
+use crate::helper::common::{DataType, Header};
 use crate::helper::sequence::SeqCheck;
 
 pub struct Nexus<'a> {
@@ -120,7 +121,7 @@ impl<'a> Nexus<'a> {
 
     fn parse_matrix(&mut self, matrix: &[(String, String)]) {
         matrix.iter().for_each(|(id, seq)| {
-            common::check_valid_seq(&self.input, &self.datatype, &id, &seq);
+            alphabet::check_valid_seq(&self.input, &self.datatype, &id, &seq);
             if self.interleave {
                 self.insert_matrix_interleave(id.to_string(), seq.to_string());
             } else {
