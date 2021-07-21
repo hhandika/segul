@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::helper::common::DataType;
+use crate::helper::types::DataType;
 
 pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
     if !is_valid_dna(dna) {

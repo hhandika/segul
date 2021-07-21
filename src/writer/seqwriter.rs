@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::helper::common::{Header, OutputFmt, Partition, PartitionFmt};
+use crate::helper::types::{Header, OutputFmt, Partition, PartitionFmt};
 use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {

@@ -7,8 +7,8 @@ use glob::glob;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
-use crate::helper::common::{DataType, InputFmt};
 use crate::helper::sequence;
+use crate::helper::types::{DataType, InputFmt};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;

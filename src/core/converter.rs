@@ -4,8 +4,8 @@ use indexmap::IndexMap;
 
 use crate::writer::seqwriter::SeqWriter;
 
-use crate::helper::common::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::sequence::Sequence;
+use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 
 pub struct Converter<'a> {
     input: &'a Path,

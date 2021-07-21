@@ -3,7 +3,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::helper::common::{DataType, Header, InputFmt};
+use crate::helper::types::{DataType, Header, InputFmt};
 use crate::parse_sequence;
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;

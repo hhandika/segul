@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 
 use crate::core::summary::{CharSummary, Chars, Completeness, SiteSummary, Sites};
-use crate::helper::common::DataType;
+use crate::helper::types::DataType;
 use crate::helper::utils;
 
 pub fn print_stats(site: &Sites, dna: &Chars) -> Result<()> {

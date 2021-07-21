@@ -8,8 +8,8 @@ use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 
 use crate::helper::alphabet;
-use crate::helper::common::{DataType, Header};
 use crate::helper::sequence::SeqCheck;
+use crate::helper::types::{DataType, Header};
 
 pub struct Phylip<'a> {
     input: &'a Path,

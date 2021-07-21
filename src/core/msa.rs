@@ -9,9 +9,9 @@ use std::path::{Path, PathBuf};
 use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
-use crate::helper::common::{DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt};
 use crate::helper::finder::IDs;
 use crate::helper::sequence::Sequence;
+use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt};
 use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
 

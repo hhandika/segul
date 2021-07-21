@@ -8,8 +8,8 @@ use std::path::Path;
 use indexmap::{IndexMap, IndexSet};
 
 use crate::helper::alphabet;
-use crate::helper::common::{DataType, Header};
 use crate::helper::sequence::SeqCheck;
+use crate::helper::types::{DataType, Header};
 
 pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("Failed opening a fasta file.");

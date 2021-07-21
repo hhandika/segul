@@ -8,8 +8,8 @@ use rayon::prelude::*;
 
 use crate::core::msa::MSAlignment;
 use crate::core::summary;
-use crate::helper::common::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::sequence::Sequence;
+use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
 
 pub enum Params {

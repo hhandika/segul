@@ -9,9 +9,9 @@ use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::helper::common::{DataType, Header, InputFmt};
 use crate::helper::finder::IDs;
 use crate::helper::sequence::Sequence;
+use crate::helper::types::{DataType, Header, InputFmt};
 use crate::helper::utils;
 use crate::writer::sumwriter;
 

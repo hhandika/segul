@@ -9,8 +9,8 @@ use nom::{bytes::complete, character, sequence, IResult};
 use regex::Regex;
 
 use crate::helper::alphabet;
-use crate::helper::common::{DataType, Header};
 use crate::helper::sequence::SeqCheck;
+use crate::helper::types::{DataType, Header};
 
 pub struct Nexus<'a> {
     input: &'a Path,
