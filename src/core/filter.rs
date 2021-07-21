@@ -3,6 +3,7 @@ use std::io::{self, BufWriter, Result, Write};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
+use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::core::msa::MSAlignment;
@@ -126,18 +127,17 @@ impl<'a> SeqFilter<'a> {
     }
 
     fn get_pars_inf(&self, file: &Path) -> usize {
-        let aln = self.get_alignment(file);
-        summary::get_pars_inf(&aln.matrix, self.datatype)
+        let (matrix, _) = self.get_alignment(file);
+        summary::get_pars_inf(&matrix, self.datatype)
     }
 
     fn get_header(&self, file: &Path) -> Header {
-        let aln = self.get_alignment(file);
-        aln.header
+        let (_, header) = self.get_alignment(file);
+        header
     }
 
-    fn get_alignment(&self, file: &Path) -> Sequence {
-        let mut aln = Sequence::new();
-        aln.get_alignment(file, self.input_fmt, &self.datatype);
-        aln
+    fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
+        let aln = Sequence::new(file, &self.datatype);
+        aln.get_alignment(self.input_fmt)
     }
 }

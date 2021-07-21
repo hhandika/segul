@@ -1,6 +1,7 @@
 //! Multi-Sequence Alignment Module.
 //! Contains methods for working with multi-sequence alignments.
 
+use std::ffi::OsStr;
 use std::io::{self, Result, Write};
 use std::iter;
 use std::path::{Path, PathBuf};
@@ -102,62 +103,62 @@ impl<'a> Concat<'a> {
         spin.set_message("Indexing alignments...");
         let id = IDs::new(&self.files, &self.input_fmt, self.datatype).get_id_all();
         spin.set_message("Concatenating alignments...");
-        let (alignment, nchar, partition) = self.concat(&id);
-        self.alignment = alignment;
+        self.concat(&id);
         self.header.ntax = self.alignment.len();
-        self.header.nchar = nchar;
-        self.partition = partition;
     }
 
-    fn get_alignment(&self, file: &Path) -> Sequence {
-        let mut aln = Sequence::new();
-        aln.get_alignment(file, &self.input_fmt, self.datatype);
+    fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
+        let aln = Sequence::new(file, self.datatype);
+        let (matrix, header) = aln.get_alignment(&self.input_fmt);
         assert!(
-            aln.header.ntax != 0,
+            header.ntax != 0,
             "Found an empty alignment {}",
             file.display()
         );
-        aln
+        (matrix, header)
     }
 
-    fn concat(
-        &mut self,
-        id: &IndexSet<String>,
-    ) -> (IndexMap<String, String>, usize, Vec<Partition>) {
+    fn parse_aln_name(&self, file: &Path) -> String {
+        file.file_stem()
+            .and_then(OsStr::to_str)
+            .expect("Failed getting alignment name from the file")
+            .to_string()
+    }
+
+    fn concat(&mut self, id: &IndexSet<String>) {
         let mut alignment = IndexMap::new();
         let mut nchar = 0;
         let mut gene_start = 1;
         let mut partition = Vec::new();
         self.files.iter().for_each(|file| {
-            let aln = self.get_alignment(file);
-            nchar += aln.header.nchar; // increment sequence length using the value from parser
-            self.get_partition(&mut partition, &aln.name, gene_start, nchar);
+            let (matrix, header) = self.get_alignment(file);
+            nchar += header.nchar; // increment sequence length using the value from parser
+            let gene_name = self.parse_aln_name(file);
+            let part = self.get_partition(&gene_name, gene_start, nchar);
+            partition.push(part);
             gene_start = nchar + 1;
-            id.iter().for_each(|id| match aln.matrix.get(id) {
+            id.iter().for_each(|id| match matrix.get(id) {
                 Some(seq) => {
                     self.insert_alignment(&mut alignment, id, seq);
                 }
                 None => {
-                    let seq = self.get_missings(aln.header.nchar);
+                    let seq = self.get_missings(header.nchar);
                     self.insert_alignment(&mut alignment, id, &seq);
                 }
             });
         });
-        (alignment, nchar, partition)
+
+        self.alignment = alignment;
+        self.header.nchar = nchar;
+        self.partition = partition;
     }
 
-    fn get_partition(
-        &self,
-        partition: &mut Vec<Partition>,
-        gene_name: &str,
-        start: usize,
-        end: usize,
-    ) {
+    fn get_partition(&self, gene_name: &str, start: usize, end: usize) -> Partition {
         let mut part = Partition::new();
         part.gene = gene_name.to_string();
         part.start = start;
         part.end = end;
-        partition.push(part);
+        part
     }
 
     fn insert_alignment(&self, alignment: &mut IndexMap<String, String>, id: &str, seq: &str) {

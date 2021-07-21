@@ -9,7 +9,7 @@ use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::helper::common::{DataType, InputFmt};
+use crate::helper::common::{DataType, Header, InputFmt};
 use crate::helper::finder::IDs;
 use crate::helper::sequence::Sequence;
 use crate::helper::utils;
@@ -91,12 +91,12 @@ impl<'a> SeqStats<'a> {
     }
 
     fn get_stats(&self, path: &Path) -> (Sites, Chars) {
-        let mut aln = Sequence::new();
-        aln.get_alignment(path, self.input_format, self.datatype);
+        let aln = Sequence::new(path, self.datatype);
+        let (matrix, header) = aln.get_alignment(self.input_format);
         let mut dna = Chars::new();
-        dna.count_chars(&aln);
+        dna.count_chars(&matrix, &header);
         let mut sites = Sites::new();
-        sites.get_stats(path, &aln.matrix, self.datatype);
+        sites.get_stats(path, &matrix, self.datatype);
 
         (sites, dna)
     }
@@ -520,10 +520,10 @@ impl Chars {
         }
     }
 
-    fn count_chars(&mut self, aln: &Sequence) {
-        self.ntax = aln.header.ntax;
-        self.total_chars = aln.header.nchar * self.ntax;
-        aln.matrix
+    fn count_chars(&mut self, matrix: &IndexMap<String, String>, header: &Header) {
+        self.ntax = header.ntax;
+        self.total_chars = header.nchar * self.ntax;
+        matrix
             .values()
             .flat_map(|seqs| seqs.chars())
             .for_each(|ch| {
@@ -631,10 +631,10 @@ mod test {
     fn get_site_stats_test() {
         let path = Path::new("test_files/concat.fasta");
         let input_format = InputFmt::Fasta;
-        let mut aln = Sequence::new();
-        aln.get_alignment(path, &input_format, &DNA);
+        let aln = Sequence::new(path, &DNA);
+        let (matrix, _) = aln.get_alignment(&input_format);
         let mut site = Sites::new();
-        let smat = site.index_sites(&aln.matrix, &DNA);
+        let smat = site.index_sites(&matrix, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(18, site.conserved);
         assert_eq!(8, site.variable);
@@ -652,10 +652,10 @@ mod test {
     fn dna_count_test() {
         let path = Path::new("test_files/concat.fasta");
         let input_format = InputFmt::Fasta;
-        let mut aln = Sequence::new();
-        aln.get_alignment(path, &input_format, &DNA);
+        let aln = Sequence::new(path, &DNA);
+        let (matrix, header) = aln.get_alignment(&input_format);
         let mut dna = Chars::new();
-        dna.count_chars(&aln);
+        dna.count_chars(&matrix, &header);
         assert_eq!(4, dna.ntax);
         assert_eq!(104, dna.total_chars);
         assert_eq!(Some(&48), dna.chars.get(&'A'));

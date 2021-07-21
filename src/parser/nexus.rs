@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Read, Result};
+use std::io::{BufReader, Read};
 use std::path::Path;
 
 use indexmap::{IndexMap, IndexSet};
@@ -29,7 +29,7 @@ impl<'a> Nexus<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<()> {
+    pub fn parse(&mut self) {
         let blocks = self.get_blocks();
         self.parse_blocks(&blocks);
         let mut seq_info = SeqCheck::new();
@@ -37,7 +37,6 @@ impl<'a> Nexus<'a> {
         self.header.aligned = seq_info.is_alignment;
         self.check_ntax_matches();
         self.check_nchar_matches(seq_info.longest);
-        Ok(())
     }
 
     pub fn parse_only_id(&mut self) -> IndexSet<String> {
@@ -348,7 +347,7 @@ mod test {
     fn nexus_reading_simple_test() {
         let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
         assert_eq!(1, nex.matrix.len());
     }
 
@@ -356,7 +355,7 @@ mod test {
     fn nexus_reading_complete_test() {
         let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
         assert_eq!(5, nex.matrix.len());
     }
 
@@ -364,7 +363,7 @@ mod test {
     fn nexus_reading_tabulated_test() {
         let sample = Path::new("test_files/tabulated.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
         assert_eq!(2, nex.matrix.len());
     }
 
@@ -372,7 +371,7 @@ mod test {
     fn nexus_parsing_object_test() {
         let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
         assert_eq!(5, nex.header.ntax);
         assert_eq!(802, nex.header.nchar);
         assert_eq!("dna", nex.header.datatype);
@@ -393,7 +392,7 @@ mod test {
     fn check_match_ntax_test() {
         let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
     }
 
     #[test]
@@ -401,7 +400,7 @@ mod test {
     fn check_match_ntax_panic_test() {
         let sample = Path::new("test_files/unmatched_block.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
     }
 
     #[test]
@@ -409,7 +408,7 @@ mod test {
     fn check_invalid_nexus_test() {
         let sample = Path::new("test_files/simple.fas");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
     }
 
     #[test]
@@ -417,7 +416,7 @@ mod test {
     fn nexus_duplicate_panic_test() {
         let sample = Path::new("test_files/duplicates.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
     }
 
     #[test]
@@ -433,14 +432,14 @@ mod test {
     fn nexus_space_panic_test() {
         let sample = Path::new("test_files/idspaces.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
     }
 
     #[test]
     fn nexus_sequence_test() {
         let sample = Path::new("test_files/tabulated.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
         let key = String::from("ABEF");
         let res = String::from("gatata---");
         assert_eq!(Some(&res), nex.matrix.get(&key));
@@ -450,7 +449,7 @@ mod test {
     fn nexus_parse_interleave() {
         let sample = Path::new("test_files/interleave.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
         assert_eq!(3, nex.matrix.len());
     }
 
@@ -458,7 +457,7 @@ mod test {
     fn nexus_parse_interleave_res_test() {
         let sample = Path::new("test_files/interleave.nex");
         let mut nex = Nexus::new(sample, &DNA);
-        nex.parse().unwrap();
+        nex.parse();
         let key = String::from("ABCD");
         let res = String::from("gatatagatatt");
         assert_eq!(Some(&res), nex.matrix.get(&key));
@@ -468,7 +467,7 @@ mod test {
     fn nexus_simple_aa_test() {
         let sample = Path::new("test_files/simple_aa.nex");
         let mut nex = Nexus::new(sample, &AA);
-        nex.parse().unwrap();
+        nex.parse();
         let key = String::from("ABCE");
         let res = String::from("MAYPMQLGFQDATSPI");
         assert_eq!(Some(&res), nex.matrix.get(&key));

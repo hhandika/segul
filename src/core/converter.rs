@@ -32,24 +32,23 @@ impl<'a> Converter<'a> {
     }
 
     pub fn convert_unsorted(&mut self, input_fmt: &InputFmt) {
-        let seq = self.get_sequence(input_fmt);
-        self.convert(&seq.matrix, seq.header);
+        let (matrix, header) = self.get_sequence(input_fmt);
+        self.convert(&matrix, header);
     }
 
     pub fn convert_sorted(&mut self, input_fmt: &InputFmt) {
-        let mut seq = self.get_sequence(input_fmt);
-        seq.matrix.sort_keys();
-        self.convert(&seq.matrix, seq.header)
+        let (mut matrix, header) = self.get_sequence(input_fmt);
+        matrix.sort_keys();
+        self.convert(&matrix, header)
     }
 
     pub fn set_isdir(&mut self, is_dir: bool) {
         self.is_dir = is_dir;
     }
 
-    fn get_sequence(&mut self, input_fmt: &InputFmt) -> Sequence {
-        let mut sequence = Sequence::new();
-        sequence.get(self.input, input_fmt, self.datatype);
-        sequence
+    fn get_sequence(&mut self, input_fmt: &InputFmt) -> (IndexMap<String, String>, Header) {
+        let seq = Sequence::new(self.input, self.datatype);
+        seq.get(input_fmt)
     }
 
     fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
