@@ -219,9 +219,9 @@ impl<R: Read> Reader<R> {
                 } else {
                     records.id = None;
                     records.seq = line.to_string();
+                    records.interleave = true;
                 }
 
-                records.interleave = self.interleave;
                 records.pos = self.pos;
                 self.pos += 1;
 
