@@ -2,7 +2,15 @@ use std::path::Path;
 
 use crate::helper::types::DataType;
 
+// Alphabeth for dna.
+// Include IUPAC characters plus ambiguous, missing, and gap characters (?, -, *, etc.)
+// Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
 const DNA: &[u8] = b"ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?";
+
+// Alphabeth for amino acid.
+// Include 20 IUPAC characters,
+// ambiguous, missing, and gap characters (X,?,-,.,~, *, etc.)
+// Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
 const AA: &[u8] = b"ARNDCQEGHILKMFPSTWYVYXBZJU?-.~*";
 
 pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
@@ -35,17 +43,10 @@ fn check_valid_aa(input: &Path, id: &str, aa: &str) {
     }
 }
 
-// Alphabeth for dna.
-// Include IUPAC characters plus ambiguous, missing, and gap characters (?, -, *, etc.)
-// Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
 fn is_valid_dna(dna: &str) -> bool {
     dna.bytes().all(|char| DNA.contains(&char))
 }
 
-// Alphabeth for amino acid.
-// Include 20 IUPAC characters,
-// ambiguous, missing, and gap characters (X,?,-,.,~, *, etc.)
-// Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
 fn is_valid_aa(aa: &str) -> bool {
     aa.bytes().all(|char| AA.contains(&char))
 }
