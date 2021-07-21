@@ -15,38 +15,28 @@ pub struct Sequence<'a> {
 
 impl<'a> Sequence<'a> {
     pub fn new(file: &'a Path, datatype: &'a DataType) -> Self {
-        Self {
-            file,
-            // input_fmt,
-            datatype,
-        }
+        Self { file, datatype }
     }
 
-    #[inline]
     pub fn get_alignment(&self, input_fmt: &'a InputFmt) -> (IndexMap<String, String>, Header) {
         let (matrix, header) = self.get(input_fmt);
-        self.check_is_alignment(self.file, &header);
+        assert!(
+            header.aligned,
+            "Ups. Something is wrong. {} is not an alignment",
+            self.file.display()
+        );
         (matrix, header)
     }
 
     pub fn get(&self, input_fmt: &'a InputFmt) -> (IndexMap<String, String>, Header) {
         match input_fmt {
+            InputFmt::Fasta => parse_sequence!(self, file, datatype, Fasta),
             InputFmt::Nexus => parse_sequence!(self, file, datatype, Nexus),
             InputFmt::Phylip => parse_sequence!(self, file, datatype, Phylip),
-            InputFmt::Fasta => parse_sequence!(self, file, datatype, Fasta),
             InputFmt::Auto => {
                 let input_fmt = common::infer_input_auto(self.file);
                 self.get(&input_fmt)
             }
-        }
-    }
-
-    fn check_is_alignment(&self, file: &Path, header: &Header) {
-        if !header.aligned {
-            panic!(
-                "Ups. Something is wrong. {} is not an alignment",
-                file.display()
-            );
         }
     }
 }
