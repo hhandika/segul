@@ -8,7 +8,8 @@ use lazy_static::lazy_static;
 use nom::{bytes::complete, character, sequence, IResult};
 use regex::Regex;
 
-use crate::helper::common::{self, DataType, Header, SeqCheck};
+use crate::helper::common::{self, DataType, Header};
+use crate::helper::sequence::SeqCheck;
 
 pub struct Nexus<'a> {
     input: &'a Path,
@@ -33,7 +34,7 @@ impl<'a> Nexus<'a> {
         let blocks = self.get_blocks();
         self.parse_blocks(&blocks);
         let mut seq_info = SeqCheck::new();
-        seq_info.get_sequence_info(&self.matrix);
+        seq_info.check(&self.matrix);
         self.header.aligned = seq_info.is_alignment;
         self.check_ntax_matches();
         self.check_nchar_matches(seq_info.longest);

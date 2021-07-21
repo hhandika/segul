@@ -7,7 +7,8 @@ use std::path::Path;
 
 use indexmap::{IndexMap, IndexSet};
 
-use crate::helper::common::{self, DataType, Header, SeqCheck};
+use crate::helper::common::{self, DataType, Header};
+use crate::helper::sequence::SeqCheck;
 
 pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("Failed opening a fasta file.");
@@ -46,7 +47,7 @@ impl<'a> Fasta<'a> {
         let buff = BufReader::new(file);
         self.parse_matrix(buff);
         let mut seq_info = SeqCheck::new();
-        seq_info.get_sequence_info(&self.matrix);
+        seq_info.check(&self.matrix);
         self.header.aligned = seq_info.is_alignment;
         self.header.nchar = seq_info.longest;
         self.header.ntax = self.matrix.len();

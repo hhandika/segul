@@ -41,6 +41,48 @@ impl<'a> Sequence<'a> {
     }
 }
 
+pub struct SeqCheck {
+    pub shortest: usize,
+    pub longest: usize,
+    pub is_alignment: bool,
+}
+
+impl SeqCheck {
+    pub fn new() -> Self {
+        Self {
+            shortest: 0,
+            longest: 0,
+            is_alignment: false,
+        }
+    }
+
+    pub fn check(&mut self, matrix: &IndexMap<String, String>) {
+        self.get_shortest_seq_len(matrix);
+        self.get_longest_seq_len(matrix);
+        self.check_is_alignment();
+    }
+
+    fn check_is_alignment(&mut self) {
+        self.is_alignment = self.shortest == self.longest;
+    }
+
+    fn get_shortest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
+        self.shortest = matrix
+            .values()
+            .map(|s| s.len())
+            .min()
+            .expect("Failed getting the shortest failed length");
+    }
+
+    fn get_longest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
+        self.longest = matrix
+            .values()
+            .map(|s| s.len())
+            .max()
+            .expect("Failed getting the longest failed length");
+    }
+}
+
 #[macro_export]
 macro_rules! parse_sequence {
     ($self:ident, $file:ident, $datatype:ident, $format:ident) => {{

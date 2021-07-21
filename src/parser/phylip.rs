@@ -7,7 +7,8 @@ use ahash::AHashMap as HashMap;
 use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 
-use crate::helper::common::{self, DataType, Header, SeqCheck};
+use crate::helper::common::{self, DataType, Header};
+use crate::helper::sequence::SeqCheck;
 
 pub struct Phylip<'a> {
     input: &'a Path,
@@ -29,7 +30,7 @@ impl<'a> Phylip<'a> {
     pub fn parse(&mut self) {
         self.parse_matrix().expect("Failed parsing phylip file");
         let mut seq_info = SeqCheck::new();
-        seq_info.get_sequence_info(&self.matrix);
+        seq_info.check(&self.matrix);
         self.header.aligned = seq_info.is_alignment;
         self.match_header_datatype();
         self.check_ntax_matches();
