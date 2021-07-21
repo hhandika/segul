@@ -2,7 +2,7 @@ use clap::ArgMatches;
 
 use crate::cli::*;
 use crate::core::filter;
-use crate::helper::common::{DataType, InputFmt, OutputFmt};
+use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl InputCli for FilterParser<'_> {}
 impl OutputCli for FilterParser<'_> {}

@@ -20,8 +20,8 @@ use crate::cli::summary::SummaryParser;
 
 use crate::core::msa;
 use crate::core::summary::SeqStats;
-use crate::helper::common::{DataType, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::finder::{Files, IDs};
+use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
 
 pub fn parse_cli(version: &str) {

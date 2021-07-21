@@ -1,7 +1,7 @@
 use clap::ArgMatches;
 
 use crate::cli::*;
-use crate::helper::common::{DataType, InputFmt, OutputFmt};
+use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl PartCLi for ConcatParser<'_> {}
 

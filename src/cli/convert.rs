@@ -2,7 +2,7 @@ use crate::core::converter::Converter;
 use clap::ArgMatches;
 
 use crate::cli::*;
-use crate::helper::common::{DataType, InputFmt, OutputFmt};
+use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl InputCli for ConvertParser<'_> {}
 impl OutputCli for ConvertParser<'_> {}

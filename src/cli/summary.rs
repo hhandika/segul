@@ -1,7 +1,7 @@
 use clap::ArgMatches;
 
 use crate::cli::*;
-use crate::helper::common::{DataType, InputFmt};
+use crate::helper::types::{DataType, InputFmt};
 
 impl InputCli for SummaryParser<'_> {
     // We can't ignore datatype here because
