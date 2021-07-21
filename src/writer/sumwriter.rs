@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 
 use crate::core::summary::{CharSummary, Chars, Completeness, SiteSummary, Sites};
+use crate::helper::alphabet;
 use crate::helper::types::DataType;
 use crate::helper::utils;
 
@@ -52,8 +53,8 @@ pub fn print_stats(site: &Sites, dna: &Chars) -> Result<()> {
 trait Alphabet {
     fn get_alphabet(&self, datatype: &DataType) -> &str {
         match datatype {
-            DataType::Dna => "-?ACGTNRYSWKMBDHV.",
-            DataType::Aa => "?-ARNDCQEGHILKMFPSTWYVYXBZJU.~*",
+            DataType::Dna => alphabet::DNA_STR_UPPERCASE,
+            DataType::Aa => alphabet::AA_STR_UPPERCASE,
             _ => unreachable!(),
         }
     }

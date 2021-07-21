@@ -2,16 +2,19 @@ use std::path::Path;
 
 use crate::helper::types::DataType;
 
+pub const DNA_STR_UPPERCASE: &str = "?-ACGTNRYSWKMBDHV.";
+pub const AA_STR_UPPERCASE: &str = "?-ARNDCQEGHILKMFPSTWYVYXBZJU*.~";
+
 // Alphabeth for dna.
 // Include IUPAC characters plus ambiguous, missing, and gap characters (?, -, *, etc.)
 // Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
-const DNA: &[u8] = b"ACGTRYSWKMBDHVNacgtryswkmbdhvn.-?";
+const DNA: &[u8] = b"?-ACGTRYSWKMBDHVNacgtryswkmbdhvn.";
 
 // Alphabeth for amino acid.
 // Include 20 IUPAC characters,
 // ambiguous, missing, and gap characters (X,?,-,.,~, *, etc.)
 // Source: http://www.iqtree.org/doc/Frequently-Asked-Questions
-const AA: &[u8] = b"ARNDCQEGHILKMFPSTWYVYXBZJU?-.~*";
+const AA: &[u8] = b"?-ARNDCQEGHILKMFPSTWYVYXBZJU*.~";
 
 pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
     if !is_valid_dna(dna) {
