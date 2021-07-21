@@ -41,34 +41,6 @@ impl<'a> Sequence<'a> {
         }
     }
 
-    // fn from_nexus(&mut self, file: &Path, datatype: &DataType) {
-    //     let mut nex = Nexus::new(file, datatype);
-    //     nex.parse().expect("Failed reading a nexus file");
-    //     self.get_sequence(nex.matrix, nex.header)
-    // }
-
-    // fn from_phylip(&mut self, file: &Path, datatype: &DataType) {
-    //     let mut phy = Phylip::new(file, datatype);
-    //     phy.parse().expect("Failed reading a phylip file");
-    //     self.get_sequence(phy.matrix, phy.header);
-    // }
-
-    // fn from_fasta(&mut self, file: &Path, datatype: &DataType) {
-    //     let mut fas = Fasta::new(file, datatype);
-    //     fas.parse();
-    //     self.get_sequence(fas.matrix, fas.header);
-    // }
-
-    // fn get_seq(&mut self, file: &Path, datatype: &DataType) {
-    //     let (matrix, header) = parse_sequence!(file, datatype, Phylip);
-    // }
-
-    // #[inline]
-    // fn get_sequence(&mut self, matrix: IndexMap<String, String>, header: Header) {
-    //     self.matrix = matrix;
-    //     self.header = header;
-    // }
-
     fn check_is_alignment(&self, file: &Path, header: &Header) {
         if !header.aligned {
             panic!(
