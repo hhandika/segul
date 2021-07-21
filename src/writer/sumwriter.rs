@@ -5,8 +5,8 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::core::summary::{CharSummary, Chars, Completeness, SiteSummary, Sites};
 use crate::helper::alphabet;
+use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites};
 use crate::helper::types::DataType;
 use crate::helper::utils;
 

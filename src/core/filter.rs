@@ -7,8 +7,8 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::core::msa::MSAlignment;
-use crate::core::summary;
 use crate::helper::sequence::Sequence;
+use crate::helper::stats;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
 
@@ -128,7 +128,7 @@ impl<'a> SeqFilter<'a> {
 
     fn get_pars_inf(&self, file: &Path) -> usize {
         let (matrix, _) = self.get_alignment(file);
-        summary::get_pars_inf(&matrix, self.datatype)
+        stats::get_pars_inf(&matrix, self.datatype)
     }
 
     fn get_header(&self, file: &Path) -> Header {
