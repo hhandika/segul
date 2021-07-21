@@ -107,24 +107,6 @@ impl<'a> Concat<'a> {
         self.header.ntax = self.alignment.len();
     }
 
-    fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
-        let aln = Sequence::new(file, self.datatype);
-        let (matrix, header) = aln.get_alignment(&self.input_fmt);
-        assert!(
-            header.ntax != 0,
-            "Found an empty alignment {}",
-            file.display()
-        );
-        (matrix, header)
-    }
-
-    fn parse_aln_name(&self, file: &Path) -> String {
-        file.file_stem()
-            .and_then(OsStr::to_str)
-            .expect("Failed getting alignment name from the file")
-            .to_string()
-    }
-
     fn concat(&mut self, id: &IndexSet<String>) {
         let mut alignment = IndexMap::new();
         let mut nchar = 0;
@@ -153,6 +135,17 @@ impl<'a> Concat<'a> {
         self.partition = partition;
     }
 
+    fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
+        let aln = Sequence::new(file, self.datatype);
+        let (matrix, header) = aln.get_alignment(&self.input_fmt);
+        assert!(
+            header.ntax != 0,
+            "Found an empty alignment {}",
+            file.display()
+        );
+        (matrix, header)
+    }
+
     fn get_partition(&self, gene_name: &str, start: usize, end: usize) -> Partition {
         let mut part = Partition::new();
         part.gene = gene_name.to_string();
@@ -168,6 +161,13 @@ impl<'a> Concat<'a> {
                 alignment.insert(id.to_string(), seq.to_string());
             }
         }
+    }
+
+    fn parse_aln_name(&self, file: &Path) -> String {
+        file.file_stem()
+            .and_then(OsStr::to_str)
+            .expect("Failed getting alignment name from the file")
+            .to_string()
     }
 
     #[inline]
