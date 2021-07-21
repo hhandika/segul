@@ -3,6 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Lines, Result};
 use std::path::Path;
 
+use ahash::AHashMap as HashMap;
 use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 
@@ -68,7 +69,7 @@ impl<'a> Phylip<'a> {
     fn parse_matrix(&mut self) -> Result<()> {
         let buff = self.get_header()?;
         let records = Reader::new(buff, self.header.ntax);
-        let mut ids: IndexMap<usize, String> = IndexMap::new();
+        let mut ids: HashMap<usize, String> = HashMap::new();
         records.into_iter().for_each(|rec| match rec.id {
             Some(id) => {
                 common::check_valid_seq(&self.input, &self.datatype, &id, &rec.seq);
