@@ -1,7 +1,4 @@
-use std::ffi::OsStr;
 use std::path::Path;
-
-use indexmap::IndexMap;
 
 pub enum InputFmt {
     Auto,
@@ -71,64 +68,6 @@ impl Header {
             gap: '-',
             aligned: false,
         }
-    }
-}
-
-pub fn infer_input_auto(input: &Path) -> InputFmt {
-    let ext: &str = input
-        .extension()
-        .and_then(OsStr::to_str)
-        .expect("Failed parsing extension");
-    match ext {
-        "fas" | "fa" | "fasta" => InputFmt::Fasta,
-        "nex" | "nexus" => InputFmt::Nexus,
-        "phy" | "phylip" => InputFmt::Phylip,
-        _ => panic!(
-            "Ups... The program cannot recognize the file extension. \
-        Maybe try specify the input format using the -f or --format option."
-        ),
-    }
-}
-
-pub struct SeqCheck {
-    pub shortest: usize,
-    pub longest: usize,
-    pub is_alignment: bool,
-}
-
-impl SeqCheck {
-    pub fn new() -> Self {
-        Self {
-            shortest: 0,
-            longest: 0,
-            is_alignment: false,
-        }
-    }
-
-    pub fn get_sequence_info(&mut self, matrix: &IndexMap<String, String>) {
-        self.get_shortest_seq_len(matrix);
-        self.get_longest_seq_len(matrix);
-        self.check_is_alignment();
-    }
-
-    fn check_is_alignment(&mut self) {
-        self.is_alignment = self.shortest == self.longest;
-    }
-
-    fn get_shortest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
-        self.shortest = matrix
-            .values()
-            .map(|s| s.len())
-            .min()
-            .expect("Failed getting the shortest failed length");
-    }
-
-    fn get_longest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
-        self.longest = matrix
-            .values()
-            .map(|s| s.len())
-            .max()
-            .expect("Failed getting the longest failed length");
     }
 }
 

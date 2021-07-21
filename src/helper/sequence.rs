@@ -1,12 +1,29 @@
+use std::ffi::OsStr;
 use std::path::Path;
 
 use indexmap::IndexMap;
 
-use crate::helper::common::{self, DataType, Header, InputFmt};
+use crate::helper::common::{DataType, Header, InputFmt};
 use crate::parse_sequence;
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
+
+pub fn infer_input_auto(input: &Path) -> InputFmt {
+    let ext: &str = input
+        .extension()
+        .and_then(OsStr::to_str)
+        .expect("Failed parsing extension");
+    match ext {
+        "fas" | "fa" | "fasta" => InputFmt::Fasta,
+        "nex" | "nexus" => InputFmt::Nexus,
+        "phy" | "phylip" => InputFmt::Phylip,
+        _ => panic!(
+            "Ups... The program cannot recognize the file extension. \
+        Maybe try specify the input format using the -f or --format option."
+        ),
+    }
+}
 
 pub struct Sequence<'a> {
     file: &'a Path,
@@ -34,7 +51,7 @@ impl<'a> Sequence<'a> {
             InputFmt::Nexus => parse_sequence!(self, file, datatype, Nexus),
             InputFmt::Phylip => parse_sequence!(self, file, datatype, Phylip),
             InputFmt::Auto => {
-                let input_fmt = common::infer_input_auto(self.file);
+                let input_fmt = infer_input_auto(self.file);
                 self.get(&input_fmt)
             }
         }

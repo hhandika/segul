@@ -7,7 +7,8 @@ use glob::glob;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
-use crate::helper::common::{self, DataType, InputFmt};
+use crate::helper::common::{DataType, InputFmt};
+use crate::helper::sequence;
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -91,7 +92,7 @@ impl<'a> IDs<'a> {
     fn get_id_auto(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
-            let input_fmt = common::infer_input_auto(file);
+            let input_fmt = sequence::infer_input_auto(file);
             match input_fmt {
                 InputFmt::Fasta => s.send(fasta::parse_only_id(file)).unwrap(),
                 InputFmt::Nexus => s
