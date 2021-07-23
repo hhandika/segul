@@ -1,3 +1,5 @@
+use indexmap::IndexMap;
+
 pub enum InputFmt {
     Auto,
     Fasta,
@@ -29,6 +31,8 @@ pub enum DataType {
     Aa,
     Ignore,
 }
+
+pub type SeqMatrix = IndexMap<String, String>;
 
 pub struct Partition {
     pub gene: String,

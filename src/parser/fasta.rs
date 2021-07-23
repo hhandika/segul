@@ -9,7 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
-use crate::helper::types::{DataType, Header};
+use crate::helper::types::{DataType, Header, SeqMatrix};
 
 pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("Failed opening a fasta file.");
@@ -29,7 +29,7 @@ pub fn parse_only_id(input: &Path) -> IndexSet<String> {
 pub struct Fasta<'a> {
     input: &'a Path,
     datatype: &'a DataType,
-    pub matrix: IndexMap<String, String>,
+    pub matrix: SeqMatrix,
     pub header: Header,
 }
 

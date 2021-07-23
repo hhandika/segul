@@ -1,9 +1,7 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use indexmap::IndexMap;
-
-use crate::helper::types::{DataType, Header, InputFmt};
+use crate::helper::types::{DataType, Header, InputFmt, SeqMatrix};
 use crate::parse_sequence;
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
@@ -35,7 +33,7 @@ impl<'a> Sequence<'a> {
         Self { file, datatype }
     }
 
-    pub fn get_alignment(&self, input_fmt: &'a InputFmt) -> (IndexMap<String, String>, Header) {
+    pub fn get_alignment(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
         let (matrix, header) = self.get(input_fmt);
         assert!(
             header.aligned,
@@ -45,7 +43,7 @@ impl<'a> Sequence<'a> {
         (matrix, header)
     }
 
-    pub fn get(&self, input_fmt: &'a InputFmt) -> (IndexMap<String, String>, Header) {
+    pub fn get(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
         match input_fmt {
             InputFmt::Fasta => parse_sequence!(self, file, datatype, Fasta),
             InputFmt::Nexus => parse_sequence!(self, file, datatype, Nexus),
@@ -73,7 +71,7 @@ impl SeqCheck {
         }
     }
 
-    pub fn check(&mut self, matrix: &IndexMap<String, String>) {
+    pub fn check(&mut self, matrix: &SeqMatrix) {
         self.get_shortest_seq_len(matrix);
         self.get_longest_seq_len(matrix);
         self.check_is_alignment();
@@ -83,7 +81,7 @@ impl SeqCheck {
         self.is_alignment = self.shortest == self.longest;
     }
 
-    fn get_shortest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
+    fn get_shortest_seq_len(&mut self, matrix: &SeqMatrix) {
         self.shortest = matrix
             .values()
             .map(|s| s.len())
@@ -91,7 +89,7 @@ impl SeqCheck {
             .expect("Failed getting the shortest failed length");
     }
 
-    fn get_longest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
+    fn get_longest_seq_len(&mut self, matrix: &SeqMatrix) {
         self.longest = matrix
             .values()
             // .map(|s| s.len())

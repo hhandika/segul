@@ -10,12 +10,12 @@ use regex::Regex;
 
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
-use crate::helper::types::{DataType, Header};
+use crate::helper::types::{DataType, Header, SeqMatrix};
 
 pub struct Nexus<'a> {
     input: &'a Path,
     datatype: &'a DataType,
-    pub matrix: IndexMap<String, String>,
+    pub matrix: SeqMatrix,
     pub header: Header,
     pub interleave: bool,
 }
