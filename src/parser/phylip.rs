@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Lines, Result};
+use std::io::{BufReader, Result};
 use std::path::Path;
 
 use ahash::AHashMap as HashMap;
@@ -191,7 +191,7 @@ impl Records {
 }
 
 struct Reader<R> {
-    reader: Lines<BufReader<R>>,
+    reader: BufReader<R>,
     interleave: bool,
     pos: usize,
     ntax: usize,
@@ -200,7 +200,7 @@ struct Reader<R> {
 impl<R: Read> Reader<R> {
     fn new(file: R, ntax: usize) -> Self {
         Self {
-            reader: BufReader::new(file).lines(),
+            reader: BufReader::new(file),
             interleave: false,
             pos: 1,
             ntax,
@@ -208,16 +208,18 @@ impl<R: Read> Reader<R> {
     }
 
     fn next_seq(&mut self) -> Option<Records> {
-        while let Some(Ok(lines)) = self.reader.by_ref().next() {
+        while let Some(Ok(lines)) = self.reader.by_ref().lines().next() {
             let line = lines.trim();
             if !line.is_empty() {
                 let mut records = Records::new();
                 if !self.interleave {
                     let seq: Vec<&str> = line.split_whitespace().collect();
-                    if seq.len() == 2 {
-                        records.id = Some(seq[0].to_string());
-                        records.seq = seq[1].to_string();
-                    }
+                    assert!(
+                        seq.len() == 2,
+                        "An invalid sequence found. Check if IDs contain spaces."
+                    );
+                    records.id = Some(seq[0].to_string());
+                    records.seq = seq[1].to_string();
                 } else {
                     records.id = None;
                     records.seq = line.to_string();
