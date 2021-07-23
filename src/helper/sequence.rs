@@ -87,15 +87,17 @@ impl SeqCheck {
         self.shortest = matrix
             .values()
             .map(|s| s.len())
-            .min()
+            .min_by(|a, b| a.cmp(b))
             .expect("Failed getting the shortest failed length");
     }
 
     fn get_longest_seq_len(&mut self, matrix: &IndexMap<String, String>) {
         self.longest = matrix
             .values()
+            // .map(|s| s.len())
+            // .max()
             .map(|s| s.len())
-            .max()
+            .max_by(|a, b| a.cmp(b))
             .expect("Failed getting the longest failed length");
     }
 }
