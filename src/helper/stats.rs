@@ -3,11 +3,9 @@ use std::path::{Path, PathBuf};
 
 use ahash::AHashMap as HashMap;
 
-use indexmap::IndexMap;
+use crate::helper::types::{DataType, Header, SeqMatrix};
 
-use crate::helper::types::{DataType, Header};
-
-pub fn get_pars_inf(matrix: &IndexMap<String, String>, datatype: &DataType) -> usize {
+pub fn get_pars_inf(matrix: &SeqMatrix, datatype: &DataType) -> usize {
     Sites::new().get_pars_inf_only(matrix, datatype)
 }
 
@@ -257,12 +255,7 @@ impl Sites {
         }
     }
 
-    pub fn get_stats(
-        &mut self,
-        path: &Path,
-        matrix: &IndexMap<String, String>,
-        datatype: &DataType,
-    ) {
+    pub fn get_stats(&mut self, path: &Path, matrix: &SeqMatrix, datatype: &DataType) {
         self.path = path.to_path_buf();
         let site_matrix = self.index_sites(matrix, datatype);
         self.get_site_stats(&site_matrix);
@@ -270,21 +263,13 @@ impl Sites {
         self.get_proportion();
     }
 
-    fn get_pars_inf_only(
-        &mut self,
-        matrix: &IndexMap<String, String>,
-        datatype: &DataType,
-    ) -> usize {
+    fn get_pars_inf_only(&mut self, matrix: &SeqMatrix, datatype: &DataType) -> usize {
         let site_matrix = self.index_sites(matrix, datatype);
         self.get_site_stats(&site_matrix);
         self.pars_inf
     }
 
-    fn index_sites(
-        &self,
-        matrix: &IndexMap<String, String>,
-        datatype: &DataType,
-    ) -> HashMap<usize, Vec<u8>> {
+    fn index_sites(&self, matrix: &SeqMatrix, datatype: &DataType) -> HashMap<usize, Vec<u8>> {
         match datatype {
             DataType::Dna => self.index_site_dna(matrix),
             DataType::Aa => self.index_site_aa(matrix),
@@ -292,7 +277,7 @@ impl Sites {
         }
     }
 
-    fn index_site_dna(&self, matrix: &IndexMap<String, String>) -> HashMap<usize, Vec<u8>> {
+    fn index_site_dna(&self, matrix: &SeqMatrix) -> HashMap<usize, Vec<u8>> {
         let mut site_matrix: HashMap<usize, Vec<u8>> = HashMap::new();
         matrix.values().for_each(|seq| {
             seq.bytes()
@@ -315,7 +300,7 @@ impl Sites {
         site_matrix
     }
 
-    fn index_site_aa(&self, matrix: &IndexMap<String, String>) -> HashMap<usize, Vec<u8>> {
+    fn index_site_aa(&self, matrix: &SeqMatrix) -> HashMap<usize, Vec<u8>> {
         let mut site_matrix: HashMap<usize, Vec<u8>> = HashMap::new();
         matrix.values().for_each(|seq| {
             seq.bytes().enumerate().for_each(|(idx, aa)| {
@@ -419,7 +404,7 @@ impl Chars {
         }
     }
 
-    pub fn count_chars(&mut self, matrix: &IndexMap<String, String>, header: &Header) {
+    pub fn count_chars(&mut self, matrix: &SeqMatrix, header: &Header) {
         self.ntax = header.ntax;
         self.total_chars = header.nchar * self.ntax;
         matrix
@@ -470,12 +455,13 @@ impl Chars {
 #[cfg(test)]
 mod test {
     use super::*;
+    use indexmap::IndexMap;
     use crate::helper::sequence::Sequence;
     use crate::helper::types::{DataType, InputFmt};
 
     const DNA: DataType = DataType::Dna;
 
-    fn get_matrix(id: &[&str], seq: &[&str]) -> IndexMap<String, String> {
+    fn get_matrix(id: &[&str], seq: &[&str]) -> SeqMatrix {
         let mut matrix = IndexMap::new();
         id.iter().zip(seq.iter()).for_each(|(i, s)| {
             matrix.insert(i.to_string(), s.to_string());

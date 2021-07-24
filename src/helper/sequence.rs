@@ -92,8 +92,6 @@ impl SeqCheck {
     fn get_longest_seq_len(&mut self, matrix: &SeqMatrix) {
         self.longest = matrix
             .values()
-            // .map(|s| s.len())
-            // .max()
             .map(|s| s.len())
             .max_by(|a, b| a.cmp(b))
             .expect("Failed getting the longest failed length");

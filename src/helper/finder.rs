@@ -1,4 +1,4 @@
-//! Module for files finding and IDs indexing.
+// Module for files finding and IDs indexing.
 
 use std::path::PathBuf;
 use std::sync::mpsc::channel;

@@ -11,7 +11,9 @@ use indicatif::ProgressBar;
 
 use crate::helper::finder::IDs;
 use crate::helper::sequence::Sequence;
-use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt};
+use crate::helper::types::{
+    DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt, SeqMatrix,
+};
 use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
 
@@ -79,7 +81,7 @@ impl<'a> MSAlignment<'a> {
 
 struct Concat<'a> {
     input_fmt: &'a InputFmt,
-    alignment: IndexMap<String, String>,
+    alignment: SeqMatrix,
     datatype: &'a DataType,
     header: Header,
     partition: Vec<Partition>,
@@ -135,7 +137,7 @@ impl<'a> Concat<'a> {
         self.partition = partition;
     }
 
-    fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
+    fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
         let aln = Sequence::new(file, self.datatype);
         let (matrix, header) = aln.get_alignment(&self.input_fmt);
         assert!(
@@ -154,7 +156,7 @@ impl<'a> Concat<'a> {
         part
     }
 
-    fn insert_alignment(&self, alignment: &mut IndexMap<String, String>, id: &str, seq: &str) {
+    fn insert_alignment(&self, alignment: &mut SeqMatrix, id: &str, seq: &str) {
         match alignment.get_mut(id) {
             Some(seqs) => seqs.push_str(seq),
             None => {
