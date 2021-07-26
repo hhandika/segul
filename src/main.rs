@@ -38,7 +38,7 @@ fn main() {
 
 fn setup_logger() -> Result<()> {
     let log_dir = std::env::current_dir()?;
-    let target = log_dir.join("myte.log");
+    let target = log_dir.join("segul.log");
     let tofile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S %Z)} - {l} - {m}\n",
