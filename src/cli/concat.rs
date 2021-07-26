@@ -56,7 +56,7 @@ impl<'a> ConcatParser<'a> {
             let dir = self.parse_dir_input(self.matches);
             self.get_files(dir, &self.input_fmt)
         };
-        self.print_user_input().unwrap();
+        self.print_user_input();
         let concat =
             msa::MSAlignment::new(&self.input_fmt, output, &self.output_fmt, &self.part_fmt);
 
@@ -67,17 +67,12 @@ impl<'a> ConcatParser<'a> {
         self.matches.is_present("wildcard")
     }
 
-    fn print_user_input(&self) -> Result<()> {
-        log::info!("Command\t\t: segul concat");
+    fn print_user_input(&self) {
         if !self.is_input_wcard() {
-            log::info!(
-                "{:18}: {}\n",
-                "Input dir",
-                self.parse_dir_input(self.matches)
-            );
+            log::info!("{:18}: {}", "Input dir", self.parse_dir_input(self.matches));
         } else {
-            log::info!("{:18}: WILDCARD\n", "Input");
+            log::info!("{:18}: WILDCARD", "Input");
         }
-        Ok(())
+        log::info!("{:18}: Alignment concatenation\n", "Task");
     }
 }
