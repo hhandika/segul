@@ -40,8 +40,7 @@ impl<'a> ConvertParser<'a> {
                 let dir = self.parse_dir_input(self.matches);
                 let files = self.get_files(dir, &self.input_fmt);
                 self.convert_multiple_files(&files);
-                self.print_input_dir(Path::new(dir), files.len(), &self.output)
-                    .unwrap();
+                self.print_input_dir(Path::new(dir), files.len(), &self.output);
             }
             InputType::Wildcard => {
                 let files = self.parse_input_wcard(&self.matches);
@@ -52,7 +51,7 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_file(&mut self) {
         let input = Path::new(self.parse_file_input(self.matches));
-        self.print_input_file(input).unwrap();
+        self.print_input_file(input);
         self.convert_any(input, &self.output, &self.output_fmt);
     }
 
@@ -81,21 +80,15 @@ impl<'a> ConvertParser<'a> {
         self.matches.is_present("sort")
     }
 
-    fn print_input_file(&self, input: &Path) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "Command\t\t: segul convert")?;
-        writeln!(writer, "Input\t\t: {}", &input.display())?;
-        Ok(())
+    fn print_input_file(&self, input: &Path) {
+        log::info!("{:18}: {}", "Input", &input.display());
+        log::info!("{:18}: Sequence format conversion", "Analyses");
     }
 
-    fn print_input_dir(&self, input: &Path, nfile: usize, output: &Path) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "Command\t\t: segul convert")?;
-        writeln!(writer, "Input dir\t: {}", &input.display())?;
-        writeln!(writer, "Total files\t: {}", utils::fmt_num(&nfile))?;
-        writeln!(writer, "Output dir \t: {}\n", output.display())?;
-        Ok(())
+    fn print_input_dir(&self, input: &Path, nfile: usize, output: &Path) {
+        log::info!("{:18}: segul convert", "Command");
+        log::info!("{:18}: {}", "Input dir", &input.display());
+        log::info!("{:18}: {}", "Total files", utils::fmt_num(&nfile));
+        log::info!("{:18}: {}\n", "Output dir", output.display());
     }
 }
