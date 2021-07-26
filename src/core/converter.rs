@@ -58,9 +58,7 @@ impl<'a> Converter<'a> {
             .expect("Failed writing output files");
 
         if !self.is_dir {
-            convert
-                .print_save_path()
-                .expect("Failed writing save path to stdout");
+            convert.print_save_path();
         }
     }
 }

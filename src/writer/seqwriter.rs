@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::prelude::*;
-use std::io::{self, BufWriter};
+use std::io::BufWriter;
 use std::iter;
 use std::path::{Path, PathBuf};
 
@@ -60,18 +60,12 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    pub fn print_save_path(&self) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "Output\t\t: {}", self.output.display())?;
-        Ok(())
+    pub fn print_save_path(&self) {
+        log::info!("Output\t\t: {}", self.output.display());
     }
 
-    pub fn print_partition_path(&self) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "Partition\t: {}", &self.part_file.display())?;
-        Ok(())
+    pub fn print_partition_path(&self) {
+        log::info!("Partition\t: {}", &self.part_file.display());
     }
 
     fn write_fasta(&mut self, interleave: bool) -> Result<()> {

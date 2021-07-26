@@ -2,7 +2,6 @@
 //! Contains methods for working with multi-sequence alignments.
 
 use std::ffi::OsStr;
-use std::io::{self, Result, Write};
 use std::iter;
 use std::path::{Path, PathBuf};
 
@@ -59,23 +58,16 @@ impl<'a> MSAlignment<'a> {
         save.write_sequence(&self.output_fmt)
             .expect("Failed writing the output file");
         spin.finish_with_message("DONE!\n");
-        self.print_alignment_stats(concat.partition.len(), &concat.header)
-            .unwrap();
-        save.print_save_path()
-            .expect("Cannot write save path to stdout");
-        save.print_partition_path()
-            .expect("Cannot write partition path to stdout");
+        self.print_alignment_stats(concat.partition.len(), &concat.header);
+        save.print_save_path();
+        save.print_partition_path();
     }
 
-    fn print_alignment_stats(&self, count: usize, header: &Header) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = io::BufWriter::new(io);
-        writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
-        writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&header.ntax))?;
-        writeln!(writer, "Loci\t\t: {}", utils::fmt_num(&count))?;
-        writeln!(writer, "Length\t\t: {}", utils::fmt_num(&header.nchar))?;
-
-        Ok(())
+    fn print_alignment_stats(&self, count: usize, header: &Header) {
+        log::info!("\x1b[0;33mAlignment\x1b[0m");
+        log::info!("Taxa\t\t: {}", utils::fmt_num(&header.ntax));
+        log::info!("Loci\t\t: {}", utils::fmt_num(&count));
+        log::info!("Length\t\t: {}", utils::fmt_num(&header.nchar));
     }
 }
 

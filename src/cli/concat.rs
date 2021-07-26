@@ -68,17 +68,11 @@ impl<'a> ConcatParser<'a> {
     }
 
     fn print_user_input(&self) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = io::BufWriter::new(io);
-        writeln!(writer, "Command\t\t: segul concat")?;
+        log::info!("Command\t\t: segul concat");
         if !self.is_input_wcard() {
-            writeln!(
-                writer,
-                "Input dir\t: {}\n",
-                self.parse_dir_input(self.matches)
-            )?;
+            log::info!("Input dir\t: {}\n", self.parse_dir_input(self.matches));
         } else {
-            writeln!(writer, "Input\t\t: WILDCARD\n",)?;
+            log::info!("Input\t\t: WILDCARD\n",);
         }
         Ok(())
     }
