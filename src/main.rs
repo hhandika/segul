@@ -21,7 +21,7 @@ fn main() {
         log::error!("{}", panic_info);
     }));
 
-    setup_logging().expect("Failed setting up a log file.");
+    setup_logger().expect("Failed setting up a log file.");
     let version = crate_version!();
     let time = Instant::now();
     cli::parse_cli(&version);
@@ -36,7 +36,7 @@ fn main() {
     }
 }
 
-fn setup_logging() -> Result<()> {
+fn setup_logger() -> Result<()> {
     let log_dir = std::env::current_dir()?;
     let target = log_dir.join("myte.log");
     let tofile = FileAppender::builder()
