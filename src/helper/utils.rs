@@ -19,7 +19,7 @@ fn parse_duration(duration: u64) -> String {
 
 pub fn print_formatted_duration(duration: u64) {
     let time = parse_duration(duration);
-    log::info!("Execution time (HH:MM:SS): {}", time);
+    log::info!("Execution time (HH:MM:SS): {}\n", time);
 }
 
 pub fn set_spinner() -> ProgressBar {

@@ -27,7 +27,7 @@ fn main() {
     let duration = time.elapsed();
     println!();
     if duration.as_secs() < 60 {
-        log::info!("Execution time: {:?}", duration);
+        log::info!("Execution time: {:?}\n", duration);
     } else {
         helper::utils::print_formatted_duration(duration.as_secs());
     }
