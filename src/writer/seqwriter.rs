@@ -61,11 +61,11 @@ impl<'a> SeqWriter<'a> {
     }
 
     pub fn print_save_path(&self) {
-        log::info!("Output\t\t: {}", self.output.display());
+        log::info!("{:18}: {}", "Output", self.output.display());
     }
 
     pub fn print_partition_path(&self) {
-        log::info!("Partition\t: {}", &self.part_file.display());
+        log::info!("{:18}: {}", "Partition", &self.part_file.display());
     }
 
     fn write_fasta(&mut self, interleave: bool) -> Result<()> {

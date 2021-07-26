@@ -39,11 +39,12 @@ impl<'a> ConvertParser<'a> {
             InputType::Dir => {
                 let dir = self.parse_dir_input(self.matches);
                 let files = self.get_files(dir, &self.input_fmt);
+                self.print_input_dir(Some(dir), files.len(), &self.output);
                 self.convert_multiple_files(&files);
-                self.print_input_dir(Path::new(dir), files.len(), &self.output);
             }
             InputType::Wildcard => {
                 let files = self.parse_input_wcard(&self.matches);
+                self.print_input_dir::<PathBuf>(None, files.len(), &self.output);
                 self.convert_multiple_files(&files)
             }
         }
@@ -82,13 +83,17 @@ impl<'a> ConvertParser<'a> {
 
     fn print_input_file(&self, input: &Path) {
         log::info!("{:18}: {}", "Input", &input.display());
-        log::info!("{:18}: Sequence format conversion", "Analyses");
+        log::info!("{:18}: Sequence format conversion", "Task");
     }
 
-    fn print_input_dir(&self, input: &Path, nfile: usize, output: &Path) {
-        log::info!("{:18}: segul convert", "Command");
-        log::info!("{:18}: {}", "Input dir", &input.display());
+    fn print_input_dir<P: AsRef<Path>>(&self, input: Option<P>, nfile: usize, output: &Path) {
+        if let Some(input) = input {
+            log::info!("{:18}: {}", "Input dir", &input.as_ref().display());
+        } else {
+            log::info!("{:18}: {}", "Input dir", "WILDCARD");
+        }
         log::info!("{:18}: {}", "Total files", utils::fmt_num(&nfile));
-        log::info!("{:18}: {}\n", "Output dir", output.display());
+        log::info!("{:18}: Sequence format conversion\n", "Task");
+        log::info!("{:18}: {}", "Output dir", output.display());
     }
 }
