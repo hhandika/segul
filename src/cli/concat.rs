@@ -70,9 +70,13 @@ impl<'a> ConcatParser<'a> {
     fn print_user_input(&self) -> Result<()> {
         log::info!("Command\t\t: segul concat");
         if !self.is_input_wcard() {
-            log::info!("Input dir\t: {}\n", self.parse_dir_input(self.matches));
+            log::info!(
+                "{:18}: {}\n",
+                "Input dir",
+                self.parse_dir_input(self.matches)
+            );
         } else {
-            log::info!("Input\t\t: WILDCARD\n",);
+            log::info!("{:18}: WILDCARD\n", "Input");
         }
         Ok(())
     }

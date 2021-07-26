@@ -5,6 +5,7 @@ use std::ffi::OsStr;
 use std::iter;
 use std::path::{Path, PathBuf};
 
+use ansi_term::Colour::Yellow;
 use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
@@ -64,10 +65,10 @@ impl<'a> MSAlignment<'a> {
     }
 
     fn print_alignment_stats(&self, count: usize, header: &Header) {
-        log::info!("\x1b[0;33mAlignment\x1b[0m");
-        log::info!("Taxa\t\t: {}", utils::fmt_num(&header.ntax));
-        log::info!("Loci\t\t: {}", utils::fmt_num(&count));
-        log::info!("Length\t\t: {}", utils::fmt_num(&header.nchar));
+        log::info!("{}", Yellow.paint("Alignment"));
+        log::info!("{:18}: {}", "Taxa", utils::fmt_num(&header.ntax));
+        log::info!("{:18}: {}", "Loci", utils::fmt_num(&count));
+        log::info!("{:18}: {}", "Length", utils::fmt_num(&header.nchar));
     }
 }
 
