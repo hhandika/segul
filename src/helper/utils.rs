@@ -17,10 +17,9 @@ fn parse_duration(duration: u64) -> String {
     time.format("%H:%M:%S").to_string()
 }
 
-pub fn print_formatted_duration<W: Write>(writer: &mut W, duration: u64) -> Result<()> {
+pub fn print_formatted_duration(duration: u64) {
     let time = parse_duration(duration);
-    writeln!(writer, "Execution time (HH:MM:SS): {}", time)?;
-    Ok(())
+    log::info!("Execution time (HH:MM:SS): {}", time);
 }
 
 pub fn set_spinner() -> ProgressBar {

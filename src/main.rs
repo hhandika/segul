@@ -1,5 +1,4 @@
 use std::io::Result;
-use std::io::{BufWriter, Write};
 use std::panic;
 use std::time::Instant;
 
@@ -26,13 +25,11 @@ fn main() {
     let time = Instant::now();
     cli::parse_cli(&version);
     let duration = time.elapsed();
-    let io = std::io::stdout();
-    let mut writer = BufWriter::new(io);
-    writeln!(writer).unwrap();
+    println!();
     if duration.as_secs() < 60 {
-        writeln!(writer, "Execution time: {:?}", duration).unwrap();
+        log::info!("Execution time: {:?}", duration);
     } else {
-        helper::utils::print_formatted_duration(&mut writer, duration.as_secs()).unwrap();
+        helper::utils::print_formatted_duration(duration.as_secs());
     }
 }
 
