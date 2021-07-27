@@ -16,6 +16,8 @@ mod parser;
 mod writer;
 
 fn main() {
+    // We ignore backtrace for now. It does
+    // not seem useful for most cases.
     panic::set_hook(Box::new(move |panic_info| {
         log::error!("{}", panic_info);
     }));
@@ -55,9 +57,9 @@ fn setup_logger() -> Result<()> {
                 .appender("logfile")
                 .build(LevelFilter::Info),
         )
-        .unwrap();
+        .expect("Failed building log configuration");
 
-    log4rs::init_config(config).unwrap();
+    log4rs::init_config(config).expect("Cannot initiate log configuration");
 
     Ok(())
 }
