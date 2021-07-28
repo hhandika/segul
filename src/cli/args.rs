@@ -195,7 +195,7 @@ pub fn get_args(version: &str) -> ArgMatches {
         )
         .subcommand(
             App::new("filter")
-                .about("Picks alignments with specified min taxa")
+                .about("Filter alignments based on min taxon completeness, alignment length, and parsimony informative sites")
                 .arg(
                     Arg::with_name("dir")
                         .short("d")
