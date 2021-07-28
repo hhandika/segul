@@ -243,7 +243,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("npercent")
                         .long("npercent")
-                        .help("Sets minimal taxa in multiple percentages")
+                        .help("Inputs percentages of minimal taxa (allow multiple values)")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "aln-len", "pars-inf"])
                         .multiple(true)
@@ -260,7 +260,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("aln-len")
                         .long("len")
-                        .help("Sets minimal alignment length")
+                        .help("Inputs minimal alignment length")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "pars-inf"])
                         .value_name("FORMAT"),
@@ -268,7 +268,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("pars-inf")
                         .long("pinf")
-                        .help("Sets minimal alignment length")
+                        .help("Inputs minimal parsimony informative sites")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "aln-len"])
                         .value_name("FORMAT"),
