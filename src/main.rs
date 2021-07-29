@@ -15,6 +15,8 @@ mod helper;
 mod parser;
 mod writer;
 
+const LOG_FILE: &str = "segul.log";
+
 fn main() {
     // We ignore backtrace for now. It does
     // not seem useful for most cases.
@@ -27,17 +29,19 @@ fn main() {
     let time = Instant::now();
     cli::parse_cli(&version);
     let duration = time.elapsed();
+    log::info!("{:18}: {}", "Log file", LOG_FILE);
     println!();
     if duration.as_secs() < 60 {
-        log::info!("{:18}: {:?}\n", "Execution time", duration);
+        log::info!("{:18}: {:?}", "Execution time", duration);
     } else {
-        helper::utils::print_formatted_duration(duration.as_secs());
+        let time = helper::utils::parse_duration(duration.as_secs());
+        log::info!("{:18}: {}", "Execution time (HH:MM:SS)", time);
     }
 }
 
 fn setup_logger() -> Result<()> {
     let log_dir = std::env::current_dir()?;
-    let target = log_dir.join("segul.log");
+    let target = log_dir.join(LOG_FILE);
     let tofile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S %Z)} - {l} - {m}\n",
