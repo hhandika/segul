@@ -1,8 +1,9 @@
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{self, BufWriter, Write};
-use std::path::PathBuf;
+use std::io::{BufWriter, Write};
+// use std::path::PathBuf;
 
+use ansi_term::Colour::Yellow;
 use anyhow::{Context, Result};
 
 use crate::helper::alphabet;
@@ -10,44 +11,39 @@ use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites}
 use crate::helper::types::DataType;
 use crate::helper::utils;
 
-pub fn print_stats(site: &Sites, dna: &Chars) -> Result<()> {
-    let io = io::stdout();
-    let mut writer = BufWriter::new(io);
+pub fn print_stats(site: &Sites, dna: &Chars) {
+    log::info!("{}", Yellow.paint("Alignment"));
+    log::info!("{:18}: {}", "Taxa", utils::fmt_num(&dna.ntax));
+    log::info!("{:18}: {}\n", "Length", utils::fmt_num(&site.counts));
 
-    writeln!(writer, "\x1b[0;33mAlignment\x1b[0m")?;
-    writeln!(writer, "Taxa\t\t: {}", utils::fmt_num(&dna.ntax))?;
-    writeln!(writer, "Length\t\t: {}\n", utils::fmt_num(&site.counts))?;
-
-    writeln!(writer, "\x1b[0;33mSites\x1b[0m")?;
-    writeln!(writer, "Conserved\t: {}", utils::fmt_num(&site.conserved))?;
-    writeln!(writer, "Variable\t: {}", utils::fmt_num(&site.variable))?;
-    writeln!(
-        writer,
-        "Parsimony inf.\t: {}\n",
+    log::info!("{}", Yellow.paint("Sites"));
+    log::info!("{:18}: {}", "Conserved", utils::fmt_num(&site.conserved));
+    log::info!("{:18}: {}", "Variable", utils::fmt_num(&site.variable));
+    log::info!(
+        "{:18}: {}\n",
+        "Parsimony inf.",
         utils::fmt_num(&site.pars_inf)
-    )?;
-    writeln!(writer, "%Conserved\t: {:.2}%", site.prop_cons * 100.0)?;
-    writeln!(writer, "%Variable\t: {:.2}%", site.prop_var * 100.0)?;
-    writeln!(writer, "%Pars. inf.\t: {:.2}%\n", site.prop_var * 100.0)?;
+    );
+    log::info!("{:18}: {:.2}%", "%Conserved", site.prop_cons * 100.0);
+    log::info!("{:18}: {:.2}%", "%Variable", site.prop_var * 100.0);
+    log::info!("{:18}: {:.2}%\n", "%Pars. inf.", site.prop_var * 100.0);
 
-    writeln!(writer, "\x1b[0;33mCharacters\x1b[0m")?;
-    writeln!(writer, "Total\t\t: {}", utils::fmt_num(&dna.total_chars))?;
-    writeln!(
-        writer,
-        "Missing data\t: {}",
+    log::info!("{}", Yellow.paint("Characters"));
+    log::info!("{:18}: {}", "Total", utils::fmt_num(&dna.total_chars));
+    log::info!(
+        "{:18}: {}",
+        "Missing data",
         utils::fmt_num(&dna.missing_data)
-    )?;
-    writeln!(
-        writer,
-        "Prop. missing \t: {:.2}%",
+    );
+    log::info!(
+        "{:18}: {:.2}%",
+        "Prop. missing",
         &dna.prop_missing_data * 100.0
-    )?;
+    );
 
-    dna.chars.iter().for_each(|(ch, count)| {
-        writeln!(writer, "{}\t\t: {}", ch, utils::fmt_num(&count)).unwrap()
-    });
-    writer.flush()?;
-    Ok(())
+    dna.chars
+        .iter()
+        .for_each(|(ch, count)| log::info!("{:18}: {}", ch, utils::fmt_num(&count)));
 }
 
 trait Alphabet {
@@ -86,6 +82,9 @@ impl<'a> CsvWriter<'a> {
             self.write_csv_content(&mut writer, site, chars, alphabet)
                 .unwrap();
         });
+
+        log::info!("\n{}", Yellow.paint("Output Files"));
+        log::info!("{:18}: {}", "Alignment summary", self.output);
 
         Ok(())
     }
@@ -228,293 +227,241 @@ impl<'s> SummaryWriter<'s> {
     }
 
     pub fn print_summary(&self) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "\x1b[0;33mGeneral Summmary\x1b[0m")?;
-        self.write_gen_sum(&mut writer)?;
-        writeln!(writer, "\x1b[0;33mAlignment Summmary\x1b[0m")?;
-        self.write_aln_sum(&mut writer)?;
-        writeln!(writer, "\x1b[0;33mTaxon Summmary\x1b[0m")?;
-        self.write_tax_sum(&mut writer)?;
+        log::info!("{}", Yellow.paint("General Summmary"));
+        self.write_gen_sum();
+        log::info!("{}", Yellow.paint("\nAlignment Summmary"));
+        self.write_aln_sum();
+        log::info!("{}", Yellow.paint("\nTaxon Summmary"));
+        self.write_tax_sum();
 
-        writeln!(writer, "\x1b[0;33mCharacter Count\x1b[0m")?;
-        self.write_char_count(&mut writer)?;
+        log::info!("{}", Yellow.paint("\nCharacter Count"));
+        self.write_char_count();
 
-        writeln!(writer, "\x1b[0;33mData Matrix Completeness\x1b[0m")?;
-        self.write_matrix_comp(&mut writer)?;
+        log::info!("{}", Yellow.paint("\nData Matrix Completeness"));
+        self.write_matrix_comp();
 
-        writeln!(writer, "\x1b[0;33mConserved Sequences\x1b[0m")?;
-        self.write_cons_seq(&mut writer)?;
+        log::info!("{}", Yellow.paint("\nConserved Sequences"));
+        self.write_cons_seq();
 
-        writeln!(writer, "\x1b[0;33mVariable Sequences\x1b[0m")?;
-        self.write_var_seq(&mut writer)?;
+        log::info!("{}", Yellow.paint("\nVariable Sequences"));
+        self.write_var_seq();
 
-        writeln!(writer, "\x1b[0;33mParsimony Informative\x1b[0m")?;
-        self.write_pars_inf(&mut writer)?;
-        writeln!(writer)?;
-        writer.flush()?;
+        log::info!("{}", Yellow.paint("\nParsimony Informative"));
+        self.write_pars_inf();
         Ok(())
     }
 
-    pub fn write_sum_to_file(&self, output: &str) -> Result<()> {
-        let fname = self.get_output_fname(output);
-        let file = File::create(&fname)
-            .with_context(|| format!("Failed creating file {}", fname.display()))?;
-        let mut writer = BufWriter::new(file);
-        writeln!(writer, "General Summmary")?;
-        self.write_gen_sum(&mut writer)?;
-        writeln!(writer, "Alignment Summmary")?;
-        self.write_aln_sum(&mut writer)?;
-        writeln!(writer, "Taxon Summmary")?;
-        self.write_tax_sum(&mut writer)?;
+    // pub fn write_sum_to_file(&self, output: &str) -> Result<()> {
+    //     let fname = self.get_output_fname(output);
+    //     let file = File::create(&fname)
+    //         .with_context(|| format!("Failed creating file {}", fname.display()))?;
+    //     let mut writer = BufWriter::new(file);
+    //     writeln!(writer, "General Summmary")?;
+    //     self.write_gen_sum();
+    //     writeln!(writer, "Alignment Summmary")?;
+    //     self.write_aln_sum(&mut writer)?;
+    //     writeln!(writer, "Taxon Summmary")?;
+    //     self.write_tax_sum(&mut writer)?;
 
-        writeln!(writer, "Character Count")?;
-        self.write_char_count(&mut writer)?;
+    //     writeln!(writer, "Character Count")?;
+    //     self.write_char_count(&mut writer)?;
 
-        writeln!(writer, "Data Matrix Completeness")?;
-        self.write_matrix_comp(&mut writer)?;
+    //     writeln!(writer, "Data Matrix Completeness")?;
+    //     self.write_matrix_comp(&mut writer)?;
 
-        writeln!(writer, "Conserved Sequences")?;
-        self.write_cons_seq(&mut writer)?;
+    //     writeln!(writer, "Conserved Sequences")?;
+    //     self.write_cons_seq(&mut writer)?;
 
-        writeln!(writer, "Variable Sequences")?;
-        self.write_var_seq(&mut writer)?;
+    //     writeln!(writer, "Variable Sequences")?;
+    //     self.write_var_seq(&mut writer)?;
 
-        writeln!(writer, "Parsimony Informative")?;
-        self.write_pars_inf(&mut writer)?;
-        writeln!(writer)?;
-        writer.flush()?;
-        Ok(())
-    }
+    //     writeln!(writer, "Parsimony Informative")?;
+    //     self.write_pars_inf(&mut writer)?;
+    //     writeln!(writer)?;
+    //     writer.flush()?;
+    //     Ok(())
+    // }
 
-    fn get_output_fname(&self, output: &str) -> PathBuf {
-        let fname = format!("{}_summary.txt", output);
-        PathBuf::from(fname)
-    }
+    // fn get_output_fname(&self, output: &str) -> PathBuf {
+    //     let fname = format!("{}_summary.txt", output);
+    //     PathBuf::from(fname)
+    // }
 
-    fn write_gen_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(
-            writer,
-            "Total taxa\t: {}",
+    fn write_gen_sum(&self) {
+        log::info!(
+            "{:18}: {}",
+            "Total taxa",
             utils::fmt_num(&self.complete.total_tax)
-        )?;
-        writeln!(
-            writer,
-            "Total loci\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Total loci",
             utils::fmt_num(&self.site.total_loci)
-        )?;
-        writeln!(
-            writer,
-            "Total sites\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Total sites",
             utils::fmt_num(&self.site.total_sites)
-        )?;
-        writeln!(
-            writer,
-            "Missing data\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Missing data",
             utils::fmt_num(&self.chars.missing_data)
-        )?;
-        writeln!(
-            writer,
-            "%Missing data\t: {:.2}%",
+        );
+        log::info!(
+            "{:18}: {:.2}%",
+            "%Missing data",
             &self.chars.prop_missing_data * 100.0
-        )?;
+        );
 
         match self.datatype {
-            DataType::Dna => self.write_dna_sum(writer)?,
+            DataType::Dna => self.write_dna_sum(),
             DataType::Aa => (),
             _ => panic!("Please specify datatype"),
         }
-        writeln!(writer)?;
-
-        Ok(())
     }
 
-    fn write_dna_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(writer, "GC content\t: {:.2}", self.chars.gc_content)?;
-        writeln!(writer, "AT content\t: {:.2}", self.chars.at_content)?;
-        writeln!(
-            writer,
-            "Characters\t: {}",
+    fn write_dna_sum(&self) {
+        log::info!("{:18}: {:.2}", "GC content", self.chars.gc_content);
+        log::info!("{:18}: {:.2}", "AT content", self.chars.at_content);
+        log::info!(
+            "{:18}: {}",
+            "Characters",
             utils::fmt_num(&self.chars.total_chars)
-        )?;
-        writeln!(
-            writer,
-            "Nucleotides\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Nucleotides",
             utils::fmt_num(&self.chars.total_nucleotides)
-        )?;
-        Ok(())
+        );
     }
 
-    fn write_aln_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(
-            writer,
-            "Min length\t: {} bp",
+    fn write_aln_sum(&self) {
+        log::info!(
+            "{:18}: {} bp",
+            "Min length",
             utils::fmt_num(&self.site.min_sites)
-        )?;
-        writeln!(
-            writer,
-            "Max length\t: {} bp",
+        );
+        log::info!(
+            "{:18}: {} bp",
+            "Max length",
             utils::fmt_num(&self.site.max_sites)
-        )?;
-        writeln!(writer, "Mean length\t: {:.2} bp\n", &self.site.mean_sites)?;
-        Ok(())
+        );
+        log::info!("{:18}: {:.2} bp", "Mean length", &self.site.mean_sites);
     }
 
-    fn write_tax_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(
-            writer,
-            "Min taxa\t: {}",
-            utils::fmt_num(&self.chars.min_tax)
-        )?;
-        writeln!(
-            writer,
-            "Max taxa\t: {}",
-            utils::fmt_num(&self.chars.max_tax)
-        )?;
-        writeln!(writer, "Mean taxa\t: {:.2}\n", self.chars.mean_tax)?;
-
-        Ok(())
+    fn write_tax_sum(&self) {
+        log::info!("{:18}: {}", "Min taxa", utils::fmt_num(&self.chars.min_tax));
+        log::info!("{:18}: {}", "Max taxa", utils::fmt_num(&self.chars.max_tax));
+        log::info!("{:18}: {:.2}", "Mean taxa", self.chars.mean_tax);
     }
 
-    fn write_char_count<W: Write>(&self, writer: &mut W) -> Result<()> {
+    fn write_char_count(&self) {
         let alphabet = self.get_alphabet(self.datatype);
         alphabet.chars().for_each(|ch| {
             if let Some(count) = self.chars.chars.get(&ch) {
-                writeln!(writer, "{}\t\t: {}", ch, utils::fmt_num(&count)).unwrap();
+                log::info!("{:18}: {}", ch, utils::fmt_num(&count));
             }
         });
-        writeln!(writer)?;
-        Ok(())
     }
 
-    fn write_matrix_comp<W: Write>(&self, writer: &mut W) -> Result<()> {
+    fn write_matrix_comp(&self) {
         self.complete
             .completeness
             .iter()
             .for_each(|(percent, ntax)| {
-                self.write_matrix_comp_content(writer, percent, ntax)
-                    .expect("Failed printing data matrix completeness to stdout")
+                let percent_str = format!("{}% taxa", percent);
+                log::info!("{:18}: {}", percent_str, utils::fmt_num(ntax))
             });
-        writeln!(writer)?;
-
-        Ok(())
     }
 
-    fn write_matrix_comp_content<W: Write>(
-        &self,
-        writer: &mut W,
-        percent: &usize,
-        ntax: &usize,
-    ) -> Result<()> {
-        if *percent < 10 {
-            writeln!(writer, "{}% taxa\t\t: {}", percent, utils::fmt_num(ntax))?;
-        } else {
-            writeln!(writer, "{}% taxa\t: {}", percent, utils::fmt_num(ntax))?;
-        }
-
-        Ok(())
-    }
-
-    fn write_cons_seq<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(
-            writer,
-            "Con. loci\t: {}",
+    fn write_cons_seq(&self) {
+        log::info!(
+            "{:18}: {}",
+            "Con. loci",
             utils::fmt_num(&self.site.cons_loci)
-        )?;
-        writeln!(
-            writer,
-            "%Con. loci\t: {:.2}%",
+        );
+        log::info!(
+            "{:18}: {:.2}%",
+            "%Con. loci",
             self.site.prop_cons_loci * 100.0
-        )?;
-        writeln!(
-            writer,
-            "Con. sites\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Con. sites",
             utils::fmt_num(&self.site.total_cons_site)
-        )?;
-        writeln!(writer, "%Con. sites\t: {:.2}%", &self.site.prop_cons_site)?;
-        writeln!(
-            writer,
-            "Min con. sites\t: {}",
+        );
+        log::info!("{:18}: {:.2}%", "%Con. sites", &self.site.prop_cons_site);
+        log::info!(
+            "{:18}: {}",
+            "Min con. sites",
             utils::fmt_num(&self.site.min_cons_site)
-        )?;
-        writeln!(
-            writer,
-            "Max con. sites\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Max con. sites",
             utils::fmt_num(&self.site.max_cons_site)
-        )?;
-        writeln!(
-            writer,
-            "Mean con. sites\t: {:.2}\n",
-            &self.site.mean_cons_site
-        )?;
-
-        Ok(())
+        );
+        log::info!("{:18}: {:.2}", "Mean con. sites", &self.site.mean_cons_site);
     }
 
-    fn write_var_seq<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(
-            writer,
-            "Var. loci\t: {}",
+    fn write_var_seq(&self) {
+        log::info!(
+            "{:18}: {}",
+            "Var. loci",
             utils::fmt_num(&self.site.var_loci)
-        )?;
-        writeln!(
-            writer,
-            "%Var. loci\t: {:.2}%",
+        );
+        log::info!(
+            "{:18}: {:.2}%",
+            "%Var. loci",
             self.site.prop_var_loci * 100.0
-        )?;
-        writeln!(
-            writer,
-            "Var. sites\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Var. sites",
             utils::fmt_num(&self.site.total_var_site)
-        )?;
-        writeln!(writer, "%Var. sites\t: {:.2}%", &self.site.prop_var_site)?;
-        writeln!(
-            writer,
-            "Min var. sites\t: {}",
+        );
+        log::info!("{:18}: {:.2}%", "%Var. sites", &self.site.prop_var_site);
+        log::info!(
+            "{:18}: {}",
+            "Min var. sites",
             utils::fmt_num(&self.site.min_var_site)
-        )?;
-        writeln!(
-            writer,
-            "Max var. sites\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Max var. sites",
             utils::fmt_num(&self.site.max_var_site)
-        )?;
-        writeln!(
-            writer,
-            "Mean var. sites\t: {:.2}\n",
-            &self.site.mean_var_site
-        )?;
-        Ok(())
+        );
+        log::info!("{:18}: {:.2}", "Mean var. sites", &self.site.mean_var_site);
     }
 
-    fn write_pars_inf<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writeln!(
-            writer,
-            "Inf. loci\t: {}",
+    fn write_pars_inf(&self) {
+        log::info!(
+            "{:18}: {}",
+            "Inf. loci",
             utils::fmt_num(&self.site.inf_loci)
-        )?;
-        writeln!(
-            writer,
-            "%Inf. loci\t: {:.2}%",
+        );
+        log::info!(
+            "{:18}: {:.2}%",
+            "%Inf. loci",
             self.site.prop_inf_loci * 100.0
-        )?;
-        writeln!(
-            writer,
-            "Inf. sites\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Inf. sites",
             utils::fmt_num(&self.site.total_inf_site)
-        )?;
-        writeln!(writer, "%Inf. sites\t: {:.2}%", &self.site.prop_inf_site)?;
-        writeln!(
-            writer,
-            "Min inf. sites\t: {}",
+        );
+        log::info!("{:18}: {:.2}%", "%Inf. sites", &self.site.prop_inf_site);
+        log::info!(
+            "{:18}: {}",
+            "Min inf. sites",
             utils::fmt_num(&self.site.min_inf_site)
-        )?;
-        writeln!(
-            writer,
-            "Max inf. sites\t: {}",
+        );
+        log::info!(
+            "{:18}: {}",
+            "Max inf. sites",
             utils::fmt_num(&self.site.max_inf_site)
-        )?;
-        writeln!(writer, "Mean inf. sites\t: {:.2}", &self.site.mean_inf_site)?;
-
-        Ok(())
+        );
+        log::info!("{:18}: {:.2}", "Mean inf. sites", &self.site.mean_inf_site);
     }
 }

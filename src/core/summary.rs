@@ -45,7 +45,7 @@ impl<'a> SeqStats<'a> {
         sumwriter::CsvWriter::new(self.output, self.datatype)
             .write_summary_file(&site, &dna)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
-        sumwriter::print_stats(&site, &dna).unwrap();
+        sumwriter::print_stats(&site, &dna);
     }
 
     pub fn get_stats_dir(&mut self, files: &[PathBuf]) {
@@ -57,17 +57,14 @@ impl<'a> SeqStats<'a> {
         let mut stats: Vec<(Sites, Chars)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
-
-        spin.set_message("Writing output files...");
+        spin.finish_with_message("DONE!\n");
+        let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete, self.datatype);
+        // sum.write_sum_to_file(self.output)
+        //     .expect("File writing a summary statistics file");
+        sum.print_summary().expect("Failed writing to stdout");
         sumwriter::CsvWriter::new(self.output, self.datatype)
             .write_summary_dir(&stats)
             .expect("Failed writing a per locus csv file");
-
-        let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete, self.datatype);
-        sum.write_sum_to_file(self.output)
-            .expect("File writing a summary statistics file");
-        spin.finish_with_message("DONE!\n");
-        sum.print_summary().expect("Failed writing to stdout");
     }
 
     fn get_ntax(&mut self, files: &[PathBuf]) {
