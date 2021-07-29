@@ -442,8 +442,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .possible_values(&["dna", "aa"]),
                 )
                 .arg(
-                    Arg::with_name("comp-interval")
-                        .long("comp-interval")
+                    Arg::with_name("percent-interval")
+                        .long("interval")
                         .help("Sets a custom percentage interval value for counting data matrix completeness")
                         .takes_value(true)
                         .value_name("DECREMENT")

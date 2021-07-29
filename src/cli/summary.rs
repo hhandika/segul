@@ -75,11 +75,11 @@ impl<'a> SummaryParser<'a> {
     fn parse_interval(&self) -> usize {
         let interval = self
             .matches
-            .value_of("comp-interval")
-            .expect("CAN'T GET INTERVAL VALUES");
+            .value_of("percent-interval")
+            .expect("Failed parsing the interval command");
         interval
             .parse::<usize>()
-            .expect("FAIL PARSING INTERVAL VALUES")
+            .expect("Failed parsing interval values to integer")
     }
 
     fn print_input_file(&self, input: &Path) {
