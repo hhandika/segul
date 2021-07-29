@@ -1,8 +1,9 @@
 use std::fs;
-use std::io::{self, BufWriter, Result, Write};
+use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
+use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
@@ -52,8 +53,7 @@ impl<'a> SeqFilter<'a> {
             None => {
                 fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
                 self.par_copy_files(&ftr_aln);
-                self.print_output(ftr_aln.len())
-                    .expect("CANNOT DISPLAY TO STDOUT");
+                self.print_output(ftr_aln.len());
             }
         }
     }
@@ -116,14 +116,10 @@ impl<'a> SeqFilter<'a> {
         Ok(())
     }
 
-    fn print_output(&self, fcounts: usize) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "\x1b[0;33mOutput\x1b[0m")?;
-        writeln!(writer, "File count\t: {}", utils::fmt_num(&fcounts))?;
-        writeln!(writer, "Dir\t\t: {}", self.output.display())?;
-
-        Ok(())
+    fn print_output(&self, fcounts: usize) {
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
+        log::info!("{:18}: {}", "Dir", self.output.display());
     }
 
     fn get_pars_inf(&self, file: &Path) -> usize {
