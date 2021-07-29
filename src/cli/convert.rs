@@ -5,6 +5,7 @@ use crate::cli::*;
 use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl InputCli for ConvertParser<'_> {}
+impl InputPrint for ConvertParser<'_> {}
 impl OutputCli for ConvertParser<'_> {}
 
 pub(in crate::cli) struct ConvertParser<'a> {
@@ -34,25 +35,28 @@ impl<'a> ConvertParser<'a> {
         self.output_fmt = self.parse_output_fmt(self.matches);
         self.datatype = self.parse_datatype(self.matches);
         let input_type = self.parse_input_type(self.matches);
+        let task_desc = "Sequence format conversion";
         match input_type {
-            InputType::File => self.convert_file(),
+            InputType::File => self.convert_file(task_desc),
             InputType::Dir => {
                 let dir = self.parse_dir_input(self.matches);
                 let files = self.get_files(dir, &self.input_fmt);
-                self.print_input_dir(Some(dir), files.len(), &self.output);
+                self.print_input_multi(&Some(dir), task_desc, files.len(), &self.input_fmt);
                 self.convert_multiple_files(&files);
+                log::info!("{:18}: {}", "Output dir", self.output.display());
             }
             InputType::Wildcard => {
                 let files = self.parse_input_wcard(&self.matches);
-                self.print_input_dir::<PathBuf>(None, files.len(), &self.output);
-                self.convert_multiple_files(&files)
+                self.print_input_multi::<PathBuf>(&None, task_desc, files.len(), &self.input_fmt);
+                self.convert_multiple_files(&files);
+                log::info!("{:18}: {}", "Output dir", self.output.display());
             }
         }
     }
 
-    fn convert_file(&mut self) {
+    fn convert_file(&mut self, task_desc: &str) {
         let input = Path::new(self.parse_file_input(self.matches));
-        self.print_input_file(input);
+        self.print_input_file(input, task_desc, &self.input_fmt);
         self.convert_any(input, &self.output, &self.output_fmt);
     }
 
@@ -79,21 +83,5 @@ impl<'a> ConvertParser<'a> {
 
     fn is_sort(&self) -> bool {
         self.matches.is_present("sort")
-    }
-
-    fn print_input_file(&self, input: &Path) {
-        log::info!("{:18}: {}", "Input", &input.display());
-        log::info!("{:18}: Sequence format conversion", "Task");
-    }
-
-    fn print_input_dir<P: AsRef<Path>>(&self, input: Option<P>, nfile: usize, output: &Path) {
-        if let Some(input) = input {
-            log::info!("{:18}: {}", "Input dir", &input.as_ref().display());
-        } else {
-            log::info!("{:18}: {}", "Input dir", "WILDCARD");
-        }
-        log::info!("{:18}: {}", "Total files", utils::fmt_num(&nfile));
-        log::info!("{:18}: Sequence format conversion\n", "Task");
-        log::info!("{:18}: {}", "Output dir", output.display());
     }
 }

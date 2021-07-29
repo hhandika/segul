@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+
+use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::*;
@@ -5,12 +8,14 @@ use crate::core::filter;
 use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl InputCli for FilterParser<'_> {}
+impl InputPrint for FilterParser<'_> {}
 impl OutputCli for FilterParser<'_> {}
 impl PartCLi for FilterParser<'_> {}
 
 pub(in crate::cli) struct FilterParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_fmt: InputFmt,
+    input_dir: Option<PathBuf>,
     output_dir: PathBuf,
     files: Vec<PathBuf>,
     params: filter::Params,
@@ -24,6 +29,7 @@ impl<'a> FilterParser<'a> {
         Self {
             matches,
             input_fmt: InputFmt::Fasta,
+            input_dir: None,
             output_dir: PathBuf::new(),
             files: Vec::new(),
             params: filter::Params::MinTax(0),
@@ -36,32 +42,32 @@ impl<'a> FilterParser<'a> {
     pub(in crate::cli) fn filter(&mut self) {
         self.input_fmt = self.parse_input_fmt(self.matches);
         self.datatype = self.parse_datatype(self.matches);
-        let dir = self.parse_dir_input(self.matches);
+        let task_desc = "Alignment filtering";
         self.files = if self.is_input_dir() {
             let dir = self.parse_dir_input(self.matches);
+            self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &self.input_fmt)
         } else {
             self.parse_input_wcard(&self.matches)
         };
 
         if self.is_npercent() {
-            self.get_min_taxa_npercent(dir);
+            self.get_min_taxa_npercent(task_desc);
         } else {
             self.get_params();
-            self.set_output_path(dir);
-            self.filter_aln();
+            self.set_output_path();
+            self.filter_aln(task_desc);
         }
     }
 
-    fn get_min_taxa_npercent(&mut self, dir: &str) {
+    fn get_min_taxa_npercent(&mut self, task_desc: &str) {
         let npercent = self.parse_npercent();
         npercent.iter().for_each(|&np| {
             self.percent = np;
             let min_tax = self.get_min_taxa();
             self.params = filter::Params::MinTax(min_tax);
-            self.set_multi_output_path(dir);
-            self.print_input().expect("CANNOT DISPLAY TO STDOUT");
-            self.filter_aln();
+            self.set_multi_output_path();
+            self.filter_aln(task_desc);
             utils::print_divider();
         });
     }
@@ -70,8 +76,14 @@ impl<'a> FilterParser<'a> {
         self.matches.is_present("dir")
     }
 
-    fn filter_aln(&self) {
-        self.print_input().expect("CANNOT DISPLAY TO STDOUT");
+    fn filter_aln(&self, task_desc: &str) {
+        self.print_input_multi(
+            &self.input_dir,
+            task_desc,
+            self.files.len(),
+            &self.input_fmt,
+        );
+        self.print_params();
         let mut filter = filter::SeqFilter::new(
             &self.files,
             &self.input_fmt,
@@ -193,25 +205,31 @@ impl<'a> FilterParser<'a> {
             .expect("CANNOT PARSE NTAX VALUES TO INTEGERS")
     }
 
-    fn set_output_path<P: AsRef<Path>>(&mut self, dir: P) {
+    fn set_output_path(&mut self) {
         if self.matches.is_present("output") {
             self.output_dir = PathBuf::from(self.parse_output(self.matches));
         } else {
-            self.output_dir = self.fmt_output_path(dir.as_ref());
+            match self.input_dir.as_ref() {
+                Some(dir) => self.output_dir = self.fmt_output_path(&dir),
+                None => panic!("Please, define an output directory!"),
+            }
         }
     }
 
-    fn set_multi_output_path<P: AsRef<Path>>(&mut self, dir: P) {
+    fn set_multi_output_path(&mut self) {
         if self.matches.is_present("output") {
             let output_dir = PathBuf::from(self.parse_output(self.matches));
             self.output_dir = self.fmt_output_path(&output_dir)
         } else {
-            self.output_dir = self.fmt_output_path(dir.as_ref());
+            match self.input_dir.as_ref() {
+                Some(dir) => self.output_dir = self.fmt_output_path(&dir),
+                None => panic!("Please, define an output directory!"),
+            }
         }
     }
 
     fn fmt_output_path(&self, dir: &Path) -> PathBuf {
-        let parent = dir.parent().expect("FAILED PARSING PARENT DIR");
+        let parent = dir.parent().expect("Failed parsing input directory");
         let last: String = match dir.file_name() {
             Some(fname) => fname.to_string_lossy().to_string(),
             None => String::from("segul-filter"),
@@ -224,35 +242,17 @@ impl<'a> FilterParser<'a> {
         parent.join(output_dir)
     }
 
-    fn print_input(&self) -> Result<()> {
-        let io = io::stdout();
-        let mut writer = BufWriter::new(io);
-        writeln!(writer, "\x1b[0;33mInput\x1b[0m")?;
-        if self.is_input_dir() {
-            writeln!(
-                writer,
-                "Input dir\t: {}",
-                self.parse_dir_input(self.matches)
-            )?;
-        } else {
-            writeln!(writer, "Input\t\t: WILDCARD",)?;
-        }
-        writeln!(
-            writer,
-            "File count\t: {}",
-            utils::fmt_num(&self.files.len())
-        )?;
+    fn print_params(&self) {
+        log::info!("{}", Yellow.paint("Parameters"));
         match self.params {
             filter::Params::MinTax(min_taxa) => {
-                writeln!(writer, "Taxon count\t: {}", self.ntax)?;
-                writeln!(writer, "Percent\t\t: {}%", self.percent * 100.0)?;
-                writeln!(writer, "Min tax\t\t: {}", min_taxa)?;
+                log::info!("{:18}: {}", "Taxon count", self.ntax);
+                log::info!("{:18}: {}%", "Percent", self.percent * 100.0);
+                log::info!("{:18}: {}\n", "Min tax", min_taxa);
             }
-            filter::Params::AlnLen(len) => writeln!(writer, "Min aln len\t: {}bp", len)?,
-            filter::Params::ParsInf(inf) => writeln!(writer, "Min pars. inf\t: {}", inf)?,
+            filter::Params::AlnLen(len) => log::info!("{:18}: {}bp\n", "Min aln len", len),
+            filter::Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
         }
-        writeln!(writer)?;
-        Ok(())
     }
 }
 

@@ -18,6 +18,8 @@ impl InputCli for SummaryParser<'_> {
     }
 }
 
+impl InputPrint for SummaryParser<'_> {}
+
 impl OutputCli for SummaryParser<'_> {}
 
 pub(in crate::cli) struct SummaryParser<'a> {
@@ -42,17 +44,18 @@ impl<'a> SummaryParser<'a> {
         self.interval = self.parse_interval();
         self.datatype = self.parse_datatype(self.matches);
         let input_type = self.parse_input_type(&self.matches);
+        let task_desc = "Sequence summary statistics";
         match input_type {
-            InputType::File => self.get_stats_file(),
+            InputType::File => self.get_stats_file(task_desc),
             InputType::Dir => {
                 let dir = self.parse_dir_input(self.matches);
                 let files = self.get_files(dir, &self.input_fmt);
-                self.print_input_multi(Some(dir), files.len());
+                self.print_input_multi(&Some(dir), task_desc, files.len(), &self.input_fmt);
                 self.get_stats_multiple(&files);
             }
             InputType::Wildcard => {
                 let files = self.parse_input_wcard(&self.matches);
-                self.print_input_multi::<PathBuf>(None, files.len());
+                self.print_input_multi::<PathBuf>(&None, task_desc, files.len(), &self.input_fmt);
                 self.get_stats_multiple(&files)
             }
         }
@@ -63,11 +66,11 @@ impl<'a> SummaryParser<'a> {
         SeqStats::new(&self.input_fmt, output, self.interval, &self.datatype).get_stats_dir(&files);
     }
 
-    fn get_stats_file(&self) {
+    fn get_stats_file(&self, task_desc: &str) {
         self.parse_input_fmt(&self.matches);
         let input = Path::new(self.parse_file_input(self.matches));
         let output = self.parse_output(&self.matches);
-        self.print_input_file(&input);
+        self.print_input_file(&input, task_desc, &self.input_fmt);
         SeqStats::new(&self.input_fmt, output, self.interval, &self.datatype)
             .get_seq_stats_file(input);
     }
@@ -80,31 +83,5 @@ impl<'a> SummaryParser<'a> {
         interval
             .parse::<usize>()
             .expect("Failed parsing interval values to integer")
-    }
-
-    fn print_input_file(&self, input: &Path) {
-        log::info!("{:18}: {}", "Input", &input.display());
-        self.print_input_fmt();
-        log::info!("{:18}: Sequence summary statistics\n", "Task");
-    }
-
-    fn print_input_multi<P: AsRef<Path>>(&self, input: Option<P>, fcounts: usize) {
-        if let Some(input) = input {
-            log::info!("{:18}: {}", "Input dir", &input.as_ref().display());
-        } else {
-            log::info!("{:18}: {}", "Input dir", "WILDCARD");
-        }
-        log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
-        self.print_input_fmt();
-        log::info!("{:18}: Sequence summary statistics\n", "Task");
-    }
-
-    fn print_input_fmt(&self) {
-        match self.input_fmt {
-            InputFmt::Auto => log::info!("{:18}: {}", "Input format", "Auto"),
-            InputFmt::Fasta => log::info!("{:18}: {}", "Input format", "Fasta"),
-            InputFmt::Nexus => log::info!("{:18}: {}", "Input format", "Nexus"),
-            InputFmt::Phylip => log::info!("{:18}: {}", "Input format", "Phylip"),
-        }
     }
 }

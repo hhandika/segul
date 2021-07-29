@@ -279,6 +279,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Sets an output directory")
                         .takes_value(true)
+                        .required_unless("dir")
                         .value_name("OUTPUT"),
                 )
                 .arg(

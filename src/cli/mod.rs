@@ -107,6 +107,40 @@ trait InputCli {
     }
 }
 
+trait InputPrint {
+    fn print_input_file(&self, input: &Path, task_desc: &str, input_fmt: &InputFmt) {
+        log::info!("{:18}: {}", "Input", &input.display());
+        self.print_input_fmt(input_fmt);
+        log::info!("{:18}: {}\n", "Task", task_desc);
+    }
+
+    fn print_input_multi<P: AsRef<Path>>(
+        &self,
+        input: &Option<P>,
+        task_desc: &str,
+        fcounts: usize,
+        input_fmt: &InputFmt,
+    ) {
+        if let Some(input) = input {
+            log::info!("{:18}: {}", "Input dir", &input.as_ref().display());
+        } else {
+            log::info!("{:18}: {}", "Input dir", "WILDCARD");
+        }
+        log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
+        self.print_input_fmt(input_fmt);
+        log::info!("{:18}: {}\n", "Task", task_desc);
+    }
+
+    fn print_input_fmt(&self, input_fmt: &InputFmt) {
+        match input_fmt {
+            InputFmt::Auto => log::info!("{:18}: {}", "Input format", "Auto"),
+            InputFmt::Fasta => log::info!("{:18}: {}", "Input format", "Fasta"),
+            InputFmt::Nexus => log::info!("{:18}: {}", "Input format", "Nexus"),
+            InputFmt::Phylip => log::info!("{:18}: {}", "Input format", "Phylip"),
+        }
+    }
+}
+
 trait OutputCli {
     fn parse_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
         matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
