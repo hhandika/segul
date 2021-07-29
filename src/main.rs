@@ -27,6 +27,7 @@ fn main() {
     setup_logger().expect("Failed setting up a log file.");
     let version = crate_version!();
     let time = Instant::now();
+    helper::utils::print_welcome_text(&version);
     cli::parse_cli(&version);
     let duration = time.elapsed();
     log::info!("{:18}: {}", "Log file", LOG_FILE);
