@@ -14,21 +14,9 @@ use crate::helper::utils;
 pub fn print_stats(site: &Sites, dna: &Chars) {
     log::info!("{}", Yellow.paint("Alignment"));
     log::info!("{:18}: {}", "Taxa", utils::fmt_num(&dna.ntax));
-    log::info!("{:18}: {}\n", "Length", utils::fmt_num(&site.counts));
+    log::info!("{:18}: {}", "Length", utils::fmt_num(&site.counts));
 
-    log::info!("{}", Yellow.paint("Sites"));
-    log::info!("{:18}: {}", "Conserved", utils::fmt_num(&site.conserved));
-    log::info!("{:18}: {}", "Variable", utils::fmt_num(&site.variable));
-    log::info!(
-        "{:18}: {}\n",
-        "Parsimony inf.",
-        utils::fmt_num(&site.pars_inf)
-    );
-    log::info!("{:18}: {:.2}%", "%Conserved", site.prop_cons * 100.0);
-    log::info!("{:18}: {:.2}%", "%Variable", site.prop_var * 100.0);
-    log::info!("{:18}: {:.2}%\n", "%Pars. inf.", site.prop_var * 100.0);
-
-    log::info!("{}", Yellow.paint("Characters"));
+    log::info!("\n{}", Yellow.paint("Characters"));
     log::info!("{:18}: {}", "Total", utils::fmt_num(&dna.total_chars));
     log::info!(
         "{:18}: {}",
@@ -44,6 +32,18 @@ pub fn print_stats(site: &Sites, dna: &Chars) {
     dna.chars
         .iter()
         .for_each(|(ch, count)| log::info!("{:18}: {}", ch, utils::fmt_num(&count)));
+
+    log::info!("\n{}", Yellow.paint("Sites"));
+    log::info!("{:18}: {}", "Conserved", utils::fmt_num(&site.conserved));
+    log::info!("{:18}: {}", "Variable", utils::fmt_num(&site.variable));
+    log::info!(
+        "{:18}: {}",
+        "Parsimony inf.",
+        utils::fmt_num(&site.pars_inf)
+    );
+    log::info!("{:18}: {:.2}%", "%Conserved", site.prop_cons * 100.0);
+    log::info!("{:18}: {:.2}%", "%Variable", site.prop_var * 100.0);
+    log::info!("{:18}: {:.2}%\n", "%Pars. inf.", site.prop_var * 100.0);
 }
 
 trait Alphabet {
