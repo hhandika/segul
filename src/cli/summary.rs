@@ -13,7 +13,7 @@ impl InputCli for SummaryParser<'_> {
         match datatype {
             "aa" => DataType::Aa,
             "dna" => DataType::Dna,
-            _ => unreachable!(),
+            _ => unreachable!("Please, define the data type of the file"),
         }
     }
 }
