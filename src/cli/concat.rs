@@ -4,6 +4,7 @@ use crate::cli::*;
 use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl PartCLi for ConcatParser<'_> {}
+impl InputPrint for ConcatParser<'_> {}
 
 impl InputCli for ConcatParser<'_> {
     fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
@@ -24,6 +25,7 @@ impl OutputCli for ConcatParser<'_> {
 pub(in crate::cli) struct ConcatParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_fmt: InputFmt,
+    input_dir: Option<PathBuf>,
     input_type: InputType,
     output_fmt: OutputFmt,
     part_fmt: PartitionFmt,
@@ -35,6 +37,7 @@ impl<'a> ConcatParser<'a> {
         Self {
             matches,
             input_fmt: InputFmt::Fasta,
+            input_dir: None,
             input_type: InputType::Dir,
             output_fmt: OutputFmt::Nexus,
             part_fmt: PartitionFmt::Charset,
@@ -50,13 +53,15 @@ impl<'a> ConcatParser<'a> {
         self.output_fmt = self.parse_output_fmt(self.matches);
         self.part_fmt = self.parse_partition_fmt(self.matches);
         self.check_partition_format(&self.output_fmt, &self.part_fmt);
+        let task_desc = "Alignment concatenation";
         let mut files = if self.is_input_wcard() {
             self.parse_input_wcard(&self.matches)
         } else {
             let dir = self.parse_dir_input(self.matches);
+            self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &self.input_fmt)
         };
-        self.print_user_input();
+        self.print_input_multi(&self.input_dir, task_desc, files.len(), &self.input_fmt);
         let concat =
             msa::MSAlignment::new(&self.input_fmt, output, &self.output_fmt, &self.part_fmt);
 
@@ -65,14 +70,5 @@ impl<'a> ConcatParser<'a> {
 
     fn is_input_wcard(&self) -> bool {
         self.matches.is_present("wildcard")
-    }
-
-    fn print_user_input(&self) {
-        if !self.is_input_wcard() {
-            log::info!("{:18}: {}", "Input dir", self.parse_dir_input(self.matches));
-        } else {
-            log::info!("{:18}: WILDCARD", "Input");
-        }
-        log::info!("{:18}: Alignment concatenation\n", "Task");
     }
 }
