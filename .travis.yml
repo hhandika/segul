@@ -56,7 +56,7 @@ matrix:
 script: |
   export RUST_BACKTRACE=1 &&
   cargo build --verbose &&
-  cargo test --verbose &&
+  cargo test --verbose
 
 jobs:
   allow_failures:
