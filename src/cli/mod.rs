@@ -5,7 +5,7 @@ mod filter;
 mod id;
 mod summary;
 
-use std::io::{self, BufWriter, Result, Write};
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use clap::ArgMatches;
