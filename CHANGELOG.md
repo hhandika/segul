@@ -1,14 +1,21 @@
 # Release Notes
 
+## v0.3.0
+
+- Add new features: alignment filtering, id finding, and summary statistics.
+- More consistent terminal output.
+- Add sequence checking for fasta input.
+- Faster parser.
+- Improvement in memory allocation.
+
 ## v0.2.0
 
 - Add support for interleaved outputs.
 
 ## v0.1.1
 
-- Faster fasta concat
+- Faster fasta concat.
 
 ## v0.1.0
 
-- First stable release
-
+- First stable release.
