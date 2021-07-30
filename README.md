@@ -23,7 +23,7 @@ Supported sequence formats:
 2. Relaxed phylip
 3. Fasta
 
-The program support all formats in interleaved and sequential.
+The program support all formats in interleave and sequential.
 
 It is now in active development. Our goal is to provide as many functionalities possible for alignment manipulation tasks.
 
