@@ -251,42 +251,6 @@ impl<'s> SummaryWriter<'s> {
         Ok(())
     }
 
-    // pub fn write_sum_to_file(&self, output: &str) -> Result<()> {
-    //     let fname = self.get_output_fname(output);
-    //     let file = File::create(&fname)
-    //         .with_context(|| format!("Failed creating file {}", fname.display()))?;
-    //     let mut writer = BufWriter::new(file);
-    //     writeln!(writer, "General Summmary")?;
-    //     self.write_gen_sum();
-    //     writeln!(writer, "Alignment Summmary")?;
-    //     self.write_aln_sum(&mut writer)?;
-    //     writeln!(writer, "Taxon Summmary")?;
-    //     self.write_tax_sum(&mut writer)?;
-
-    //     writeln!(writer, "Character Count")?;
-    //     self.write_char_count(&mut writer)?;
-
-    //     writeln!(writer, "Data Matrix Completeness")?;
-    //     self.write_matrix_comp(&mut writer)?;
-
-    //     writeln!(writer, "Conserved Sequences")?;
-    //     self.write_cons_seq(&mut writer)?;
-
-    //     writeln!(writer, "Variable Sequences")?;
-    //     self.write_var_seq(&mut writer)?;
-
-    //     writeln!(writer, "Parsimony Informative")?;
-    //     self.write_pars_inf(&mut writer)?;
-    //     writeln!(writer)?;
-    //     writer.flush()?;
-    //     Ok(())
-    // }
-
-    // fn get_output_fname(&self, output: &str) -> PathBuf {
-    //     let fname = format!("{}_summary.txt", output);
-    //     PathBuf::from(fname)
-    // }
-
     fn write_gen_sum(&self) {
         log::info!(
             "{:18}: {}",
