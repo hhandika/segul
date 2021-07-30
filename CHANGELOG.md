@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.1
+
+- Fix welcome screen showing up when checking the app version.
+
 ## v0.3.0
 
 - Add new features: alignment filtering, id finding, and summary statistics.
