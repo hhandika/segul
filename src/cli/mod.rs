@@ -26,6 +26,7 @@ use crate::helper::utils;
 
 pub fn parse_cli(version: &str) {
     let args = args::get_args(version);
+    utils::print_welcome_text(&version);
     match args.subcommand() {
         ("convert", Some(convert_matches)) => ConvertParser::new(convert_matches).convert(),
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
