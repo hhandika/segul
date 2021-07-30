@@ -3,7 +3,7 @@ use clap::{App, AppSettings, Arg, ArgMatches};
 pub fn get_args(version: &str) -> ArgMatches {
     App::new("segul")
         .version(version)
-        .about("An ultra-fast and efficient alignment manipulation tool")
+        .about("An ultra-fast and efficient alignment tool for phylogenomics")
         .author("Heru Handika")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
