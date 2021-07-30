@@ -13,7 +13,6 @@ env:
 os:
   - linux
   - osx
-  - windows
 
 rust:
   - stable
