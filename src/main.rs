@@ -20,13 +20,14 @@ const LOG_FILE: &str = "segul.log";
 fn main() {
     // We ignore backtrace for now. It does
     // not seem useful for most cases.
+    let time = Instant::now();
     panic::set_hook(Box::new(move |panic_info| {
         log::error!("{}", panic_info);
     }));
 
     setup_logger().expect("Failed setting up a log file.");
     let version = crate_version!();
-    let time = Instant::now();
+
     helper::utils::print_welcome_text(&version);
     cli::parse_cli(&version);
     let duration = time.elapsed();
