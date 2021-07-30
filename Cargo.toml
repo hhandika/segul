@@ -8,7 +8,7 @@ description = "An ultra-fast and efficient alignment tool for phylogenomics"
 readme = "README.md"
 homepage = "https://github.com/hhandika/segul"
 repository = "https://github.com/hhandika/segul"
-keywords = ["cli", "utility", "alignment", "sequence", "genomics", "phylogenomics"]
+keywords = ["cli", "utility", "alignment", "genomics", "phylogenomics"]
 categories = ["command-line-utilities", "science"]
 
 [dependencies]
