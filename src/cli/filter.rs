@@ -48,7 +48,7 @@ impl<'a> FilterParser<'a> {
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &self.input_fmt)
         } else {
-            self.parse_input_wcard(&self.matches)
+            self.parse_input_wcard(self.matches)
         };
 
         if self.is_npercent() {
@@ -210,7 +210,7 @@ impl<'a> FilterParser<'a> {
             self.output_dir = PathBuf::from(self.parse_output(self.matches));
         } else {
             match self.input_dir.as_ref() {
-                Some(dir) => self.output_dir = self.fmt_output_path(&dir),
+                Some(dir) => self.output_dir = self.fmt_output_path(dir),
                 None => panic!("Please, define an output directory!"),
             }
         }
@@ -222,7 +222,7 @@ impl<'a> FilterParser<'a> {
             self.output_dir = self.fmt_output_path(&output_dir)
         } else {
             match self.input_dir.as_ref() {
-                Some(dir) => self.output_dir = self.fmt_output_path(&dir),
+                Some(dir) => self.output_dir = self.fmt_output_path(dir),
                 None => panic!("Please, define an output directory!"),
             }
         }

@@ -31,7 +31,7 @@ pub fn print_stats(site: &Sites, dna: &Chars) {
 
     dna.chars
         .iter()
-        .for_each(|(ch, count)| log::info!("{:18}: {}", ch, utils::fmt_num(&count)));
+        .for_each(|(ch, count)| log::info!("{:18}: {}", ch, utils::fmt_num(count)));
 
     log::info!("\n{}", Yellow.paint("Sites"));
     log::info!("{:18}: {}", "Conserved", utils::fmt_num(&site.conserved));
@@ -94,7 +94,7 @@ impl<'a> CsvWriter<'a> {
         let file = File::create(&self.output)
             .with_context(|| format!("Failed creating file {}", self.output))?;
         let mut writer = BufWriter::new(file);
-        let alphabet = self.get_alphabet(&self.datatype);
+        let alphabet = self.get_alphabet(self.datatype);
         self.write_csv_header(&mut writer, alphabet)?;
         self.write_csv_content(&mut writer, site, chars, alphabet)
             .unwrap();
@@ -324,7 +324,7 @@ impl<'s> SummaryWriter<'s> {
         let alphabet = self.get_alphabet(self.datatype);
         alphabet.chars().for_each(|ch| {
             if let Some(count) = self.chars.chars.get(&ch) {
-                log::info!("{:18}: {}", ch, utils::fmt_num(&count));
+                log::info!("{:18}: {}", ch, utils::fmt_num(count));
             }
         });
     }

@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::BufWriter;
-use std::iter;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
@@ -287,7 +286,7 @@ impl<'a> SeqWriter<'a> {
         match &self.partition {
             Some(partition) => partition.iter().for_each(|part| {
                 if codon {
-                    self.write_nex_codon(writer, &part).unwrap();
+                    self.write_nex_codon(writer, part).unwrap();
                 } else {
                     writeln!(
                         writer,
@@ -440,9 +439,9 @@ impl<'a> SeqWriter<'a> {
         let spaces = 1;
         if len < max_len {
             let inserts = (max_len - len) + spaces;
-            iter::repeat(' ').take(inserts).collect()
+            " ".repeat(inserts)
         } else {
-            iter::repeat(' ').take(spaces).collect()
+            " ".repeat(spaces)
         }
     }
 }

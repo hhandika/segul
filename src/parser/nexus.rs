@@ -81,25 +81,25 @@ impl<'a> Nexus<'a> {
         let mut header = String::new();
         buff.read_line(&mut header)
             .expect("Failed reading nexus header file");
-        self.check_nexus(&header.trim());
+        self.check_nexus(header.trim());
         let reader = NexusReader::new(buff);
         reader.into_iter().collect()
     }
 
     fn parse_blocks(&mut self, blocks: &[Block]) {
         blocks.iter().for_each(|block| match block {
-            Block::Dimensions(dimensions) => self.parse_dimensions(&dimensions),
-            Block::Format(format) => self.parse_format(&format),
-            Block::Matrix(matrix) => self.parse_matrix(&matrix),
+            Block::Dimensions(dimensions) => self.parse_dimensions(dimensions),
+            Block::Format(format) => self.parse_format(format),
+            Block::Matrix(matrix) => self.parse_matrix(matrix),
             Block::Undetermined => (),
         });
     }
 
     fn parse_dimensions(&mut self, blocks: &[String]) {
         blocks.iter().for_each(|dimension| match dimension {
-            token if token.starts_with("ntax") => self.header.ntax = self.parse_ntax(&dimension),
+            token if token.starts_with("ntax") => self.header.ntax = self.parse_ntax(dimension),
             token if token.starts_with("nchar") => {
-                self.header.nchar = self.parse_characters(&dimension)
+                self.header.nchar = self.parse_characters(dimension)
             }
             _ => (),
         });
@@ -108,13 +108,13 @@ impl<'a> Nexus<'a> {
     fn parse_format(&mut self, blocks: &[String]) {
         blocks.iter().for_each(|format| match format {
             token if token.starts_with("datatype") => {
-                self.header.datatype = self.parse_datatype(&format)
+                self.header.datatype = self.parse_datatype(format)
             }
             token if token.starts_with("missing") => {
-                self.header.missing = self.parse_missing(&format)
+                self.header.missing = self.parse_missing(format)
             }
-            token if token.starts_with("gap") => self.header.gap = self.parse_gap(&format),
-            token if token.starts_with("interleave") => self.parse_interleave(&format),
+            token if token.starts_with("gap") => self.header.gap = self.parse_gap(format),
+            token if token.starts_with("interleave") => self.parse_interleave(format),
             _ => (),
         });
     }
@@ -122,7 +122,7 @@ impl<'a> Nexus<'a> {
     fn parse_matrix(&mut self, matrix: &[(String, String)]) {
         self.matrix.reserve(self.header.ntax);
         matrix.iter().for_each(|(id, seq)| {
-            alphabet::check_valid_seq(&self.input, &self.datatype, &id, &seq);
+            alphabet::check_valid_seq(self.input, self.datatype, id, seq);
             if self.interleave {
                 self.insert_matrix_interleave(id.to_string(), seq.to_string());
             } else {

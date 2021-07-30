@@ -104,7 +104,7 @@ impl<'a> SeqFilter<'a> {
     ) {
         let output = self.output.to_string_lossy();
         let concat = MSAlignment::new(self.input_fmt, &output, output_fmt, part_fmt);
-        concat.concat_alignment(ftr_files, &self.datatype);
+        concat.concat_alignment(ftr_files, self.datatype);
     }
 
     fn copy_files(&self, origin: &Path) -> Result<()> {
@@ -133,7 +133,7 @@ impl<'a> SeqFilter<'a> {
     }
 
     fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
-        let aln = Sequence::new(file, &self.datatype);
+        let aln = Sequence::new(file, self.datatype);
         aln.get_alignment(self.input_fmt)
     }
 }

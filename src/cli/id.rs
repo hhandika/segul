@@ -44,7 +44,7 @@ impl<'a> IdParser<'a> {
     }
 
     pub(in crate::cli) fn get_id(&mut self) {
-        let input_fmt = self.parse_input_fmt(&self.matches);
+        let input_fmt = self.parse_input_fmt(self.matches);
         let datatype = self.parse_datatype(self.matches);
         let task_desc = "IDs finding";
         let files = if self.is_input_dir() {
@@ -52,7 +52,7 @@ impl<'a> IdParser<'a> {
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
         } else {
-            self.parse_input_wcard(&self.matches)
+            self.parse_input_wcard(self.matches)
         };
         self.print_input_multi(&self.input_dir, task_desc, files.len(), &input_fmt);
         let spin = utils::set_spinner();
@@ -67,7 +67,7 @@ impl<'a> IdParser<'a> {
     }
 
     fn write_results(&self, ids: &IndexSet<String>) {
-        let fname = self.parse_output_path(&self.matches);
+        let fname = self.parse_output_path(self.matches);
         let file = File::create(&fname).expect("CANNOT CREATE AN OUTPUT FILE");
         let mut writer = BufWriter::new(file);
         ids.iter().for_each(|id| {

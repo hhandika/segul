@@ -40,10 +40,10 @@ impl<'a> SummaryParser<'a> {
     }
 
     pub(in crate::cli) fn stats(&mut self) {
-        self.input_fmt = self.parse_input_fmt(&self.matches);
+        self.input_fmt = self.parse_input_fmt(self.matches);
         self.interval = self.parse_interval();
         self.datatype = self.parse_datatype(self.matches);
-        let input_type = self.parse_input_type(&self.matches);
+        let input_type = self.parse_input_type(self.matches);
         let task_desc = "Sequence summary statistics";
         match input_type {
             InputType::File => self.get_stats_file(task_desc),
@@ -54,7 +54,7 @@ impl<'a> SummaryParser<'a> {
                 self.get_stats_multiple(&files);
             }
             InputType::Wildcard => {
-                let files = self.parse_input_wcard(&self.matches);
+                let files = self.parse_input_wcard(self.matches);
                 self.print_input_multi::<PathBuf>(&None, task_desc, files.len(), &self.input_fmt);
                 self.get_stats_multiple(&files)
             }
@@ -62,15 +62,15 @@ impl<'a> SummaryParser<'a> {
     }
 
     fn get_stats_multiple(&self, files: &[PathBuf]) {
-        let output = self.parse_output(&self.matches);
-        SeqStats::new(&self.input_fmt, output, self.interval, &self.datatype).get_stats_dir(&files);
+        let output = self.parse_output(self.matches);
+        SeqStats::new(&self.input_fmt, output, self.interval, &self.datatype).get_stats_dir(files);
     }
 
     fn get_stats_file(&self, task_desc: &str) {
-        self.parse_input_fmt(&self.matches);
+        self.parse_input_fmt(self.matches);
         let input = Path::new(self.parse_file_input(self.matches));
-        let output = self.parse_output(&self.matches);
-        self.print_input_file(&input, task_desc, &self.input_fmt);
+        let output = self.parse_output(self.matches);
+        self.print_input_file(input, task_desc, &self.input_fmt);
         SeqStats::new(&self.input_fmt, output, self.interval, &self.datatype)
             .get_seq_stats_file(input);
     }

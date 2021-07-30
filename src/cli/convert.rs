@@ -46,7 +46,7 @@ impl<'a> ConvertParser<'a> {
                 log::info!("{:18}: {}", "Output dir", self.output.display());
             }
             InputType::Wildcard => {
-                let files = self.parse_input_wcard(&self.matches);
+                let files = self.parse_input_wcard(self.matches);
                 self.print_input_multi::<PathBuf>(&None, task_desc, files.len(), &self.input_fmt);
                 self.convert_multiple_files(&files);
                 log::info!("{:18}: {}", "Output dir", self.output.display());

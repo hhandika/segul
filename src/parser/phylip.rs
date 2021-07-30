@@ -75,13 +75,13 @@ impl<'a> Phylip<'a> {
         self.matrix.reserve(self.header.ntax);
         records.into_iter().for_each(|rec| match rec.id {
             Some(id) => {
-                alphabet::check_valid_seq(&self.input, &self.datatype, &id, &rec.seq);
+                alphabet::check_valid_seq(self.input, self.datatype, &id, &rec.seq);
                 ids.insert(rec.pos, id.clone());
                 self.insert_matrix(id, rec.seq);
             }
             None => {
                 if let Some(id) = ids.get(&rec.pos) {
-                    alphabet::check_valid_seq(&self.input, &self.datatype, &id, &rec.seq);
+                    alphabet::check_valid_seq(self.input, self.datatype, id, &rec.seq);
                     if let Some(value) = self.matrix.get_mut(id) {
                         value.push_str(&rec.seq);
                     }
@@ -99,7 +99,7 @@ impl<'a> Phylip<'a> {
         let mut buff = BufReader::new(file);
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
-        self.parse_header(&header_line.trim());
+        self.parse_header(header_line.trim());
 
         Ok(buff)
     }

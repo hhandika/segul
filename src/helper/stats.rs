@@ -83,9 +83,9 @@ impl SiteSummary {
         self.min_sites = sites.iter().map(|s| s.counts).min().unwrap();
         self.max_sites = sites.iter().map(|s| s.counts).max().unwrap();
         self.mean_sites = self.total_sites as f64 / self.total_loci as f64;
-        self.count_cons_sites(&sites);
-        self.count_var_sites(&sites);
-        self.count_inf_sites(&sites);
+        self.count_cons_sites(sites);
+        self.count_var_sites(sites);
+        self.count_inf_sites(sites);
     }
 
     fn count_cons_sites(&mut self, sites: &[Sites]) {
@@ -455,9 +455,9 @@ impl Chars {
 #[cfg(test)]
 mod test {
     use super::*;
-    use indexmap::IndexMap;
     use crate::helper::sequence::Sequence;
     use crate::helper::types::{DataType, InputFmt};
+    use indexmap::IndexMap;
 
     const DNA: DataType = DataType::Dna;
 

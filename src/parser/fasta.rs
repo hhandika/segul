@@ -66,7 +66,7 @@ impl<'a> Fasta<'a> {
                     fas.id
                 ),
                 None => {
-                    alphabet::check_valid_seq(&self.input, &self.datatype, &fas.id, &fas.seq);
+                    alphabet::check_valid_seq(self.input, self.datatype, &fas.id, &fas.seq);
                     self.matrix.insert(fas.id, fas.seq);
                 }
             });

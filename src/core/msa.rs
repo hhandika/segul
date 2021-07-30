@@ -2,7 +2,6 @@
 //! Contains methods for working with multi-sequence alignments.
 
 use std::ffi::OsStr;
-use std::iter;
 use std::path::{Path, PathBuf};
 
 use ansi_term::Colour::Yellow;
@@ -40,23 +39,23 @@ impl<'a> MSAlignment<'a> {
     }
 
     pub fn concat_alignment(&self, files: &mut [PathBuf], datatype: &DataType) {
-        let mut concat = Concat::new(files, &self.input_fmt, datatype);
+        let mut concat = Concat::new(files, self.input_fmt, datatype);
         let spin = utils::set_spinner();
         self.write_alignment(&mut concat, &spin);
     }
 
     fn write_alignment(&self, concat: &mut Concat, spin: &ProgressBar) {
-        concat.concat_alignment(&spin);
+        concat.concat_alignment(spin);
         let output = Path::new(self.output);
         let mut save = SeqWriter::new(
             output,
             &concat.alignment,
             &concat.header,
             Some(&concat.partition),
-            &self.part_fmt,
+            self.part_fmt,
         );
         spin.set_message("Writing output files...");
-        save.write_sequence(&self.output_fmt)
+        save.write_sequence(self.output_fmt)
             .expect("Failed writing the output file");
         spin.finish_with_message("DONE!\n");
         self.print_alignment_stats(concat.partition.len(), &concat.header);
@@ -96,7 +95,7 @@ impl<'a> Concat<'a> {
     fn concat_alignment(&mut self, spin: &ProgressBar) {
         alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
-        let id = IDs::new(&self.files, &self.input_fmt, self.datatype).get_id_all();
+        let id = IDs::new(self.files, self.input_fmt, self.datatype).get_id_all();
         spin.set_message("Concatenating alignments...");
         self.concat(&id);
         self.header.ntax = self.alignment.len();
@@ -132,7 +131,7 @@ impl<'a> Concat<'a> {
 
     fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
         let aln = Sequence::new(file, self.datatype);
-        let (matrix, header) = aln.get_alignment(&self.input_fmt);
+        let (matrix, header) = aln.get_alignment(self.input_fmt);
         assert!(
             header.ntax != 0,
             "Found an empty alignment {}",
@@ -167,7 +166,7 @@ impl<'a> Concat<'a> {
 
     #[inline]
     fn get_missings(&self, len: usize) -> String {
-        iter::repeat('?').take(len).collect()
+        "?".repeat(len)
     }
 }
 

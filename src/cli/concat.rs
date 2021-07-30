@@ -55,7 +55,7 @@ impl<'a> ConcatParser<'a> {
         self.check_partition_format(&self.output_fmt, &self.part_fmt);
         let task_desc = "Alignment concatenation";
         let mut files = if self.is_input_wcard() {
-            self.parse_input_wcard(&self.matches)
+            self.parse_input_wcard(self.matches)
         } else {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
