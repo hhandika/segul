@@ -103,7 +103,7 @@ impl<'a> Concat<'a> {
     }
 
     fn concat(&mut self, id: &IndexSet<String>) {
-        let mut alignment = IndexMap::new();
+        let mut alignment = IndexMap::with_capacity(id.len());
         let mut nchar = 0;
         let mut gene_start = 1;
         let mut partition = Vec::new();
