@@ -48,7 +48,7 @@ It should show the cargo version number. Then install the app:
 cargo install segul
 ```
 
-If you encounter a compiling  issue, you may need to install the development tool necessary to compile the app. For Linux, install build-essential. 
+If you encounter a compiling  issue, you may need to install the development tool necessary to compile the app. For Linux, install build-essential.
 
 For Debian-based distributions, such as Debian, Ubuntu, PopOS, Linux Mint, etc:
 
