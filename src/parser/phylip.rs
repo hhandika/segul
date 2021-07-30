@@ -72,6 +72,7 @@ impl<'a> Phylip<'a> {
         let buff = self.get_header()?;
         let records = Reader::new(buff, self.header.ntax);
         let mut ids: HashMap<usize, String> = HashMap::new();
+        self.matrix.reserve(self.header.ntax);
         records.into_iter().for_each(|rec| match rec.id {
             Some(id) => {
                 alphabet::check_valid_seq(&self.input, &self.datatype, &id, &rec.seq);

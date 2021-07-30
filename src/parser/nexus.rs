@@ -120,6 +120,7 @@ impl<'a> Nexus<'a> {
     }
 
     fn parse_matrix(&mut self, matrix: &[(String, String)]) {
+        self.matrix.reserve(self.header.ntax);
         matrix.iter().for_each(|(id, seq)| {
             alphabet::check_valid_seq(&self.input, &self.datatype, &id, &seq);
             if self.interleave {
