@@ -1,9 +1,9 @@
-use clap::{App, AppSettings, Arg, ArgMatches};
+use clap::{crate_description, crate_name, App, AppSettings, Arg, ArgMatches};
 
 pub fn get_args(version: &str) -> ArgMatches {
-    App::new("segul")
+    App::new(crate_name!())
         .version(version)
-        .about("An ultra-fast and efficient alignment tool for phylogenomics")
+        .about(crate_description!())
         .author("Heru Handika")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
