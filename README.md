@@ -45,7 +45,7 @@ It is now in active development. Our goal is to provide as many functionalities 
   - [Installing through Cargo](#installing-through-cargo)
   - [Installing from a GitHub repository](#installing-from-a-github-repository)
 - [Usages](#usages)
-  - [Available command options](#available-command-options)
+  - [Available subcommands](#available-subcommands)
 
 ## Supported Platforms
 
