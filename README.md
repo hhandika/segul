@@ -58,7 +58,7 @@ The program may work in any rust supported [platform](https://doc.rust-lang.org/
 
 ## Quick Start
 
-If you already using a rust program and familiar with its [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](#installation)). To install through cargo:
+If you already using a rust program and familiar with its [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](#installing-through-cargo)). To install through cargo:
 
 ```{Bash}
 cargo install segul
