@@ -17,12 +17,12 @@ impl InputCli for IdParser<'_> {
 }
 
 impl OutputCli for IdParser<'_> {
-    fn parse_output_path(&self, matches: &ArgMatches) -> PathBuf {
+    fn parse_output(&self, matches: &ArgMatches) -> PathBuf {
         if matches.is_present("output") {
             let output = self.parse_output(matches);
-            PathBuf::from(output).with_extension("txt")
+            output.with_extension("txt")
         } else {
-            let input = Path::new(self.parse_dir_input(matches));
+            let input = self.parse_dir_input(matches);
             input.with_extension("txt")
         }
     }
@@ -67,7 +67,7 @@ impl<'a> IdParser<'a> {
     }
 
     fn write_results(&self, ids: &IndexSet<String>) {
-        let fname = self.parse_output_path(self.matches);
+        let fname = self.parse_output(self.matches);
         let file = File::create(&fname).expect("CANNOT CREATE AN OUTPUT FILE");
         let mut writer = BufWriter::new(file);
         ids.iter().for_each(|id| {

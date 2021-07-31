@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-// use std::path::PathBuf;
+use std::path::Path;
 
 use ansi_term::Colour::Yellow;
 use anyhow::{Context, Result};
@@ -59,22 +59,18 @@ trait Alphabet {
 impl Alphabet for CsvWriter<'_> {}
 
 pub struct CsvWriter<'a> {
-    output: String,
+    output: &'a Path,
     datatype: &'a DataType,
 }
 
 impl<'a> CsvWriter<'a> {
-    pub fn new(output: &str, datatype: &'a DataType) -> Self {
-        Self {
-            output: String::from(output),
-            datatype,
-        }
+    pub fn new(output: &'a Path, datatype: &'a DataType) -> Self {
+        Self { output, datatype }
     }
 
     pub fn write_summary_dir(&mut self, stats: &[(Sites, Chars)]) -> Result<()> {
-        self.get_ouput_fname();
         let file = File::create(&self.output)
-            .with_context(|| format!("Failed creating file {}", self.output))?;
+            .with_context(|| format!("Failed creating file {}", self.output.display()))?;
         let mut writer = BufWriter::new(file);
         let alphabet = self.get_alphabet(self.datatype);
         self.write_csv_header(&mut writer, alphabet)?;
@@ -84,15 +80,14 @@ impl<'a> CsvWriter<'a> {
         });
 
         log::info!("\n{}", Yellow.paint("Output Files"));
-        log::info!("{:18}: {}", "Alignment summary", self.output);
+        log::info!("{:18}: {}", "Alignment summary", self.output.display());
 
         Ok(())
     }
 
     pub fn write_summary_file(&mut self, site: &Sites, chars: &Chars) -> Result<()> {
-        self.get_ouput_fname();
         let file = File::create(&self.output)
-            .with_context(|| format!("Failed creating file {}", self.output))?;
+            .with_context(|| format!("Failed creating file {}", self.output.display()))?;
         let mut writer = BufWriter::new(file);
         let alphabet = self.get_alphabet(self.datatype);
         self.write_csv_header(&mut writer, alphabet)?;
@@ -100,10 +95,6 @@ impl<'a> CsvWriter<'a> {
             .unwrap();
 
         Ok(())
-    }
-
-    fn get_ouput_fname(&mut self) {
-        self.output.push_str("_per_locus.csv")
     }
 
     fn write_csv_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {

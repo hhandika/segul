@@ -102,8 +102,7 @@ impl<'a> SeqFilter<'a> {
         output_fmt: &OutputFmt,
         part_fmt: &PartitionFmt,
     ) {
-        let output = self.output.to_string_lossy();
-        let concat = MSAlignment::new(self.input_fmt, &output, output_fmt, part_fmt);
+        let concat = MSAlignment::new(self.input_fmt, self.output, output_fmt, part_fmt);
         concat.concat_alignment(ftr_files, self.datatype);
     }
 

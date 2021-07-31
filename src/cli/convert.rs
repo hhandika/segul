@@ -6,7 +6,17 @@ use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl InputCli for ConvertParser<'_> {}
 impl InputPrint for ConvertParser<'_> {}
-impl OutputCli for ConvertParser<'_> {}
+impl OutputCli for ConvertParser<'_> {
+    fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
+        if matches.is_present("output") {
+            PathBuf::from(matches.value_of("output").expect("CANNOT READ OUTPUT PATH"))
+        } else {
+            PathBuf::from(self.parse_file_input(matches).file_name().expect(
+                "Faile parsing input file to get the ouput name. Please specify output names!",
+            ))
+        }
+    }
+}
 
 pub(in crate::cli) struct ConvertParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -31,7 +41,7 @@ impl<'a> ConvertParser<'a> {
 
     pub(in crate::cli) fn convert(&mut self) {
         self.input_fmt = self.parse_input_fmt(self.matches);
-        self.output = self.parse_output_path(self.matches);
+        self.output = self.parse_output(self.matches);
         self.output_fmt = self.parse_output_fmt(self.matches);
         self.datatype = self.parse_datatype(self.matches);
         let input_type = self.parse_input_type(self.matches);

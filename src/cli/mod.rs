@@ -82,14 +82,16 @@ enum InputType {
 }
 
 trait InputCli {
-    fn parse_file_input<'a>(&self, matches: &'a ArgMatches) -> &'a str {
-        matches
-            .value_of("input")
-            .expect("CANNOT FIND AN INPUT FILE")
+    fn parse_file_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
+        Path::new(
+            matches
+                .value_of("input")
+                .expect("CANNOT FIND AN INPUT FILE"),
+        )
     }
 
-    fn parse_dir_input<'a>(&self, matches: &'a ArgMatches) -> &'a str {
-        matches.value_of("dir").expect("CANNOT READ DIR PATH")
+    fn parse_dir_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
+        Path::new(matches.value_of("dir").expect("CANNOT READ DIR PATH"))
     }
 
     fn parse_input_wcard(&self, matches: &ArgMatches) -> Vec<PathBuf> {
@@ -100,7 +102,7 @@ trait InputCli {
             .collect()
     }
 
-    fn get_files(&self, dir: &str, input_fmt: &InputFmt) -> Vec<PathBuf> {
+    fn get_files(&self, dir: &Path, input_fmt: &InputFmt) -> Vec<PathBuf> {
         Files::new(dir, input_fmt).get_files()
     }
 
@@ -181,17 +183,8 @@ trait InputPrint {
 }
 
 trait OutputCli {
-    fn parse_output<'a>(&self, matches: &'a ArgMatches) -> &'a str {
-        matches.value_of("output").expect("CANNOT READ OUTPUT PATH")
-    }
-
-    fn parse_output_path(&self, matches: &ArgMatches) -> PathBuf {
-        if matches.is_present("output") {
-            let output = self.parse_output(matches);
-            PathBuf::from(output)
-        } else {
-            PathBuf::from(".")
-        }
+    fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
+        PathBuf::from(matches.value_of("output").expect("CANNOT READ OUTPUT PATH"))
     }
 
     fn parse_output_fmt(&self, matches: &ArgMatches) -> OutputFmt {
@@ -272,6 +265,6 @@ mod test {
             .get_matches();
         let id = IdParser::new(&arg);
         let res = PathBuf::from("./test_dir.txt");
-        assert_eq!(res, id.parse_output_path(&arg));
+        assert_eq!(res, id.parse_output(&arg));
     }
 }

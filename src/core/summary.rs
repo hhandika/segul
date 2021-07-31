@@ -15,7 +15,7 @@ use crate::writer::sumwriter;
 
 pub struct SeqStats<'a> {
     input_format: &'a InputFmt,
-    output: &'a str,
+    output: &'a Path,
     datatype: &'a DataType,
     ntax: usize,
     interval: usize,
@@ -24,7 +24,7 @@ pub struct SeqStats<'a> {
 impl<'a> SeqStats<'a> {
     pub fn new(
         input_format: &'a InputFmt,
-        output: &'a str,
+        output: &'a Path,
         interval: usize,
         datatype: &'a DataType,
     ) -> Self {

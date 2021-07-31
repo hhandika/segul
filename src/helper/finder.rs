@@ -1,6 +1,6 @@
 // Module for files finding and IDs indexing.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
 use glob::glob;
@@ -14,13 +14,13 @@ use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
 
 pub struct Files<'a> {
-    dir: &'a str,
+    dir: &'a Path,
     input_fmt: &'a InputFmt,
     pattern: String,
 }
 
 impl<'a> Files<'a> {
-    pub fn new(dir: &'a str, input_fmt: &'a InputFmt) -> Self {
+    pub fn new(dir: &'a Path, input_fmt: &'a InputFmt) -> Self {
         Self {
             dir,
             input_fmt,
@@ -51,9 +51,9 @@ impl<'a> Files<'a> {
 
     fn get_pattern(&mut self) {
         self.pattern = match self.input_fmt {
-            InputFmt::Fasta => format!("{}/*.fa*", self.dir),
-            InputFmt::Nexus => format!("{}/*.nex*", self.dir),
-            InputFmt::Phylip => format!("{}/*.phy*", self.dir),
+            InputFmt::Fasta => format!("{}/*.fa*", self.dir.display()),
+            InputFmt::Nexus => format!("{}/*.nex*", self.dir.display()),
+            InputFmt::Phylip => format!("{}/*.phy*", self.dir.display()),
             InputFmt::Auto => panic!(
                 "The input format is the default auto. \
             The program cannot use auto for dir input. \
@@ -153,7 +153,7 @@ mod test {
 
     #[test]
     fn get_files_test() {
-        let path = "test_files/concat/";
+        let path = Path::new("test_files/concat/");
         let mut finder = Files::new(path, &InputFmt::Nexus);
         let files = finder.get_files();
         assert_eq!(4, files.len());
@@ -162,7 +162,7 @@ mod test {
     #[test]
     #[should_panic]
     fn check_empty_files_test() {
-        let path = "test_files/empty/";
+        let path = Path::new("test_files/empty/");
         let mut finder = Files::new(path, &InputFmt::Nexus);
         let files = finder.get_files();
         finder.check_glob_results(&files);

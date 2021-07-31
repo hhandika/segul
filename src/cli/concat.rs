@@ -16,11 +16,7 @@ impl InputCli for ConcatParser<'_> {
     }
 }
 
-impl OutputCli for ConcatParser<'_> {
-    fn parse_output_path(&self, matches: &ArgMatches) -> PathBuf {
-        PathBuf::from(self.parse_output(matches))
-    }
-}
+impl OutputCli for ConcatParser<'_> {}
 
 pub(in crate::cli) struct ConcatParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -63,7 +59,7 @@ impl<'a> ConcatParser<'a> {
         };
         self.print_input_multi(&self.input_dir, task_desc, files.len(), &self.input_fmt);
         let concat =
-            msa::MSAlignment::new(&self.input_fmt, output, &self.output_fmt, &self.part_fmt);
+            msa::MSAlignment::new(&self.input_fmt, &output, &self.output_fmt, &self.part_fmt);
 
         concat.concat_alignment(&mut files, &self.datatype);
     }

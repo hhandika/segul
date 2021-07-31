@@ -18,7 +18,7 @@ use crate::writer::seqwriter::SeqWriter;
 
 pub struct MSAlignment<'a> {
     input_fmt: &'a InputFmt,
-    output: &'a str,
+    output: &'a Path,
     output_fmt: &'a OutputFmt,
     part_fmt: &'a PartitionFmt,
 }
@@ -26,7 +26,7 @@ pub struct MSAlignment<'a> {
 impl<'a> MSAlignment<'a> {
     pub fn new(
         input_fmt: &'a InputFmt,
-        output: &'a str,
+        output: &'a Path,
         output_fmt: &'a OutputFmt,
         part_fmt: &'a PartitionFmt,
     ) -> Self {
@@ -46,9 +46,8 @@ impl<'a> MSAlignment<'a> {
 
     fn write_alignment(&self, concat: &mut Concat, spin: &ProgressBar) {
         concat.concat_alignment(spin);
-        let output = Path::new(self.output);
         let mut save = SeqWriter::new(
-            output,
+            self.output,
             &concat.alignment,
             &concat.header,
             Some(&concat.partition),
@@ -179,7 +178,7 @@ mod test {
 
     #[test]
     fn concat_nexus_test() {
-        let path = "test_files/concat/";
+        let path = Path::new("test_files/concat/");
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
@@ -190,7 +189,7 @@ mod test {
     #[test]
     #[should_panic]
     fn get_alignment_panic_test() {
-        let path = "test_files/concat/";
+        let path = Path::new("test_files/concat/");
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
         let concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         concat.get_alignment(Path::new("."));
@@ -198,7 +197,7 @@ mod test {
 
     #[test]
     fn concat_check_result_test() {
-        let path = "test_files/concat/";
+        let path = Path::new("test_files/concat/");
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
@@ -210,7 +209,7 @@ mod test {
 
     #[test]
     fn concat_partition_test() {
-        let path = "test_files/concat/";
+        let path = Path::new("test_files/concat/");
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
