@@ -39,7 +39,7 @@ Supported operating system:
 - Windows
 - Windows Sub-System for Linux
 
-To install, you can donwload the executable in the release tab. Or install through Rust package manager, cargo. You will need the [rust compiler tool-chain](https://www.rust-lang.org/learn/get-started) to install SEGUL. It requires rust version 1.5 or higher. Then, check if the tool-chain installation successful:
+To install, you can donwload the executable in the release tab. Or install through Rust package manager, cargo. You will need the [rust compiler tool-chain](https://www.rust-lang.org/learn/get-started) to install the program through cargo. It requires rust version 1.5 or higher. Then, check if the tool-chain installation successful:
 
 ```{Bash}
 cargo --version
