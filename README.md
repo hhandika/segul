@@ -36,6 +36,17 @@ Supported partition formats:
 
 It is now in active development. Our goal is to provide as many functionalities possible for alignment manipulation tasks.
 
+## Table of Contents
+
+- [Supported Platforms](#supported-platforms)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+  - [Using a pre-compiled library](#using-a-pre-compiled-library)
+  - [Installing through Cargo](#installing-through-cargo)
+  - [Installing from a GitHub repository](#installing-from-a-github-repository)
+- [Usages](#usages)
+  - [Available command options](#available-command-options)
+
 ## Supported Platforms
 
 The program may work in any rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
@@ -85,14 +96,14 @@ It is also available in short options:
 segul concat -d nexus-alignments -f nexus
 ```
 
-The program program outputs are the resulting files from the task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. The program will append the log outputs to the same log file (named `segul.log`) each time you run the program if the file exist in the same directory. Rename this file or move it to a different folder you would like to keep different log file for each task.
+The program outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. The program will append the log outputs to the same log file (named `segul.log`) each time you run the program if the file exist in the same directory. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
 
 ## Installation
 
 We want the installation as flexible as possible. We offer three ways to install the program. Each of the options has its own advantages and disavantages.
 
 1. Using a pre-compiled library. The quickest and the most straigtforward installation route, but the app may not fine-tuned for your specific hardware.
-2. Through the rust package manager, cargo. It is similar to pip for python, germ for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install (see below). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
+2. Through the rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
 3. Compiling it from the source in the Github repository. It gives you the most up to date version, but the resulting binary may be less stable than the binary installed through the other routes.
 
 ### Using a pre-compiled library
@@ -197,7 +208,7 @@ Then set the GNU toolchain as the default compiler
 rustup default stable-x86_64-pc-windows-gnu
 ```
 
-### Installing through GitHub Repository
+### Installing from a GitHub Repository
 
 You will need [rust compiler toolchain](https://www.rust-lang.org/learn/get-started). To install the development version for any supported platform:
 
