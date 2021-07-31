@@ -5,7 +5,7 @@
 ![GH-Release](https://img.shields.io/github/v/release/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-SEGUL is an ultrafast and memory efficient command-line (cli) application for alignment manipulation tasks that typically done using interpreted programming languages, such as Python, R, or Perl. It is designed to handle genomic datasets, but just as capable for Sanger datasets. In our test using a dataset with 4060 UCE loci, for instance, compare to a program written using biopython library, SEGUL is >40x faster for alignment concatenation while using 3x less RAM space.
+SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments that typically done using interpreted programming languages, such as Python, R, or Perl. It is designed to handle genomic datasets, but just as capable for Sanger datasets. In our test using a dataset with 4060 UCE loci, for instance, compare to a program written using biopython library, SEGUL is >40x faster for alignment concatenation while using 3x less RAM space.
 
 Available features:
 
@@ -58,7 +58,7 @@ The program may work in any rust supported [platform](https://doc.rust-lang.org/
 
 ## Quick Start
 
-If you already using a rust program and familiar with its [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. If you are new to using a command line application, installing through cargo is also the easiest route (see details in the installation instruction). To install through cargo:
+If you already using a rust program and familiar with its [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](#installation)). To install through cargo:
 
 ```{Bash}
 cargo install segul
