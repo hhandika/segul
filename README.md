@@ -180,7 +180,7 @@ It should show the cargo version number. Then, install the app:
 cargo install segul
 ```
 
-If you encounter a compiling  issue, you may need to install a C-development tool. For Debian-based Linux distribution, such as Debian, Ubuntu, PopOS, etc., the easiest way is to install build-essential:
+If you encounter a compiling  issue, you may need to install the C-development toolkit. For Debian-based Linux distribution, such as Debian, Ubuntu, PopOS, etc., the easiest way is to install build-essential:
 
 ```{Bash}
 sudo apt install build-essential
