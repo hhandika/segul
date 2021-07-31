@@ -64,7 +64,7 @@ If you already using a rust program and familiar with its [toolchain](https://ww
 cargo install segul
 ```
 
-You can also use the pre-compiled binary available in [the release page](https://github.com/hhandika/segul/releases/). The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system. If you are not familiar with it, please see the detailed instruction below.
+You can also use the pre-compiled binary available in [the release page](https://github.com/hhandika/segul/releases/). The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](#using-a-pre-compiled-library)).
 
 The program command structure is similar to git, gh-cli, or any other program that use subcommands. The program file name will be `segul` for Linux/MacOS and `segul.exe` for Windows.
 
