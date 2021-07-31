@@ -133,7 +133,6 @@ For Windows, you only need to install the gnu toolchain for rust. The installati
 ```{Bash}
 rustup toolchain install stable-x86_64-pc-windows-gnu
 
-# then
 rustup default stable-x86_64-pc-windows-gnu
 ```
 
