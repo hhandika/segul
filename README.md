@@ -104,7 +104,7 @@ The program outputs are the resulting files from each task and a log file. Most 
 
 We want the installation as flexible as possible. We offer three ways to install the program. Each of the options has its own advantages and disavantages.
 
-1. Using a pre-compiled library. The quickest and the most straigtforward installation route, but the app may not fine-tuned for your specific hardware.
+1. Using a pre-compiled library. The quickest and the most straigtforward installation route, but the app may not be fine-tuned for your specific hardware.
 2. Through the rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
 3. Compiling it from the source in the Github repository. It gives you the most up to date version, but the resulting binary may be less stable than the binary installed through the other routes.
 
