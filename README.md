@@ -246,7 +246,7 @@ segul --version
 
 ## Usages
 
-### Available command options
+### Available subcommands
 
 ```{Bash}
 USAGE:
