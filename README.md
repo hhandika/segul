@@ -236,7 +236,7 @@ cd segul/
 cargo build --release
 ```
 
-The different is, for the latter, the executable will be in the `segul` repository: `/target/release/segul`. Copy the `segul` binary and then add it to your environment path folder.
+The different is that, for the latter, the executable will be in the `segul` repository: `/target/release/segul`. Copy the `segul` binary and then add it to your environment path folder.
 
 Then, try to call SEGUL:
 
