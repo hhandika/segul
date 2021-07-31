@@ -210,6 +210,12 @@ Then set the GNU toolchain as the default compiler
 rustup default stable-x86_64-pc-windows-gnu
 ```
 
+Try to install segul again:
+
+```{Bash}
+cargo install segul
+```
+
 ### Installing from a GitHub Repository
 
 You will need [rust compiler toolchain](https://www.rust-lang.org/learn/get-started). To install the development version for any supported platform:
