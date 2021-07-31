@@ -210,7 +210,7 @@ Then set the GNU toolchain as the default compiler
 rustup default stable-x86_64-pc-windows-gnu
 ```
 
-Try to install segul again:
+Try to install SEGUL again:
 
 ```{Bash}
 cargo install segul
@@ -224,7 +224,7 @@ You will need [rust compiler toolchain](https://www.rust-lang.org/learn/get-star
 cargo install --git https://github.com/hhandika/segul.git
 ```
 
-You should have segul ready to use.
+You should have SEGUL ready to use.
 
 It is equivalent to:
 
@@ -236,7 +236,13 @@ cd segul/
 cargo build --release
 ```
 
-The different is, for the latter, the executable will be in the `segul` repository: /target/release/segul. Copy the `segul` binary and then add it to your environment path folder.
+The different is, for the latter, the executable will be in the `segul` repository: `/target/release/segul`. Copy the `segul` binary and then add it to your environment path folder.
+
+Then, try to call SEGUL:
+
+```{Bash}
+segul --version
+```
 
 ## Usages
 
