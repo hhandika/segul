@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.2
+
+- Fix error prematurely writing a log file.
+
 ## v0.3.1
 
 - Fix welcome screen showing up when checking the app version.
