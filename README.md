@@ -121,7 +121,7 @@ See specific details below:
 
 #### Linux/MacOS
 
-First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the program in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using more up to date Linux. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try install using cargo.
+First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the program in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using more up to date Linux. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try to [install the app using cargo](#installing-through-cargo).
 
 For MacOS, the executable is available for an Intel Mac. If you are using Apple silicon Macs (M1), may be best to install it through cargo.
 
