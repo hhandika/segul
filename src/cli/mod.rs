@@ -116,7 +116,7 @@ trait InputCli {
                         .collect::<Vec<PathBuf>>()
                 })
                 .collect();
-            assert!(files.len() > 0, "Empty folders!");
+            assert!(!files.is_empty(), "Empty folders!");
             files
         } else {
             inputs
