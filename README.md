@@ -42,7 +42,7 @@ It is now in active development. Our goal is to provide as many functionalities 
 - [Quick Start](#quick-start)
 - [Installation](#installation)
   - [Using a pre-compiled library](#using-a-pre-compiled-library)
-  - [Installing through Cargo](#installing-through-cargo)
+  - [Installing using Cargo](#installing-using-cargo)
   - [Installing from a GitHub repository](#installing-from-a-github-repository)
 - [Usages](#usages)
   - [Available subcommands](#available-subcommands)
@@ -54,7 +54,7 @@ The program may work in any rust supported [platform](https://doc.rust-lang.org/
 - Linux
 - MacOS
 - Windows
-- Windows Sub-System for Linux
+- Windows Subsystem for Linux (WSL)
 
 ## Quick Start
 
@@ -66,7 +66,7 @@ cargo install segul
 
 You can also use the pre-compiled binary available in [the release page](https://github.com/hhandika/segul/releases/). The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](#using-a-pre-compiled-library)).
 
-The program command structure is similar to git, gh-cli, or any other program that use subcommands. The program file name will be `segul` for Linux/MacOS and `segul.exe` for Windows.
+The program command structure is similar to git, gh-cli, or any other program that use subcommands. The program file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
 
 ```{Bash}
 [THE-PROGRAM-FILENAME] <SUBCOMMAND> [OPTIONS] <VALUES> <A-FLAG-IF-APPLICABLE>
@@ -96,34 +96,34 @@ It is also available in short options:
 segul concat -d nexus-alignments -f nexus
 ```
 
-The program outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. The program will append the log outputs to the same log file (named `segul.log`) each time you run the program if the file exist in the same directory. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
+The app outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, the app will append the log output to the same log file (named `segul.log`) if the file exists in the same directory. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
 
 > :warning: **Unlike the log file, for the other outputs, the app will over-write existing files with the same names**: Careful in specifying the output file names. Future updates will prevent it.
 
 ## Installation
 
-We want the installation as flexible as possible. We offer three ways to install the program. Each of the options has its own advantages and disavantages.
+We want the installation as flexible as possible. We offer three ways to install the program. Each of the options has pros and cons.
 
 1. Using a pre-compiled library. The quickest and the most straigtforward installation route, but the app may not be fine-tuned for your specific hardware.
-2. Through the rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
+2. Using the rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
 3. Compiling it from the source in the Github repository. It gives you the most up to date version, but the resulting binary may be less stable than the binary installed through the other routes.
 
 ### Using a pre-compiled library
 
-The pre-compiled library is available at [the release page](https://github.com/hhandika/segul/releases/). The typicall workflow is as folow:
+The pre-compiled library is available at [the release page](https://github.com/hhandika/segul/releases/). The typical workflow is as follow:
 
-1. Copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/) or download it to your computer.
+1. Download the zip file in [the release page](https://github.com/hhandika/segul/releases/) to your computer, using a browser or using a command line app.
 2. Extract the zip file.
 3. Make the binary executable (Linux and MacOS only).
-4. Put it in a folder registered in your environment variable. It can be run from the folder where you extract the app too, but you will need your datasets in the same folder.
+4. Put it in a folder registered in your environment variable. It can be run from the folder where you extract the app too, but this option is less convenient when dealing with datasets in different folders or storage partitions.
 
 See specific details below:
 
 #### Linux/MacOS
 
-First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the program in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using more up to date Linux. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try to [install the app using cargo](#installing-through-cargo).
+First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the program in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using more up to date Linux kernel. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try to [install the app using cargo](#installing-through-cargo).
 
-For MacOS, the executable is available for an Intel Mac. If you are using Apple silicon Macs (M1), may be best to install it through cargo.
+For MacOS, the executable is available for an Intel Mac. If you are using Apple silicon Macs (Apple M1), we recommend installing it using cargo.
 
 Here, we use the version 0.3.1 as an example. You should replace the link with the most up to date version available in the release page.
 
@@ -164,9 +164,9 @@ If you would like to setup a folder in your environment variable, take a look at
 
 #### Windows
 
-The installation procedure is similar to the MacOS or Linux. After downloading the zip file for Windows and extracting it, you will setup your environment variable that point to the path where you will put the executable. Follow this amazing guideline from the stakoverflow [to setup the environment variable](https://stackoverflow.com/questions/44272416/how-to-add-a-folder-to-path-environment-variable-in-windows-10-with-screensho). After setup, copy the segul.exe file to the folder.
+The installation procedure is similar to the MacOS or Linux. After downloading the zip file for Windows and extracting it, you will setup your environment variable that point to the path where you will put the executable. In Windows, this is usually done using GUI. Follow this amazing guideline from the stakoverflow [to setup the environment variable](https://stackoverflow.com/questions/44272416/how-to-add-a-folder-to-path-environment-variable-in-windows-10-with-screensho). After setup, copy the segul.exe file to the folder.
 
-### Installing through Cargo
+### Installing using Cargo
 
 This is the recommended option. Cargo will compile the program and fine-tuned it for your specific hardware. It also allows to easily updating the app. You will need the [rust compiler toolchain](https://www.rust-lang.org/learn/get-started). It requires rust version 1.5 or higher. Then, check if the toolchain installation successful:
 
@@ -218,7 +218,7 @@ cargo install segul
 
 ### Installing from a GitHub Repository
 
-You will need [rust compiler toolchain](https://www.rust-lang.org/learn/get-started). To install the development version for any supported platform:
+You will need [rust compiler toolchain](https://www.rust-lang.org/learn/get-started). The setup procedure is similar to installing the app using cargo. To install the development version for any supported platform:
 
 ```{Bash}
 cargo install --git https://github.com/hhandika/segul.git
@@ -243,6 +243,38 @@ Then, try to call SEGUL:
 ```{Bash}
 segul --version
 ```
+
+## Updating the app
+
+If you install the app using cargo, updating the app is the same as installing it:
+
+```{Bash}
+cargo install segul
+```
+
+Cargo will check if the version of the app in your computer different from the version in the rust package repository ([crates.io](https://crates.io/crates/segul)) and will install the newer version if it is available. Similar procedure is also applied for installing from the GitHub repository:
+
+```{Bash}
+cargo install --git https://github.com/hhandika/segul.git
+```
+
+If you used the pre-compiled binary, replace the old binary with the newer version manually.
+
+## Uninstalling the app
+
+It is also easy to do if you uninstall through cargo:
+
+```{Bash}
+cargo uninstall segul
+```
+
+Rust toolchain, including cargo, can be uninstall easily too:
+
+```{Bash}
+rustup self uninstall
+```
+
+Remove the app manually if you use the pre-compiled binary.
 
 ## Usages
 
