@@ -139,8 +139,8 @@ trait InputCli {
 
     fn parse_input_fmt(&self, matches: &ArgMatches) -> InputFmt {
         let input_fmt = matches
-            .value_of("format")
-            .expect("CANNOT READ FORMAT INPUT");
+            .value_of("input-format")
+            .expect("Failed parsing an input format value");
         match input_fmt {
             "auto" => InputFmt::Auto,
             "fasta" => InputFmt::Fasta,
@@ -199,7 +199,11 @@ trait InputPrint {
 
 trait OutputCli {
     fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
-        PathBuf::from(matches.value_of("output").expect("CANNOT READ OUTPUT PATH"))
+        PathBuf::from(
+            matches
+                .value_of("output")
+                .expect("Failed parsing an output value"),
+        )
     }
 
     fn parse_output_fmt(&self, matches: &ArgMatches) -> OutputFmt {

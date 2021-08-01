@@ -50,9 +50,9 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("OUTPUT"),
                 )
                 .arg(
-                    Arg::with_name("format")
+                    Arg::with_name("input-format")
                         .short("f")
-                        .long("format")
+                        .long("input-format")
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
@@ -123,9 +123,9 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("WILDCARD"),
                 )
                 .arg(
-                    Arg::with_name("format")
+                    Arg::with_name("input-format")
                         .short("f")
-                        .long("format")
+                        .long("input-format")
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
@@ -206,9 +206,9 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("DIR"),
                 )
                 .arg(
-                    Arg::with_name("format")
+                    Arg::with_name("input-format")
                         .short("f")
-                        .long("format")
+                        .long("input-format")
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
@@ -337,9 +337,9 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("INPUT FILE"),
                 )
                 .arg(
-                    Arg::with_name("format")
+                    Arg::with_name("input-format")
                         .short("f")
-                        .long("format")
+                        .long("input-format")
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
@@ -407,9 +407,9 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("WILDCARD"),
                 )
                 .arg(
-                    Arg::with_name("format")
+                    Arg::with_name("input-format")
                         .short("f")
-                        .long("format")
+                        .long("input-format")
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
