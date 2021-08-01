@@ -110,7 +110,7 @@ We want the installation as flexible as possible. We offer three ways to install
 
 ### Using a pre-compiled library
 
-The pre-compiled library is available at [the release page](https://github.com/hhandika/segul/releases/). The typical workflow is as follow:
+The pre-compiled library is available in [the release page](https://github.com/hhandika/segul/releases/). The typical workflow is as follow:
 
 1. Download the zip file in [the release page](https://github.com/hhandika/segul/releases/) to your computer, using a browser or using a command line app.
 2. Extract the zip file.
