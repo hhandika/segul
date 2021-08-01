@@ -207,7 +207,7 @@ impl<'a> FilterParser<'a> {
 
     fn set_output_path(&mut self) {
         if self.matches.is_present("output") {
-            self.output_dir = PathBuf::from(self.parse_output(self.matches));
+            self.output_dir = self.parse_output(self.matches);
         } else {
             match self.input_dir.as_ref() {
                 Some(dir) => self.output_dir = self.fmt_output_path(dir),
@@ -218,7 +218,7 @@ impl<'a> FilterParser<'a> {
 
     fn set_multi_output_path(&mut self) {
         if self.matches.is_present("output") {
-            let output_dir = PathBuf::from(self.parse_output(self.matches));
+            let output_dir = self.parse_output(self.matches);
             self.output_dir = self.fmt_output_path(&output_dir)
         } else {
             match self.input_dir.as_ref() {
