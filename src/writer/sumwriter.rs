@@ -79,7 +79,7 @@ impl<'a> CsvWriter<'a> {
                 .unwrap();
         });
 
-        log::info!("\n{}", Yellow.paint("Output Files"));
+        log::info!("{}", Yellow.paint("Output Files"));
         log::info!("{:18}: {}", "Alignment summary", self.output.display());
 
         Ok(())
@@ -220,24 +220,24 @@ impl<'s> SummaryWriter<'s> {
     pub fn print_summary(&self) -> Result<()> {
         log::info!("{}", Yellow.paint("General Summmary"));
         self.write_gen_sum();
-        log::info!("{}", Yellow.paint("\nAlignment Summmary"));
+        log::info!("{}", Yellow.paint("Alignment Summmary"));
         self.write_aln_sum();
-        log::info!("{}", Yellow.paint("\nTaxon Summmary"));
+        log::info!("{}", Yellow.paint("Taxon Summmary"));
         self.write_tax_sum();
 
-        log::info!("{}", Yellow.paint("\nCharacter Count"));
+        log::info!("{}", Yellow.paint("Character Count"));
         self.write_char_count();
 
-        log::info!("{}", Yellow.paint("\nData Matrix Completeness"));
+        log::info!("{}", Yellow.paint("Data Matrix Completeness"));
         self.write_matrix_comp();
 
-        log::info!("{}", Yellow.paint("\nConserved Sequences"));
+        log::info!("{}", Yellow.paint("Conserved Sequences"));
         self.write_cons_seq();
 
-        log::info!("{}", Yellow.paint("\nVariable Sequences"));
+        log::info!("{}", Yellow.paint("Variable Sequences"));
         self.write_var_seq();
 
-        log::info!("{}", Yellow.paint("\nParsimony Informative"));
+        log::info!("{}", Yellow.paint("Parsimony Informative"));
         self.write_pars_inf();
         Ok(())
     }
@@ -271,7 +271,7 @@ impl<'s> SummaryWriter<'s> {
 
         match self.datatype {
             DataType::Dna => self.write_dna_sum(),
-            DataType::Aa => (),
+            DataType::Aa => log::info!("\n"),
             _ => panic!("Please specify datatype"),
         }
     }
@@ -285,7 +285,7 @@ impl<'s> SummaryWriter<'s> {
             utils::fmt_num(&self.chars.total_chars)
         );
         log::info!(
-            "{:18}: {}",
+            "{:18}: {}\n",
             "Nucleotides",
             utils::fmt_num(&self.chars.total_nucleotides)
         );
@@ -302,13 +302,13 @@ impl<'s> SummaryWriter<'s> {
             "Max length",
             utils::fmt_num(&self.site.max_sites)
         );
-        log::info!("{:18}: {:.2} bp", "Mean length", &self.site.mean_sites);
+        log::info!("{:18}: {:.2} bp\n", "Mean length", &self.site.mean_sites);
     }
 
     fn write_tax_sum(&self) {
         log::info!("{:18}: {}", "Min taxa", utils::fmt_num(&self.chars.min_tax));
         log::info!("{:18}: {}", "Max taxa", utils::fmt_num(&self.chars.max_tax));
-        log::info!("{:18}: {:.2}", "Mean taxa", self.chars.mean_tax);
+        log::info!("{:18}: {:.2}\n", "Mean taxa", self.chars.mean_tax);
     }
 
     fn write_char_count(&self) {
@@ -318,6 +318,7 @@ impl<'s> SummaryWriter<'s> {
                 log::info!("{:18}: {}", ch, utils::fmt_num(count));
             }
         });
+        log::info!("");
     }
 
     fn write_matrix_comp(&self) {
@@ -328,6 +329,7 @@ impl<'s> SummaryWriter<'s> {
                 let percent_str = format!("{}% taxa", percent);
                 log::info!("{:18}: {}", percent_str, utils::fmt_num(ntax))
             });
+        log::info!("");
     }
 
     fn write_cons_seq(&self) {
@@ -357,7 +359,11 @@ impl<'s> SummaryWriter<'s> {
             "Max con. sites",
             utils::fmt_num(&self.site.max_cons_site)
         );
-        log::info!("{:18}: {:.2}", "Mean con. sites", &self.site.mean_cons_site);
+        log::info!(
+            "{:18}: {:.2}\n",
+            "Mean con. sites",
+            &self.site.mean_cons_site
+        );
     }
 
     fn write_var_seq(&self) {
@@ -387,7 +393,11 @@ impl<'s> SummaryWriter<'s> {
             "Max var. sites",
             utils::fmt_num(&self.site.max_var_site)
         );
-        log::info!("{:18}: {:.2}", "Mean var. sites", &self.site.mean_var_site);
+        log::info!(
+            "{:18}: {:.2}\n",
+            "Mean var. sites",
+            &self.site.mean_var_site
+        );
     }
 
     fn write_pars_inf(&self) {
@@ -417,6 +427,10 @@ impl<'s> SummaryWriter<'s> {
             "Max inf. sites",
             utils::fmt_num(&self.site.max_inf_site)
         );
-        log::info!("{:18}: {:.2}", "Mean inf. sites", &self.site.mean_inf_site);
+        log::info!(
+            "{:18}: {:.2}\n",
+            "Mean inf. sites",
+            &self.site.mean_inf_site
+        );
     }
 }

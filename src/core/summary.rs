@@ -59,8 +59,6 @@ impl<'a> SeqStats<'a> {
         let (sites, dna, complete) = self.get_summary_dna(&stats);
         spin.finish_with_message("DONE!\n");
         let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete, self.datatype);
-        // sum.write_sum_to_file(self.output)
-        //     .expect("File writing a summary statistics file");
         sum.print_summary().expect("Failed writing to stdout");
         sumwriter::CsvWriter::new(self.output, self.datatype)
             .write_summary_dir(&stats)
