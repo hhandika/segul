@@ -93,17 +93,13 @@ trait InputCli {
     }
 
     fn parse_dir_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
-        Path::new(
-            matches
-                .value_of("dir")
-                .expect("Failed parsing a dir values"),
-        )
+        Path::new(matches.value_of("dir").expect("Failed parsing a dir value"))
     }
 
     fn parse_input_wcard(&self, matches: &ArgMatches) -> Vec<PathBuf> {
         let inputs = matches
             .values_of("wildcard")
-            .expect("Failed parsing wildcard")
+            .expect("Failed parsing wildcard values")
             .map(PathBuf::from)
             .collect::<Vec<PathBuf>>();
         if cfg!(windows) {
