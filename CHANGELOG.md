@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.4
+
+- Fix wildcard issues on windows.
+
 ## v0.3.3
 
 - Fix issue with summary printing.

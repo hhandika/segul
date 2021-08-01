@@ -5,11 +5,13 @@ mod filter;
 mod id;
 mod summary;
 
+use std::ffi::OsStr;
 use std::io::Result;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use clap::ArgMatches;
+use glob::glob;
 use indexmap::IndexSet;
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
@@ -95,11 +97,30 @@ trait InputCli {
     }
 
     fn parse_input_wcard(&self, matches: &ArgMatches) -> Vec<PathBuf> {
-        matches
+        let inputs = matches
             .values_of("wildcard")
             .expect("FAILED PARSING npercent")
             .map(PathBuf::from)
-            .collect()
+            .collect::<Vec<PathBuf>>();
+        if cfg!(windows) {
+            let inputs = inputs
+                .iter()
+                .map(|t| OsStr::new(t).to_string_lossy())
+                .collect::<Vec<_>>();
+            let files: Vec<PathBuf> = inputs
+                .iter()
+                .flat_map(|i| {
+                    glob(i)
+                        .expect("Failed globbing files")
+                        .filter_map(|ok| ok.ok())
+                        .collect::<Vec<PathBuf>>()
+                })
+                .collect();
+            assert!(files.len() > 0);
+            files
+        } else {
+            inputs
+        }
     }
 
     fn get_files(&self, dir: &Path, input_fmt: &InputFmt) -> Vec<PathBuf> {
