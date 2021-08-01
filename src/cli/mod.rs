@@ -88,18 +88,22 @@ trait InputCli {
         Path::new(
             matches
                 .value_of("input")
-                .expect("CANNOT FIND AN INPUT FILE"),
+                .expect("Failed parsing an input value"),
         )
     }
 
     fn parse_dir_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
-        Path::new(matches.value_of("dir").expect("CANNOT READ DIR PATH"))
+        Path::new(
+            matches
+                .value_of("dir")
+                .expect("Failed parsing a dir values"),
+        )
     }
 
     fn parse_input_wcard(&self, matches: &ArgMatches) -> Vec<PathBuf> {
         let inputs = matches
             .values_of("wildcard")
-            .expect("FAILED PARSING npercent")
+            .expect("Failed parsing wildcard")
             .map(PathBuf::from)
             .collect::<Vec<PathBuf>>();
         if cfg!(windows) {
@@ -146,13 +150,7 @@ trait InputCli {
             "fasta" => InputFmt::Fasta,
             "nexus" => InputFmt::Nexus,
             "phylip" => InputFmt::Phylip,
-            _ => panic!(
-                "UNSUPPORTED FORMAT. \
-        THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, and phylip. \
-        ALL IN lowercase. \
-        YOUR INPUT: {} ",
-                input_fmt
-            ),
+            _ => unreachable!("Unknown input format. Supported format: auto, fasta, nexus, phylip"),
         }
     }
 
@@ -211,7 +209,7 @@ trait OutputCli {
     fn parse_output_fmt(&self, matches: &ArgMatches) -> OutputFmt {
         let output_fmt = matches
             .value_of("output-format")
-            .expect("CANNOT READ FORMAT INPUT");
+            .expect("Failed parsing ouput format");
         match output_fmt {
             "nexus" => OutputFmt::Nexus,
             "phylip" => OutputFmt::Phylip,
@@ -219,12 +217,7 @@ trait OutputCli {
             "nexus-int" => OutputFmt::NexusInt,
             "fasta-int" => OutputFmt::FastaInt,
             "phylip-int" => OutputFmt::PhylipInt,
-            _ => panic!(
-                "UNSUPPORTED FORMAT. \
-        THE PROGRAM ONLY ACCEPT fasta, fasta-int, nexus, nexus-int, phylip, and phylip-int. ALL IN lowercase. \
-        YOUR INPUT: {} ",
-                output_fmt
-            ),
+            _ => unreachable!("Please, specify the correct output format!"),
         }
     }
 }
@@ -233,7 +226,7 @@ trait PartCLi {
     fn parse_partition_fmt(&self, matches: &ArgMatches) -> PartitionFmt {
         let part_fmt = matches
             .value_of("partition")
-            .expect("CANNOT READ PARTITION FORMAT");
+            .expect("Failed parsing partition format");
         if matches.is_present("codon") {
             self.parse_partition_fmt_codon(part_fmt)
         } else {
@@ -265,8 +258,8 @@ trait PartCLi {
             _ => {
                 if let PartitionFmt::Charset | PartitionFmt::CharsetCodon = part_fmt {
                     panic!(
-                        "CANNOT WRITE EMBEDDED-NEXUS PARTITION TO NON-NEXUS OUTPUT. \
-                MAYBE YOU MEAN TO WRITE THE PARTITION TO 'charset' INSTEAD."
+                        "Cannot write embedded-nexus partition 'charset' to non-nexus output. \
+                Maybe you mean to write the partition to 'nexus' instead."
                     )
                 }
             }
