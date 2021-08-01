@@ -1,10 +1,10 @@
 [package]
 name = "segul"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2018"
 license = "MIT"
-description = "An ultrafast and efficient alignment tool for phylogenomics"
+description = "An ultrafast and memory efficient alignment tool for phylogenomics"
 readme = "README.md"
 homepage = "https://github.com/hhandika/segul"
 repository = "https://github.com/hhandika/segul"

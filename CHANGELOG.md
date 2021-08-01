@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.3
+
+- Fix issue with summary printing.
+
 ## v0.3.2
 
 - Fix error prematurely writing a log file.
