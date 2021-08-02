@@ -11,9 +11,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [linux, macos, windows]
+        name: [hpc, linux, macos, windows]
 
         include:
+          - name: hpc
+            os: ubuntu-latest
+            container: quay.io/pypa/manylinux2010_x86_64
+            executable: segul
+            artifact_name: target/release/segul
+            asset_name: segul-Linux-HPC-x86_64.zip
+
           - name: linux
             os: ubuntu-latest
             executable: segul

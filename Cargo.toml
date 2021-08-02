@@ -1,6 +1,6 @@
 [package]
 name = "segul"
-version = "0.3.10"
+version = "0.3.11"
 authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2018"
 license = "MIT"

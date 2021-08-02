@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.11
+
+- Add support for older linux.
+
 ## v0.3.10
 
 - Change CI implementation.
