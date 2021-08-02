@@ -26,7 +26,7 @@ Supported sequence formats:
 2. Relaxed phylip
 3. Fasta
 
-All of the formats are supported in interleave and sequential.
+All of the formats are supported in interleave and sequential. The app supports both DNA and amino acid sequences.
 
 Supported partition formats:
 
@@ -42,10 +42,13 @@ It is now in active development. Our goal is to provide as many functionalities 
 - [Quick Start](#quick-start)
 - [Installation](#installation)
   - [Using a pre-compiled library](#using-a-pre-compiled-library)
-  - [Installing using Cargo](#installing-using-cargo)
+  - [Installing using the Cargo Package Manager](#installing-using-the-cargo-package-manager)
   - [Installing from a GitHub repository](#installing-from-a-github-repository)
-- [Usages](#usages)
+- [Command Structure](#command-structure)
   - [Available subcommands](#available-subcommands)
+- [Usages](#usages)
+  - [Converting sequences to a different format](#converting-sequences-to-a-different-format)
+  - [Concatenating sequences](#concatenating-sequences)
 
 ## Supported Platforms
 
@@ -60,7 +63,7 @@ The program may work in any rust supported [platform](https://doc.rust-lang.org/
 
 If you already using a rust program and familiar with its [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](#installing-through-cargo)). To install through cargo:
 
-```{Bash}
+```Bash
 cargo install segul
 ```
 
@@ -68,31 +71,31 @@ You can also use the pre-compiled binary available in [the release page](https:/
 
 The program command structure is similar to git, gh-cli, or any other program that use subcommands. The program file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
 
-```{Bash}
+```Bash
 [THE-PROGRAM-FILENAME] <SUBCOMMAND> [OPTIONS] <VALUES> <A-FLAG-IF-APPLICABLE>
 ```
 
 To check for available subcommand:
 
-```{Bash}
+```Bash
 segul --help
 ```
 
 To check for available options and flags for each sub-command:
 
-```{Bash}
+```Bash
 segul <SUBCOMMAND> --help
 ```
 
 For example, to concat all the alignments in a directory named `nexus-alignments`:
 
-```{Bash}
+```Bash
 segul concat --dir nexus-alignments --format nexus
 ```
 
 It is also available in short options:
 
-```{Bash}
+```Bash
 segul concat -d nexus-alignments -f nexus
 ```
 
@@ -119,7 +122,7 @@ The pre-compiled library is available in [the release page](https://github.com/h
 
 See specific details below:
 
-#### Linux/MacOS
+#### Linux/WSL/MacOS
 
 First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the program in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using WSL or more up to date native Linux distros. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try to [install the app using cargo](#installing-through-cargo).
 
@@ -129,32 +132,32 @@ Here, we use the version 0.3.1 as an example. You should replace the link with t
 
 - Download the library.
 
-```{Bash}
+```Bash
 
 wget https://github.com/hhandika/segul/releases/download/v0.3.1/segul-MacOS-x86_64.zip
 ```
 
 - Unzip the file.
 
-```{Bash}
+```Bash
 unzip segul-MacOS-x86_64.zip
 ```
 
 - Make it executable
 
-```{Bash}
+```Bash
 chmod +x segul
 ```
 
 If you would like the binary executable for all users:
 
-```{Bash}
+```Bash
 chmod a+x segul
 ```
 
 The next step is putting the binary in a folder registered in your path variable. It is always best to avoid registering too many paths in your environment variable. It will slow down your terminal startup if you do. If you already used a single executable cli app, the chance is that you may already have a folder registered in your path variable. Copy SEGUL executable to the folder. Then, try call SEGUL from anywhere in your system:
 
-```{Bash}
+```Bash
 segul --version
 ```
 
@@ -166,53 +169,55 @@ If you would like to setup a folder in your environment variable, take a look at
 
 The installation procedure is similar to the MacOS or Linux. After downloading the zip file for Windows and extracting it, you will setup your environment variable that point to the path where you will put the executable. In Windows, this is usually done using GUI. Follow this amazing guideline from the stakoverflow [to setup the environment variable](https://stackoverflow.com/questions/44272416/how-to-add-a-folder-to-path-environment-variable-in-windows-10-with-screensho). After setup, copy the segul.exe file to the folder.
 
-### Installing using Cargo
+### Installing using the Cargo Package Manager
 
-This is the recommended option. Cargo will compile the program and fine-tuned it for your specific hardware. It also allows to easily updating the app. You will need the [rust compiler toolchain](https://www.rust-lang.org/learn/get-started). It requires rust version 1.5 or higher. Then, check if the toolchain installation successful:
+This is the recommended option. Cargo will compile the app, manage its dependencies, and fine-tuned it for your specific hardware. It also allows to easily updating the app.
 
-```{Bash}
+First, download and install [the rust compiler toolchain](https://www.rust-lang.org/learn/get-started). It requires rust version 1.5 or higher. Then, check if the toolchain installation successful:
+
+```Bash
 cargo --version
 ```
 
 It should show the cargo version number. Then, install the app:
 
-```{Bash}
+```Bash
 cargo install segul
 ```
 
-If you encounter a compiling  issue, you may need to install the C-development toolkit. For Debian-based Linux distribution, such as Debian, Ubuntu, PopOS, etc., the easiest way is to install build-essential:
+If you encounter a compiling  issue (usually happens on Linux or Windows), you may need to install the C-development toolkit. For Debian-based Linux distribution, such as Debian, Ubuntu, PopOS, etc., the easiest way is to install build-essential:
 
-```{Bash}
+```Bash
 sudo apt install build-essential
 ```
 
 For OpenSUSE:
 
-```{Bash}
+```Bash
 zypper install -t pattern devel_basis
 ```
 
 For Fedora:
 
-```{Bash}
+```Bash
 sudo dnf groupinstall "Development Tools" "Development Libraries"
 ```
 
 For Windows, you only need to install the GNU toolchain for rust. The installation should be straighforward using rustup. Rustup comes as a part of the rust-compiler toolchain. It should be available in your system at the same time as you install cargo.
 
-```{Bash}
+```Bash
 rustup toolchain install stable-x86_64-pc-windows-gnu
 ```
 
 Then set the GNU toolchain as the default compiler
 
-```{Bash}
+```Bash
 rustup default stable-x86_64-pc-windows-gnu
 ```
 
 Try to install SEGUL again:
 
-```{Bash}
+```Bash
 cargo install segul
 ```
 
@@ -220,7 +225,7 @@ cargo install segul
 
 You will need [rust compiler toolchain](https://www.rust-lang.org/learn/get-started). The setup procedure is similar to installing the app using cargo. To install the development version for any supported platform:
 
-```{Bash}
+```Bash
 cargo install --git https://github.com/hhandika/segul.git
 ```
 
@@ -228,7 +233,7 @@ You should have SEGUL ready to use.
 
 It is equivalent to:
 
-```{Bash}
+```Bash
 git clone https://github.com/hhandika/segul
 
 cd segul/
@@ -240,7 +245,7 @@ The different is that, for the latter, the executable will be in the `segul` rep
 
 Then, try to call SEGUL:
 
-```{Bash}
+```Bash
 segul --version
 ```
 
@@ -248,13 +253,13 @@ segul --version
 
 If you install the app using cargo, updating the app is the same as installing it:
 
-```{Bash}
+```Bash
 cargo install segul
 ```
 
-Cargo will check if the version of the app in your computer different from the version in the rust package repository ([crates.io](https://crates.io/crates/segul)) and will install the newer version if it is available. Similar procedure is also applied for installing from the GitHub repository:
+Cargo will check whether the version of the app in your computer different from the version in the rust package repository ([crates.io](https://crates.io/crates/segul)) and will install the newer version if it is available. Similar procedure is also applied for installing from the GitHub repository:
 
-```{Bash}
+```Bash
 cargo install --git https://github.com/hhandika/segul.git
 ```
 
@@ -264,23 +269,23 @@ If you used the pre-compiled binary, replace the old binary with the newer versi
 
 It is also easy to do if you install the app using cargo:
 
-```{Bash}
+```Bash
 cargo uninstall segul
 ```
 
 Rust toolchain, including cargo, can be uninstall easily too:
 
-```{Bash}
+```Bash
 rustup self uninstall
 ```
 
 Remove the app manually if you use the pre-compiled binary.
 
-## Usages
+## Command Structure
 
-### Available subcommands
+### Available Subcommands
 
-```{Bash}
+```Bash
 USAGE:
     segul <SUBCOMMAND>
 
@@ -297,4 +302,104 @@ SUBCOMMANDS:
     summary    Gets alignment summary stats
 ```
 
-More detailed instructions coming soon...
+## Usages
+
+### Converting sequences to a different format
+
+Segul can convert from a single file input (`-i` or `--input`), a directory input (`-d` or `--dir`), or using a wildcard input (`-c` `--wildcard`).
+
+#### Using a single file input
+
+```Bash
+segul convert --input [path-to-your-repository] --input-format [choose-one]
+```
+
+In shortened format:
+
+```Bash
+segul convert -i [path-to-your-repository] -f [sequence-format]
+```
+
+By default it converts to nexus. To choose a different output format, use the output format option (`-F` or `--output-format`):
+
+```Bash
+segul convert --input [path-to-your-repository] --input-format [sequence-format] --output-format [sequence-format]
+```
+
+In shortened format. Notice the uppercase 'F' for the ouput format:
+
+```Bash
+segul convert -i [path-to-your-repository] -f [sequence-format] -F [sequence-format]
+```
+
+You can also ignore the specifying the input format and the program will infer it based on the file extension:
+
+```Bash
+segul convert -i [path-to-your-repository]
+```
+
+By default the program will use the input file name for the output name with the output format extension. To specify, the output name use the `-o` or `--output` option. There is no need to include the extension for the output name.
+
+Using the `--short` flag, you can also sort the sequence based on their IDs in alphabetical order.
+
+For example, to convert a file name `sequence.fasta` to a phylip format and we will short the result.
+
+```Bash
+segul convert -i sequence.phy -f fasta -F phylip -o new_sequence --sort
+```
+
+#### Batch converting sequence files in a directory
+
+The conversion command is similar to converting a single file. Unlike the single file, the app require you to specify the input format and the output name. The output name will be the directory name for the output files, whereas the output file name will be the same as the input file.
+
+```Bash
+segul convert --dir [path-to-your-repository] --input-format [choose-one] --output [your-output-dir-name]
+```
+
+In shortened format
+
+```Bash
+segul convert -d [path-to-your-repository] -f [sequence-format] -o [your-output-dir-name]
+```
+
+For example, suppose we want to convert all the fasta files in the directory below to a phylip format and name the output directory `new_sequences`:
+
+```Bash
+sequences/
+├── seq_1.fasta
+├── seq_2.fasta
+└── seq_3.fasta
+```
+
+The command will be:
+
+```Bash
+segul convert -d sequences/ -f fasta -F phylip -o new_sequences
+```
+
+The resulting directory will be:
+
+```Bash
+new_sequences/
+├── seq_1.phy
+├── seq_2.phy
+└── seq_3.phy
+```
+
+#### Batch converting sequence files using wildcard
+
+All the options for a single input or a directory is also available for a wildcard. The program can also infer the input format. Unlike any other input, the wildcard can take multiple values. This allow you to batch converting files in different folders. The ouput will be in a single directory. It is required to specify the output name and will be used as a name for the output directory.
+
+```Bash
+segul convert -c [wildcard-1] [wildcard-2] [wildcard-3] -f [sequence-format] -o [your-output-dir-name]
+```
+
+### Concatenating sequences
+
+The app concat multiple alignments and write the partition setting for the resulting files. The input options are `-d` or `--dir` and `-c` or `--wildcard`. To specify the partition format, you will use the `-p` or `--part` option. You can also write the partition to a codon model format by using the flag `--codon`.
+
+### Filtering sequences
+
+### Computing sequence summary statistics
+
+### Finding all IDs in a collection of alignments
