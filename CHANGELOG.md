@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.12
+
+- CI fix with newer container.
+
 ## v0.3.11
 
 - Add support for older linux.
