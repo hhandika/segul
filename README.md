@@ -46,6 +46,13 @@ It is now in active development. Our goal is to provide as many functionalities 
   - [Installing from a GitHub repository](#installing-from-a-github-repository)
 - [Command Structure](#command-structure)
   - [Available subcommands](#available-subcommands)
+  - [Input options](#input-options)
+  - [Input format](#input-format)
+  - [Output](#output)
+  - [Output format](#output-format)
+  - [Data type](#data-type)
+  - [Special options](#special-options)
+  - [Special flags](#special-flags)
 - [Usages](#usages)
   - [Converting sequences to a different format](#converting-sequences-to-a-different-format)
   - [Concatenating sequences](#concatenating-sequences)
@@ -383,7 +390,7 @@ Availability: summary subcommand
 
 This option is to specify the percentage decrement interval for computing data matrix completeness in summary statistics. Available interval: `1`, `2`, `5`, `10`.
 
-### Filtering options
+#### Filtering options
 
 Only available for filter subcommands. Available options:
 
@@ -393,7 +400,7 @@ Only available for filter subcommands. Available options:
 - `--pinf`: To filter based on the number of parsimony informative sites.
 - `--ntax`: To defined the total number of taxa. By default the app determines the number of taxa in all the alignments based on the numbers of unique IDs.
 
-### Special Flags
+### Special flags
 
 `--codon`: Use to set the partition format to codon model. Available in concat subcommand, and filtering subcommand (if you choose to concatenate the result).
 
