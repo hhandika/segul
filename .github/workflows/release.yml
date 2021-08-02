@@ -49,7 +49,7 @@ jobs:
       #     name: ${{ matrix.asset_name }}
       #     path: ${{ matrix.artifact_name }}
       
-      - name: Package
+      - name: Compress
         run: tar -czvf ${{ matrix.asset_name }} ${{ matrix.executable }}
 
       - name: Release
