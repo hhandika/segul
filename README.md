@@ -50,7 +50,7 @@ It is now in active development. Our goal is to provide as many functionalities 
   - [Input format](#input-format)
   - [Output](#output)
   - [Output format](#output-format)
-  - [Data type](#data-type)
+  - [Data types](#data-types)
   - [Special options](#special-options)
   - [Special flags](#special-flags)
 - [Usages](#usages)
@@ -365,7 +365,7 @@ Interleaved formats:
 - `nexus-int`
 - `phylip-int`
 
-### Data type
+### Data types
 
 Argument: `--datatype`
 
