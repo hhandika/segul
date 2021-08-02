@@ -4,7 +4,7 @@ use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::*;
-use crate::core::filter;
+use crate::core::filter::{Params, SeqFilter};
 use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl InputCli for FilterParser<'_> {}
@@ -18,7 +18,7 @@ pub(in crate::cli) struct FilterParser<'a> {
     input_dir: Option<PathBuf>,
     output_dir: PathBuf,
     files: Vec<PathBuf>,
-    params: filter::Params,
+    params: Params,
     ntax: usize,
     percent: f64,
     datatype: DataType,
@@ -32,7 +32,7 @@ impl<'a> FilterParser<'a> {
             input_dir: None,
             output_dir: PathBuf::new(),
             files: Vec::new(),
-            params: filter::Params::MinTax(0),
+            params: Params::MinTax(0),
             ntax: 0,
             percent: 0.0,
             datatype: DataType::Dna,
@@ -65,7 +65,7 @@ impl<'a> FilterParser<'a> {
         npercent.iter().for_each(|&np| {
             self.percent = np;
             let min_tax = self.get_min_taxa();
-            self.params = filter::Params::MinTax(min_tax);
+            self.params = Params::MinTax(min_tax);
             self.set_multi_output_path();
             self.filter_aln(task_desc);
             utils::print_divider();
@@ -84,7 +84,7 @@ impl<'a> FilterParser<'a> {
             &self.input_fmt,
         );
         self.print_params();
-        let mut filter = filter::SeqFilter::new(
+        let mut filter = SeqFilter::new(
             &self.files,
             &self.input_fmt,
             &self.datatype,
@@ -109,10 +109,10 @@ impl<'a> FilterParser<'a> {
         self.params = match self.matches {
             m if m.is_present("percent") => {
                 self.percent = self.get_percent();
-                filter::Params::MinTax(self.get_min_taxa())
+                Params::MinTax(self.get_min_taxa())
             }
-            m if m.is_present("aln-len") => filter::Params::AlnLen(self.get_aln_len()),
-            m if m.is_present("pars-inf") => filter::Params::ParsInf(self.get_pars_inf()),
+            m if m.is_present("aln-len") => Params::AlnLen(self.get_aln_len()),
+            m if m.is_present("pars-inf") => Params::ParsInf(self.get_pars_inf()),
             _ => unreachable!("Invalid parameters!"),
         }
     }
@@ -142,18 +142,18 @@ impl<'a> FilterParser<'a> {
         let len = self
             .matches
             .value_of("aln-len")
-            .expect("CANNOT GET ALIGNMENT LENGTH VALUES");
+            .expect("Failed parsing an alignment length value");
         len.parse::<usize>()
-            .expect("CANNOT PARSE ALIGNMENT LENGTH VALUES TO INTEGERS")
+            .expect("Failed parsing an alignment value to integer")
     }
 
     fn get_pars_inf(&self) -> usize {
         let len = self
             .matches
             .value_of("pars-inf")
-            .expect("CANNOT GET PARSIMONY INFORMATIVE VALUES");
+            .expect("Failed parsing a parsimony informative value");
         len.parse::<usize>()
-            .expect("CANNOT PARSE PARSIMONY INFORMATIVE VALUES TO INTEGERS")
+            .expect("Failed parsing a parsimony informative value to in integer")
     }
 
     fn get_ntax(&mut self) {
@@ -173,7 +173,7 @@ impl<'a> FilterParser<'a> {
     fn parse_npercent(&self) -> Vec<f64> {
         self.matches
             .values_of("npercent")
-            .expect("FAILED PARSING npercent")
+            .expect("Failed parsing npercent")
             .map(|np| self.parse_percent(np))
             .collect()
     }
@@ -186,23 +186,23 @@ impl<'a> FilterParser<'a> {
         let percent = self
             .matches
             .value_of("percent")
-            .expect("CANNOT GET PERCENTAGE VALUES");
+            .expect("Failed parsing a percentage value");
         self.parse_percent(percent)
     }
 
     fn parse_percent(&self, percent: &str) -> f64 {
         percent
             .parse::<f64>()
-            .expect("CANNOT PARSE PERCENTAGE VALUES TO FLOATING POINTS")
+            .expect("Failed parsing a percentage value to a floating point number")
     }
 
     fn parse_ntax(&self) -> usize {
         let ntax = self
             .matches
             .value_of("ntax")
-            .expect("CANNOT GET NTAX VALUES");
+            .expect("Failed parsing a ntax value");
         ntax.parse::<usize>()
-            .expect("CANNOT PARSE NTAX VALUES TO INTEGERS")
+            .expect("Failed parsing a ntax value to integer")
     }
 
     fn set_output_path(&mut self) {
@@ -235,9 +235,9 @@ impl<'a> FilterParser<'a> {
             None => String::from("segul-filter"),
         };
         let output_dir = match self.params {
-            filter::Params::MinTax(_) => format!("{}_{}p", last, self.percent * 100.0),
-            filter::Params::AlnLen(len) => format!("{}_{}bp", last, len),
-            filter::Params::ParsInf(inf) => format!("{}_{}inf", last, inf),
+            Params::MinTax(_) => format!("{}_{}p", last, self.percent * 100.0),
+            Params::AlnLen(len) => format!("{}_{}bp", last, len),
+            Params::ParsInf(inf) => format!("{}_{}inf", last, inf),
         };
         parent.join(output_dir)
     }
@@ -245,13 +245,13 @@ impl<'a> FilterParser<'a> {
     fn print_params(&self) {
         log::info!("{}", Yellow.paint("Parameters"));
         match self.params {
-            filter::Params::MinTax(min_taxa) => {
+            Params::MinTax(min_taxa) => {
                 log::info!("{:18}: {}", "Taxon count", self.ntax);
                 log::info!("{:18}: {}%", "Percent", self.percent * 100.0);
                 log::info!("{:18}: {}\n", "Min tax", min_taxa);
             }
-            filter::Params::AlnLen(len) => log::info!("{:18}: {}bp\n", "Min aln len", len),
-            filter::Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
+            Params::AlnLen(len) => log::info!("{:18}: {}bp\n", "Min aln len", len),
+            Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
         }
     }
 }

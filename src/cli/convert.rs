@@ -9,7 +9,11 @@ impl InputPrint for ConvertParser<'_> {}
 impl OutputCli for ConvertParser<'_> {
     fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
         if matches.is_present("output") {
-            PathBuf::from(matches.value_of("output").expect("CANNOT READ OUTPUT PATH"))
+            PathBuf::from(
+                matches
+                    .value_of("output")
+                    .expect("Failed parsing an output values"),
+            )
         } else {
             PathBuf::from(self.parse_file_input(matches).file_name().expect(
                 "Faile parsing input file to get the ouput name. Please specify output names!",
