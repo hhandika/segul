@@ -183,7 +183,7 @@ The installation procedure is similar to the MacOS or Linux. After downloading t
 
 ### Installing using the Cargo Package Manager
 
-This is the recommended option. Cargo will compile the app, manage its dependencies, and fine-tuned it for your specific hardware. It also allows to easily updating the app.
+This is the recommended option. Cargo will compile the app and fine-tuned it for your specific hardware. It also allows to easily updating the app.
 
 First, download and install [the rust compiler toolchain](https://www.rust-lang.org/learn/get-started). It requires rust version 1.5 or higher. Then, check if the toolchain installation successful:
 
