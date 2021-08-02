@@ -16,16 +16,19 @@ jobs:
         include:
           - name: linux
             os: ubuntu-latest
+            executable: segul
             artifact_name: target/release/segul
             asset_name: segul-Linux-x86_64.tar.gz
 
           - name: windows
             os: windows-latest
+            executable: segul.exe
             artifact_name: target/release/segul.exe
             asset_name: segul-Windows-x86_64.tar.gz
 
           - name: macos
             os: macos-latest
+            executable: segul
             artifact_name: target/release/segul
             asset_name: segul-MacOS-x86_64.tar.gz
 
@@ -38,19 +41,21 @@ jobs:
           toolchain: stable
 
       - name: Build
-        run: cargo build --release
+        run: cargo build --release && mv ${{ matrix.artifact_name }} .
 
-      - name: Upload binaries to artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.asset_name }}
-          path: ${{ matrix.artifact_name }}
+      # - name: Upload binaries to artifact
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: ${{ matrix.asset_name }}
+      #     path: ${{ matrix.artifact_name }}
       
+      - name: Package
+        run: tar -czvf ${{ matrix.asset_name }} ${{ matrix.executable }}
+
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: ${{ matrix.asset_name }}
-          path: ${{ matrix.artifact_name }}
+          files: ${{ matrix.asset_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
