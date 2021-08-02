@@ -371,7 +371,7 @@ Argument: `--datatype`
 
 Availabilities: all subcommands
 
-The app support both DNA and amino acid sequences. By default the data type is set for DNA sequences. If your input file is amino acid sequences, you will need to change the data type to `aa`. By specifying the data type, the app will check if your sequence files contain only IUPAC characters. Except for computing summary statistics, you can set data type to `ignore` to skip checking the IUPAC characters. This usually speed app the computation for about 40%. Use this option when you are sure your sequences contain only IUPAC characters.
+The app support both DNA and amino acid sequences. By default the data type is set for DNA sequences. If your input file is amino acid sequences, you will need to change the data type to `aa`. By specifying the data type, the app will check if your sequence files contain valid IUPAC characters. Except for computing summary statistics, you can set data type to `ignore` to skip checking the IUPAC characters. It usually speeds up the computation for about 40%. Use this option when you are sure your sequences contain only IUPAC characters.
 
 To summarize, available data types:
 
