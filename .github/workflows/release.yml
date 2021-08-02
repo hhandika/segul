@@ -18,19 +18,19 @@ jobs:
             os: ubuntu-latest
             executable: segul
             artifact_name: target/release/segul
-            asset_name: segul-Linux-x86_64.tar.gz
+            asset_name: segul-Linux-x86_64.zip
 
           - name: windows
             os: windows-latest
             executable: segul.exe
             artifact_name: target/release/segul.exe
-            asset_name: segul-Windows-x86_64.tar.gz
+            asset_name: segul-Windows-x86_64.zip
 
           - name: macos
             os: macos-latest
             executable: segul
             artifact_name: target/release/segul
-            asset_name: segul-MacOS-x86_64.tar.gz
+            asset_name: segul-MacOS-x86_64.zip
 
     steps:
       - uses: actions/checkout@v1
@@ -58,6 +58,7 @@ jobs:
 
       - name: Upload Release
         uses: ncipollo/release-action@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           artifacts: ${{ matrix.asset_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
