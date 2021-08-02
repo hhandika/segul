@@ -90,7 +90,7 @@ segul <SUBCOMMAND> --help
 For example, to concat all the alignments in a directory named `nexus-alignments`:
 
 ```Bash
-segul concat --dir nexus-alignments --format nexus
+segul concat --dir nexus-alignments --input-format nexus
 ```
 
 It is also available in short options:
@@ -283,7 +283,7 @@ Remove the app manually if you use the pre-compiled binary.
 
 ## Command Structure
 
-### Available Subcommands
+### Available subcommands
 
 ```Bash
 USAGE:
@@ -302,6 +302,109 @@ SUBCOMMANDS:
     summary    Gets alignment summary stats
 ```
 
+### Input options
+
+- Option `-i` or `input`: Use for a single file input. Only available for convert and summary subcommands.
+- Option `-d` or `dir`: If your input is a path to a directory. The directory input requires users to specify the input format. Available for all subcommands.
+- Option `w` or `wildcard`: If your input is wilcards. This is more flexible than the other two input options and can accept multiple values. Available for all subcommands.
+
+### Input format
+
+Arguments: `-f` or `--input-format`
+
+Availabilities: all subcommands
+
+It is used to specify the input format. For a sinlge input `-i` or `--input` and `-w` or `--wildcard`, this is not required. 
+
+Input format options (all in lowercase):
+
+- `auto` (default)
+- `nexus`
+- `phylip`
+- `fasta`
+
+### Output
+
+Arguments: `-o` or `--output`
+
+Availabilities: all subcommands
+
+For a single output task, such as converting a single file, or concatenating alignment, the output will be the file name for the output. For a multiple output task, such as converting multiple files to a different format, the output will be the directory name for the output. The program will use the input file name for the each output file.
+
+The program by default write to the current working directory. 
+
+### Output format
+
+Arguments: `-F` or `--output-format`
+
+Availabilities: all subcommands
+
+By default the output format is `nexus`. Use this option to specify the output format. Below is the available output formats.
+
+Sequential formats:
+
+- `nexus`
+- `phylip`
+- `fasta`
+
+Interleaved formats:
+
+- `fasta-int`
+- `nexus-int`
+- `phylip-int`
+
+### Data type
+
+Argument: `--datatype`
+
+Availabilities: all subcommands
+
+The app support both DNA and amino acid sequences. By default the datatype is set for DNA. If your input file is amino acid sequences, you will need to change the data type to `aa`. By specifying the data type, the app will check if your sequence files contain only IUPAC characters. Except for computing summary statistics, you can set data type to `ignore` to skip checking the IUPAC characters. This usually speed app the computation for about 40%. Use this option when you are sure your sequences contain only IUPAC characters.
+
+### Special options
+
+#### Partition format
+
+Arguments: `-p` or `--part`
+
+Availabilities: concat and filter subcommands
+
+This option is used to specify the partition format. By default the format is nexus. Available options:
+
+- `charset` (embedded in a nexus sequence)
+- `nexus`
+- `raxml`
+
+#### Percentage interval
+
+Arguments: `-i` or `--interval`
+
+Availability: summary subcommand
+
+This option is to specify the percentage decrement interval for computing data matrix completeness in summary statistics. Available interval: `1`, `2`, `5`, `10`.
+
+### Filtering options
+
+Only available for filter subcommands. Available options:
+
+- `-l` or `--len`: To filter alignments based on minimal alignment length
+- `--percent`: To filter based on percentage of data matrix completeness.
+- `--npercent`: The same as `--percent`, but accept multiple values.
+- `--pinf`: To filter based on the number of parsimony informative sites.
+- `--ntax`: To defined the total number of taxa. By default the app determines the number of taxa in all the alignments based on the numbers of unique IDs.
+
+### Special Flags
+
+`--codon`: Use to set the partition format to codon model. Available in concat subcommand, and filtering subcommand (if you choose to concatenate the result).
+
+`--concat`: Available for filtering to concat the filtering results in lieu to copying the files.
+
+`--sort`: Available for convert to sort the sequences based on their IDs in alphabetical order.
+
+`-h` or `--help`: To display help information.
+
+`-v` or `--version`: To display the app version information.
+
 ## Usages
 
 ### Converting sequences to a different format
@@ -314,7 +417,7 @@ Segul can convert from a single file input (`-i` or `--input`), a directory inpu
 segul convert --input [path-to-your-repository] --input-format [choose-one]
 ```
 
-In shortened format:
+In short format:
 
 ```Bash
 segul convert -i [path-to-your-repository] -f [sequence-format]
@@ -326,7 +429,7 @@ By default it converts to nexus. To choose a different output format, use the ou
 segul convert --input [path-to-your-repository] --input-format [sequence-format] --output-format [sequence-format]
 ```
 
-In shortened format. Notice the uppercase 'F' for the ouput format:
+In short format, notice the uppercase 'F' for the output format:
 
 ```Bash
 segul convert -i [path-to-your-repository] -f [sequence-format] -F [sequence-format]
