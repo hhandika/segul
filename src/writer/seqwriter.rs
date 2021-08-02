@@ -252,7 +252,7 @@ impl<'a> SeqWriter<'a> {
             PartitionFmt::NexusCodon => self.write_part_nexus(true),
             PartitionFmt::Raxml => self.write_part_raxml(false),
             PartitionFmt::RaxmlCodon => self.write_part_raxml(true),
-            _ => eprintln!("Ups. Error while parsing partition format"),
+            _ => log::warn!("Ups. Error while parsing partition format"),
         }
     }
 
@@ -268,7 +268,7 @@ impl<'a> SeqWriter<'a> {
                     writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
                 }
             }),
-            None => eprintln!("Failed to find partition data"),
+            None => log::warn!("Failed to find partition data"),
         }
     }
 
