@@ -55,7 +55,10 @@ It is now in active development. Our goal is to provide as many functionalities 
   - [Special flags](#special-flags)
 - [Usages](#usages)
   - [Converting sequences to a different format](#converting-sequences-to-a-different-format)
-  - [Concatenating sequences](#concatenating-sequences)
+  - [Concatenating alignments](#concatenating-alignments)
+  - [Filtering alignments](#filtering-alignments)
+  - [Computing sequence summary statistics](#computing-sequence-summary-statistics)
+  - [Finding all IDs in a collection of alignments](#finding-all-ids-in-a-collection-of-alignments)
 
 ## Supported Platforms
 
@@ -512,11 +515,11 @@ All the options for a single input or a directory is also available for a wildca
 segul convert -c [wildcard-1] [wildcard-2] [wildcard-3] -f [sequence-format] -o [your-output-dir-name]
 ```
 
-### Concatenating sequences
+### Concatenating alignments
 
 The app concat multiple alignments and write the partition setting for the resulting files. The input options are `-d` or `--dir` and `-c` or `--wildcard`. To specify the partition format, you will use the `-p` or `--part` option. You can also write the partition to a codon model format by using the flag `--codon`.
 
-### Filtering sequences
+### Filtering alignments
 
 ### Computing sequence summary statistics
 
