@@ -314,7 +314,7 @@ Arguments: `-f` or `--input-format`
 
 Availabilities: all subcommands
 
-It is used to specify the input format. For a sinlge input `-i` or `--input` and `-w` or `--wildcard`, this is not required. 
+It is used to specify the input format. For a sinlge input `-i` or `--input` and `-w` or `--wildcard`, this is not required.
 
 Input format options (all in lowercase):
 
@@ -331,7 +331,7 @@ Availabilities: all subcommands
 
 For a single output task, such as converting a single file, or concatenating alignment, the output will be the file name for the output. For a multiple output task, such as converting multiple files to a different format, the output will be the directory name for the output. The program will use the input file name for the each output file.
 
-The program by default write to the current working directory. 
+The program by default write to the current working directory.
 
 ### Output format
 
