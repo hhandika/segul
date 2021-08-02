@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.7
+
+- Better error handling.
+
 ## v0.3.6
 
 - Fix issues when concatenating filtered alignments. Now, enforce users to input required arguments.
