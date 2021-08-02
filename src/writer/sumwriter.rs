@@ -51,7 +51,7 @@ trait Alphabet {
         match datatype {
             DataType::Dna => alphabet::DNA_STR_UPPERCASE,
             DataType::Aa => alphabet::AA_STR_UPPERCASE,
-            _ => unreachable!(),
+            _ => unreachable!("Invalid data types! Use dna or aa only"),
         }
     }
 }
