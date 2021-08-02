@@ -62,7 +62,7 @@ It is now in active development. Our goal is to provide as many functionalities 
 
 ## Supported Platforms
 
-The app may work in any rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
+The app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
 
 - Linux
 - MacOS
@@ -71,7 +71,7 @@ The app may work in any rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
-If you are familiar with the Rust programming language and its development [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using the Rust package manager: [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html). In addition to cargo, for Linux system (including WSL), it requires the C-development toolkit, `build-essential` for Debian-based distributions or its equivalent in other Linux distributions.
+If you are familiar with [the Rust programming language](https://en.wikipedia.org/wiki/Rust_(programming_language)) and its development [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using the Rust package manager: [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html). In addition to cargo, for Linux system (including WSL), it requires the C-development toolkit, `build-essential` for Debian-based distributions or its equivalent in other Linux distributions.
 
 If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](#installing-through-cargo)). After you have cargo installed in your computer, installing SEGUL is one command away:
 
@@ -120,7 +120,7 @@ The app outputs are the resulting files from each task and a log file. Most info
 We want the installation to be as flexible as possible. We offer three ways to install the app. Each of the options has pros and cons.
 
 1. Using a pre-compiled binary. The quickest and the most straigtforward installation route, but the app may not be fine-tuned for your specific hardware.
-2. Using the rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
+2. Using the Rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
 3. Compiling it from the source in the Github repository. It gives you the most up to date version, but the resulting binary may be less stable than the binary installed through the other routes.
 
 ### Using a pre-compiled binary
@@ -185,7 +185,7 @@ The installation procedure is similar to the MacOS or Linux. After downloading t
 
 This is the recommended option. Cargo will compile the app and fine-tuned it for your specific hardware. It also allows to easily updating the app.
 
-First, download and install [the rust compiler toolchain](https://www.rust-lang.org/learn/get-started). It requires rust version 1.5 or higher. Then, check if the toolchain installation successful:
+First, download and install [the Rust compiler toolchain](https://www.rust-lang.org/learn/get-started). It requires Rust version 1.5 or higher. Then, check if the toolchain installation successful:
 
 ```Bash
 cargo --version
@@ -235,7 +235,7 @@ cargo install segul
 
 ### Installing from a GitHub Repository
 
-You will need [the rust compiler toolchain](https://www.rust-lang.org/learn/get-started). The setup procedure is similar to installing the app using cargo. To install the development version for any supported platform:
+You will need [the Rust compiler toolchain](https://www.rust-lang.org/learn/get-started). The setup procedure is similar to installing the app using cargo. To install the development version for any supported platform:
 
 ```Bash
 cargo install --git https://github.com/hhandika/segul.git
@@ -269,7 +269,7 @@ If you install the app using cargo, updating the app is the same as installing i
 cargo install segul
 ```
 
-Cargo will check whether the version of the app in your computer different from the version in the rust package repository ([crates.io](https://crates.io/crates/segul)) and will install the newer version if it is available. Similar procedure is also applied for installing from the GitHub repository:
+Cargo will check whether the version of the app in your computer different from the version in the Rust package repository ([crates.io](https://crates.io/crates/segul)) and will install the newer version if it is available. Similar procedure is also applied for installing from the GitHub repository:
 
 ```Bash
 cargo install --git https://github.com/hhandika/segul.git
