@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.3.5
+
+- Change option "format" to "input-format" for consistency with "output-format".
+- Fix missing a new line after spinner message in converting sequences in a directory.
+
 ## v0.3.4
 
 - Fix wildcard issues on windows.

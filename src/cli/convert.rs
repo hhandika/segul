@@ -78,7 +78,7 @@ impl<'a> ConvertParser<'a> {
             let output = self.output.join(file.file_stem().unwrap());
             self.convert_any(file, &output, &self.output_fmt);
         });
-        spin.finish_with_message("DONE!");
+        spin.finish_with_message("DONE!\n");
     }
 
     fn convert_any(&self, input: &Path, output: &Path, output_fmt: &OutputFmt) {
