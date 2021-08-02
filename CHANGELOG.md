@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.10
+
+- Change CI implementation.
+
 ## v0.3.9
 
 - Fix CI errors.
