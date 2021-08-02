@@ -332,17 +332,17 @@ In shortened format. Notice the uppercase 'F' for the ouput format:
 segul convert -i [path-to-your-repository] -f [sequence-format] -F [sequence-format]
 ```
 
-You can also ignore the specifying the input format and the program will infer it based on the file extension:
+You can also skip specifying the input format and the program will infer it based on the file extension:
 
 ```Bash
 segul convert -i [path-to-your-repository]
 ```
 
-By default the program will use the input file name for the output name with the output format extension. To specify, the output name use the `-o` or `--output` option. There is no need to include the extension for the output name.
+By default the program will use the input file name for the output. To specify, the output name use the `-o` or `--output` option. There is no need to include the extension for the output name.
 
-Using the `--short` flag, you can also sort the sequence based on their IDs in alphabetical order.
+Using the `--sort` flag, you can also sort the sequence based on their IDs in alphabetical order.
 
-For example, to convert a file name `sequence.fasta` to a phylip format and we will short the result.
+For example, to convert a file name `sequence.fasta` to a phylip format and we will sort the result.
 
 ```Bash
 segul convert -i sequence.phy -f fasta -F phylip -o new_sequence --sort
@@ -350,7 +350,7 @@ segul convert -i sequence.phy -f fasta -F phylip -o new_sequence --sort
 
 #### Batch converting sequence files in a directory
 
-The conversion command is similar to converting a single file. Unlike the single file, the app require you to specify the input format and the output name. The output name will be the directory name for the output files, whereas the output file name will be the same as the input file.
+The conversion command for a directory input is similar to converting a single file. Unlike the single file, the app require you to specify the input format and the output name. The output name will be the directory name for the output files, whereas the output file name will be the same as the input file.
 
 ```Bash
 segul convert --dir [path-to-your-repository] --input-format [choose-one] --output [your-output-dir-name]
