@@ -114,7 +114,7 @@ The app outputs are the resulting files from each task and a log file. Most info
 
 ## Installation
 
-We want the installation as flexible as possible. We offer three ways to install the program. Each of the options has pros and cons.
+We want the installation to be as flexible as possible. We offer three ways to install the program. Each of the options has pros and cons.
 
 1. Using a pre-compiled binary. The quickest and the most straigtforward installation route, but the app may not be fine-tuned for your specific hardware.
 2. Using the rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
@@ -412,7 +412,7 @@ Only available for filter subcommands. Available options:
 
 `-h` or `--help`: To display help information.
 
-`-v` or `--version`: To display the app version information.
+`--version`: To display the app version information.
 
 ## Usages
 
