@@ -5,7 +5,7 @@
 ![GH-Release](https://img.shields.io/github/v/release/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments that typically done using interpreted programming languages, such as Python, R, or Perl. It is designed to handle genomic datasets, but just as capable for Sanger datasets. In our test using a dataset with 4060 UCE loci, for instance, compare to a program written using biopython library, SEGUL is >40x faster for alignment concatenation while using 3x less RAM space.
+SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments that typically done using interpreted programming languages, such as Python, R, or Perl. It is designed to handle genomic datasets, but just as capable for Sanger datasets. In our test using a dataset with 4060 UCE loci, for instance, compare to a app written using biopython library, SEGUL is >40x faster for alignment concatenation while using 3x less RAM space.
 
 Available features:
 
@@ -59,7 +59,7 @@ It is now in active development. Our goal is to provide as many functionalities 
 
 ## Supported Platforms
 
-The program may work in any rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
+The app may work in any rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
 
 - Linux
 - MacOS
@@ -68,7 +68,7 @@ The program may work in any rust supported [platform](https://doc.rust-lang.org/
 
 ## Quick Start
 
-If you already using a rust program and familiar with its [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. In addition to cargo, for Linux system (including WSL), it only requires the C-development toolkit, `build-essential` or its equivalent in other Linux distributions.
+If you already using a rust app and familiar with its [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. In addition to cargo, for Linux system (including WSL), it only requires the C-development toolkit, `build-essential` or its equivalent in other Linux distributions.
 
 If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](#installing-through-cargo)). After you have cargo installed in your computer, installing SEGUL is one command away:
 
@@ -78,7 +78,7 @@ cargo install segul
 
 You can also use the pre-compiled binary available in [the release page](https://github.com/hhandika/segul/releases/). The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](#using-a-pre-compiled-binary)).
 
-The program command structure is similar to git, gh-cli, or any other program that use subcommands. The program file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
+The app command structure is similar to git, gh-cli, or any other app that use subcommands. The app file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
 
 ```Bash
 [THE-PROGRAM-FILENAME] <SUBCOMMAND> [OPTIONS] <VALUES> <A-FLAG-IF-APPLICABLE>
@@ -114,7 +114,7 @@ The app outputs are the resulting files from each task and a log file. Most info
 
 ## Installation
 
-We want the installation to be as flexible as possible. We offer three ways to install the program. Each of the options has pros and cons.
+We want the installation to be as flexible as possible. We offer three ways to install the app. Each of the options has pros and cons.
 
 1. Using a pre-compiled binary. The quickest and the most straigtforward installation route, but the app may not be fine-tuned for your specific hardware.
 2. Using the rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
@@ -133,7 +133,7 @@ See specific details below:
 
 #### Linux/WSL/MacOS
 
-First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the program in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using WSL or more up to date native Linux distros. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try to [install the app using cargo](#installing-through-cargo).
+First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the app in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using WSL or more up to date native Linux distros. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try to [install the app using cargo](#installing-through-cargo).
 
 For MacOS, the executable is available for an Intel Mac. If you are using Apple silicon Macs (Apple M1), we recommend installing it using cargo.
 
@@ -338,9 +338,9 @@ Arguments: `-o` or `--output`
 
 Availabilities: all subcommands
 
-For a single output task, such as converting a single file, or concatenating alignment, the output will be the file name for the output. For a multiple output task, such as converting multiple files to a different format, the output will be the directory name for the output. The program will use the input file name for the each output file.
+For a single output task, such as converting a single file, or concatenating alignment, the output will be the file name for the output. For a multiple output task, such as converting multiple files to a different format, the output will be the directory name for the output. The app will use the input file name for the each output file.
 
-The program by default write to the current working directory.
+The app by default write to the current working directory.
 
 ### Output format
 
@@ -444,13 +444,13 @@ In short format, notice the uppercase 'F' for the output format:
 segul convert -i [path-to-your-repository] -f [sequence-format] -F [sequence-format]
 ```
 
-You can also skip specifying the input format and the program will infer it based on the file extension:
+You can also skip specifying the input format and the app will infer it based on the file extension:
 
 ```Bash
 segul convert -i [path-to-your-repository]
 ```
 
-By default the program will use the input file name for the output. To specify, the output name use the `-o` or `--output` option. There is no need to include the extension for the output name.
+By default the app will use the input file name for the output. To specify, the output name use the `-o` or `--output` option. There is no need to include the extension for the output name.
 
 Using the `--sort` flag, you can also sort the sequence based on their IDs in alphabetical order.
 
@@ -500,7 +500,7 @@ new_sequences/
 
 #### Batch converting sequence files using wildcard
 
-All the options for a single input or a directory is also available for a wildcard. The program can also infer the input format. Unlike any other input, the wildcard can take multiple values. This allow you to batch converting files in different folders. The ouput will be in a single directory. It is required to specify the output name and will be used as a name for the output directory.
+All the options for a single input or a directory is also available for a wildcard. The app can also infer the input format. Unlike any other input, the wildcard can take multiple values. This allow you to batch converting files in different folders. The ouput will be in a single directory. It is required to specify the output name and will be used as a name for the output directory.
 
 ```Bash
 segul convert -c [wildcard-1] [wildcard-2] [wildcard-3] -f [sequence-format] -o [your-output-dir-name]
