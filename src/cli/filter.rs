@@ -113,7 +113,7 @@ impl<'a> FilterParser<'a> {
             }
             m if m.is_present("aln-len") => filter::Params::AlnLen(self.get_aln_len()),
             m if m.is_present("pars-inf") => filter::Params::ParsInf(self.get_pars_inf()),
-            _ => unreachable!(),
+            _ => unreachable!("Invalid parameters!"),
         }
     }
 

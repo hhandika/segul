@@ -44,7 +44,7 @@ pub fn parse_cli(version: &str) {
         ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).filter(),
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
         ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
-        _ => unreachable!(),
+        _ => unreachable!("Invalid subcommands!"),
     }
 }
 

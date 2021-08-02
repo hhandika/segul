@@ -304,6 +304,11 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("part")
                         .help("Sets partition format if concat")
                         .takes_value(true)
+                        .requires_all(&[
+                            "concat",
+                            "output",
+                            "output-format",
+                        ])
                         .value_name("FORMAT")
                         .possible_values(&["charset", "nexus", "raxml"]),
                 )
@@ -311,16 +316,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("concat")
                         .long("concat")
                         .help("Concats the final results")
-                        .required_ifs(&[
-                            ("filter", "partition"),
-                            ("filter", "codon"),
-                            ("filter", "output-format"),
+                        .requires_all(&[
+                            "partition",
+                            "output",
+                            "output-format",
                         ])
                         .takes_value(false),
                 )
                 .arg(
                     Arg::with_name("codon")
                         .long("codon")
+                        .requires("concat")
                         .help("Sets codon model partition format")
                         .takes_value(false),
                 ),

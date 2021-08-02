@@ -22,7 +22,9 @@ impl InputPrint for SummaryParser<'_> {}
 
 impl OutputCli for SummaryParser<'_> {
     fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
-        let output = matches.value_of("output").expect("CANNOT READ OUTPUT PATH");
+        let output = matches
+            .value_of("output")
+            .expect("Failed parsing an output value");
         let csv = format!("{}_per_locus", output);
         PathBuf::from(csv).with_extension("csv")
     }
