@@ -71,7 +71,7 @@ The app may work in any rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
-If you are familiar with the Rust programming language and its development [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. In addition to cargo, for Linux system (including WSL), it requires the C-development toolkit, `build-essential` for Debian-based distributions or its equivalent in other Linux distributions.
+If you are familiar with the Rust programming language and its development [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using the Rust package manager: [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html). In addition to cargo, for Linux system (including WSL), it requires the C-development toolkit, `build-essential` for Debian-based distributions or its equivalent in other Linux distributions.
 
 If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](#installing-through-cargo)). After you have cargo installed in your computer, installing SEGUL is one command away:
 
