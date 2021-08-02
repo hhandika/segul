@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.9
+
+- Fix CI errors.
+
 ## v0.3.8
 
 - More consistent error messages for the filter subcommand.
