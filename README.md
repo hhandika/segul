@@ -232,7 +232,7 @@ cargo install segul
 
 ### Installing from a GitHub Repository
 
-You will need [rust compiler toolchain](https://www.rust-lang.org/learn/get-started). The setup procedure is similar to installing the app using cargo. To install the development version for any supported platform:
+You will need [the rust compiler toolchain](https://www.rust-lang.org/learn/get-started). The setup procedure is similar to installing the app using cargo. To install the development version for any supported platform:
 
 ```Bash
 cargo install --git https://github.com/hhandika/segul.git
@@ -313,9 +313,9 @@ SUBCOMMANDS:
 
 ### Input options
 
-- Option `-i` or `input`: Use for a single file input. Only available for convert and summary subcommands.
-- Option `-d` or `dir`: If your input is a path to a directory. The directory input requires users to specify the input format. Available for all subcommands.
-- Option `w` or `wildcard`: If your input is wilcards. This is more flexible than the other two input options and can accept multiple values. Available for all subcommands.
+- Option `-i` or `--input`: Use for a single file input. Only available for convert and summary subcommands.
+- Option `-d` or `--dir`: If your input is a path to a directory. The directory input requires users to specify the input format. Available for all subcommands.
+- Option `w` or `--wildcard`: If your input is wilcards. This is more flexible than the other two input options and can accept multiple values. Available for all subcommands.
 
 ### Input format
 
@@ -338,7 +338,7 @@ Arguments: `-o` or `--output`
 
 Availabilities: all subcommands
 
-For a single output task, such as converting a single file, or concatenating alignment, the output will be the file name for the output. For a multiple output task, such as converting multiple files to a different format, the output will be the directory name for the output. The app will use the input file name for the each output file.
+For a single output task, such as converting a single file, or concatenating alignment, the output will be the file name for the output. For a multiple output task, such as converting multiple files to a different format, the output will be the directory name for the output. The app will use the input file name for each output file.
 
 The app by default write to the current working directory.
 
@@ -368,7 +368,13 @@ Argument: `--datatype`
 
 Availabilities: all subcommands
 
-The app support both DNA and amino acid sequences. By default the datatype is set for DNA. If your input file is amino acid sequences, you will need to change the data type to `aa`. By specifying the data type, the app will check if your sequence files contain only IUPAC characters. Except for computing summary statistics, you can set data type to `ignore` to skip checking the IUPAC characters. This usually speed app the computation for about 40%. Use this option when you are sure your sequences contain only IUPAC characters.
+The app support both DNA and amino acid sequences. By default the data type is set for DNA sequences. If your input file is amino acid sequences, you will need to change the data type to `aa`. By specifying the data type, the app will check if your sequence files contain only IUPAC characters. Except for computing summary statistics, you can set data type to `ignore` to skip checking the IUPAC characters. This usually speed app the computation for about 40%. Use this option when you are sure your sequences contain only IUPAC characters.
+
+To summarize, available data types:
+
+- `aa`
+- `dna`
+- `ignore`
 
 ### Special options
 
