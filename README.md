@@ -41,7 +41,7 @@ It is now in active development. Our goal is to provide as many functionalities 
 - [Supported Platforms](#supported-platforms)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
-  - [Using a pre-compiled library](#using-a-pre-compiled-library)
+  - [Using a pre-compiled binary](#using-a-pre-compiled-binary)
   - [Installing using the Cargo Package Manager](#installing-using-the-cargo-package-manager)
   - [Installing from a GitHub repository](#installing-from-a-github-repository)
 - [Command Structure](#command-structure)
@@ -74,7 +74,7 @@ If you already using a rust program and familiar with its [toolchain](https://ww
 cargo install segul
 ```
 
-You can also use the pre-compiled binary available in [the release page](https://github.com/hhandika/segul/releases/). The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](#using-a-pre-compiled-library)).
+You can also use the pre-compiled binary available in [the release page](https://github.com/hhandika/segul/releases/). The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](#using-a-pre-compiled-binary)).
 
 The program command structure is similar to git, gh-cli, or any other program that use subcommands. The program file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
 
@@ -114,13 +114,13 @@ The app outputs are the resulting files from each task and a log file. Most info
 
 We want the installation as flexible as possible. We offer three ways to install the program. Each of the options has pros and cons.
 
-1. Using a pre-compiled library. The quickest and the most straigtforward installation route, but the app may not be fine-tuned for your specific hardware.
+1. Using a pre-compiled binary. The quickest and the most straigtforward installation route, but the app may not be fine-tuned for your specific hardware.
 2. Using the rust package manager, cargo. It is similar to pip for python, gem for ruby, npm for JavaScript, etc. This is the recommended option. Cargo is a part of the Rust programming language toolchain. The toolchain is small and easy to install ([see below](#installing-through-cargo)). Cargo will also help to manage the app and allow for a quick update whenever the new version is released.
 3. Compiling it from the source in the Github repository. It gives you the most up to date version, but the resulting binary may be less stable than the binary installed through the other routes.
 
-### Using a pre-compiled library
+### Using a pre-compiled binary
 
-The pre-compiled library is available in [the release page](https://github.com/hhandika/segul/releases/). The typical workflow is as follow:
+The pre-compiled binary is available in [the release page](https://github.com/hhandika/segul/releases/). The typical workflow is as follow:
 
 1. Download the zip file in [the release page](https://github.com/hhandika/segul/releases/) to your computer, using a browser or using a command line app.
 2. Extract the zip file.
@@ -137,7 +137,7 @@ For MacOS, the executable is available for an Intel Mac. If you are using Apple 
 
 Here, we use the version 0.3.1 as an example. You should replace the link with the most up to date version available in the release page.
 
-- Download the library.
+- Download the binary.
 
 ```Bash
 
