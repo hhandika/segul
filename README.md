@@ -71,7 +71,7 @@ The app may work in any rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
-If you are familiar with a rust app and its [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. In addition to cargo, for Linux system (including WSL), it requires the C-development toolkit, `build-essential` for Debian-based distributions or its equivalent in other Linux distributions.
+If you are familiar with the Rust programming language and its development [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using cargo. In addition to cargo, for Linux system (including WSL), it requires the C-development toolkit, `build-essential` for Debian-based distributions or its equivalent in other Linux distributions.
 
 If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](#installing-through-cargo)). After you have cargo installed in your computer, installing SEGUL is one command away:
 
@@ -136,7 +136,7 @@ See specific details below:
 
 #### Linux/WSL/MacOS
 
-First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the app in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using WSL or more up to date native Linux distros. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try to [install the app using cargo](#installing-through-cargo).
+First, copy the link to the zip file in [the release page](https://github.com/hhandika/segul/releases/). We provide two versions of the app for Linux. The zip file labeled with HPC is compiled using Red Hat Enterprise Linux Server 7.9 (Kernel Version 3.10). If you are running the app in HPC, you should use this version. The other version (labeled Linux only) is compiled using [Ubuntu 20.04 LTS (Kernel version 5.8)](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md). You should use this if you are using WSL or more up to date native Linux distributions. Simply put, if you encounter [GLIBC](https://www.gnu.org/software/libc/) error, try using the HPC version. If the issue still persists, try to [install the app using cargo](#installing-through-cargo).
 
 For MacOS, the executable is available for an Intel Mac. If you are using Apple silicon Macs (Apple M1), we recommend installing it using cargo.
 
