@@ -400,25 +400,25 @@ This option is to specify the percentage decrement interval for computing data m
 
 #### Filtering options
 
-Only available for filter subcommands. Available options:
+Only available for the filter subcommand. Available options:
 
 - `-l` or `--len`: To filter alignments based on minimal alignment length
 - `--percent`: To filter based on percentage of data matrix completeness.
-- `--npercent`: The same as `--percent`, but accept multiple values.
+- `--npercent`: The same as `--percent`, but accept multiple values. This option allows you to create collections of alignments with different data matrix completeness in a single command.
 - `--pinf`: To filter based on the number of parsimony informative sites.
 - `--ntax`: To defined the total number of taxa. By default the app determines the number of taxa in all the alignments based on the numbers of unique IDs.
 
 ### Special flags
 
-`--codon`: Use to set the partition format to codon model. Available in concat subcommand, and filtering subcommand (if you choose to concatenate the result).
+- `--codon`: Use to set the partition format to codon model. Available in the concat and filter subcommands (if you choose to concatenate the result).
 
-`--concat`: Available for filtering to concat the filtering results in lieu to copying the files.
+- `--concat`: Available for the filter subcommand. If is set, the app will concatenate filtered alignments in lieu to copying the files.
 
-`--sort`: Available for convert to sort the sequences based on their IDs in alphabetical order.
+- `--sort`: Available for the convert subcommand to sort the sequences based on their IDs in alphabetical order.
 
-`-h` or `--help`: To display help information.
+- `-h` or `--help`: To display help information.
 
-`--version`: To display the app version information.
+- `--version`: To display the app version information.
 
 ## Usages
 
