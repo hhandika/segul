@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.13
+
+- Update release steps.
+
 ## v0.3.12
 
 - CI fix with newer container.

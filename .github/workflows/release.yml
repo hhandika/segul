@@ -48,7 +48,10 @@ jobs:
           toolchain: stable
 
       - name: Build
-        run: cargo build --release && mv ${{ matrix.artifact_name }} .
+        run: |
+          ldd --version
+          cargo build --release 
+          mv ${{ matrix.artifact_name }} .
       
       - name: Archive Release
         uses: thedoctor0/zip-release@master
