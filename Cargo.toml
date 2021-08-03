@@ -33,3 +33,4 @@ regex = "1.4.5"
 [profile.release]
 debug = false
 lto = "fat"
+panic = "abort"
