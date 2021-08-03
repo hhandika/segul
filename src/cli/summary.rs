@@ -58,12 +58,25 @@ impl<'a> SummaryParser<'a> {
             InputType::Dir => {
                 let dir = self.parse_dir_input(self.matches);
                 let files = self.get_files(&dir, &self.input_fmt);
-                self.print_input_multi(&Some(dir), task_desc, files.len(), &self.input_fmt);
+
+                self.print_input_multi(
+                    &Some(dir),
+                    task_desc,
+                    files.len(),
+                    &self.input_fmt,
+                    &self.datatype,
+                );
                 self.get_stats_multiple(&files);
             }
             InputType::Wildcard => {
                 let files = self.parse_input_wcard(self.matches);
-                self.print_input_multi::<PathBuf>(&None, task_desc, files.len(), &self.input_fmt);
+                self.print_input_multi::<PathBuf>(
+                    &None,
+                    task_desc,
+                    files.len(),
+                    &self.input_fmt,
+                    &self.datatype,
+                );
                 self.get_stats_multiple(&files)
             }
         }
@@ -78,7 +91,7 @@ impl<'a> SummaryParser<'a> {
         self.parse_input_fmt(self.matches);
         let input = Path::new(self.parse_file_input(self.matches));
         let output = self.parse_output(self.matches);
-        self.print_input_file(input, task_desc, &self.input_fmt);
+        self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
             .get_seq_stats_file(input);
     }

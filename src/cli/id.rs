@@ -54,7 +54,13 @@ impl<'a> IdParser<'a> {
         } else {
             self.parse_input_wcard(self.matches)
         };
-        self.print_input_multi(&self.input_dir, task_desc, files.len(), &input_fmt);
+        self.print_input_multi(
+            &self.input_dir,
+            task_desc,
+            files.len(),
+            &input_fmt,
+            &datatype,
+        );
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
         let ids = IDs::new(&files, &input_fmt, &datatype).get_id_all();

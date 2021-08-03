@@ -82,6 +82,7 @@ impl<'a> FilterParser<'a> {
             task_desc,
             self.files.len(),
             &self.input_fmt,
+            &self.datatype,
         );
         self.print_params();
         let mut filter = SeqFilter::new(

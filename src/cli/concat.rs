@@ -57,7 +57,13 @@ impl<'a> ConcatParser<'a> {
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &self.input_fmt)
         };
-        self.print_input_multi(&self.input_dir, task_desc, files.len(), &self.input_fmt);
+        self.print_input_multi(
+            &self.input_dir,
+            task_desc,
+            files.len(),
+            &self.input_fmt,
+            &self.datatype,
+        );
         let concat =
             msa::MSAlignment::new(&self.input_fmt, &output, &self.output_fmt, &self.part_fmt);
 

@@ -164,9 +164,16 @@ trait InputCli {
 }
 
 trait InputPrint {
-    fn print_input_file(&self, input: &Path, task_desc: &str, input_fmt: &InputFmt) {
+    fn print_input_file(
+        &self,
+        input: &Path,
+        task_desc: &str,
+        input_fmt: &InputFmt,
+        datatype: &DataType,
+    ) {
         log::info!("{:18}: {}", "Input", &input.display());
         self.print_input_fmt(input_fmt);
+        self.print_datatype(datatype);
         log::info!("{:18}: {}\n", "Task", task_desc);
     }
 
@@ -176,6 +183,7 @@ trait InputPrint {
         task_desc: &str,
         fcounts: usize,
         input_fmt: &InputFmt,
+        datatype: &DataType,
     ) {
         if let Some(input) = input {
             log::info!("{:18}: {}", "Input dir", &input.as_ref().display());
@@ -184,7 +192,16 @@ trait InputPrint {
         }
         log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
         self.print_input_fmt(input_fmt);
+        self.print_datatype(datatype);
         log::info!("{:18}: {}\n", "Task", task_desc);
+    }
+
+    fn print_datatype(&self, datatype: &DataType) {
+        match datatype {
+            DataType::Aa => log::info!("{:18}: {}", "Data type", "Amino Acid"),
+            DataType::Dna => log::info!("{:18}: {}", "Data type", "DNA"),
+            DataType::Ignore => log::info!("{:18}: {}", "Data type", "Ignore"),
+        }
     }
 
     fn print_input_fmt(&self, input_fmt: &InputFmt) {
