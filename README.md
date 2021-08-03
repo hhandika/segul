@@ -94,4 +94,4 @@ The app outputs are the resulting files from each task and a log file. Most info
 
 > :warning: **Unlike the log file, for the other outputs, the app will over-write existing files with the same names**: Careful in specifying the output file names. Future updates will prevent it.
 
-## Acknowledgment
+<!-- ## Acknowledgment -->
