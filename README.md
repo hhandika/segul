@@ -48,6 +48,8 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 - Windows
 - Windows Subsystem for Linux (WSL)
 
+> Notes for Windows users: We recommend using [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab) to take full advantages of the app features.
+
 ## Quick Start
 
 If you are familiar with [the Rust programming language](https://en.wikipedia.org/wiki/Rust_(programming_language)) and its development [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using the Rust package manager: [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html). In addition to cargo, for Linux system (including WSL), it requires the C-development toolkit, `build-essential` for Debian-based distributions or its equivalent in other Linux distributions.
