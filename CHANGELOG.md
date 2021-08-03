@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.15
+
+- Print data type in the input information.
+
 ## v0.3.14
 
 - Fix another CI issue.
