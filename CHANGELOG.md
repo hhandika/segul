@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.16
+
+- Change panic implementation to C-style abort: fix issues with too many redundant error messages when multi-threading tasks panic.
+
 ## v0.3.15
 
 - Print data type in the input information.
