@@ -6,7 +6,6 @@
 ![Download](https://img.shields.io/crates/d/segul?color=yellow)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-
 SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments that typically done using interpreted programming languages, such as Python, R, or Perl. It is designed to handle genomic datasets, but just as capable for Sanger datasets. In our test using a dataset with 4060 UCE loci, for instance, compare to a app written using biopython library, SEGUL is >40x faster for alignment concatenation while using 3x less RAM space.
 
 Available features:
