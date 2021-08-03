@@ -16,7 +16,8 @@ jobs:
         include:
           - name: hpc
             os: ubuntu-latest
-            container: quay.io/pypa/manylinux2014_x86_64
+            container: 
+              image: quay.io/pypa/manylinux2010_x86_64
             executable: segul
             artifact_name: target/release/segul
             asset_name: segul-Linux-HPC-x86_64.zip
@@ -49,7 +50,6 @@ jobs:
 
       - name: Build
         run: |
-          ldd --version
           cargo build --release 
           mv ${{ matrix.artifact_name }} .
       

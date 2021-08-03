@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.14
+
+- Fix another CI issue.
+
 ## v0.3.13
 
 - Update release steps.
