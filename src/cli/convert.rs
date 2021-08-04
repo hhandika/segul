@@ -83,14 +83,14 @@ impl<'a> ConvertParser<'a> {
     fn convert_file(&self, task_desc: &str) {
         let input = Path::new(self.parse_file_input(self.matches));
         let output = self.create_output_fname(&self.output, &self.output_fmt);
-        check_output_file_exist(&output);
+        self.check_output_file_exist(&output);
         self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
         self.convert_any(input, &output, &self.output_fmt);
     }
 
     fn convert_multiple_files(&mut self, files: &[PathBuf]) {
         self.is_dir = true;
-        check_output_dir_exist(&self.output);
+        self.check_output_dir_exist(&self.output);
         let spin = utils::set_spinner();
         spin.set_message("Converting alignments...");
         files.par_iter().for_each(|file| {

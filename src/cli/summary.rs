@@ -84,7 +84,7 @@ impl<'a> SummaryParser<'a> {
 
     fn get_stats_multiple(&self, files: &[PathBuf]) {
         let output = self.parse_output(self.matches);
-        check_output_file_exist(&output);
+        self.check_output_file_exist(&output);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype).get_stats_dir(files);
     }
 
@@ -93,7 +93,7 @@ impl<'a> SummaryParser<'a> {
         let input = Path::new(self.parse_file_input(self.matches));
         let output = self.parse_output(self.matches);
         self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
-        check_output_file_exist(&output);
+        self.check_output_file_exist(&output);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
             .get_seq_stats_file(input);
     }

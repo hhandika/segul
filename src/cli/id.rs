@@ -55,7 +55,7 @@ impl<'a> IdParser<'a> {
             &datatype,
         );
         self.output = self.parse_output(self.matches).with_extension("txt");
-        check_output_file_exist(&self.output);
+        self.check_output_file_exist(&self.output);
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
         let ids = IDs::new(&files, &input_fmt, &datatype).get_id_all();

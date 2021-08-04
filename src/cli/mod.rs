@@ -28,6 +28,7 @@ use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
 use crate::cli::summary::SummaryParser;
 
+use crate::check_output_path;
 use crate::core::msa;
 use crate::core::summary::SeqStats;
 use crate::helper::finder::{Files, IDs};
@@ -246,6 +247,26 @@ trait OutputCli {
             OutputFmt::Phylip | OutputFmt::PhylipInt => path.with_extension("phy"),
         }
     }
+
+    fn check_output_file_exist(&self, path: &Path) {
+        check_output_path!(
+            is_file,
+            remove_file,
+            path,
+            "The same output file exists! Remove it?",
+            "Failed removing files"
+        );
+    }
+
+    fn check_output_dir_exist(&self, path: &Path) {
+        check_output_path!(
+            is_dir,
+            remove_dir_all,
+            path,
+            "The same output directory exists! Remove it?",
+            "Failed removing a directory"
+        )
+    }
 }
 
 trait ConcatCLi {
@@ -304,42 +325,64 @@ trait ConcatCLi {
     }
 }
 
-fn check_output_file_exist(path: &Path) {
-    if path.is_file() {
-        let prompt = "The same output file exists! Remove it?";
-        let selection = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt(prompt)
-            .interact();
-        match selection {
-            Ok(yes) => {
-                if yes {
-                    fs::remove_file(path).expect("Failed removing files");
-                    println!();
-                } else {
-                    std::process::abort();
+#[macro_export]
+macro_rules! check_output_path {
+    ($type: ident, $execution: ident, $path: ident, $prompt: stmt, $err_msg: stmt) => {
+        if $path.$type() {
+            let selection = Confirm::with_theme(&ColorfulTheme::default())
+                .with_prompt(stringify!($prompt))
+                .interact();
+            match selection {
+                Ok(yes) => {
+                    if yes {
+                        fs::$execution($path).expect(stringify!($err_msg));
+                        println!();
+                    } else {
+                        std::process::abort();
+                    }
                 }
+                Err(err) => panic!("Failed parsing user input: {}", err),
             }
-            Err(err) => panic!("Failed parsing user input: {}", err),
         }
-    }
+    };
 }
 
-fn check_output_dir_exist(path: &Path) {
-    if path.is_dir() {
-        let prompt = "The same output directory exists! Remove it?";
-        let selection = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt(prompt)
-            .interact();
-        match selection {
-            Ok(yes) => {
-                if yes {
-                    fs::remove_dir_all(path).expect("Failed removing files");
-                    println!();
-                } else {
-                    std::process::abort();
-                }
-            }
-            Err(err) => panic!("Failed parsing user input: {}", err),
-        };
-    }
-}
+// fn check_output_file_exist(path: &Path) {
+//     if path.is_file() {
+//         let prompt = "The same output file exists! Remove it?";
+//         let selection = Confirm::with_theme(&ColorfulTheme::default())
+//             .with_prompt(prompt)
+//             .interact();
+//         match selection {
+//             Ok(yes) => {
+//                 if yes {
+//                     fs::remove_file(path).expect("Failed removing files");
+//                     println!();
+//                 } else {
+//                     std::process::abort();
+//                 }
+//             }
+//             Err(err) => panic!("Failed parsing user input: {}", err),
+//         }
+//     }
+// }
+
+// fn check_output_dir_exist(path: &Path) {
+//     if path.is_dir() {
+//         let prompt = "The same output directory exists! Remove it?";
+//         let selection = Confirm::with_theme(&ColorfulTheme::default())
+//             .with_prompt(prompt)
+//             .interact();
+//         match selection {
+//             Ok(yes) => {
+//                 if yes {
+//                     fs::remove_dir_all(path).expect("Failed removing files");
+//                     println!();
+//                 } else {
+//                     std::process::abort();
+//                 }
+//             }
+//             Err(err) => panic!("Failed parsing user input: {}", err),
+//         };
+//     }
+// }
