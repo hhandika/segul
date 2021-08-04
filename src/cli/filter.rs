@@ -50,24 +50,32 @@ impl<'a> FilterParser<'a> {
         } else {
             self.parse_input_wcard(self.matches)
         };
+        self.print_input_multi(
+            &self.input_dir,
+            task_desc,
+            self.files.len(),
+            &self.input_fmt,
+            &self.datatype,
+        );
 
         if self.is_npercent() {
-            self.get_min_taxa_npercent(task_desc);
+            self.get_min_taxa_npercent();
         } else {
             self.get_params();
             self.set_output_path();
-            self.filter_aln(task_desc);
+            self.filter_aln();
         }
     }
 
-    fn get_min_taxa_npercent(&mut self, task_desc: &str) {
+    fn get_min_taxa_npercent(&mut self) {
         let npercent = self.parse_npercent();
+        self.count_ntax();
         npercent.iter().for_each(|&np| {
             self.percent = np;
-            let min_tax = self.get_min_taxa();
-            self.params = Params::MinTax(min_tax);
+            let min_taxa = self.count_min_tax();
+            self.params = Params::MinTax(min_taxa);
             self.set_multi_output_path();
-            self.filter_aln(task_desc);
+            self.filter_aln();
             utils::print_divider();
         });
     }
@@ -76,14 +84,7 @@ impl<'a> FilterParser<'a> {
         self.matches.is_present("dir")
     }
 
-    fn filter_aln(&self, task_desc: &str) {
-        self.print_input_multi(
-            &self.input_dir,
-            task_desc,
-            self.files.len(),
-            &self.input_fmt,
-            &self.datatype,
-        );
+    fn filter_aln(&self) {
         self.check_output_dir_exist(&self.output_dir);
         self.print_params();
         let mut filter = SeqFilter::new(
@@ -114,17 +115,14 @@ impl<'a> FilterParser<'a> {
         self.params = match self.matches {
             m if m.is_present("percent") => {
                 self.percent = self.get_percent();
-                Params::MinTax(self.get_min_taxa())
+                self.count_ntax();
+                let min_taxa = self.count_min_tax();
+                Params::MinTax(min_taxa)
             }
             m if m.is_present("aln-len") => Params::AlnLen(self.get_aln_len()),
             m if m.is_present("pars-inf") => Params::ParsInf(self.get_pars_inf()),
             _ => unreachable!("Invalid parameters!"),
         }
-    }
-
-    fn get_min_taxa(&mut self) -> usize {
-        self.get_ntax();
-        self.count_min_tax()
     }
 
     fn check_concat(&self) -> Option<PartitionFmt> {
@@ -161,13 +159,16 @@ impl<'a> FilterParser<'a> {
             .expect("Failed parsing a parsimony informative value to in integer")
     }
 
-    fn get_ntax(&mut self) {
-        self.ntax = if self.matches.is_present("ntax") {
-            self.parse_ntax()
+    fn count_ntax(&mut self) {
+        if self.matches.is_present("ntax") {
+            self.ntax = self.parse_ntax();
         } else {
-            IDs::new(&self.files, &self.input_fmt, &self.datatype)
+            let spin = utils::set_spinner();
+            spin.set_message("Counting the number of taxa...");
+            self.ntax = IDs::new(&self.files, &self.input_fmt, &self.datatype)
                 .get_id_all()
-                .len()
+                .len();
+            spin.finish_with_message("Done!\n");
         };
     }
 
