@@ -48,7 +48,7 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 - Windows
 - Windows Subsystem for Linux (WSL)
 
-> Notes for Windows users: We recommend using [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab) to take full advantages of the app features.
+> :warning: **SEGUL terminal output is in [UTF-8 encoding](https://en.wikipedia.org/wiki/UTF-8)**: For Windows (including WSL) users, we recommend using [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab) for consistent terminal output. For other supported platforms, your default terminal is more likely supported UTF-8 encoding.
 
 ## Quick Start
 
