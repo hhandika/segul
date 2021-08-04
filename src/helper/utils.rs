@@ -6,7 +6,7 @@ use chrono::NaiveTime;
 use indicatif::{ProgressBar, ProgressStyle};
 use num_format::{Locale, ToFormattedString};
 
-const DIVIDER_LEN: usize = 52;
+const DIVIDER_LEN: usize = 57;
 
 pub fn fmt_num(num: &usize) -> String {
     num.to_formatted_string(&Locale::en)
