@@ -239,7 +239,7 @@ trait OutputCli {
         }
     }
 
-    fn create_fname(&self, path: &Path, ext: &OutputFmt) -> PathBuf {
+    fn create_output_fname(&self, path: &Path, ext: &OutputFmt) -> PathBuf {
         match ext {
             OutputFmt::Fasta | OutputFmt::FastaInt => path.with_extension("fas"),
             OutputFmt::Nexus | OutputFmt::NexusInt => path.with_extension("nex"),
@@ -248,7 +248,18 @@ trait OutputCli {
     }
 }
 
-trait PartCLi {
+trait ConcatCLi {
+    fn parse_prefix(&self, matches: &ArgMatches, dir: &Path) -> PathBuf {
+        if matches.is_present("prefix") {
+            let prefix = matches
+                .value_of("prefix")
+                .expect("Failed parsing a prefix value");
+            PathBuf::from(prefix)
+        } else {
+            PathBuf::from(dir)
+        }
+    }
+
     fn parse_partition_fmt(&self, matches: &ArgMatches) -> PartitionFmt {
         let part_fmt = matches
             .value_of("partition")

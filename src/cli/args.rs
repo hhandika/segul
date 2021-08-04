@@ -153,7 +153,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("output")
                         .short("o")
                         .long("output")
-                        .help("Uses a costume output filename")
+                        .help("Uses a costume output directory")
                         .takes_value(true)
                         .required(true)
                         .default_value("concat")
@@ -175,6 +175,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "nexus-int",
                             "phylip-int",
                         ]),
+                )
+                .arg(
+                    Arg::with_name("prefix")
+                        .long("prefix")
+                        .help("Uses a costume output filename")
+                        .takes_value(true)
+                        .value_name("PREFIX"),
                 )
                 .arg(
                     Arg::with_name("datatype")

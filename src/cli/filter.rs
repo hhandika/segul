@@ -10,7 +10,7 @@ use crate::helper::types::{DataType, InputFmt, OutputFmt};
 impl InputCli for FilterParser<'_> {}
 impl InputPrint for FilterParser<'_> {}
 impl OutputCli for FilterParser<'_> {}
-impl PartCLi for FilterParser<'_> {}
+impl ConcatCLi for FilterParser<'_> {}
 
 pub(in crate::cli) struct FilterParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -100,8 +100,9 @@ impl<'a> FilterParser<'a> {
                 } else {
                     OutputFmt::Nexus
                 };
-                let fname = self.create_fname(&self.output_dir, &output_fmt);
-                let output = self.output_dir.join(fname);
+                let prefix = self.parse_prefix(self.matches, &self.output_dir);
+                let final_path = self.output_dir.join(prefix);
+                let output = self.create_output_fname(&final_path, &output_fmt);
                 filter.set_concat(&output, &output_fmt, &part_fmt);
                 filter.filter_aln();
             }

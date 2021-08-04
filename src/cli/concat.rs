@@ -2,7 +2,7 @@ use clap::ArgMatches;
 
 use crate::cli::*;
 
-impl PartCLi for ConcatParser<'_> {}
+impl ConcatCLi for ConcatParser<'_> {}
 impl InputPrint for ConcatParser<'_> {}
 
 impl InputCli for ConcatParser<'_> {
@@ -34,9 +34,10 @@ impl<'a> ConcatParser<'a> {
         let input_fmt = self.parse_input_fmt(self.matches);
         let datatype = self.parse_datatype(self.matches);
         let output_fmt = self.parse_output_fmt(self.matches);
-        let prefix = self.parse_output(self.matches);
-        let fname = self.create_fname(&prefix, &output_fmt);
-        let output = prefix.join(fname);
+        let dir = self.parse_output(self.matches);
+        let prefix = self.parse_prefix(self.matches, &dir);
+        let final_path = dir.join(prefix);
+        let output = self.create_output_fname(&final_path, &output_fmt);
         let part_fmt = self.parse_partition_fmt(self.matches);
         self.check_partition_format(&output_fmt, &part_fmt);
         let task_desc = "Alignment concatenation";
@@ -55,7 +56,7 @@ impl<'a> ConcatParser<'a> {
             &datatype,
         );
 
-        check_output_dir_exist(&prefix);
+        check_output_dir_exist(&dir);
         let concat = msa::MSAlignment::new(&input_fmt, &output, &output_fmt, &part_fmt);
 
         concat.concat_alignment(&mut files, &datatype);
