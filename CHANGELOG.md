@@ -2,7 +2,7 @@
 
 ## Upcoming
 
-- Allow to specify both the directory and file name for concatenating sequences
+- Allow to specify both the directory and file name for concatenating alignments.
 
 ## v0.4.0
 
