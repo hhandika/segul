@@ -306,7 +306,7 @@ trait ConcatCLi {
 
 fn check_output_file_exist(path: &Path) {
     if path.is_file() {
-        let prompt = "The same file exists! Remove it?";
+        let prompt = "The same output file exists! Remove it?";
         let selection = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(prompt)
             .interact();
@@ -326,7 +326,7 @@ fn check_output_file_exist(path: &Path) {
 
 fn check_output_dir_exist(path: &Path) {
     if path.is_dir() {
-        let prompt = "The same directory exists! Remove it?";
+        let prompt = "The same output directory exists! Remove it?";
         let selection = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(prompt)
             .interact();
