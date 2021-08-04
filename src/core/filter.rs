@@ -51,8 +51,11 @@ impl<'a> SeqFilter<'a> {
         match self.concat {
             Some((output_fmt, part_fmt)) => self.concat_results(&mut ftr_aln, output_fmt, part_fmt),
             None => {
+                let spin = utils::set_spinner();
                 fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
+                spin.set_message("Copying matching alignments...");
                 self.par_copy_files(&ftr_aln);
+                spin.finish_with_message("Done!\n");
                 self.print_output(ftr_aln.len());
             }
         }

@@ -84,8 +84,8 @@ impl<'a> FilterParser<'a> {
             &self.input_fmt,
             &self.datatype,
         );
-        self.print_params();
         check_output_dir_exist(&self.output_dir);
+        self.print_params();
         let mut filter = SeqFilter::new(
             &self.files,
             &self.input_fmt,
