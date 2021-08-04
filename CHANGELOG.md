@@ -1,5 +1,9 @@
 # Release Notes
 
+## Upcoming
+
+- Allow to specify both the directory and file name for concatenating sequences
+
 ## v0.4.0
 
 - Avoid overwriting existing files or directory. Now, ask user to remove or abort.
