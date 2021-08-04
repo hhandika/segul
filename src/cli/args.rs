@@ -306,6 +306,14 @@ pub fn get_args(version: &str) -> ArgMatches {
                         ]),
                 )
                 .arg(
+                    Arg::with_name("prefix")
+                        .long("prefix")
+                        .help("Uses a costume output filename")
+                        .takes_value(true)
+                        .requires("concat")
+                        .value_name("PREFIX"),
+                )
+                .arg(
                     Arg::with_name("partition")
                         .short("-p")
                         .long("part")
