@@ -58,7 +58,13 @@ impl<'a> SeqFilter<'a> {
         }
     }
 
-    pub fn set_concat(&mut self, output_fmt: &'a OutputFmt, part_fmt: &'a PartitionFmt) {
+    pub fn set_concat(
+        &mut self,
+        output: &'a Path,
+        output_fmt: &'a OutputFmt,
+        part_fmt: &'a PartitionFmt,
+    ) {
+        self.output = output;
         self.concat = Some((output_fmt, part_fmt))
     }
 

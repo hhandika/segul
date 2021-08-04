@@ -94,6 +94,4 @@ segul concat -d nexus-alignments -f nexus
 
 The app outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, the app will append the log output to the same log file (named `segul.log`) if the file exists in the same directory. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
 
-> :warning: **Unlike the log file, for the other outputs, the app will over-write existing files with the same names**: Careful in specifying the output file names. Future updates will prevent it.
-
 <!-- ## Acknowledgment -->

@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.4.0
+
+- Avoid overwriting existing files or directory. Now, ask user to remove or abort.
+- Concatenate results now in a directory.
+- Better error handling
+- Fix stack overflow when getting unique ids.
+
 ## v0.3.16
 
 - Change panic implementation to C-style abort: fix issues with too many redundant error messages when multi-threading tasks panic.

@@ -1,6 +1,6 @@
 [package]
 name = "segul"
-version = "0.3.16"
+version = "0.4.0"
 authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -19,6 +19,7 @@ anyhow = "1.0.*"
 bytecount = "0.6.2"
 chrono = "0.4.*"
 clap = "2.*"
+dialoguer = "0.8.*"
 glob = "0.3.*"
 indexmap = "1.6.*"
 indicatif = "0.16.*"

@@ -85,6 +85,7 @@ impl<'a> FilterParser<'a> {
             &self.datatype,
         );
         self.print_params();
+        check_output_dir_exist(&self.output_dir);
         let mut filter = SeqFilter::new(
             &self.files,
             &self.input_fmt,
@@ -99,7 +100,9 @@ impl<'a> FilterParser<'a> {
                 } else {
                     OutputFmt::Nexus
                 };
-                filter.set_concat(&output_fmt, &part_fmt);
+                let fname = self.create_fname(&self.output_dir, &output_fmt);
+                let output = self.output_dir.join(fname);
+                filter.set_concat(&output, &output_fmt, &part_fmt);
                 filter.filter_aln();
             }
             None => filter.filter_aln(),

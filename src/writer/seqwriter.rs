@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
@@ -10,8 +10,8 @@ use crate::helper::types::{Header, OutputFmt, Partition, PartitionFmt};
 use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {
-    path: &'a Path,
-    output: PathBuf,
+    output: &'a Path,
+    // output: PathBuf,
     matrix: &'a IndexMap<String, String>,
     id_len: usize,
     header: &'a Header,
@@ -22,15 +22,15 @@ pub struct SeqWriter<'a> {
 
 impl<'a> SeqWriter<'a> {
     pub fn new(
-        path: &'a Path,
+        output: &'a Path,
         matrix: &'a IndexMap<String, String>,
         header: &'a Header,
         partition: Option<&'a [Partition]>,
         part_fmt: &'a PartitionFmt,
     ) -> Self {
         Self {
-            path,
-            output: PathBuf::new(),
+            output,
+            // output: PathBuf::new(),
             id_len: 0,
             matrix,
             header,
@@ -41,11 +41,10 @@ impl<'a> SeqWriter<'a> {
     }
 
     pub fn write_sequence(&mut self, output_fmt: &OutputFmt) -> Result<()> {
-        self.get_output_fname(output_fmt);
-
         if self.partition.is_some() {
             self.get_partition_path();
         }
+        // self.get_output_fname(output_fmt);
 
         match output_fmt {
             OutputFmt::Nexus => self.write_nexus(false)?,
@@ -64,7 +63,7 @@ impl<'a> SeqWriter<'a> {
     }
 
     pub fn print_partition_path(&self) {
-        log::info!("{:18}: {}", "Partition", &self.part_file.display());
+        log::info!("{:18}: {}", "Partition", &self.part_file.display(),);
     }
 
     fn write_fasta(&mut self, interleave: bool) -> Result<()> {
@@ -367,19 +366,11 @@ impl<'a> SeqWriter<'a> {
             }
 
             PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
-                self.part_file = self
-                    .output
-                    .parent()
-                    .unwrap()
-                    .join(&self.get_part_fname("nex"));
+                self.part_file = self.get_part_fname("nex");
             }
 
             PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => {
-                self.part_file = self
-                    .output
-                    .parent()
-                    .unwrap()
-                    .join(&self.get_part_fname("txt"));
+                self.part_file = self.get_part_fname("txt");
             }
 
             _ => (),
@@ -389,37 +380,35 @@ impl<'a> SeqWriter<'a> {
     fn get_part_fname(&self, ext: &str) -> PathBuf {
         let fname = format!(
             "{}_partition.{}",
-            self.output.file_stem().unwrap().to_string_lossy(),
+            self.output
+                .file_stem()
+                .expect("Failed getting file name for partition")
+                .to_string_lossy(),
             ext
         );
 
-        PathBuf::from(fname)
-    }
-
-    fn get_output_fname(&mut self, ext: &OutputFmt) {
-        self.output = match ext {
-            OutputFmt::Fasta | OutputFmt::FastaInt => self.path.with_extension("fas"),
-            OutputFmt::Nexus | OutputFmt::NexusInt => self.path.with_extension("nex"),
-            OutputFmt::Phylip | OutputFmt::PhylipInt => self.path.with_extension("phy"),
-        };
+        self.output
+            .parent()
+            .expect("Failed getting output parent directory")
+            .join(Path::new(&fname))
     }
 
     fn create_output_file(&self, fname: &Path) -> Result<BufWriter<File>> {
-        let dir_name = fname.parent().with_context(|| {
-            format!(
-                "Failed getting an output directory name for {}",
-                self.path.display()
-            )
-        })?;
+        let dir_name = self
+            .output
+            .parent()
+            .with_context(|| format!("Failed parsing parent directory"))?;
         fs::create_dir_all(&dir_name).with_context(|| {
             format!(
                 "Failed creating an output directory for {}",
-                self.path.display()
+                self.output.display()
             )
         })?;
-        let file = File::create(&fname)
-            .with_context(|| format!("Failed writing output file for {}", self.path.display()))?;
-        Ok(BufWriter::new(file))
+        let file = OpenOptions::new().write(true).create_new(true).open(fname);
+        match file {
+            Ok(writer) => Ok(BufWriter::new(writer)),
+            Err(error) => panic!("Failed writing to file: {}", error),
+        }
     }
 
     fn get_interleave_len(&self) -> usize {
@@ -474,16 +463,16 @@ mod test {
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 
-    #[test]
-    fn get_output_fname_test() {
-        let path = Path::new("sanger/cytb");
-        let matrix = IndexMap::new();
-        let header = Header::new();
-        let mut convert = SeqWriter::new(path, &matrix, &header, None, &PartitionFmt::None);
-        let output = PathBuf::from("sanger/cytb.fas");
-        convert.get_output_fname(&OutputFmt::Fasta);
-        assert_eq!(output, convert.output);
-    }
+    // #[test]
+    // fn get_output_fname_test() {
+    //     let path = Path::new("sanger/cytb");
+    //     let matrix = IndexMap::new();
+    //     let header = Header::new();
+    //     let convert = SeqWriter::new(path, &matrix, &header, None, &PartitionFmt::None);
+    //     let output = PathBuf::from("sanger/cytb.fas");
+    //     // convert.get_output_fname(&OutputFmt::Fasta);
+    //     assert_eq!(output, convert.output);
+    // }
 
     #[test]
     fn chunk_seq_test() {

@@ -6,11 +6,13 @@ mod id;
 mod summary;
 
 use std::ffi::OsStr;
+use std::fs;
 use std::io::Result;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use clap::ArgMatches;
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use glob::glob;
 use indexmap::IndexSet;
 use log::LevelFilter;
@@ -216,11 +218,10 @@ trait InputPrint {
 
 trait OutputCli {
     fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
-        PathBuf::from(
-            matches
-                .value_of("output")
-                .expect("Failed parsing an output value"),
-        )
+        let output = matches
+            .value_of("output")
+            .expect("Failed parsing an output value");
+        PathBuf::from(output)
     }
 
     fn parse_output_fmt(&self, matches: &ArgMatches) -> OutputFmt {
@@ -235,6 +236,14 @@ trait OutputCli {
             "fasta-int" => OutputFmt::FastaInt,
             "phylip-int" => OutputFmt::PhylipInt,
             _ => unreachable!("Please, specify the correct output format!"),
+        }
+    }
+
+    fn create_fname(&self, path: &Path, ext: &OutputFmt) -> PathBuf {
+        match ext {
+            OutputFmt::Fasta | OutputFmt::FastaInt => path.with_extension("fas"),
+            OutputFmt::Nexus | OutputFmt::NexusInt => path.with_extension("nex"),
+            OutputFmt::Phylip | OutputFmt::PhylipInt => path.with_extension("phy"),
         }
     }
 }
@@ -284,18 +293,42 @@ trait PartCLi {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use clap::{App, Arg};
+fn check_output_file_exist(path: &Path) {
+    if path.is_file() {
+        let prompt = "The same file exists! Remove it?";
+        let selection = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt(prompt)
+            .interact();
+        match selection {
+            Ok(yes) => {
+                if yes {
+                    fs::remove_file(path).expect("Failed removing files");
+                    println!();
+                } else {
+                    std::process::abort();
+                }
+            }
+            Err(err) => panic!("Failed parsing user input: {}", err),
+        }
+    }
+}
 
-    #[test]
-    fn get_id_output_path_test() {
-        let arg = App::new("segul-test")
-            .arg(Arg::with_name("dir").default_value("./test_dir/"))
-            .get_matches();
-        let id = IdParser::new(&arg);
-        let res = PathBuf::from("./test_dir.txt");
-        assert_eq!(res, id.parse_output(&arg));
+fn check_output_dir_exist(path: &Path) {
+    if path.is_dir() {
+        let prompt = "The same directory exists! Remove it?";
+        let selection = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt(prompt)
+            .interact();
+        match selection {
+            Ok(yes) => {
+                if yes {
+                    fs::remove_dir_all(path).expect("Failed removing files");
+                    println!();
+                } else {
+                    std::process::abort();
+                }
+            }
+            Err(err) => panic!("Failed parsing user input: {}", err),
+        };
     }
 }
