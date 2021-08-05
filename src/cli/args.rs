@@ -322,7 +322,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .requires_all(&[
                             "concat",
                             "output",
-                            "output-format",
                         ])
                         .value_name("FORMAT")
                         .possible_values(&["charset", "nexus", "raxml"]),
@@ -334,7 +333,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .requires_all(&[
                             "partition",
                             "output",
-                            "output-format",
                         ])
                         .takes_value(false),
                 )

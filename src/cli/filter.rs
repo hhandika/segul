@@ -80,10 +80,6 @@ impl<'a> FilterParser<'a> {
         });
     }
 
-    fn is_input_dir(&self) -> bool {
-        self.matches.is_present("dir")
-    }
-
     fn filter_aln(&self) {
         self.check_output_dir_exist(&self.output_dir);
         self.print_params();
@@ -168,7 +164,7 @@ impl<'a> FilterParser<'a> {
             self.ntax = IDs::new(&self.files, &self.input_fmt, &self.datatype)
                 .get_id_all()
                 .len();
-            spin.finish_with_message("Done!\n");
+            spin.finish_with_message("DONE!\n");
         };
     }
 
@@ -182,10 +178,6 @@ impl<'a> FilterParser<'a> {
             .expect("Failed parsing npercent")
             .map(|np| self.parse_percent(np))
             .collect()
-    }
-
-    fn is_npercent(&mut self) -> bool {
-        self.matches.is_present("npercent")
     }
 
     fn get_percent(&mut self) -> f64 {
@@ -259,6 +251,14 @@ impl<'a> FilterParser<'a> {
             Params::AlnLen(len) => log::info!("{:18}: {}bp\n", "Min aln len", len),
             Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
         }
+    }
+
+    fn is_npercent(&mut self) -> bool {
+        self.matches.is_present("npercent")
+    }
+
+    fn is_input_dir(&self) -> bool {
+        self.matches.is_present("dir")
     }
 }
 
