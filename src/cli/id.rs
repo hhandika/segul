@@ -59,7 +59,7 @@ impl<'a> IdParser<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
         let ids = IDs::new(&files, &input_fmt, &datatype).get_id_all();
-        spin.finish_with_message("DONE!");
+        spin.finish_with_message("DONE!\n");
         self.write_results(&ids).expect("Failed writing results");
         self.print_output(ids.len());
     }

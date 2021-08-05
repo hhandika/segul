@@ -16,7 +16,8 @@
 
 ## v0.3.16
 
-- Change panic implementation to C-style abort: fix issues with too many redundant error messages when multi-threading tasks panic.
+- Change panic implementation to C-style abort.
+- Fix issues with too many redundant error messages when panic occurs in multi-threading tasks.
 
 ## v0.3.15
 
