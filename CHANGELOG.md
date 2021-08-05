@@ -2,9 +2,11 @@
 
 ## Upcoming
 
+## v0.5.0
+
 - Allow to specify both the directory and file name for concatenating alignments.
 - Clearer prompt messages.
-- More consistent letter cases for spinner.
+- More consistent letter cases and spacing for spinner.
 - Concat filtered alignment now default to nexus. No need to specify.
 
 ## v0.4.0
