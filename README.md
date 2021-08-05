@@ -72,7 +72,7 @@ Then, install SEGUL:
 cargo install segul
 ```
 
-If you prefer more straigforward installation method, we also provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For Linux and WSL, first check your GLIBC version:
+If you prefer more straigtforward installation method, we also provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For Linux and WSL, first check your GLIBC version:
 
 ```Bash
 ldd --version
