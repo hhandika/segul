@@ -43,7 +43,6 @@ jobs:
       - name: Build
         run: |
           cargo build --release
-          strip ${{ matrix.artifact_name }}
           mv ${{ matrix.artifact_name }} .
       
       - name: Archive Release
