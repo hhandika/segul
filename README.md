@@ -52,15 +52,33 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
-If you are familiar with [the Rust programming language](https://en.wikipedia.org/wiki/Rust_(programming_language)) and its development [toolchain](https://www.rust-lang.org/learn/get-started), the best option is to install the app using the Rust package manager: [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html). In addition to cargo, for Linux system (including WSL), it requires the C-development toolkit, `build-essential` for Debian-based distributions or its equivalent in other Linux distributions.
+You can install SEGUL using the Rust package manager: [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). After you have cargo installed in your computer, in Linux system (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, etc.) or its equivalent in other Linux distributions:
 
-If you are new to using a command line application, installing through cargo is also the easiest route ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). After you have cargo installed in your computer, installing SEGUL is one command away:
+```Bash
+sudo apt install build-essential
+```
+
+On Windows:
+
+```Bash
+rustup toolchain install stable-x86_64-pc-windows-gnu
+
+rustup default stable-x86_64-pc-windows-gnu
+```
+
+Then, install SEGUL:
 
 ```Bash
 cargo install segul
 ```
 
-You can also use the pre-compiled binary available in [the release page](https://github.com/hhandika/segul/releases/). The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)).
+If you prefer more straigforward installation method, we also provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For Linux and WSL, first check your GLIBC version:
+
+```Bash
+ldd --version
+```
+
+If your system GLIBC is >=2.18, use the Linux binary. If lower, use the Linux-HPC binary. The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)).
 
 The app command structure is similar to git, gh-cli, or any other app that use subcommands. The app file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
 
