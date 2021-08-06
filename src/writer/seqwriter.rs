@@ -11,7 +11,6 @@ use indexmap::IndexMap;
 
 pub struct SeqWriter<'a> {
     output: &'a Path,
-    // output: PathBuf,
     matrix: &'a IndexMap<String, String>,
     id_len: usize,
     header: &'a Header,
@@ -30,7 +29,6 @@ impl<'a> SeqWriter<'a> {
     ) -> Self {
         Self {
             output,
-            // output: PathBuf::new(),
             id_len: 0,
             matrix,
             header,
