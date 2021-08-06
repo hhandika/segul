@@ -7,6 +7,7 @@ use glob::glob;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
+use crate::get_id_non_fasta;
 use crate::helper::sequence;
 use crate::helper::types::{DataType, InputFmt};
 use crate::parser::fasta;
@@ -79,14 +80,18 @@ impl<'a> IDs<'a> {
         }
     }
 
-    pub fn get_id_all(&self) -> IndexSet<String> {
-        let all_ids = match self.input_fmt {
-            InputFmt::Nexus => self.get_id_from_nexus(),
-            InputFmt::Phylip => self.get_id_from_phylip(),
+    pub fn get_id_unique(&self) -> IndexSet<String> {
+        let all_ids = self.parse_id();
+        self.filter_unique(&all_ids)
+    }
+
+    fn parse_id(&self) -> Vec<IndexSet<String>> {
+        match self.input_fmt {
+            InputFmt::Nexus => get_id_non_fasta!(self, Nexus, datatype),
+            InputFmt::Phylip => get_id_non_fasta!(self, Phylip, datatype),
             InputFmt::Fasta => self.get_id_from_fasta(),
             InputFmt::Auto => self.get_id_auto(),
-        };
-        self.get_id(&all_ids)
+        }
     }
 
     fn get_id_auto(&self) -> Vec<IndexSet<String>> {
@@ -107,24 +112,6 @@ impl<'a> IDs<'a> {
         receiver.iter().collect()
     }
 
-    fn get_id_from_phylip(&self) -> Vec<IndexSet<String>> {
-        let (sender, receiver) = channel();
-        self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(Phylip::new(file, self.datatype).parse_only_id())
-                .unwrap();
-        });
-        receiver.iter().collect()
-    }
-
-    fn get_id_from_nexus(&self) -> Vec<IndexSet<String>> {
-        let (sender, receiver) = channel();
-        self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(Nexus::new(file, self.datatype).parse_only_id())
-                .unwrap();
-        });
-        receiver.iter().collect()
-    }
-
     fn get_id_from_fasta(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
@@ -133,7 +120,7 @@ impl<'a> IDs<'a> {
         receiver.iter().collect()
     }
 
-    fn get_id(&self, all_ids: &[IndexSet<String>]) -> IndexSet<String> {
+    fn filter_unique(&self, all_ids: &[IndexSet<String>]) -> IndexSet<String> {
         let mut id = IndexSet::new();
         all_ids.iter().for_each(|ids| {
             ids.iter().for_each(|val| {
@@ -145,6 +132,18 @@ impl<'a> IDs<'a> {
 
         id
     }
+}
+
+#[macro_export]
+macro_rules! get_id_non_fasta {
+    ($self:ident,  $type: ident, $datatype:ident) => {{
+        let (sender, receiver) = channel();
+        $self.files.par_iter().for_each_with(sender, |s, file| {
+            s.send($type::new(file, $self.$datatype).parse_only_id())
+                .expect("Failed parallel processing IDs");
+        });
+        receiver.iter().collect()
+    }};
 }
 
 #[cfg(test)]
@@ -175,7 +174,7 @@ mod test {
         let datatype = DataType::Dna;
         let files = Files::new(path, &input_fmt).get_files();
         let id = IDs::new(&files, &input_fmt, &datatype);
-        let ids = id.get_id_all();
+        let ids = id.get_id_unique();
         assert_eq!(3, ids.len());
     }
 }

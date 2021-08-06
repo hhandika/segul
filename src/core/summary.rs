@@ -67,7 +67,7 @@ impl<'a> SeqStats<'a> {
 
     fn get_ntax(&mut self, files: &[PathBuf]) {
         self.ntax = IDs::new(files, self.input_format, self.datatype)
-            .get_id_all()
+            .get_id_unique()
             .len();
     }
 

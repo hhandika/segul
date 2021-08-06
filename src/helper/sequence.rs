@@ -45,9 +45,9 @@ impl<'a> Sequence<'a> {
 
     pub fn get(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
         match input_fmt {
-            InputFmt::Fasta => parse_sequence!(self, file, datatype, Fasta),
-            InputFmt::Nexus => parse_sequence!(self, file, datatype, Nexus),
-            InputFmt::Phylip => parse_sequence!(self, file, datatype, Phylip),
+            InputFmt::Fasta => parse_sequence!(self, Fasta),
+            InputFmt::Nexus => parse_sequence!(self, Nexus),
+            InputFmt::Phylip => parse_sequence!(self, Phylip),
             InputFmt::Auto => {
                 let input_fmt = infer_input_auto(self.file);
                 self.get(&input_fmt)
@@ -100,8 +100,8 @@ impl SeqCheck {
 
 #[macro_export]
 macro_rules! parse_sequence {
-    ($self:ident, $file:ident, $datatype:ident, $format:ident) => {{
-        let mut seq = $format::new($self.$file, $self.$datatype);
+    ($self:ident, $format:ident) => {{
+        let mut seq = $format::new($self.file, $self.datatype);
         seq.parse();
         (seq.matrix, seq.header)
     }};

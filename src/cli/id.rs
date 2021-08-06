@@ -57,13 +57,13 @@ impl<'a> IdParser<'a> {
         );
 
         self.output = self.parse_output(self.matches).with_extension("txt");
+        let id = Id::new(&self.output, &input_fmt, &datatype);
         self.check_output_file_exist(&self.output);
-        self.write_id(&input_fmt, &datatype)
-    }
-
-    fn write_id(&self, input_fmt: &InputFmt, datatype: &DataType) {
-        let id = Id::new(&self.output, input_fmt, datatype);
-        id.generate_id(&self.files);
+        if self.matches.is_present("map") {
+            id.map_id(&self.files);
+        } else {
+            id.generate_id(&self.files);
+        }
     }
 
     fn is_input_dir(&self) -> bool {

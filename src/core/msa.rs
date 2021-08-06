@@ -94,7 +94,7 @@ impl<'a> Concat<'a> {
     fn concat_alignment(&mut self, spin: &ProgressBar) {
         alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
-        let id = IDs::new(self.files, self.input_fmt, self.datatype).get_id_all();
+        let id = IDs::new(self.files, self.input_fmt, self.datatype).get_id_unique();
         spin.set_message("Concatenating alignments...");
         self.concat(&id);
         self.header.ntax = self.alignment.len();
