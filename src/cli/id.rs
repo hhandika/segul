@@ -1,10 +1,9 @@
-use std::fs::File;
 use std::path::PathBuf;
 
-use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::*;
+use crate::core::id::Id;
 
 impl InputCli for IdParser<'_> {
     fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
@@ -24,6 +23,7 @@ pub(in crate::cli) struct IdParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_dir: Option<PathBuf>,
     output: PathBuf,
+    files: Vec<PathBuf>,
 }
 
 impl<'a> IdParser<'a> {
@@ -32,6 +32,7 @@ impl<'a> IdParser<'a> {
             matches,
             input_dir: None,
             output: PathBuf::new(),
+            files: Vec::new(),
         }
     }
 
@@ -39,7 +40,7 @@ impl<'a> IdParser<'a> {
         let input_fmt = self.parse_input_fmt(self.matches);
         let datatype = self.parse_datatype(self.matches);
         let task_desc = "IDs finding";
-        let files = if self.is_input_dir() {
+        self.files = if self.is_input_dir() {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
@@ -50,38 +51,23 @@ impl<'a> IdParser<'a> {
         self.print_input_multi(
             &self.input_dir,
             task_desc,
-            files.len(),
+            self.files.len(),
             &input_fmt,
             &datatype,
         );
+
         self.output = self.parse_output(self.matches).with_extension("txt");
         self.check_output_file_exist(&self.output);
-        let spin = utils::set_spinner();
-        spin.set_message("Indexing IDs..");
-        let ids = IDs::new(&files, &input_fmt, &datatype).get_id_all();
-        spin.finish_with_message("DONE!\n");
-        self.write_results(&ids).expect("Failed writing results");
-        self.print_output(ids.len());
+        self.write_id(&input_fmt, &datatype)
+    }
+
+    fn write_id(&self, input_fmt: &InputFmt, datatype: &DataType) {
+        let id = Id::new(&self.output, input_fmt, datatype);
+        id.generate_id(&self.files);
     }
 
     fn is_input_dir(&self) -> bool {
         self.matches.is_present("dir")
-    }
-
-    fn write_results(&self, ids: &IndexSet<String>) -> Result<()> {
-        let file = File::create(&self.output).expect("CANNOT CREATE AN OUTPUT FILE");
-        let mut writer = BufWriter::new(file);
-        ids.iter().for_each(|id| {
-            writeln!(writer, "{}", id).unwrap();
-        });
-        writer.flush()?;
-        Ok(())
-    }
-
-    fn print_output(&self, ids: usize) {
-        log::info!("\n{}", Yellow.paint("Output"));
-        log::info!("{:18}: {}", "Total unique IDs", ids);
-        log::info!("{:18}: {}", "File output", self.output.display());
     }
 }
 

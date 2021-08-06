@@ -8,13 +8,12 @@ mod summary;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Result;
-use std::io::{BufWriter, Write};
+
 use std::path::{Path, PathBuf};
 
 use clap::ArgMatches;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use glob::glob;
-use indexmap::IndexSet;
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
