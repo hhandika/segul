@@ -28,10 +28,19 @@ impl<'a> Id<'a> {
     pub fn generate_id(&self, files: &[PathBuf]) {
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
-        let ids = IDs::new(files, self.input_fmt, self.datatype).get_id_all();
+        let ids = IDs::new(files, self.input_fmt, self.datatype).get_id_unique();
         spin.finish_with_message("DONE!\n");
         self.write_results(&ids).expect("Failed writing results");
         self.print_output(ids.len());
+    }
+
+    #[allow(dead_code)]
+    pub fn map_id(&self, files: &[PathBuf]) {
+        let spin = utils::set_spinner();
+        spin.set_message("Indexing IDs..");
+        let ids = IDs::new(files, self.input_fmt, self.datatype);
+        let taxon_id = ids.get_id_unique();
+        println!("{}", taxon_id.len());
     }
 
     fn write_results(&self, ids: &IndexSet<String>) -> Result<()> {
@@ -54,3 +63,8 @@ impl<'a> Id<'a> {
         log::info!("{:18}: {}", "File output", self.output.display());
     }
 }
+
+// #[cfg(test)]
+// mod test {
+//     use super::*;
+//     use crate::helper::finder::Files;
