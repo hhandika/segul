@@ -167,4 +167,15 @@ mod test {
         let files = finder.get_files();
         finder.check_glob_results(&files);
     }
+
+    #[test]
+    fn id_test() {
+        let path = Path::new("test_files/concat");
+        let input_fmt = InputFmt::Nexus;
+        let datatype = DataType::Dna;
+        let files = Files::new(path, &input_fmt).get_files();
+        let id = IDs::new(&files, &input_fmt, &datatype);
+        let ids = id.get_id_all();
+        assert_eq!(3, ids.len());
+    }
 }
