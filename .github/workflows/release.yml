@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    tags:
-      - "*"
+    # tags:
+    #   - "*"
 
 jobs:
   publish:
@@ -52,10 +52,12 @@ jobs:
           path: ${{ matrix.executable }}
           filename: ${{ matrix.asset_name }}
 
-      - name: Release
-        uses: softprops/action-gh-release@master
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: ${{ matrix.asset_name }}
+      - name: Set Version
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Upload Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo $VERSION
+          gh release upload --clobber ${{ env.VERSION }} ${{ matrix.asset_name }}
