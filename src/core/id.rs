@@ -46,7 +46,7 @@ impl<'a> Id<'a> {
     //     spin.set_message("Indexing IDs..");
     //     let ids = IDs::new(files, self.input_fmt, self.datatype);
     //     let taxon_id = ids.get_id_unique();
-    //     // let mut ids_map: BTreeMap<String, (String, bool)> = BTreeMap::new();
+    //     // let mut ids_map: BTreeMap<String, Vec<(String, bool)>> = BTreeMap::new();
     //     files.iter().for_each(|file| {
     //         let id = self.parse_id(file, &self.input_fmt);
     //         // let fname = self.get_filename(file);
