@@ -2,6 +2,10 @@
 
 ## Upcoming
 
+## v0.6.4
+
+- Update release rules.
+
 ## v0.6.3
 
 - CI release changes.
