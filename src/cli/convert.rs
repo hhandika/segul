@@ -92,12 +92,12 @@ impl<'a> ConvertParser<'a> {
         self.is_dir = true;
         self.check_output_dir_exist(&self.output);
         let spin = utils::set_spinner();
-        spin.set_message("Converting alignments...");
+        spin.set_message("Converting sequence format...");
         files.par_iter().for_each(|file| {
             let output = self.output.join(file.file_stem().unwrap());
             self.convert_any(file, &output, &self.output_fmt);
         });
-        spin.finish_with_message("DONE!\n");
+        spin.finish_with_message("Finished converting sequence format!\n");
     }
 
     fn convert_any(&self, input: &Path, output: &Path, output_fmt: &OutputFmt) {

@@ -61,7 +61,7 @@ impl<'a> SeqFilter<'a> {
                 fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
                 spin.set_message("Copying matching alignments...");
                 self.par_copy_files(&ftr_aln);
-                spin.finish_with_message("Done!\n");
+                spin.finish_with_message("Finished copying files!\n");
                 self.print_output(ftr_aln.len());
             }
         }
@@ -95,8 +95,8 @@ impl<'a> SeqFilter<'a> {
             .map(|(_, pinf)| pinf)
             .max()
             .expect("Pinf contain none values");
-        spin.finish_with_message("DONE!\n");
-        log::info!("{:18}: {}\n", "Max parsimony inf. sites", max_inf);
+        spin.finish_with_message("Finished counting pars. inf. sites!\n");
+        log::info!("{:18}: {}\n", "Max pars. inf. sites", max_inf);
         let min_pinf = self.count_min_pinf(max_inf, perc_inf);
         ftr_aln
             .iter()

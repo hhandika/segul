@@ -41,7 +41,7 @@ impl<'a> SeqStats<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Getting alignments...");
         let (site, dna) = self.get_stats(path);
-        spin.finish_with_message("DONE!\n");
+        spin.finish_with_message("Finished getting alignments!\n");
         sumwriter::CsvWriter::new(self.output, self.datatype)
             .write_summary_file(&site, &dna)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
@@ -53,11 +53,11 @@ impl<'a> SeqStats<'a> {
         spin.set_message("Indexing alignments...");
         self.get_ntax(files);
 
-        spin.set_message("Getting summary stats...");
+        spin.set_message("Computing summary stats...");
         let mut stats: Vec<(Sites, Chars)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
-        spin.finish_with_message("DONE!\n");
+        spin.finish_with_message("Finishing computing summary stats!\n");
         let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete, self.datatype);
         sum.print_summary().expect("Failed writing to stdout");
         sumwriter::CsvWriter::new(self.output, self.datatype)
