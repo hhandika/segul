@@ -2,6 +2,10 @@
 
 ## Upcoming
 
+## v0.6.3
+
+- CI release changes.
+
 ## v0.6.2
 
 - Clearer terminal messages.
