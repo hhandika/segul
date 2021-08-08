@@ -159,7 +159,7 @@ impl<'a> FilterParser<'a> {
             self.ntax = IDs::new(&self.files, &self.input_fmt, &self.datatype)
                 .get_id_unique()
                 .len();
-            spin.finish_with_message("Finished counting number of taxa!\n");
+            spin.finish_with_message("Finished counting the number of taxa!\n");
         };
     }
 

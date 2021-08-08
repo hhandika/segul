@@ -2,6 +2,10 @@
 
 ## Upcoming
 
+## v0.6.2
+
+- Clearer terminal messages.
+
 ## v0.6.1
 
 - Fix CI token access.
