@@ -15,3 +15,6 @@ Cargo.lock
 /data
 
 .DS_Store
+
+SEGUL*
+segul*
