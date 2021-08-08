@@ -2,6 +2,14 @@
 
 ## Upcoming
 
+## v0.6.6
+
+- Try to fix Windows CI issues.
+
+## v0.6.5
+
+- Fix CI issues
+
 ## v0.6.4
 
 - Update release rules.

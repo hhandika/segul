@@ -40,6 +40,9 @@ jobs:
           profile: minimal
           toolchain: stable
 
+      - id: get_version
+        uses: battila7/get-version-action@v2
+
       - name: Build
         run: |
           cargo build --release
@@ -52,12 +55,8 @@ jobs:
           path: ${{ matrix.executable }}
           filename: ${{ matrix.asset_name }}
 
-      - name: Get Release Tags
-        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-
       - name: Upload Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo $VERSION
-          gh release upload --clobber ${{ env.VERSION }} ${{ matrix.asset_name }}
+          gh release upload --clobber ${{ steps.get_version.outputs.version }} ${{ matrix.asset_name }}
