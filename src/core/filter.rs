@@ -90,14 +90,15 @@ impl<'a> SeqFilter<'a> {
         });
         spin.set_message("Finding maximum parsimony informative sites...");
         let ftr_aln: Vec<(PathBuf, usize)> = rx.iter().collect();
-        let max_inf = ftr_aln
+        let max_pinf = ftr_aln
             .iter()
             .map(|(_, pinf)| pinf)
             .max()
             .expect("Pinf contain none values");
         spin.finish_with_message("Finished counting pars. inf. sites!\n");
-        log::info!("{:18}: {}\n", "Max pars. inf. sites", max_inf);
-        let min_pinf = self.count_min_pinf(max_inf, perc_inf);
+        let min_pinf = self.count_min_pinf(max_pinf, perc_inf);
+        log::info!("{:18}: {}", "Max pinf. sites", max_pinf);
+        log::info!("{:18}: {}\n", "Min pinf. sites", min_pinf);
         ftr_aln
             .iter()
             .filter(|(_, pinf)| *pinf >= min_pinf)
@@ -134,13 +135,13 @@ impl<'a> SeqFilter<'a> {
             });
 
         let ftr_aln = rx.iter().collect();
-        spin.finish_with_message("DONE!\n");
+        spin.finish_with_message("Finished filtering alignments!\n");
         ftr_aln
     }
 
     fn par_copy_files(&self, match_path: &[PathBuf]) {
         match_path.par_iter().for_each(|path| {
-            self.copy_files(path).expect("CANNOT COPY FILES");
+            self.copy_files(path).expect("Failed copying files");
         });
     }
 
