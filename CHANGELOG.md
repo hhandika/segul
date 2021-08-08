@@ -2,6 +2,10 @@
 
 ## Upcoming
 
+## v0.6.1
+
+- Fix CI token access.
+
 ## v0.6.0
 
 - Add support for percent parsimony informative.
