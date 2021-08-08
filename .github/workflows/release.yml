@@ -52,7 +52,7 @@ jobs:
           path: ${{ matrix.executable }}
           filename: ${{ matrix.asset_name }}
 
-      - name: Set Version
+      - name: Get Release Tags
         run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Upload Release
