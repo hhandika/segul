@@ -18,7 +18,7 @@ Available features:
 
 Planned features:
 
-1. Filtering sequences from a collection of alignments based on user-defined IDs.
+1. Extracting sequences from a collection of alignments based on user-defined IDs.
 2. Converting dna sequences to amino acid and vice versa.
 
 Supported sequence formats:
