@@ -243,8 +243,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("percent")
                         .help("Sets percentage of minimal taxa")
                         .takes_value(true)
-                        .required_unless_all(&["npercent", "aln-len", "pars-inf"])
-                        .conflicts_with_all(&["npercent", "aln-len", "pars-inf"])
+                        .required_unless_all(&["npercent", "aln-len", "pars-inf", "percent-inf"])
+                        .conflicts_with_all(&["npercent", "aln-len", "pars-inf", "percent-inf"])
                         .value_name("FORMAT"),
                 )
                 .arg(
@@ -278,6 +278,14 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Inputs minimal parsimony informative sites")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "aln-len"])
+                        .value_name("FORMAT"),
+                )
+                .arg(
+                    Arg::with_name("percent-inf")
+                        .long("percent-inf")
+                        .help("Inputs percent parsimony informative sites")
+                        .takes_value(true)
+                        .conflicts_with_all(&["percent", "npercent", "aln-len", "pars-inf"])
                         .value_name("FORMAT"),
                 )
                 .arg(

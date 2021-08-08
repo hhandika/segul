@@ -115,29 +115,24 @@ impl<'a> FilterParser<'a> {
                 let min_taxa = self.count_min_tax();
                 Params::MinTax(min_taxa)
             }
-            m if m.is_present("aln-len") => Params::AlnLen(self.get_aln_len()),
-            m if m.is_present("pars-inf") => Params::ParsInf(self.get_pars_inf()),
+            m if m.is_present("aln-len") => Params::AlnLen(self.parse_aln_len()),
+            m if m.is_present("pars-inf") => Params::ParsInf(self.parse_pars_inf()),
+            m if m.is_present("percent-inf") => Params::PercInf(self.count_percent_inf()),
             _ => unreachable!("Invalid parameters!"),
         }
     }
 
-    fn check_concat(&self) -> Option<PartitionFmt> {
-        if self.matches.is_present("concat") {
-            Some(self.get_part_fmt())
-        } else {
-            None
-        }
+    fn count_percent_inf(&self) -> f64 {
+        let perc_inf = self
+            .matches
+            .value_of("percent-inf")
+            .expect("Failed parsing percent informative values");
+        perc_inf
+            .parse::<f64>()
+            .expect("Failed parsing percent inf to floating points")
     }
 
-    fn get_part_fmt(&self) -> PartitionFmt {
-        if self.matches.is_present("partition") {
-            self.parse_partition_fmt(self.matches)
-        } else {
-            PartitionFmt::Nexus
-        }
-    }
-
-    fn get_aln_len(&self) -> usize {
+    fn parse_aln_len(&self) -> usize {
         let len = self
             .matches
             .value_of("aln-len")
@@ -146,7 +141,7 @@ impl<'a> FilterParser<'a> {
             .expect("Failed parsing an alignment value to integer")
     }
 
-    fn get_pars_inf(&self) -> usize {
+    fn parse_pars_inf(&self) -> usize {
         let len = self
             .matches
             .value_of("pars-inf")
@@ -203,6 +198,22 @@ impl<'a> FilterParser<'a> {
             .expect("Failed parsing a ntax value to integer")
     }
 
+    fn check_concat(&self) -> Option<PartitionFmt> {
+        if self.matches.is_present("concat") {
+            Some(self.get_part_fmt())
+        } else {
+            None
+        }
+    }
+
+    fn get_part_fmt(&self) -> PartitionFmt {
+        if self.matches.is_present("partition") {
+            self.parse_partition_fmt(self.matches)
+        } else {
+            PartitionFmt::Nexus
+        }
+    }
+
     fn set_output_path(&mut self) {
         if self.matches.is_present("output") {
             self.output_dir = self.parse_output(self.matches);
@@ -236,6 +247,7 @@ impl<'a> FilterParser<'a> {
             Params::MinTax(_) => format!("{}_{}p", last, self.percent * 100.0),
             Params::AlnLen(len) => format!("{}_{}bp", last, len),
             Params::ParsInf(inf) => format!("{}_{}inf", last, inf),
+            Params::PercInf(perc_inf) => format!("{}_{}percent_inf", last, perc_inf * 100.0),
         };
         parent.join(output_dir)
     }
@@ -250,6 +262,7 @@ impl<'a> FilterParser<'a> {
             }
             Params::AlnLen(len) => log::info!("{:18}: {}bp\n", "Min aln len", len),
             Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
+            Params::PercInf(perc_inf) => log::info!("{:18}: {}\n", "% pars. inf", perc_inf * 100.0),
         }
     }
 
@@ -268,7 +281,7 @@ mod test {
     use clap::{App, Arg};
 
     #[test]
-    fn min_taxa_output_dir_test() {
+    fn test_min_taxa_output_dir() {
         let arg = App::new("segul-test")
             .arg(Arg::with_name("test"))
             .get_matches();
@@ -281,7 +294,7 @@ mod test {
     }
 
     #[test]
-    fn min_taxa_test() {
+    fn test_min_taxa() {
         let arg = App::new("segul-test")
             .arg(Arg::with_name("filter-test"))
             .get_matches();

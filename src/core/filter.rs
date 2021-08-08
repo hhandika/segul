@@ -5,6 +5,7 @@ use std::sync::mpsc::channel;
 
 use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
+use indicatif::ProgressBar;
 use rayon::prelude::*;
 
 use crate::core::msa::MSAlignment;
@@ -17,6 +18,7 @@ pub enum Params {
     MinTax(usize),
     AlnLen(usize),
     ParsInf(usize),
+    PercInf(f64),
 }
 
 pub struct SeqFilter<'a> {
@@ -47,11 +49,17 @@ impl<'a> SeqFilter<'a> {
     }
 
     pub fn filter_aln(&mut self) {
-        let mut ftr_aln = self.par_ftr_aln();
+        let spin = utils::set_spinner();
+        let mut ftr_aln: Vec<PathBuf> = if let Params::PercInf(perc_inf) = self.params {
+            self.par_ftr_perc_inf(perc_inf, &spin)
+        } else {
+            spin.set_message("Filtering alignments...");
+            self.par_ftr_aln()
+        };
+
         match self.concat {
             Some((output_fmt, part_fmt)) => self.concat_results(&mut ftr_aln, output_fmt, part_fmt),
             None => {
-                let spin = utils::set_spinner();
                 fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
                 spin.set_message("Copying matching alignments...");
                 self.par_copy_files(&ftr_aln);
@@ -69,6 +77,31 @@ impl<'a> SeqFilter<'a> {
     ) {
         self.output = output;
         self.concat = Some((output_fmt, part_fmt))
+    }
+
+    fn par_ftr_perc_inf(&self, perc_inf: &f64, spin: &ProgressBar) -> Vec<PathBuf> {
+        let (send, rx) = channel();
+        spin.set_message("Counting parsimony informative sites...");
+        self.files.par_iter().for_each_with(send, |s, file| {
+            s.send({
+                let pinf = self.get_pars_inf(file);
+                (PathBuf::from(file), pinf)
+            })
+            .unwrap()
+        });
+        let ftr_aln: Vec<(PathBuf, usize)> = rx.iter().collect();
+        let max_inf = ftr_aln
+            .iter()
+            .map(|(_, pinf)| pinf)
+            .max()
+            .expect("Pinf contain none values");
+        let min_pinf = self.count_min_pinf(max_inf, perc_inf);
+        spin.set_message("Filtering alignments...");
+        ftr_aln
+            .iter()
+            .filter(|(_, pinf)| *pinf >= min_pinf)
+            .map(|(aln, _)| PathBuf::from(aln))
+            .collect()
     }
 
     fn par_ftr_aln(&self) -> Vec<PathBuf> {
@@ -94,6 +127,7 @@ impl<'a> SeqFilter<'a> {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
+                _ => (),
             });
 
         rx.iter().collect()
@@ -103,6 +137,10 @@ impl<'a> SeqFilter<'a> {
         match_path.par_iter().for_each(|path| {
             self.copy_files(path).expect("CANNOT COPY FILES");
         });
+    }
+
+    fn count_min_pinf(&self, max_inf: &usize, perc_inf: &f64) -> usize {
+        (*max_inf as f64 * perc_inf).floor() as usize
     }
 
     fn concat_results(
@@ -143,5 +181,30 @@ impl<'a> SeqFilter<'a> {
     fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
         let aln = Sequence::new(file, self.datatype);
         aln.get_alignment(self.input_fmt)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::helper::finder::Files;
+
+    const PATH: &str = "test_files/concat/";
+    const INPUT_FMT: InputFmt = InputFmt::Nexus;
+
+    #[test]
+    fn test_min_taxa() {
+        let path = Path::new(PATH);
+        let files = Files::new(path, &INPUT_FMT).get_files();
+        let ftr = SeqFilter::new(
+            &files,
+            &INPUT_FMT,
+            &DataType::Dna,
+            Path::new("test"),
+            &Params::PercInf(0.9),
+        );
+        let percent = 0.65;
+        let pinf = 10;
+        assert_eq!(6, ftr.count_min_pinf(&pinf, &percent));
     }
 }
