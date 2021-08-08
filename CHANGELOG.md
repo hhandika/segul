@@ -2,6 +2,10 @@
 
 ## Upcoming
 
+## v0.6.0
+
+- Add support for percent parsimony informative.
+
 ## v0.5.0
 
 - Allow to specify both the directory and file name for concatenating alignments.
