@@ -5,7 +5,6 @@ use std::sync::mpsc::channel;
 
 use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
-use indicatif::ProgressBar;
 use rayon::prelude::*;
 
 use crate::core::msa::MSAlignment;
@@ -49,17 +48,16 @@ impl<'a> SeqFilter<'a> {
     }
 
     pub fn filter_aln(&mut self) {
-        let spin = utils::set_spinner();
         let mut ftr_aln: Vec<PathBuf> = if let Params::PercInf(perc_inf) = self.params {
-            self.par_ftr_perc_inf(perc_inf, &spin)
+            self.par_ftr_perc_inf(perc_inf)
         } else {
-            spin.set_message("Filtering alignments...");
             self.par_ftr_aln()
         };
 
         match self.concat {
             Some((output_fmt, part_fmt)) => self.concat_results(&mut ftr_aln, output_fmt, part_fmt),
             None => {
+                let spin = utils::set_spinner();
                 fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
                 spin.set_message("Copying matching alignments...");
                 self.par_copy_files(&ftr_aln);
@@ -79,9 +77,10 @@ impl<'a> SeqFilter<'a> {
         self.concat = Some((output_fmt, part_fmt))
     }
 
-    fn par_ftr_perc_inf(&self, perc_inf: &f64, spin: &ProgressBar) -> Vec<PathBuf> {
-        let (send, rx) = channel();
+    fn par_ftr_perc_inf(&self, perc_inf: &f64) -> Vec<PathBuf> {
+        let spin = utils::set_spinner();
         spin.set_message("Counting parsimony informative sites...");
+        let (send, rx) = channel();
         self.files.par_iter().for_each_with(send, |s, file| {
             s.send({
                 let pinf = self.get_pars_inf(file);
@@ -89,14 +88,16 @@ impl<'a> SeqFilter<'a> {
             })
             .unwrap()
         });
+        spin.set_message("Finding maximum parsimony informative sites...");
         let ftr_aln: Vec<(PathBuf, usize)> = rx.iter().collect();
         let max_inf = ftr_aln
             .iter()
             .map(|(_, pinf)| pinf)
             .max()
             .expect("Pinf contain none values");
+        spin.finish_with_message("DONE!\n");
+        log::info!("{:18}: {}\n", "Max parsimony inf. sites", max_inf);
         let min_pinf = self.count_min_pinf(max_inf, perc_inf);
-        spin.set_message("Filtering alignments...");
         ftr_aln
             .iter()
             .filter(|(_, pinf)| *pinf >= min_pinf)
@@ -105,6 +106,8 @@ impl<'a> SeqFilter<'a> {
     }
 
     fn par_ftr_aln(&self) -> Vec<PathBuf> {
+        let spin = utils::set_spinner();
+        spin.set_message("Filtering alignments...");
         let (send, rx) = channel();
         self.files
             .par_iter()
@@ -130,7 +133,9 @@ impl<'a> SeqFilter<'a> {
                 _ => (),
             });
 
-        rx.iter().collect()
+        let ftr_aln = rx.iter().collect();
+        spin.finish_with_message("DONE!\n");
+        ftr_aln
     }
 
     fn par_copy_files(&self, match_path: &[PathBuf]) {
@@ -189,11 +194,11 @@ mod test {
     use super::*;
     use crate::helper::finder::Files;
 
-    const PATH: &str = "test_files/concat/";
-    const INPUT_FMT: InputFmt = InputFmt::Nexus;
+    const PATH: &str = "test_files/pinf/";
+    const INPUT_FMT: InputFmt = InputFmt::Fasta;
 
     #[test]
-    fn test_min_taxa() {
+    fn test_min_pinf() {
         let path = Path::new(PATH);
         let files = Files::new(path, &INPUT_FMT).get_files();
         let ftr = SeqFilter::new(
@@ -203,8 +208,14 @@ mod test {
             Path::new("test"),
             &Params::PercInf(0.9),
         );
-        let percent = 0.65;
-        let pinf = 10;
-        assert_eq!(6, ftr.count_min_pinf(&pinf, &percent));
+
+        let pinf = 4;
+        let percent = 0.9;
+        let percent_2 = 0.5;
+        let ftr_aln = ftr.par_ftr_perc_inf(&percent);
+        let ftr_aln_2 = ftr.par_ftr_perc_inf(&percent_2);
+        assert_eq!(3, ftr.count_min_pinf(&pinf, &percent));
+        assert_eq!(1, ftr_aln.len());
+        assert_eq!(4, ftr_aln_2.len());
     }
 }
