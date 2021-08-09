@@ -352,7 +352,7 @@ impl<'a> SeqWriter<'a> {
         let dir_name = self
             .output
             .parent()
-            .with_context(|| format!("Failed parsing parent directory"))?;
+            .with_context(|| "Failed parsing parent directory")?;
         fs::create_dir_all(&dir_name).with_context(|| {
             format!(
                 "Failed creating an output directory for {}",

@@ -9,9 +9,9 @@ use crate::helper::utils;
 use crate::writer::seqwriter::SeqWriter;
 
 pub struct Converter<'a> {
+    input_fmt: &'a InputFmt,
     output_fmt: &'a OutputFmt,
     datatype: &'a DataType,
-    input_fmt: &'a InputFmt,
     sort: bool,
 }
 
