@@ -1,5 +1,5 @@
 use std::ffi::OsStr;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
@@ -69,7 +69,10 @@ impl<'a> CsvWriter<'a> {
     }
 
     pub fn write_summary_dir(&mut self, stats: &[(Sites, Chars)]) -> Result<()> {
-        let file = File::create(&self.output)
+        let file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&self.output)
             .with_context(|| format!("Failed creating file {}", self.output.display()))?;
         let mut writer = BufWriter::new(file);
         let alphabet = self.get_alphabet(self.datatype);

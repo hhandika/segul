@@ -94,8 +94,8 @@ impl<'a> MSAlignment<'a> {
         log::info!("{:18}: {}", "Taxa", utils::fmt_num(&header.ntax));
         log::info!("{:18}: {}", "Loci", utils::fmt_num(&count));
         log::info!("{:18}: {}", "Length", utils::fmt_num(&header.nchar));
-        log::info!("{:18}: {}", "Output", self.output.display());
-        log::info!("{:18}: {}", "Partition", &part_file.display(),);
+        log::info!("{:18}: {}", "Sequence file", self.output.display());
+        log::info!("{:18}: {}", "Partition file", &part_file.display(),);
     }
 }
 
