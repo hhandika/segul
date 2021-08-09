@@ -39,10 +39,6 @@ impl<'a> SeqWriter<'a> {
     }
 
     pub fn write_sequence(&mut self, output_fmt: &OutputFmt) -> Result<()> {
-        if self.partition.is_some() {
-            self.get_partition_path();
-        }
-
         match output_fmt {
             OutputFmt::Nexus => self.write_nexus(false)?,
             OutputFmt::NexusInt => self.write_nexus(true)?,
@@ -55,12 +51,8 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    pub fn print_save_path(&self) {
-        log::info!("{:18}: {}", "Output", self.output.display());
-    }
-
-    pub fn print_partition_path(&self) {
-        log::info!("{:18}: {}", "Partition", &self.part_file.display(),);
+    pub fn set_partition_name(&mut self, part_name: &Path) {
+        self.part_file = PathBuf::from(part_name);
     }
 
     fn write_fasta(&mut self, interleave: bool) -> Result<()> {
@@ -354,40 +346,6 @@ impl<'a> SeqWriter<'a> {
         )?;
 
         Ok(())
-    }
-
-    fn get_partition_path(&mut self) {
-        match self.part_fmt {
-            PartitionFmt::Charset | PartitionFmt::CharsetCodon => {
-                self.part_file = PathBuf::from("charset (in-file)")
-            }
-
-            PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
-                self.part_file = self.get_part_fname("nex");
-            }
-
-            PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => {
-                self.part_file = self.get_part_fname("txt");
-            }
-
-            _ => (),
-        }
-    }
-
-    fn get_part_fname(&self, ext: &str) -> PathBuf {
-        let fname = format!(
-            "{}_partition.{}",
-            self.output
-                .file_stem()
-                .expect("Failed getting file name for partition")
-                .to_string_lossy(),
-            ext
-        );
-
-        self.output
-            .parent()
-            .expect("Failed getting output parent directory")
-            .join(Path::new(&fname))
     }
 
     fn create_output_file(&self, fname: &Path) -> Result<BufWriter<File>> {

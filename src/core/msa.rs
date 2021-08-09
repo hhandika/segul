@@ -38,13 +38,13 @@ impl<'a> MSAlignment<'a> {
         }
     }
 
-    pub fn concat_alignment(&self, files: &mut [PathBuf], datatype: &DataType) {
+    pub fn concat_alignment(&mut self, files: &mut [PathBuf], datatype: &DataType) {
         let mut concat = Concat::new(files, self.input_fmt, datatype);
         let spin = utils::set_spinner();
         self.write_alignment(&mut concat, &spin);
     }
 
-    fn write_alignment(&self, concat: &mut Concat, spin: &ProgressBar) {
+    fn write_alignment(&mut self, concat: &mut Concat, spin: &ProgressBar) {
         concat.concat_alignment(spin);
         let mut save = SeqWriter::new(
             self.output,
@@ -53,20 +53,49 @@ impl<'a> MSAlignment<'a> {
             Some(&concat.partition),
             self.part_fmt,
         );
+        let part_fname = self.get_partition_path();
+        save.set_partition_name(&part_fname);
         spin.set_message("Writing output files...");
         save.write_sequence(self.output_fmt)
             .expect("Failed writing the output file");
         spin.finish_with_message("Finished concatenating alignments!\n");
-        self.print_alignment_stats(concat.partition.len(), &concat.header);
-        save.print_save_path();
-        save.print_partition_path();
+        self.print_output_info(concat.partition.len(), &concat.header, &part_fname);
     }
 
-    fn print_alignment_stats(&self, count: usize, header: &Header) {
+    fn get_partition_path(&mut self) -> PathBuf {
+        match self.part_fmt {
+            PartitionFmt::Charset | PartitionFmt::CharsetCodon => {
+                PathBuf::from("charset (in-file)")
+            }
+            PartitionFmt::Nexus | PartitionFmt::NexusCodon => self.get_part_fname("nex"),
+            PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => self.get_part_fname("txt"),
+            _ => unreachable!("Please, define a valid partition format!"),
+        }
+    }
+
+    fn get_part_fname(&self, ext: &str) -> PathBuf {
+        let fname = format!(
+            "{}_partition.{}",
+            self.output
+                .file_stem()
+                .expect("Failed getting file name for partition")
+                .to_string_lossy(),
+            ext
+        );
+
+        self.output
+            .parent()
+            .expect("Failed getting output parent directory")
+            .join(Path::new(&fname))
+    }
+
+    fn print_output_info(&self, count: usize, header: &Header, part_file: &Path) {
         log::info!("{}", Yellow.paint("Alignment"));
         log::info!("{:18}: {}", "Taxa", utils::fmt_num(&header.ntax));
         log::info!("{:18}: {}", "Loci", utils::fmt_num(&count));
         log::info!("{:18}: {}", "Length", utils::fmt_num(&header.nchar));
+        log::info!("{:18}: {}", "Output", self.output.display());
+        log::info!("{:18}: {}", "Partition", &part_file.display(),);
     }
 }
 
