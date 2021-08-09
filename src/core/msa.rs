@@ -90,10 +90,14 @@ impl<'a> MSAlignment<'a> {
     }
 
     fn print_output_info(&self, count: usize, header: &Header, part_file: &Path) {
-        log::info!("{}", Yellow.paint("Alignment"));
+        log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "Taxa", utils::fmt_num(&header.ntax));
         log::info!("{:18}: {}", "Loci", utils::fmt_num(&count));
-        log::info!("{:18}: {}", "Length", utils::fmt_num(&header.nchar));
+        log::info!(
+            "{:18}: {}",
+            "Alignment length",
+            utils::fmt_num(&header.nchar)
+        );
         log::info!("{:18}: {}", "Sequence file", self.output.display());
         log::info!("{:18}: {}", "Partition file", &part_file.display(),);
     }
