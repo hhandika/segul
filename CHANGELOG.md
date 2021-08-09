@@ -5,6 +5,8 @@
 - Add spinner for converting a single file.
 - Output names for concatenating filtered sequences is now default to the directory name with parameters as sufixes.
 - Allow "ignore" in the summary data types.
+- Fix issues on specifying a directory for summary stats.
+- Help info now shows the type of values required for the arguments.
 
 ## v0.6.6
 
