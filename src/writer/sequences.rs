@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
-use std::fs::{self, File, OpenOptions};
 use std::io::prelude::*;
-use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
+use indexmap::IndexMap;
 
 use crate::helper::types::{Header, OutputFmt, Partition, PartitionFmt};
-use indexmap::IndexMap;
+use crate::writer::FileWriter;
+
+impl FileWriter for SeqWriter<'_> {}
 
 pub struct SeqWriter<'a> {
     output: &'a Path,
@@ -346,24 +347,6 @@ impl<'a> SeqWriter<'a> {
         )?;
 
         Ok(())
-    }
-
-    fn create_output_file(&self, fname: &Path) -> Result<BufWriter<File>> {
-        let dir_name = self
-            .output
-            .parent()
-            .with_context(|| "Failed parsing parent directory")?;
-        fs::create_dir_all(&dir_name).with_context(|| {
-            format!(
-                "Failed creating an output directory for {}",
-                self.output.display()
-            )
-        })?;
-        let file = OpenOptions::new().write(true).create_new(true).open(fname);
-        match file {
-            Ok(writer) => Ok(BufWriter::new(writer)),
-            Err(error) => panic!("Failed writing to file: {}", error),
-        }
     }
 
     fn get_interleave_len(&self) -> usize {

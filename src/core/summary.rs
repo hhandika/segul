@@ -11,7 +11,7 @@ use crate::helper::sequence::Sequence;
 use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites};
 use crate::helper::types::{DataType, InputFmt};
 use crate::helper::utils;
-use crate::writer::sumwriter;
+use crate::writer::summary::{self, CsvWriter, SummaryWriter};
 
 pub struct SeqStats<'a> {
     input_format: &'a InputFmt,
@@ -43,10 +43,10 @@ impl<'a> SeqStats<'a> {
         spin.set_message("Getting alignments...");
         let (site, dna) = self.get_stats(path);
         spin.finish_with_message("Finished getting alignments!\n");
-        sumwriter::CsvWriter::new(self.output, self.datatype)
+        CsvWriter::new(self.output, self.datatype)
             .write_summary_file(&site, &dna)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
-        sumwriter::print_stats(&site, &dna);
+        summary::print_stats(&site, &dna);
     }
 
     pub fn get_stats_dir(&mut self, files: &[PathBuf]) {
@@ -59,9 +59,9 @@ impl<'a> SeqStats<'a> {
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
         spin.finish_with_message("Finished computing summary stats!\n");
-        let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete, self.datatype);
+        let sum = SummaryWriter::new(&sites, &dna, &complete, self.datatype);
         sum.print_summary().expect("Failed writing to stdout");
-        sumwriter::CsvWriter::new(self.output, self.datatype)
+        CsvWriter::new(self.output, self.datatype)
             .write_summary_dir(&stats)
             .expect("Failed writing a per locus csv file");
     }

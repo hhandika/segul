@@ -14,7 +14,7 @@ use crate::helper::types::{
     DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt, SeqMatrix,
 };
 use crate::helper::utils;
-use crate::writer::seqwriter::SeqWriter;
+use crate::writer::sequences::SeqWriter;
 
 pub struct MSAlignment<'a> {
     input_fmt: &'a InputFmt,

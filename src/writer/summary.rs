@@ -1,6 +1,5 @@
 use std::ffi::OsStr;
-use std::fs::{File, OpenOptions};
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::path::Path;
 
 use ansi_term::Colour::Yellow;
@@ -10,6 +9,7 @@ use crate::helper::alphabet;
 use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites};
 use crate::helper::types::DataType;
 use crate::helper::utils;
+use crate::writer::FileWriter;
 
 pub fn print_stats(site: &Sites, dna: &Chars) {
     log::info!("{}", Yellow.paint("Alignment"));
@@ -57,6 +57,7 @@ trait Alphabet {
 }
 
 impl Alphabet for CsvWriter<'_> {}
+impl FileWriter for CsvWriter<'_> {}
 
 pub struct CsvWriter<'a> {
     output: &'a Path,
@@ -69,12 +70,7 @@ impl<'a> CsvWriter<'a> {
     }
 
     pub fn write_summary_dir(&mut self, stats: &[(Sites, Chars)]) -> Result<()> {
-        let file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&self.output)
-            .with_context(|| format!("Failed creating file {}", self.output.display()))?;
-        let mut writer = BufWriter::new(file);
+        let mut writer = self.create_output_file(self.output)?;
         let alphabet = self.get_alphabet(self.datatype);
         self.write_csv_header(&mut writer, alphabet)?;
         stats.iter().for_each(|(site, chars)| {
@@ -89,13 +85,10 @@ impl<'a> CsvWriter<'a> {
     }
 
     pub fn write_summary_file(&mut self, site: &Sites, chars: &Chars) -> Result<()> {
-        let file = File::create(&self.output)
-            .with_context(|| format!("Failed creating file {}", self.output.display()))?;
-        let mut writer = BufWriter::new(file);
+        let mut writer = self.create_output_file(self.output)?;
         let alphabet = self.get_alphabet(self.datatype);
         self.write_csv_header(&mut writer, alphabet)?;
-        self.write_csv_content(&mut writer, site, chars, alphabet)
-            .unwrap();
+        self.write_csv_content(&mut writer, site, chars, alphabet)?;
 
         Ok(())
     }
