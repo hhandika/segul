@@ -58,7 +58,7 @@ impl<'a> SeqStats<'a> {
         let mut stats: Vec<(Sites, Chars)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
-        spin.finish_with_message("Finishing computing summary stats!\n");
+        spin.finish_with_message("Finished computing summary stats!\n");
         let sum = sumwriter::SummaryWriter::new(&sites, &dna, &complete, self.datatype);
         sum.print_summary().expect("Failed writing to stdout");
         sumwriter::CsvWriter::new(self.output, self.datatype)
