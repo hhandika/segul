@@ -329,7 +329,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .requires_all(&[
                             "concat",
-                            "output",
+                            // "output",
                         ])
                         .value_name("FORMAT")
                         .possible_values(&["charset", "nexus", "raxml"]),
@@ -340,7 +340,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Concats the final results")
                         .requires_all(&[
                             "partition",
-                            "output",
+                            // "output",
                         ])
                         .takes_value(false),
                 )
