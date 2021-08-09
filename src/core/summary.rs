@@ -37,7 +37,8 @@ impl<'a> SeqStats<'a> {
         }
     }
 
-    pub fn get_seq_stats_file(&self, path: &Path) {
+    pub fn get_seq_stats_file(&mut self, path: &Path) {
+        self.check_datatype();
         let spin = utils::set_spinner();
         spin.set_message("Getting alignments...");
         let (site, dna) = self.get_stats(path);
@@ -49,10 +50,10 @@ impl<'a> SeqStats<'a> {
     }
 
     pub fn get_stats_dir(&mut self, files: &[PathBuf]) {
+        self.check_datatype();
         let spin = utils::set_spinner();
         spin.set_message("Indexing alignments...");
         self.get_ntax(files);
-
         spin.set_message("Computing summary stats...");
         let mut stats: Vec<(Sites, Chars)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
@@ -77,6 +78,12 @@ impl<'a> SeqStats<'a> {
             s.send(self.get_stats(file)).unwrap();
         });
         rec.iter().collect()
+    }
+
+    fn check_datatype(&mut self) {
+        if let DataType::Ignore = self.datatype {
+            self.datatype = &DataType::Dna
+        }
     }
 
     fn get_stats(&self, path: &Path) -> (Sites, Chars) {

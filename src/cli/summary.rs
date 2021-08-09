@@ -3,20 +3,7 @@ use clap::ArgMatches;
 use crate::cli::*;
 use crate::helper::types::{DataType, InputFmt};
 
-impl InputCli for SummaryParser<'_> {
-    // We can't ignore datatype here because
-    /// we generate different summary statistics for each data type.
-    fn parse_datatype(&self, matches: &ArgMatches) -> DataType {
-        let datatype = matches
-            .value_of("datatype")
-            .expect("Failed parsing dataype value");
-        match datatype {
-            "aa" => DataType::Aa,
-            "dna" => DataType::Dna,
-            _ => unreachable!("Please, define the data type of the file"),
-        }
-    }
-}
+impl InputCli for SummaryParser<'_> {}
 
 impl InputPrint for SummaryParser<'_> {}
 

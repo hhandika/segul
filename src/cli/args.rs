@@ -467,7 +467,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
-                        .possible_values(&["dna", "aa"]),
+                        .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
                     Arg::with_name("percent-interval")
