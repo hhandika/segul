@@ -262,7 +262,9 @@ impl<'a> FilterParser<'a> {
             }
             Params::AlnLen(len) => log::info!("{:18}: {}bp\n", "Min aln len", len),
             Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
-            Params::PercInf(perc_inf) => log::info!("{:18}: {}\n", "% pars. inf", perc_inf * 100.0),
+            Params::PercInf(perc_inf) => {
+                log::info!("{:18}: {}%\n", "% pars. inf", perc_inf * 100.0)
+            }
         }
     }
 
