@@ -1,64 +1,85 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use indexmap::IndexMap;
-
-use crate::writer::seqwriter::SeqWriter;
+use ansi_term::Colour::Yellow;
+use rayon::prelude::*;
 
 use crate::helper::sequence::Sequence;
-use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
+use crate::helper::utils;
+use crate::writer::seqwriter::SeqWriter;
 
 pub struct Converter<'a> {
-    input: &'a Path,
-    output: &'a Path,
     output_fmt: &'a OutputFmt,
-    is_dir: bool,
     datatype: &'a DataType,
+    input_fmt: &'a InputFmt,
+    sort: bool,
 }
 
 impl<'a> Converter<'a> {
     pub fn new(
-        input: &'a Path,
-        output: &'a Path,
+        input_fmt: &'a InputFmt,
         output_fmt: &'a OutputFmt,
         datatype: &'a DataType,
+        sort: bool,
     ) -> Self {
         Self {
-            input,
-            output,
+            input_fmt,
             output_fmt,
             datatype,
-            is_dir: false,
+            sort,
         }
     }
 
-    pub fn convert_unsorted(&mut self, input_fmt: &InputFmt) {
-        let (matrix, header) = self.get_sequence(input_fmt);
-        self.convert(&matrix, header);
+    pub fn convert_multiple(&mut self, files: &[PathBuf], output: &Path) {
+        let spin = utils::set_spinner();
+        spin.set_message("Converting sequence format...");
+        files.par_iter().for_each(|file| {
+            let output_fname = output.join(file.file_stem().unwrap());
+            self.convert_any(file, &output_fname);
+        });
+        spin.finish_with_message("Finished converting sequence format!\n");
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "Output dir", output.display());
     }
 
-    pub fn convert_sorted(&mut self, input_fmt: &InputFmt) {
-        let (mut matrix, header) = self.get_sequence(input_fmt);
+    pub fn convert_file(&self, input: &Path, output: &Path) {
+        let spin = utils::set_spinner();
+        let msg = format!("Converting {}...", input.display());
+        spin.set_message(msg);
+        self.convert_any(input, output);
+        spin.finish_with_message("Finished converting sequence format!\n");
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "Output file", output.display());
+    }
+
+    fn convert_any(&self, input: &Path, output: &Path) {
+        if self.sort {
+            self.convert_sorted(input, output);
+        } else {
+            self.convert_unsorted(input, output);
+        }
+    }
+
+    fn convert_unsorted(&self, input: &Path, output: &Path) {
+        let (matrix, header) = self.get_sequence(input);
+        self.convert(&matrix, header, output);
+    }
+
+    fn convert_sorted(&self, input: &Path, output: &Path) {
+        let (mut matrix, header) = self.get_sequence(input);
         matrix.sort_keys();
-        self.convert(&matrix, header)
+        self.convert(&matrix, header, output)
     }
 
-    pub fn set_isdir(&mut self, is_dir: bool) {
-        self.is_dir = is_dir;
+    fn get_sequence(&self, input: &Path) -> (SeqMatrix, Header) {
+        let seq = Sequence::new(input, self.datatype);
+        seq.get(self.input_fmt)
     }
 
-    fn get_sequence(&mut self, input_fmt: &InputFmt) -> (IndexMap<String, String>, Header) {
-        let seq = Sequence::new(self.input, self.datatype);
-        seq.get(input_fmt)
-    }
-
-    fn convert(&self, matrix: &IndexMap<String, String>, header: Header) {
-        let mut convert = SeqWriter::new(self.output, matrix, &header, None, &PartitionFmt::None);
+    fn convert(&self, matrix: &SeqMatrix, header: Header, output: &Path) {
+        let mut convert = SeqWriter::new(output, matrix, &header, None, &PartitionFmt::None);
         convert
             .write_sequence(self.output_fmt)
             .expect("Failed writing output files");
-
-        if !self.is_dir {
-            convert.print_save_path();
-        }
     }
 }

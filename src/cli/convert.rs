@@ -28,7 +28,7 @@ pub(in crate::cli) struct ConvertParser<'a> {
     output: PathBuf,
     output_fmt: OutputFmt,
     datatype: DataType,
-    is_dir: bool,
+    sort: bool,
 }
 
 impl<'a> ConvertParser<'a> {
@@ -39,7 +39,7 @@ impl<'a> ConvertParser<'a> {
             datatype: DataType::Dna,
             output: PathBuf::new(),
             output_fmt: OutputFmt::Nexus,
-            is_dir: false,
+            sort: false,
         }
     }
 
@@ -48,6 +48,7 @@ impl<'a> ConvertParser<'a> {
         self.output = self.parse_output(self.matches);
         self.output_fmt = self.parse_output_fmt(self.matches);
         self.datatype = self.parse_datatype(self.matches);
+        self.is_sort();
         let input_type = self.parse_input_type(self.matches);
         let task_desc = "Sequence format conversion";
         match input_type {
@@ -63,7 +64,6 @@ impl<'a> ConvertParser<'a> {
                     &self.datatype,
                 );
                 self.convert_multiple_files(&files);
-                log::info!("{:18}: {}", "Output dir", self.output.display());
             }
             InputType::Wildcard => {
                 let files = self.parse_input_wcard(self.matches);
@@ -75,7 +75,6 @@ impl<'a> ConvertParser<'a> {
                     &self.datatype,
                 );
                 self.convert_multiple_files(&files);
-                log::info!("{:18}: {}", "Output dir", self.output.display());
             }
         }
     }
@@ -83,34 +82,20 @@ impl<'a> ConvertParser<'a> {
     fn convert_file(&self, task_desc: &str) {
         let input = Path::new(self.parse_file_input(self.matches));
         let output = self.create_output_fname(&self.output, &self.output_fmt);
-        self.check_output_file_exist(&output);
         self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
-        self.convert_any(input, &output, &self.output_fmt);
+        self.check_output_file_exist(&output);
+        let convert = Converter::new(&self.input_fmt, &self.output_fmt, &self.datatype, self.sort);
+        convert.convert_file(input, &output);
     }
 
     fn convert_multiple_files(&mut self, files: &[PathBuf]) {
-        self.is_dir = true;
         self.check_output_dir_exist(&self.output);
-        let spin = utils::set_spinner();
-        spin.set_message("Converting sequence format...");
-        files.par_iter().for_each(|file| {
-            let output = self.output.join(file.file_stem().unwrap());
-            self.convert_any(file, &output, &self.output_fmt);
-        });
-        spin.finish_with_message("Finished converting sequence format!\n");
+        let mut convert =
+            Converter::new(&self.input_fmt, &self.output_fmt, &self.datatype, self.sort);
+        convert.convert_multiple(files, &self.output);
     }
 
-    fn convert_any(&self, input: &Path, output: &Path, output_fmt: &OutputFmt) {
-        let mut convert = Converter::new(input, output, output_fmt, &self.datatype);
-        convert.set_isdir(self.is_dir);
-        if self.is_sort() {
-            convert.convert_sorted(&self.input_fmt);
-        } else {
-            convert.convert_unsorted(&self.input_fmt);
-        }
-    }
-
-    fn is_sort(&self) -> bool {
-        self.matches.is_present("sort")
+    fn is_sort(&mut self) {
+        self.sort = self.matches.is_present("sort");
     }
 }
