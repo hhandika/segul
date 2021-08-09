@@ -17,7 +17,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required_unless("dir")
                         .conflicts_with_all(&["dir", "wildcard"])
-                        .value_name("INPUT FILE"),
+                        .value_name("PATH"),
                 )
                 .arg(
                     Arg::with_name("dir")
@@ -27,7 +27,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required_unless("input")
                         .conflicts_with_all(&["input", "wildcard"])
-                        .value_name("DIR"),
+                        .value_name("PATH"),
                 )
                 .arg(
                     Arg::with_name("wildcard")
@@ -38,7 +38,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .multiple(true)
                         .required_unless("input")
                         .conflicts_with_all(&["input", "dir"])
-                        .value_name("DIR"),
+                        .value_name("WILDCARD"),
                 )
                 .arg(
                     Arg::with_name("output")
@@ -47,7 +47,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets target directory or use a costume file name for a single input")
                         .takes_value(true)
                         .required_unless("input")
-                        .value_name("OUTPUT"),
+                        .value_name("STRING"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -56,7 +56,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT")
+                        .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
                             "auto",
@@ -72,7 +72,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets target output format")
                         .takes_value(true)
                         .default_value("nexus")
-                        .value_name("FORMAT")
+                        .value_name("SEQ-FORMAT")
                         .possible_values(&[
                             "nexus",
                             "phylip",
@@ -109,7 +109,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Inputs alignment dir")
                         .takes_value(true)
                         .required_unless("wildcard")
-                        .value_name("DIR"),
+                        .value_name("PATH"),
                 )
                 .arg(
                     Arg::with_name("wildcard")
@@ -129,7 +129,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT")
+                        .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
                             "auto",
@@ -146,7 +146,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .default_value("nexus")
-                        .value_name("FORMAT")
+                        .value_name("PART-FORMAT")
                         .possible_values(&["charset", "nexus", "raxml"]),
                 )
                 .arg(
@@ -157,7 +157,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .default_value("concat")
-                        .value_name("OUTPUT"),
+                        .value_name("STRING"),
                 )
                 .arg(
                     Arg::with_name("output-format")
@@ -166,7 +166,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets target output format")
                         .takes_value(true)
                         .default_value("nexus")
-                        .value_name("FORMAT")
+                        .value_name("SEQ-FORMAT")
                         .possible_values(&[
                             "nexus",
                             "phylip",
@@ -181,7 +181,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("prefix")
                         .help("Uses a costume output filename")
                         .takes_value(true)
-                        .value_name("PREFIX"),
+                        .value_name("STRING"),
                 )
                 .arg(
                     Arg::with_name("datatype")
@@ -210,7 +210,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Inputs a path to alignment dir")
                         .takes_value(true)
                         .required(true)
-                        .value_name("DIR"),
+                        .value_name("PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -219,7 +219,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT")
+                        .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
                             "auto",
@@ -245,7 +245,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required_unless_all(&["npercent", "aln-len", "pars-inf", "percent-inf"])
                         .conflicts_with_all(&["npercent", "aln-len", "pars-inf", "percent-inf"])
-                        .value_name("FORMAT"),
+                        .value_name("FLOAT"),
                 )
                 .arg(
                     Arg::with_name("npercent")
@@ -254,7 +254,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "aln-len", "pars-inf"])
                         .multiple(true)
-                        .value_name("FORMAT"),
+                        .value_name("FLOAT"),
                 )
                 .arg(
                     Arg::with_name("ntax")
@@ -262,7 +262,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Inputs the total number of taxa")
                         .takes_value(true)
                         .conflicts_with_all(&["aln-len", "pars-inf"])
-                        .value_name("TAXON-COUNT"),
+                        .value_name("INTEGER"),
                 )
                 .arg(
                     Arg::with_name("aln-len")
@@ -270,7 +270,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Inputs minimal alignment length")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "pars-inf"])
-                        .value_name("FORMAT"),
+                        .value_name("INTEGER"),
                 )
                 .arg(
                     Arg::with_name("pars-inf")
@@ -278,7 +278,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Inputs minimal parsimony informative sites")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "aln-len"])
-                        .value_name("FORMAT"),
+                        .value_name("INTEGER"),
                 )
                 .arg(
                     Arg::with_name("percent-inf")
@@ -286,7 +286,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Inputs percent parsimony informative sites")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "aln-len", "pars-inf"])
-                        .value_name("FORMAT"),
+                        .value_name("FLOAT"),
                 )
                 .arg(
                     Arg::with_name("output")
@@ -295,7 +295,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets an output directory")
                         .takes_value(true)
                         .required_unless("dir")
-                        .value_name("OUTPUT"),
+                        .value_name("STRING"),
                 )
                 .arg(
                     Arg::with_name("output-format")
@@ -303,7 +303,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output-format")
                         .help("Sets output format if concat")
                         .takes_value(true)
-                        .value_name("FORMAT")
+                        .value_name("SEQ-FORMAT")
                         .possible_values(&[
                             "fasta",
                             "nexus",
@@ -316,10 +316,10 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("prefix")
                         .long("prefix")
-                        .help("Uses a costume output filename")
+                        .help("Specifies prefix for output filename")
                         .takes_value(true)
                         .requires("concat")
-                        .value_name("PREFIX"),
+                        .value_name("STRING"),
                 )
                 .arg(
                     Arg::with_name("partition")
@@ -328,7 +328,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets partition format if concat")
                         .takes_value(true)
                         .requires("concat")
-                        .value_name("FORMAT")
+                        .value_name("PART-FORMAT")
                         .possible_values(&["charset", "nexus", "raxml"]),
                 )
                 .arg(
@@ -355,7 +355,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("dir")
                         .help("Inputs dir with alignment files")
                         .takes_value(true)
-                        .value_name("INPUT FILE"),
+                        .value_name("PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -364,7 +364,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT")
+                        .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
                             "auto",
@@ -391,7 +391,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .default_value("id")
-                        .value_name("OUTPUT"),
+                        .value_name("STRING"),
                 ),
         )
         .subcommand(
@@ -405,7 +405,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required_unless("dir")
                         .conflicts_with_all(&["dir", "wildcard"])
-                        .value_name("INPUT FILE"),
+                        .value_name("PATH"),
                 )
                 .arg(
                     Arg::with_name("dir")
@@ -414,7 +414,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Gets summary from alignment files")
                         .takes_value(true)
                         .conflicts_with_all(&["input", "wildcard"])
-                        .value_name("INPUT FILE"),
+                        .value_name("PATH"),
                 )
                 .arg(
                     Arg::with_name("wildcard")
@@ -434,7 +434,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets input format")
                         .takes_value(true)
                         .required(true)
-                        .value_name("FORMAT")
+                        .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
                             "auto",
@@ -451,7 +451,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .required(true)
                         .default_value("SEGUL-stats")
-                        .value_name("OUTPUT"),
+                        .value_name("STRING"),
                 )
                 .arg(
                     Arg::with_name("datatype")
@@ -468,7 +468,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("interval")
                         .help("Sets a custom percentage interval value for counting data matrix completeness")
                         .takes_value(true)
-                        .value_name("DECREMENT")
+                        .value_name("INTEGER")
                         .default_value("5")
                         .possible_values(&["1", "2", "5", "10"]),
                 ),
