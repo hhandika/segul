@@ -2,6 +2,9 @@
 
 ## Upcoming
 
+- Add spinner for converting a single file.
+- Output names for concatenating filtered sequences is now default to the directory name with parameters as sufixes.
+
 ## v0.6.6
 
 - Try to fix Windows CI issues.
