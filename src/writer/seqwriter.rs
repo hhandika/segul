@@ -42,7 +42,6 @@ impl<'a> SeqWriter<'a> {
         if self.partition.is_some() {
             self.get_partition_path();
         }
-        // self.get_output_fname(output_fmt);
 
         match output_fmt {
             OutputFmt::Nexus => self.write_nexus(false)?,
