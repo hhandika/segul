@@ -1,4 +1,3 @@
-// use std::io::{self, BufWriter, Result, Write};
 use std::iter;
 
 use ansi_term::Colour::Yellow;
