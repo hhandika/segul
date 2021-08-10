@@ -16,7 +16,7 @@ impl OutputCli for ConvertParser<'_> {
             )
         } else {
             PathBuf::from(self.parse_file_input(matches).file_name().expect(
-                "Faile parsing input file to get the ouput name. Please specify output names!",
+                "Failed parsing input file to get the output name. Please specify output names!",
             ))
         }
     }
