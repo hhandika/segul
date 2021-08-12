@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.7.0
 
 - Add spinner for converting a single file.
 - Output names for concatenating filtered sequences is now default to the directory name with parameters as sufixes.
