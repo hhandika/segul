@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.7.1
+
+- Fix version unmatched version numbers.
+
 ## v0.7.0
 
 - Add spinner for converting a single file.
