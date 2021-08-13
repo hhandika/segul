@@ -1,0 +1,6 @@
+#!/bin/bash
+TAG=$(git describe --tag)
+
+echo "Tag found: ${TAG}"
+
+gh release create $TAG

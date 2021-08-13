@@ -1,0 +1,10 @@
+#!/bin/bash
+NAME="segul-MacOS-Arm64.zip"
+
+echo "Filename: ${NAME}"
+
+INPUT=$@
+echo "Stripping ${INPUT}"
+strip $@
+
+zip $NAME $@

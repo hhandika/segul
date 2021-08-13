@@ -1,0 +1,10 @@
+#!/bin/bash
+NAME="segul-Linux-HPC-x86_64.tar.gz"
+
+echo "Filename: ${NAME}"
+
+INPUT=$@
+echo "Stripping ${INPUT}"
+strip $@
+
+tar czvf $NAME $@
