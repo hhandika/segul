@@ -1,5 +1,5 @@
 #!/bin/bash
-TAG=$(git describe --tag)
+TAG=$(git describe --tags --abbrev=0)
 
 echo "Tag found: ${TAG}"
 
