@@ -32,7 +32,7 @@ All of the formats are supported in interleave and sequential. The app supports 
 Supported partition formats:
 
 1. RaXML
-2. Nexus 
+2. Nexus
 
 The Nexus partition can be written as a charset block embedded in Nexus formatted sequences or in a separate file.
 
