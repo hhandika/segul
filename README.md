@@ -6,7 +6,7 @@
 ![Download](https://img.shields.io/crates/d/segul?color=yellow)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments that typically done using interpreted programming languages, such as Python, R, or Perl. It is designed to handle genomic datasets, but just as capable for Sanger datasets. In our test using a dataset with 4060 UCE loci, for instance, compare to a app written using biopython library, SEGUL is >40x faster for alignment concatenation while using 3x less RAM space.
+SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments that typically done using interpreted programming languages, such as Python, R, or Perl. It is designed to handle genomic datasets, but just as capable for Sanger datasets. In our test using a dataset with 4060 UCE loci, for instance, compare to an app written using [the biopython library](https://biopython.org/), SEGUL is >40x faster for alignment concatenation while using 3x less RAM space.
 
 Available features:
 
@@ -143,6 +143,6 @@ Learn more about using SEGUL [here](https://github.com/hhandika/segul/wiki/5.-Us
 
 The app outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, if the log file (named `segul.log`) exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
 
-For other resulting files, the app forbid over-writting files with similar names. The app will check if a such file exists and will ask if you like to remove it, otherwise it will abort processing the file.
+For other resulting files, the app forbid over-writting files with similar names. The app will check if a such file exists and will ask if you like to remove it.
 
 <!-- ## Acknowledgment -->
