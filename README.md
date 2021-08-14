@@ -34,7 +34,7 @@ Supported partition formats:
 1. RaXML
 2. Nexus
 
-The Nexus partition can be written as a charset block embedded in Nexus formatted sequences or in a separate file.
+The Nexus partition can be written as a charset block embedded in Nexus formatted sequences or be written in a separate file.
 
 It is now in active development. Our goal is to provide as many functionalities possible for alignment manipulation tasks.
 
@@ -143,6 +143,6 @@ Learn more about using SEGUL [here](https://github.com/hhandika/segul/wiki/5.-Us
 
 The app outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, if the log file (named `segul.log`) exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
 
-For other resulting files, the app forbid over-writting files with similar names. The app will check if a such file exists and will ask if you like to remove it.
+For other resulting files, the app forbids over-writting files with similar names. The app will check if a such file exists and will ask if you like to remove it.
 
 <!-- ## Acknowledgment -->
