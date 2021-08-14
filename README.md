@@ -81,6 +81,8 @@ ldd --version
 
 If your system GLIBC is >=2.18, use the Linux binary. If lower, use the Linux-HPC binary. The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)).
 
+Other installation methods are also available. Learn more about SEGUL installation [here](https://github.com/hhandika/segul/wiki/2.-Installation).
+
 The app command structure is similar to git, gh-cli, or any other app that use subcommands. The app file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
 
 ```Bash
@@ -99,18 +101,48 @@ To check for available options and flags for each sub-command:
 segul <SUBCOMMAND> --help
 ```
 
-For example, to concat all the alignments in a directory named `nexus-alignments`:
+Learn more about SEGUL command structure and expected behaviors for each argument [here](https://github.com/hhandika/segul/wiki/4.-Command-Structure).
+
+To convert a single file:
 
 ```Bash
-segul concat --dir nexus-alignments --input-format nexus
+segul convert --input [path-to-your-repository] --input-format [sequence-format-keyword]
 ```
 
-It is also available in short options:
+To convert files in a directory:
+
+```Bash
+segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword]
+```
+
+To concat all alignments in a directory:
+
+```Bash
+segul concat --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
+```
+
+To generate sequence summary statistics of alignments in a directory:
+
+```Bash
+segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
+```
+
+Most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
 
 ```Bash
 segul concat -d nexus-alignments -f nexus
 ```
 
-The app outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, the app will append the log output to the same log file (named `segul.log`) if the file exists in the same directory. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
+By default, SEGUL will check whether the sequences contain only valid IUPAC characters. It is set for DNA characters by default. If your input is amino acid sequences, you can use `--datatype` option to specify the input data type. For example to concat sequences of amino acid in a directory named `nexus-alignments`:
+
+```Bash
+segul concat --dir nexus-alignments --input-format nexus --datatype aa
+```
+
+Learn more about using SEGUL [here](https://github.com/hhandika/segul/wiki/5.-Usages).
+
+The app outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, if the log file (named `segul.log`) exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
+
+For other resulting files, the app forbid over-writting files with similar names. The app will check if a such file exists and will ask if you like to remove it, otherwise it will abort processing the file.
 
 <!-- ## Acknowledgment -->
