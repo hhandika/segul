@@ -32,8 +32,9 @@ All of the formats are supported in interleave and sequential. The app supports 
 Supported partition formats:
 
 1. RaXML
-2. Embedded nexus (labeled `charset` in the app)
-3. Separate nexus
+2. Nexus 
+
+The Nexus partition can be written as a charset block embedded in Nexus formatted sequences or in a separate file.
 
 It is now in active development. Our goal is to provide as many functionalities possible for alignment manipulation tasks.
 
