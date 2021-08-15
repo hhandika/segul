@@ -1,6 +1,7 @@
 mod args;
 mod concat;
 mod convert;
+mod extract;
 mod filter;
 mod id;
 mod summary;
@@ -22,6 +23,7 @@ use log4rs::encode::pattern::PatternEncoder;
 
 use crate::cli::concat::ConcatParser;
 use crate::cli::convert::ConvertParser;
+use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
 use crate::cli::summary::SummaryParser;
@@ -45,6 +47,7 @@ pub fn parse_cli(version: &str) {
         ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).filter(),
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
         ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
+        ("extract", Some(extract_matches)) => ExtractParser::new(extract_matches).extract(),
         _ => unreachable!("Invalid subcommands!"),
     }
 }
