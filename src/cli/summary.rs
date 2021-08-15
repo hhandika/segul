@@ -44,7 +44,7 @@ impl<'a> SummaryParser<'a> {
             InputType::File => self.get_stats_file(task_desc),
             InputType::Dir => {
                 let dir = self.parse_dir_input(self.matches);
-                let files = self.get_files(&dir, &self.input_fmt);
+                let files = self.get_files(dir, &self.input_fmt);
 
                 self.print_input_multi(
                     &Some(dir),

@@ -16,7 +16,7 @@ impl Extract {
 
         match &self.re {
             Some(re) => {
-                let res = self.match_id(text, &re);
+                let res = self.match_id(text, re);
                 println!("{:18}: {}", "Result", res);
             }
             None => println!("None"),

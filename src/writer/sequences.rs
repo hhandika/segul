@@ -58,7 +58,7 @@ impl<'a> SeqWriter<'a> {
 
     fn write_fasta(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self
-            .create_output_file(&self.output)
+            .create_output_file(self.output)
             .expect("Failed writing a fasta formatted file");
         let n = self.get_interleave_len();
         self.matrix.iter().for_each(|(id, seq)| {
@@ -83,7 +83,7 @@ impl<'a> SeqWriter<'a> {
 
     fn write_nexus(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self
-            .create_output_file(&self.output)
+            .create_output_file(self.output)
             .expect("Failed writing a NEXUS formatted file");
         self.write_nex_header(&mut writer, interleave)?;
 
@@ -119,7 +119,7 @@ impl<'a> SeqWriter<'a> {
 
     fn write_phylip(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self
-            .create_output_file(&self.output)
+            .create_output_file(self.output)
             .expect("Failed writing a philip formatted file");
         write!(writer, "{} {}", self.header.ntax, self.header.nchar)?;
 
