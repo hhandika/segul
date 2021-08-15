@@ -106,13 +106,13 @@ Learn more about SEGUL command structure and expected behaviors for each argumen
 To convert a single file:
 
 ```Bash
-segul convert --input [path-to-your-repository] --input-format [sequence-format-keyword]
+segul convert --input [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
 ```
 
 To convert files in a directory:
 
 ```Bash
-segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword]
+segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
 ```
 
 To concat all alignments in a directory:
