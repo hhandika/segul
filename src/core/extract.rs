@@ -1,33 +1,28 @@
-// use lazy_static::lazy_static;
+use std::path::PathBuf;
+
 use regex::Regex;
 
-pub struct Extract {
-    re: Option<String>,
+pub struct Extract<'a> {
+    re: &'a Option<String>,
 }
 
-impl Extract {
-    pub fn new(re: Option<String>) -> Self {
+impl<'a> Extract<'a> {
+    pub fn new(re: &'a Option<String>) -> Self {
         Self { re }
     }
 
-    pub fn print_input_info(&self) {
-        let text = "Sequence_1 ATGTGTG";
-        println!("{:18}: {}", "Regex", self.re.as_ref().unwrap());
-
+    #[allow(unused_variables)]
+    pub fn extract_sequences(&self, files: &[PathBuf]) {
         match &self.re {
-            Some(re) => {
-                let res = self.match_id(text, re);
-                println!("{:18}: {}", "Result", res);
+            Some(regex) => {
+                self.match_id("Sequence 1", regex);
             }
-            None => println!("None"),
+            None => println!("No regex provided"),
         }
     }
 
-    fn match_id(&self, id: &str, re: &str) -> String {
-        let re = Regex::new(re).unwrap();
-        match re.captures(id) {
-            Some(word) => word[0].to_lowercase(),
-            None => String::from("No match"),
-        }
+    fn match_id(&self, id: &str, re: &str) -> bool {
+        let re = Regex::new(re).expect("Failed capturing nexus commands");
+        re.is_match(id)
     }
 }
