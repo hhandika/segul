@@ -2,22 +2,30 @@ use std::path::PathBuf;
 
 use regex::Regex;
 
+pub enum Params {
+    Regex(String),
+    File(PathBuf),
+    None,
+}
+
 pub struct Extract<'a> {
-    re: &'a Option<String>,
+    params: &'a Params,
 }
 
 impl<'a> Extract<'a> {
-    pub fn new(re: &'a Option<String>) -> Self {
-        Self { re }
+    pub fn new(params: &'a Params) -> Self {
+        Self { params }
     }
 
     #[allow(unused_variables)]
     pub fn extract_sequences(&self, files: &[PathBuf]) {
-        match &self.re {
-            Some(regex) => {
-                self.match_id("Sequence 1", regex);
+        match self.params {
+            Params::Regex(re) => {
+                let re = self.match_id("Sequence 1", re);
+                println!("Match: {}\n", re);
             }
-            None => println!("No regex provided"),
+            Params::File(path) => println!("Path: {}\n", path.display()),
+            Params::None => unreachable!("Please, specify a matching parameter!"),
         }
     }
 
