@@ -442,6 +442,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("REGEX")       
                 )
                 .arg(
+                    Arg::with_name("id")
+                        .long("id")
+                        .help("Extract sequence in a list of IDs")
+                        .takes_value(true)
+                        .value_name("A-TEXT-FILE")       
+                )
+                .arg(
                     Arg::with_name("output")
                         .short("o")
                         .long("output")
