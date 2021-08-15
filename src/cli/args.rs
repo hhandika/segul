@@ -395,25 +395,15 @@ pub fn get_args(version: &str) -> ArgMatches {
                 ),
         )
         .subcommand(
-            App::new("summary")
-                .about("Gets alignment summary stats")
-                .arg(
-                    Arg::with_name("input")
-                        .short("i")
-                        .long("input")
-                        .help("Gets summary from a file")
-                        .takes_value(true)
-                        .required_unless("dir")
-                        .conflicts_with_all(&["dir", "wildcard"])
-                        .value_name("PATH"),
-                )
+            App::new("extract")
+                .about("Extract sequences from a collection of alignments")
                 .arg(
                     Arg::with_name("dir")
                         .short("d")
                         .long("dir")
-                        .help("Gets summary from alignment files")
+                        .help("Inputs a directory path to alignments")
                         .takes_value(true)
-                        .conflicts_with_all(&["input", "wildcard"])
+                        .conflicts_with("wildcard")
                         .value_name("PATH"),
                 )
                 .arg(
@@ -444,13 +434,21 @@ pub fn get_args(version: &str) -> ArgMatches {
                         ]),
                 )
                 .arg(
+                    Arg::with_name("regex")
+                        .long("re")
+                        .help("Extract sequence IDs that match regular expression")
+                        .takes_value(true)
+                        .require_equals(true)
+                        .value_name("REGEX")       
+                )
+                .arg(
                     Arg::with_name("output")
                         .short("o")
                         .long("output")
-                        .help("Uses a costume output filename")
+                        .help("Specifies a directory name")
                         .takes_value(true)
                         .required(true)
-                        .default_value("SEGUL-stats")
+                        .default_value("SEGUL-extract")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -463,15 +461,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
                 )
-                .arg(
-                    Arg::with_name("percent-interval")
-                        .long("interval")
-                        .help("Sets a custom percentage interval value for counting data matrix completeness")
-                        .takes_value(true)
-                        .value_name("INTEGER")
-                        .default_value("5")
-                        .possible_values(&["1", "2", "5", "10"]),
-                ),
         )
         .get_matches()
 }
