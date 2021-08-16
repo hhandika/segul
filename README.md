@@ -49,7 +49,7 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 - Windows
 - Windows Subsystem for Linux (WSL)
 
-> :warning: **SEGUL terminal output is in [UTF-8 encoding](https://en.wikipedia.org/wiki/UTF-8)**: For Windows (including WSL) users, we recommend using [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab) to ensure consistent terminal output. For other supported platforms, your default terminal more likely supports UTF-8 encoding.
+> :warning: **SEGUL modern terminal output comes with a cost of requiring a terminal application that supports [UTF-8 encoding](https://en.wikipedia.org/wiki/UTF-8)**. For MacOS and native Linux, your default terminal more likely supports UTF-8 encoding. For Windows (including WSL) users, we recommend using [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab) to ensure consistent terminal output.
 
 ## Quick Start
 
