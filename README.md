@@ -49,7 +49,7 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 - Windows
 - Windows Subsystem for Linux (WSL)
 
-> :warning: **SEGUL modern terminal output comes with a cost of requiring a terminal application that supports [UTF-8 encoding](https://en.wikipedia.org/wiki/UTF-8)**. For MacOS and native Linux, your default terminal should have supported UTF-8 encoding by default. For Windows (including WSL) users, we recommend using [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab) to ensure consistent terminal output. Windows Terminal requires separate installation for Windows 10 or earlier. It will be the default terminal for Windows 11 when it arrives in Fall 2021.
+> :warning: **SEGUL modern terminal output comes with a cost of requiring a terminal application that supports [UTF-8 encoding](https://en.wikipedia.org/wiki/UTF-8)**. For MacOS and native Linux, your default terminal should have supported UTF-8 encoding by default. For Windows (including WSL) users, we recommend using [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab) to ensure consistent terminal output. Windows Terminal requires separate installation for Windows 10. It will be the default terminal for Windows 11 when it arrives in Fall 2021.
 
 ## Quick Start
 
