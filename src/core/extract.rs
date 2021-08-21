@@ -11,12 +11,11 @@ use crate::extract_id;
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::utils;
-use crate::parser::txt;
 use crate::writer::sequences::SeqWriter;
 
 pub enum Params {
     Regex(String),
-    File(PathBuf),
+    File(Vec<String>),
     Id(Vec<String>),
     None,
 }
@@ -73,10 +72,7 @@ impl<'a> Extract<'a> {
                     matrix.insert(id.to_string(), seq.to_string());
                 }
             }),
-            Params::File(path) => {
-                let ids = txt::parse_text_file(path);
-                extract_id!(ids, seqmat, matrix)
-            }
+            Params::File(ids) => extract_id!(ids, seqmat, matrix),
             Params::Id(ids) => extract_id!(ids, seqmat, matrix),
             _ => unreachable!("Please, specify a matching parameter!"),
         };
