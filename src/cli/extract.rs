@@ -2,6 +2,7 @@ use ansi_term::Colour::Yellow;
 
 use crate::cli::*;
 use crate::core::extract::{Extract, Params};
+use crate::parser::txt;
 
 impl InputCli for ExtractParser<'_> {}
 impl InputPrint for ExtractParser<'_> {}
@@ -66,14 +67,14 @@ impl<'a> ExtractParser<'a> {
         String::from(re)
     }
 
-    fn parse_file(&self) -> PathBuf {
+    fn parse_file(&self) -> Vec<String> {
         let file = PathBuf::from(
             self.matches
                 .value_of("file")
                 .expect("Failed parsing file path"),
         );
         assert!(file.is_file(), "File does not exist: {}", file.display());
-        file
+        txt::parse_text_file(&file)
     }
 
     fn parse_id(&self) -> Vec<String> {
@@ -92,7 +93,13 @@ impl<'a> ExtractParser<'a> {
         log::info!("{}", Yellow.paint("Params"));
         match &self.params {
             Params::Regex(re) => log::info!("{:18}: {}\n", "Regex", re),
-            Params::File(path) => log::info!("{:18}: {}\n", "File", path.display()),
+            Params::File(_) => log::info!(
+                "{:18}: {}\n",
+                "File",
+                self.matches
+                    .value_of("file")
+                    .expect("Failed parsing file path")
+            ),
             Params::Id(ids) => log::info!("{:18}: {:?}\n", "IDs", ids),
             Params::None => panic!("Please, specify a matching parameter!"),
         };
