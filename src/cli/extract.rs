@@ -25,8 +25,8 @@ impl<'a> ExtractParser<'a> {
     pub(in crate::cli) fn extract(&mut self) {
         let input_fmt = self.parse_input_fmt(self.matches);
         let datatype = self.parse_datatype(self.matches);
-        // let output_fmt = self.parse_output_fmt(self.matches);
-        // let dir = self.parse_output(self.matches);
+        let output_fmt = self.parse_output_fmt(self.matches);
+        let outdir = self.parse_output(self.matches);
         self.parse_params();
         let task_desc = "Sequence extraction";
         let files = if self.is_input_wcard() {
@@ -36,7 +36,6 @@ impl<'a> ExtractParser<'a> {
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
         };
-
         self.print_input_multi(
             &self.input_dir,
             task_desc,
@@ -44,15 +43,18 @@ impl<'a> ExtractParser<'a> {
             &input_fmt,
             &datatype,
         );
+        self.check_output_dir_exist(&outdir);
         self.print_input_info();
-        Extract::new(&self.params).extract_sequences(&files);
+        let extract = Extract::new(&self.params, &input_fmt, &datatype);
+        extract.extract_sequences(&files, &outdir, &output_fmt);
     }
 
     fn parse_params(&mut self) {
-        if self.matches.is_present("regex") {
-            self.params = Params::Regex(self.parse_regex())
-        } else {
-            self.params = Params::File(self.parse_file())
+        match self.matches {
+            m if m.is_present("regex") => self.params = Params::Regex(self.parse_regex()),
+            m if m.is_present("id") => self.params = Params::Id(self.parse_id()),
+            m if m.is_present("file") => self.params = Params::File(self.parse_file()),
+            _ => unreachable!("Unknown parameters!"),
         }
     }
 
@@ -74,6 +76,14 @@ impl<'a> ExtractParser<'a> {
         file
     }
 
+    fn parse_id(&self) -> Vec<String> {
+        self.matches
+            .values_of("id")
+            .expect("Failed parsing IDs input")
+            .map(|s| String::from(s))
+            .collect()
+    }
+
     fn is_input_wcard(&self) -> bool {
         self.matches.is_present("wildcard")
     }
@@ -83,6 +93,7 @@ impl<'a> ExtractParser<'a> {
         match &self.params {
             Params::Regex(re) => log::info!("{:18}: {}\n", "Regex", re),
             Params::File(path) => log::info!("{:18}: {}\n", "File", path.display()),
+            Params::Id(ids) => log::info!("{:18}: {:?}\n", "IDs", ids),
             Params::None => panic!("Please, specify a matching parameter!"),
         };
     }

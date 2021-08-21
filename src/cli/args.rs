@@ -455,7 +455,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("id")
                         .help("Extract sequence in a list of IDs")
                         .conflicts_with("regex")
-                        .required_unless("id")
+                        .required_unless_all(&["regex", "file"])
                         .takes_value(true)
                         .multiple(true)
                         .value_name("STRING")       
@@ -469,6 +469,23 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .required(true)
                         .default_value("SEGUL-extract")
                         .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("output-format")
+                        .short("F")
+                        .long("output-format")
+                        .help("Sets target output format")
+                        .takes_value(true)
+                        .default_value("nexus")
+                        .value_name("SEQ-FORMAT")
+                        .possible_values(&[
+                            "nexus",
+                            "phylip",
+                            "fasta",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
                 )
                 .arg(
                     Arg::with_name("datatype")

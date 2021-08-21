@@ -86,7 +86,7 @@ impl SeqCheck {
             .values()
             .map(|s| s.len())
             .min_by(|a, b| a.cmp(b))
-            .expect("Failed getting the shortest failed length");
+            .expect("Failed getting the shortest sequence length");
     }
 
     fn get_longest_seq_len(&mut self, matrix: &SeqMatrix) {
@@ -94,7 +94,7 @@ impl SeqCheck {
             .values()
             .map(|s| s.len())
             .max_by(|a, b| a.cmp(b))
-            .expect("Failed getting the longest failed length");
+            .expect("Failed getting the longest sequence length");
     }
 }
 
