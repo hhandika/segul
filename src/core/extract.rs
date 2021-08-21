@@ -38,25 +38,8 @@ impl<'a> Extract<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Extracting sequences with matching IDs...");
         files.iter().for_each(|file| {
-            let (mat, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-            let mut matrix: SeqMatrix = IndexMap::new();
-            match self.params {
-                Params::Regex(re) => mat.iter().for_each(|(id, seq)| {
-                    let matched_id = self.match_id(id, re);
-                    if matched_id {
-                        matrix.insert(id.to_string(), seq.to_string());
-                    }
-                }),
-                Params::File(path) => println!("Path: {}\n", path.display()),
-                Params::Id(ids) => mat.iter().for_each(|(id, seq)| {
-                    ids.iter().for_each(|match_id| {
-                        if match_id == id {
-                            matrix.insert(id.to_string(), seq.to_string());
-                        }
-                    })
-                }),
-                _ => unreachable!("Please, specify a matching parameter!"),
-            }
+            let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+            let matrix = 
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
                 let outname = output.join(
@@ -79,6 +62,28 @@ impl<'a> Extract<'a> {
     fn match_id(&self, id: &str, re: &str) -> bool {
         let re = Regex::new(re).expect("Failed capturing nexus commands");
         re.is_match(id)
+    }
+
+    fn get_matrix(&self, seqmat: SeqMatrix) -> SeqMatrix {
+        let mut matrix: SeqMatrix = IndexMap::new();
+        match self.params {
+            Params::Regex(re) => seqmat.iter().for_each(|(id, seq)| {
+                let matched_id = self.match_id(id, re);
+                if matched_id {
+                    matrix.insert(id.to_string(), seq.to_string());
+                }
+            }),
+            Params::File(path) => println!("Path: {}\n", path.display()),
+            Params::Id(ids) => mat.iter().for_each(|(id, seq)| {
+                ids.iter().for_each(|match_id| {
+                    if match_id == id {
+                        matrix.insert(id.to_string(), seq.to_string());
+                    }
+                })
+            }),
+            _ => unreachable!("Please, specify a matching parameter!"),
+        };
+        matrix
     }
 
     fn get_header(&self, matrix: &SeqMatrix) -> Header {
