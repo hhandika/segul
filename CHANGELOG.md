@@ -1,5 +1,9 @@
 # Release Notes
 
+## Upcoming
+
+- New feature: extract sequence file based on user-defined IDs (support regex).
+
 ## v0.7.1
 
 - Fix version unmatched version numbers.
