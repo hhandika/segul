@@ -69,8 +69,8 @@ impl<'a> ExtractParser<'a> {
     fn parse_file(&self) -> PathBuf {
         let file = PathBuf::from(
             self.matches
-                .value_of("id")
-                .expect("Failed parsing regex string"),
+                .value_of("file")
+                .expect("Failed parsing file path"),
         );
         assert!(file.is_file(), "File does not exist: {}", file.display());
         file
