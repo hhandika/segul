@@ -1,8 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
+use rayon::prelude::*;
 use regex::Regex;
 
 use crate::extract_id;
@@ -36,10 +38,10 @@ impl<'a> Extract<'a> {
 
     pub fn extract_sequences(&self, files: &[PathBuf], output: &Path, output_fmt: &OutputFmt) {
         fs::create_dir_all(output).expect("Failed creating output directory");
-        let mut file_counts = 0;
+        let file_counts = AtomicUsize::new(0);
         let spin = utils::set_spinner();
         spin.set_message("Extracting sequences with matching IDs...");
-        files.iter().for_each(|file| {
+        files.par_iter().for_each(|file| {
             let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
             let matrix = self.get_matrix(seq);
             if !matrix.is_empty() {
@@ -53,12 +55,13 @@ impl<'a> Extract<'a> {
                 writer
                     .write_sequence(output_fmt)
                     .expect("Failed writing the output files");
-                file_counts += 1;
+                file_counts.fetch_add(1, Ordering::Relaxed);
             }
         });
-        spin.finish_with_message("Finished finding matching IDs!\n");
-        assert!(file_counts > 0, "No matching IDs found!");
-        self.print_output_info(file_counts);
+        spin.finish_with_message("Finished extracting sequences!\n");
+        let counts = file_counts.load(Ordering::Relaxed);
+        assert!(counts > 0, "No matching IDs found!");
+        self.print_output_info(counts);
     }
 
     fn get_matrix(&self, seqmat: SeqMatrix) -> SeqMatrix {
