@@ -5,9 +5,11 @@ use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use regex::Regex;
 
+use crate::extract_id;
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::utils;
+use crate::parser::txt;
 use crate::writer::sequences::SeqWriter;
 
 pub enum Params {
@@ -39,7 +41,7 @@ impl<'a> Extract<'a> {
         spin.set_message("Extracting sequences with matching IDs...");
         files.iter().for_each(|file| {
             let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-            let matrix = 
+            let matrix = self.get_matrix(seq);
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
                 let outname = output.join(
@@ -59,11 +61,6 @@ impl<'a> Extract<'a> {
         self.print_output_info(file_counts);
     }
 
-    fn match_id(&self, id: &str, re: &str) -> bool {
-        let re = Regex::new(re).expect("Failed capturing nexus commands");
-        re.is_match(id)
-    }
-
     fn get_matrix(&self, seqmat: SeqMatrix) -> SeqMatrix {
         let mut matrix: SeqMatrix = IndexMap::new();
         match self.params {
@@ -73,17 +70,19 @@ impl<'a> Extract<'a> {
                     matrix.insert(id.to_string(), seq.to_string());
                 }
             }),
-            Params::File(path) => println!("Path: {}\n", path.display()),
-            Params::Id(ids) => mat.iter().for_each(|(id, seq)| {
-                ids.iter().for_each(|match_id| {
-                    if match_id == id {
-                        matrix.insert(id.to_string(), seq.to_string());
-                    }
-                })
-            }),
+            Params::File(path) => {
+                let ids = txt::parse_text_file(path);
+                extract_id!(ids, seqmat, matrix)
+            }
+            Params::Id(ids) => extract_id!(ids, seqmat, matrix),
             _ => unreachable!("Please, specify a matching parameter!"),
         };
         matrix
+    }
+
+    fn match_id(&self, id: &str, re: &str) -> bool {
+        let re = Regex::new(re).expect("Failed capturing nexus commands");
+        re.is_match(id)
     }
 
     fn get_header(&self, matrix: &SeqMatrix) -> Header {
@@ -100,4 +99,17 @@ impl<'a> Extract<'a> {
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "File counts", file_counts);
     }
+}
+
+#[macro_export]
+macro_rules! extract_id {
+    ($vec:ident, $seqmat: ident, $matrix: ident) => {
+        $seqmat.iter().for_each(|(id, seq)| {
+            $vec.iter().for_each(|match_id| {
+                if match_id == id {
+                    $matrix.insert(id.to_string(), seq.to_string());
+                }
+            })
+        })
+    };
 }
