@@ -454,7 +454,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("id")
                         .long("id")
                         .help("Extract sequence in a list of IDs")
-                        .conflicts_with("regex")
+                        .conflicts_with_all(&["regex", "file"])
                         .required_unless_all(&["regex", "file"])
                         .takes_value(true)
                         .multiple(true)
