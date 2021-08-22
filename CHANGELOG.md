@@ -2,7 +2,7 @@
 
 ## Upcoming
 
-- New feature: extract sequence file based on user-defined IDs (support regex).
+- Add new feature to xtract sequence file based on user-defined IDs.
 
 ## v0.7.1
 
