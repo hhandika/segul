@@ -45,10 +45,7 @@ impl<'a> Extract<'a> {
             let matrix = self.get_matrix(seq);
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
-                let outname = output.join(
-                    file.file_name()
-                        .expect("Failed parsing filename for output file"),
-                );
+                let outname = self.get_output_names(output, file, output_fmt);
                 let mut writer =
                     SeqWriter::new(&outname, &matrix, &header, None, &PartitionFmt::None);
                 writer
@@ -77,6 +74,18 @@ impl<'a> Extract<'a> {
             _ => unreachable!("Please, specify a matching parameter!"),
         };
         matrix
+    }
+
+    fn get_output_names(&self, dir: &Path, file: &Path, output_fmt: &OutputFmt) -> PathBuf {
+        let path = dir.join(
+            file.file_name()
+                .expect("Failed parsing filename for output file"),
+        );
+        match output_fmt {
+            OutputFmt::Fasta | OutputFmt::FastaInt => path.with_extension("fas"),
+            OutputFmt::Nexus | OutputFmt::NexusInt => path.with_extension("nex"),
+            OutputFmt::Phylip | OutputFmt::PhylipInt => path.with_extension("phy"),
+        }
     }
 
     fn match_id(&self, id: &str, re: &str) -> bool {
