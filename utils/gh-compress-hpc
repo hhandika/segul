@@ -1,5 +1,5 @@
 #!/bin/bash
-NAME="segul-Linux-HPC-x86_64.tar.gz"
+NAME="segul-ManyLinux-x86_64.tar.gz"
 
 echo "Filename: ${NAME}"
 
