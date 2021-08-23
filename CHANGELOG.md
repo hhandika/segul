@@ -1,6 +1,10 @@
 # Release Notes
 
-## Upcoming
+## 0.8.1
+
+- Fix issues missing summary subcommands.
+
+## 0.8.0
 
 - Add new feature to xtract sequence file based on user-defined IDs.
 
