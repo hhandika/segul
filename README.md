@@ -53,7 +53,15 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
-You can install SEGUL using the Rust package manager: [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). After you have cargo installed in your computer, in Linux system (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, etc.) or its equivalent in other Linux distributions:
+For a quick installation, we provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For WSL, either the ManyLinux or Linux binary should worr. For native Linux OS, first check your GLIBC version:
+
+```Bash
+ldd --version
+```
+
+If your system GLIBC is >=2.18, use the Linux binary. If lower, use the ManyLinux binary. The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)). If you are still having issues running the program, try install it using the package manager. This installation method will optimize the compiled binary for your system (see below).
+
+You can also install SEGUL using the Rust package manager: [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). After you have cargo installed in your computer, in Linux system (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, etc.) or its equivalent in other Linux distributions:
 
 ```Bash
 sudo apt install build-essential
@@ -72,14 +80,6 @@ Then, install SEGUL:
 ```Bash
 cargo install segul
 ```
-
-If you prefer more straigtforward installation method, we also provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For Linux and WSL, first check your GLIBC version:
-
-```Bash
-ldd --version
-```
-
-If your system GLIBC is >=2.18, use the Linux binary. If lower, use the Linux-HPC binary. The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)).
 
 Other installation methods are also available. Learn more about SEGUL installation [here](https://github.com/hhandika/segul/wiki/2.-Installation).
 
