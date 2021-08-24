@@ -524,7 +524,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("file")
                         .long("file")
-                        .help("Extract sequence IDs that match regular expression")
+                        .help("Inputs sequence IDs in a file")
                         .conflicts_with_all(&["id", "regex"])
                         .takes_value(true)
                         .value_name("A-TEXT-FILE-PATH")       
@@ -532,7 +532,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("id")
                         .long("id")
-                        .help("Extract sequence in a list of IDs")
+                        .help("Extract sequence using a list of IDs")
                         .conflicts_with_all(&["regex", "file"])
                         .required_unless_all(&["regex", "file"])
                         .takes_value(true)
