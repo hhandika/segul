@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.8.2
+
+- Fix wrong help messages in the extract command argumenst.
+
 ## 0.8.1
 
 - Fix issues missing summary subcommands.
