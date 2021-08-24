@@ -137,7 +137,7 @@ To extract sequences by inputing the IDs in the command line:
 segul extract --dir [path-to-alignment-directory] --input-format [sequence-format-keyword] --id [id_1] [id_2] [id_3]
 ```
 
-You can specify as many id as you would like. However, for long list of IDs, it may be better to input it using a text file. Your input is similar to:
+You can specify as many id as you would like. However, for long list of IDs, it may be better to input it using a text file. In the file it should be only the ID list, one ID each line:
 
 ```bash
 sequence_1
@@ -160,7 +160,7 @@ segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 
 The app uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
 
-Across the program funtions, most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
+Across the app functions, most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
 
 ```Bash
 segul concat -d nexus-alignments -f nexus
