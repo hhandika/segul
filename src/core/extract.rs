@@ -57,7 +57,7 @@ impl<'a> Extract<'a> {
         spin.finish_with_message("Finished extracting sequences!\n");
         let counts = file_counts.load(Ordering::Relaxed);
         assert!(counts > 0, "No matching IDs found!");
-        self.print_output_info(counts);
+        self.print_output_info(counts, output);
     }
 
     fn get_matrix(&self, seqmat: SeqMatrix) -> SeqMatrix {
@@ -103,9 +103,10 @@ impl<'a> Extract<'a> {
         header
     }
 
-    fn print_output_info(&self, file_counts: usize) {
+    fn print_output_info(&self, file_counts: usize, output: &Path) {
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "File counts", file_counts);
+        log::info!("{:18}: {}", "Output dir", output.display())
     }
 }
 
