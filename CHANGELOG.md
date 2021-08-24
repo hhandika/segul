@@ -1,8 +1,12 @@
 # Release Notes
 
-## Upcoming
+## 0.8.1
 
-- New feature: extract sequence file based on user-defined IDs (support regex).
+- Fix issues missing summary subcommands.
+
+## 0.8.0
+
+- Add new feature to xtract sequence file based on user-defined IDs.
 
 ## v0.7.1
 
