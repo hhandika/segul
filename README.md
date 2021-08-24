@@ -15,7 +15,7 @@ Available features:
 3. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
 4. Computing alignment summary statistics.
 5. Getting sample IDs from a collection of alignments.
-6. Extracting sequences from a collection of alignments based on user-defined IDs (Beta).
+6. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
 
 Planned features:
 
@@ -53,7 +53,15 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
-You can install SEGUL using the Rust package manager: [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). After you have cargo installed in your computer, in Linux system (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, etc.) or its equivalent in other Linux distributions:
+For a quick installation, we provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For WSL, either the ManyLinux or Linux binary should work. In our test system, the ManyLinux binary is a little faster. For native Linux OS, first check your GLIBC version:
+
+```Bash
+ldd --version
+```
+
+If your system GLIBC is >=2.18, use the Linux binary. If lower, use the ManyLinux binary. The installation is similar to any other single executable command-line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)). If you are still having issues running the program, try install it using the package manager. This installation method will optimize the compiled binary for your system (see below).
+
+You can also install SEGUL using the Rust package manager: [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). After you have cargo installed in your computer, in Linux system (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, etc.) or its equivalent in other Linux distributions:
 
 ```Bash
 sudo apt install build-essential
@@ -72,14 +80,6 @@ Then, install SEGUL:
 ```Bash
 cargo install segul
 ```
-
-If you prefer more straigtforward installation method, we also provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For Linux and WSL, first check your GLIBC version:
-
-```Bash
-ldd --version
-```
-
-If your system GLIBC is >=2.18, use the Linux binary. If lower, use the Linux-HPC binary. The installation is similar to any other single executable command line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)).
 
 Other installation methods are also available. Learn more about SEGUL installation [here](https://github.com/hhandika/segul/wiki/2.-Installation).
 
@@ -102,6 +102,8 @@ segul <SUBCOMMAND> --help
 ```
 
 Learn more about SEGUL command structure and expected behaviors for each argument [here](https://github.com/hhandika/segul/wiki/4.-Command-Structure).
+
+Segul can convert a single sequence file or multiple sequence files in a directory.
 
 To convert a single file:
 
@@ -127,13 +129,44 @@ To generate sequence summary statistics of alignments in a directory:
 segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
-Most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
+You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly on the command line or in text file. The app finds for the exact match. You can also use regular expression to search for matching IDs.
+
+To extract sequences by inputing the IDs in the command line:
+
+```bash
+segul extract --dir [path-to-alignment-directory] --input-format [sequence-format-keyword] --id [id_1] [id_2] [id_3]
+```
+
+You can specify as many id as you would like. However, for long list of IDs, it may be better to input it using a text file. Your input is similar to:
+
+```bash
+sequence_1
+sequence_2
+sequence_3
+sequence_4
+```
+
+The the command will be:
+
+```bash
+segul extract --dir [path-to-alignment-directory] --input-format [sequence-format-keyword] --file [path-to-text-file] 
+```
+
+For using regular expression:
+
+```bash
+segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
+```
+
+The app uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
+
+Across the program funtions, most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
 
 ```Bash
 segul concat -d nexus-alignments -f nexus
 ```
 
-By default, SEGUL will check whether the sequences contain only valid IUPAC characters. It is set for DNA characters by default. If your input is amino acid sequences, you can use `--datatype` option to specify the input data type. For example to concat sequences of amino acid in a directory named `nexus-alignments`:
+By default, SEGUL will check whether the sequences contain only valid IUPAC characters. It is set for DNA characters by default. If your input is amino acid sequences, you can use `--datatype aa` option to specify the input data type to amino acid. For example to concat sequences of amino acid in a directory named `nexus-alignments`:
 
 ```Bash
 segul concat --dir nexus-alignments --input-format nexus --datatype aa
