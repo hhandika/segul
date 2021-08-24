@@ -2,7 +2,7 @@
 
 ## 0.8.2
 
-- Fix wrong help messages in the extract command argumenst.
+- Fix wrong help messages in the extract command arguments.
 - Shows output directory in the stdout after extracting sequences.
 
 ## 0.8.1
