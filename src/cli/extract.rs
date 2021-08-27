@@ -81,7 +81,7 @@ impl<'a> ExtractParser<'a> {
         self.matches
             .values_of("id")
             .expect("Failed parsing IDs input")
-            .map(|s| String::from(s))
+            .map(String::from)
             .collect()
     }
 
