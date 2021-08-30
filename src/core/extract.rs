@@ -15,7 +15,6 @@ use crate::writer::sequences::SeqWriter;
 
 pub enum Params {
     Regex(String),
-    File(Vec<String>),
     Id(Vec<String>),
     None,
 }
@@ -69,7 +68,6 @@ impl<'a> Extract<'a> {
                     matrix.insert(id.to_string(), seq.to_string());
                 }
             }),
-            Params::File(ids) => extract_id!(ids, seqmat, matrix),
             Params::Id(ids) => extract_id!(ids, seqmat, matrix),
             _ => unreachable!("Please, specify a matching parameter!"),
         };
