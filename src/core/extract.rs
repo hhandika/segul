@@ -7,7 +7,6 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 use regex::Regex;
 
-// use crate::extract_id;
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::utils;
@@ -113,16 +112,3 @@ impl<'a> Extract<'a> {
         log::info!("{:18}: {}", "Output dir", output.display())
     }
 }
-
-// #[macro_export]
-// macro_rules! extract_id {
-//     ($vec:ident, $seqmat: ident, $matrix: ident) => {
-//         $seqmat.iter().for_each(|(id, seq)| {
-//             $vec.iter().for_each(|match_id| {
-//                 if match_id == id {
-//                     $matrix.insert(id.to_string(), seq.to_string());
-//                 }
-//             })
-//         })
-//     };
-// }
