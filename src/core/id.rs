@@ -102,7 +102,7 @@ impl<'a> Id<'a> {
     }
 
     fn print_output(&self, ids: usize) {
-        log::info!("\n{}", Yellow.paint("Output"));
+        log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "Total unique IDs", ids);
         log::info!("{:18}: {}", "File output", self.output.display());
     }
