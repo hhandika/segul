@@ -74,7 +74,7 @@ impl<'a> Extract<'a> {
                     }
                 })
             }),
-            _ => unreachable!("Please, specify a matching parameter!"),
+            Params::None => panic!("Please, specify a matching parameter!"),
         };
         matrix
     }
