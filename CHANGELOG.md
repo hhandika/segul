@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.8.3
+
+- Minor performance improvement for sequence extraction.
+
 ## 0.8.2
 
 - Fix wrong help messages in the extract command arguments.
