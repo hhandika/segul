@@ -9,12 +9,8 @@ use ansi_term::Colour::Yellow;
 use indexmap::IndexSet;
 
 use crate::helper::finder::IDs;
-// use crate::helper::sequence;
 use crate::helper::types::{DataType, InputFmt};
 use crate::helper::utils;
-// use crate::parser::fasta;
-// use crate::parser::nexus::Nexus;
-// use crate::parser::phylip::Phylip;
 
 pub struct Id<'a> {
     pub output: &'a Path,
@@ -40,53 +36,6 @@ impl<'a> Id<'a> {
         self.print_output(ids.len());
     }
 
-    // #[allow(dead_code)]
-    // pub fn map_id(&self, files: &[PathBuf]) {
-    //     let spin = utils::set_spinner();
-    //     spin.set_message("Indexing IDs..");
-    //     let ids = IDs::new(files, self.input_fmt, self.datatype);
-    //     let taxon_id = ids.get_id_unique();
-    //     // let mut ids_map: BTreeMap<String, Vec<(String, bool)>> = BTreeMap::new();
-    //     files.iter().for_each(|file| {
-    //         let id = self.parse_id(file, &self.input_fmt);
-    //         // let fname = self.get_filename(file);
-    //         taxon_id.iter().for_each(|taxon_id| {
-    //             // let taxon = taxon_id;
-    //             match id.get(taxon_id) {
-    //                 Some(_) => println!("{} => {}", taxon_id, true),
-    //                 None => {
-    //                     println!("{} => {}", taxon_id, false);
-    //                 }
-    //             };
-    //         })
-    //     })
-    // }
-
-    // fn insert_map(&self, ids_map: &mut BTreeMap<String, (String, bool)>, taxon: &str, fname: &str) {
-    //     *ids_map
-    //         .entry(String::from(taxon))
-    //         .or_insert((String::from(taxon), true));
-    // }
-
-    // fn get_filename(&self, file: &Path) -> String {
-    //     file.file_name()
-    //         .and_then(OsStr::to_str)
-    //         .expect("Failed getting filename")
-    //         .to_string()
-    // }
-
-    // fn parse_id(&mut self, file: &Path) -> IndexSet<String> {
-    //     match self.input_fmt {
-    //         InputFmt::Nexus => Nexus::new(file, self.datatype).parse_only_id(),
-    //         InputFmt::Phylip => Phylip::new(file, self.datatype).parse_only_id(),
-    //         InputFmt::Fasta => fasta::parse_only_id(file),
-    //         InputFmt::Auto => {
-    //             self.input_fmt = sequence::infer_input_auto(file);
-    //             self.parse_id(file)
-    //         }
-    //     }
-    // }
-
     fn write_results(&self, ids: &IndexSet<String>) -> Result<()> {
         let file = OpenOptions::new()
             .write(true)
@@ -107,8 +56,3 @@ impl<'a> Id<'a> {
         log::info!("{:18}: {}", "File output", self.output.display());
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//     use crate::helper::finder::Files;
