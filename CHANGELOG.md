@@ -3,6 +3,7 @@
 ## 0.8.3
 
 - Minor performance improvement for sequence extraction.
+- Fix multiple newlines after spinners when using ID subcommands.
 
 ## 0.8.2
 
