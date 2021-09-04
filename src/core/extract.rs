@@ -112,3 +112,16 @@ impl<'a> Extract<'a> {
         log::info!("{:18}: {}", "Output dir", output.display())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_match_id() {
+        let id = "Bunomys_penitus";
+        let re = "(?i)(Penitus)$";
+        let extract = Extract::new(&Params::None, &InputFmt::Fasta, &DataType::Dna);
+        assert_eq!(true, extract.match_id(id, re));
+    }
+}
