@@ -210,7 +210,7 @@ mod test {
     const DNA: DataType = DataType::Dna;
 
     #[test]
-    fn concat_nexus_test() {
+    fn test_concat_nexus() {
         let path = Path::new("test_files/concat/");
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
@@ -221,7 +221,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn get_alignment_panic_test() {
+    fn test_get_alignment_panic() {
         let path = Path::new("test_files/concat/");
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
         let concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
@@ -229,7 +229,7 @@ mod test {
     }
 
     #[test]
-    fn concat_check_result_test() {
+    fn test_concat_check_result() {
         let path = Path::new("test_files/concat/");
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
@@ -241,7 +241,7 @@ mod test {
     }
 
     #[test]
-    fn concat_partition_test() {
+    fn test_concat_partition() {
         let path = Path::new("test_files/concat/");
         let mut files = Files::new(path, &InputFmt::Nexus).get_files();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
@@ -258,7 +258,7 @@ mod test {
     }
 
     #[test]
-    fn get_gaps_test() {
+    fn test_get_gaps() {
         let len = 5;
         let gaps = "?????";
         assert_eq!(
