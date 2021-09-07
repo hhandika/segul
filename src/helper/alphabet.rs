@@ -59,20 +59,20 @@ mod test {
     use super::*;
 
     #[test]
-    fn check_valid_dna_test() {
+    fn test_check_valid_dna() {
         let dna = String::from("agtc?-");
         assert_eq!(true, is_valid_dna(&dna));
     }
 
     #[test]
-    fn check_invalid_dna_test() {
+    fn test_check_invalid_dna() {
         let dna = String::from("agtc?-z");
         assert_eq!(false, is_valid_dna(&dna));
     }
 
     #[test]
     #[should_panic]
-    fn check_invalid_dna_panic_test() {
+    fn test_check_invalid_dna_panic() {
         let sample = Path::new(".");
         let id = "ABCD";
         let dna = String::from("agta?-z");
