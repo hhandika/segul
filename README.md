@@ -41,6 +41,10 @@ It is now in active development. Our goal is to provide as many functionalities 
 
 Documentation: [GitHub Wiki](https://github.com/hhandika/segul/wiki)
 
+Citation:
+
+> Handika, H. and Esselstyn, J. A. In prep. SEGUL: An ultrafast, memory efficient, and cross-platform alignment manipulation tool for phylogenomics.
+
 ## Supported Platforms
 
 The app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
