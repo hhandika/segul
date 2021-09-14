@@ -43,7 +43,7 @@ pub fn print_stats(site: &Sites, dna: &Chars) {
     );
     log::info!("{:18}: {:.2}%", "%Conserved", site.prop_cons * 100.0);
     log::info!("{:18}: {:.2}%", "%Variable", site.prop_var * 100.0);
-    log::info!("{:18}: {:.2}%\n", "%Pars. inf.", site.prop_var * 100.0);
+    log::info!("{:18}: {:.2}%\n", "%Pars. inf.", site.prop_pinf * 100.0);
 }
 
 trait Alphabet {
