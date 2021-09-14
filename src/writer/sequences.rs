@@ -392,7 +392,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn insert_whitespaces_test() {
+    fn test_insert_whitespaces() {
         let max_len = 10;
         let id = "ABCDE";
         let matrix = IndexMap::new();
@@ -413,7 +413,7 @@ mod test {
     // }
 
     #[test]
-    fn chunk_seq_test() {
+    fn test_chunk_seq() {
         let path = Path::new(".");
         let matrix = IndexMap::new();
         let header = Header::new();
@@ -426,7 +426,7 @@ mod test {
     }
 
     #[test]
-    fn matrix_int_test() {
+    fn test_matrix_int() {
         let path = Path::new(".");
         let mut matrix = IndexMap::new();
         let header = Header::new();
