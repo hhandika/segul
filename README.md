@@ -41,6 +41,10 @@ It is now in active development. Our goal is to provide as many functionalities 
 
 Documentation: [GitHub Wiki](https://github.com/hhandika/segul/wiki)
 
+Citation:
+
+> Handika, H. and Esselstyn, J. A. In prep. SEGUL: An ultrafast, memory efficient, and cross-platform alignment manipulation tool for phylogenomics.
+
 ## Supported Platforms
 
 The app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
@@ -62,13 +66,15 @@ ldd --version
 
 If your system GLIBC is >=2.18, use the Linux binary. If lower, use the ManyLinux binary. The installation is similar to any other single executable command-line app, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)). If you are still having issues running the program, try install it using the package manager. This installation method will optimize the compiled binary for your system (see below).
 
-You can also install SEGUL using the Rust package manager: [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). After you have cargo installed in your computer, in Linux system (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, etc.) or its equivalent in other Linux distributions:
+The Rust package manager is called [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). Installing SEGUL through Cargo is similar to installing it from source code, except that it only use the stable version of the code. The source code is managed on [crates.io](https://crates.io/). The badge at top of this Readme has information on which the latest version of the app available to install through Cargo.
+
+After you have Cargo installed in your computer, in Linux system (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, PopOS, Linux Mint, etc.) or its equivalent in other Linux distributions:
 
 ```Bash
 sudo apt install build-essential
 ```
 
-On Windows:
+On Windows, you only need to install the GNU compiler toolchain available using Rustup. Rustup is installed automatically when you install Cargo. To install the toolchain:
 
 ```Bash
 rustup toolchain install stable-x86_64-pc-windows-gnu
@@ -82,7 +88,7 @@ Then, install SEGUL:
 cargo install segul
 ```
 
-Other installation methods are also available. Learn more about SEGUL installation [here](https://github.com/hhandika/segul/wiki/2.-Installation).
+You could also install SEGUL from the GitHub repository. Learn more about SEGUL installation [here](https://github.com/hhandika/segul/wiki/2.-Installation).
 
 The app command structure is similar to git, gh-cli, or any other app that use subcommands. The app file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
 
