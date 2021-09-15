@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.8.4
+
+- Fix errors in showing percentage parsimony informative for a single file input.
+
 ## 0.8.3
 
 - Minor performance improvement for sequence extraction.
