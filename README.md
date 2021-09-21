@@ -148,7 +148,7 @@ For example, to filter based on taxon completeness:
 segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --percent [percentages-of-minimal-taxa]
 ```
 
-Other available parameters are alignment length `--len`, numbers of minimal parsimony informative sites `--pinf`, and percent of minimal parsimony informative sites `--percent-inf`.
+Other available parameters are multiple minimal taxon completeness `--npercent`, alignment length `--len`, numbers of minimal parsimony informative sites `--pinf`, and percent of minimal parsimony informative sites `--percent-inf`.
 
 By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function above also available for concatenating filtered alignments.
 
