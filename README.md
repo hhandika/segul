@@ -136,7 +136,7 @@ To generate sequence summary statistics of alignments in a directory:
 segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
-Segul provide multiple filtering parameters. 
+Segul provide multiple filtering parameters.
 
 ```Bash
 segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] <parameters>
