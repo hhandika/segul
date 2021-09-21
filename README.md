@@ -136,6 +136,22 @@ To generate sequence summary statistics of alignments in a directory:
 segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
+Segul provide multiple filtering parameters. 
+
+```Bash
+segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] <parameters>
+```
+
+For example, to filter based on taxon completeness:
+
+```Bash
+segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --percent [percentages-of-minimal-taxa]
+```
+
+Other available parameters are alignment length `--len`, numbers of minimal parsimony informative sites `--pinf`, and percent of minimal parsimony informative sites `--percent-inf`.
+
+By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function above also available for concatenating filtered alignments.
+
 You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly on the command line or in text file. The app finds for the exact match. You can also use regular expression to search for matching IDs.
 
 To extract sequences by inputing the IDs in the command line:
