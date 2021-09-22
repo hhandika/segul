@@ -38,8 +38,6 @@ Supported partition formats:
 
 The Nexus partition can be written as a charset block embedded in Nexus formatted sequences or be written in a separate file.
 
-It is now in active development. Our goal is to provide as many functionalities possible for alignment manipulation tasks.
-
 Documentation: [GitHub Wiki](https://github.com/hhandika/segul/wiki)
 
 Citation:
