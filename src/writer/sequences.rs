@@ -401,17 +401,6 @@ mod test {
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 
-    // #[test]
-    // fn get_output_fname_test() {
-    //     let path = Path::new("sanger/cytb");
-    //     let matrix = IndexMap::new();
-    //     let header = Header::new();
-    //     let convert = SeqWriter::new(path, &matrix, &header, None, &PartitionFmt::None);
-    //     let output = PathBuf::from("sanger/cytb.fas");
-    //     // convert.get_output_fname(&OutputFmt::Fasta);
-    //     assert_eq!(output, convert.output);
-    // }
-
     #[test]
     fn test_chunk_seq() {
         let path = Path::new(".");
