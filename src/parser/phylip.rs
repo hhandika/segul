@@ -259,7 +259,7 @@ mod test {
     const AA: DataType = DataType::Aa;
 
     #[test]
-    fn read_phylip_simple_test() {
+    fn test_read_phylip_simple() {
         let path = Path::new("test_files/simple.phy");
         let mut phylip = Phylip::new(path, &DNA);
         phylip.parse();
@@ -271,14 +271,14 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn read_phylip_invalid_test() {
+    fn test_read_phylip_invalid() {
         let path = Path::new("test_files/invalid.phy");
         let mut phylip = Phylip::new(path, &DNA);
         phylip.parse();
     }
 
     #[test]
-    fn read_phylip_whitespace_test() {
+    fn test_read_phylip_whitespace() {
         let path = Path::new("test_files/whitespaces.phy");
         let mut phylip = Phylip::new(path, &DNA);
         phylip.parse();
@@ -288,7 +288,7 @@ mod test {
     }
 
     #[test]
-    fn parse_phylip_header_test() {
+    fn test_parse_phylip_header() {
         let header = "2 24";
         let mut phy = Phylip::new(Path::new("."), &DNA);
         phy.parse_header(header);
