@@ -416,7 +416,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn nexus_duplicate_panic_test() {
+    fn test_nexus_duplicate_panic() {
         let sample = Path::new("test_files/duplicates.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -424,7 +424,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn nexus_id_duplicate_panic_test() {
+    fn test_nexus_id_duplicate_panic() {
         let sample = Path::new("test_files/duplicates.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse_only_id();
@@ -432,14 +432,14 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn nexus_space_panic_test() {
+    fn test_nexus_space_panic() {
         let sample = Path::new("test_files/idspaces.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
     }
 
     #[test]
-    fn nexus_sequence_test() {
+    fn test_nexus_sequence() {
         let sample = Path::new("test_files/tabulated.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -449,7 +449,7 @@ mod test {
     }
 
     #[test]
-    fn nexus_parse_interleave() {
+    fn test_nexus_parse_interleave() {
         let sample = Path::new("test_files/interleave.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -457,7 +457,7 @@ mod test {
     }
 
     #[test]
-    fn nexus_parse_interleave_res_test() {
+    fn test_nexus_parse_interleave_res() {
         let sample = Path::new("test_files/interleave.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -467,7 +467,7 @@ mod test {
     }
 
     #[test]
-    fn nexus_simple_aa_test() {
+    fn test_nexus_simple_aa() {
         let sample = Path::new("test_files/simple_aa.nex");
         let mut nex = Nexus::new(sample, &AA);
         nex.parse();
@@ -477,7 +477,7 @@ mod test {
     }
 
     #[test]
-    fn regex_command_test() {
+    fn test_regex_command() {
         let text = "Matrix\n ABCD AGTC";
         assert_eq!(String::from("matrix"), get_commands(text));
     }
