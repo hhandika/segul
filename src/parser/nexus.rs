@@ -347,7 +347,7 @@ mod test {
     const AA: DataType = DataType::Aa;
 
     #[test]
-    fn nexus_reading_simple_test() {
+    fn test_nexus_reading_simple() {
         let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -355,7 +355,7 @@ mod test {
     }
 
     #[test]
-    fn nexus_reading_complete_test() {
+    fn test_nexus_reading_complete() {
         let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -363,7 +363,7 @@ mod test {
     }
 
     #[test]
-    fn nexus_reading_tabulated_test() {
+    fn test_nexus_reading_tabulated() {
         let sample = Path::new("test_files/tabulated.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -371,7 +371,7 @@ mod test {
     }
 
     #[test]
-    fn nexus_parsing_object_test() {
+    fn test_nexus_parsing_object() {
         let sample = Path::new("test_files/complete.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -383,7 +383,7 @@ mod test {
     }
 
     #[test]
-    fn nexus_parse_ntax_test() {
+    fn test_nexus_parse_ntax() {
         let sample = Path::new(".");
         let tax = "ntax=5";
         let nex = Nexus::new(sample, &DNA);
@@ -392,7 +392,7 @@ mod test {
     }
 
     #[test]
-    fn check_match_ntax_test() {
+    fn test_check_match_ntax() {
         let sample = Path::new("test_files/simple.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -400,7 +400,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn check_match_ntax_panic_test() {
+    fn test_check_match_ntax_panic() {
         let sample = Path::new("test_files/unmatched_block.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
@@ -408,7 +408,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn check_invalid_nexus_test() {
+    fn test_check_invalid_nexus() {
         let sample = Path::new("test_files/simple.fas");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
