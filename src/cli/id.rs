@@ -6,13 +6,13 @@ use crate::cli::*;
 use crate::core::id::Id;
 
 impl InputCli for IdParser<'_> {
-    fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
-        if matches.is_present("dir") {
-            InputType::Dir
-        } else {
-            InputType::Wildcard
-        }
-    }
+    // fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
+    //     if matches.is_present("dir") {
+    //         InputType::Dir
+    //     } else {
+    //         InputType::Wildcard
+    //     }
+    // }
 }
 
 impl OutputCli for IdParser<'_> {}
