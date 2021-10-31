@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.8.5
+
+- Fix missing wildcard options for filter and id subcommands.
+
 ## 0.8.4
 
 - Fix errors in displaying proportion of parsimony informative sites for a single file input.
