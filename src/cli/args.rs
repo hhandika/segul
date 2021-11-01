@@ -213,6 +213,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("PATH"),
                 )
                 .arg(
+                    Arg::with_name("wildcard")
+                        .short("c")
+                        .long("wcard")
+                        .help("Uses wildcard as an input")
+                        .takes_value(true)
+                        .multiple(true)
+                        .required_unless("input")
+                        .conflicts_with("dir")
+                        .value_name("WILDCARD"),
+                )
+                .arg(
                     Arg::with_name("input-format")
                         .short("f")
                         .long("input-format")
@@ -358,6 +369,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("PATH"),
                 )
                 .arg(
+                    Arg::with_name("wildcard")
+                        .short("c")
+                        .long("wcard")
+                        .help("Uses wildcard as an input")
+                        .takes_value(true)
+                        .multiple(true)
+                        .required_unless("input")
+                        .conflicts_with("dir")
+                        .value_name("WILDCARD"),
+                )
+                .arg(
                     Arg::with_name("input-format")
                         .short("f")
                         .long("input-format")
@@ -493,7 +515,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .multiple(true)
                         .required_unless("input")
-                        .conflicts_with_all(&["input", "dir"])
+                        .conflicts_with("dir")
                         .value_name("WILDCARD"),
                 )
                 .arg(
