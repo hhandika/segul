@@ -62,19 +62,3 @@ impl<'a> IdParser<'a> {
         self.matches.is_present("dir")
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//     use clap::{App, Arg};
-
-//     #[test]
-//     fn get_id_output_path_test() {
-//         let arg = App::new("segul-test")
-//             .arg(Arg::with_name("dir").default_value("./test_dir/"))
-//             .get_matches();
-//         let id = IdParser::new(&arg);
-//         let res = PathBuf::from("./test_dir.txt");
-//         assert_eq!(res, id.output);
-//     }
-// }
