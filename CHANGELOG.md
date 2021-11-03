@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.8.6
+
+- Fix inconsistent DNA character ordering when using a single input for summary statistics.
+
 ## 0.8.5
 
 - Fix missing wildcard options for filter and id subcommands.
