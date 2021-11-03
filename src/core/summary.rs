@@ -46,7 +46,7 @@ impl<'a> SeqStats<'a> {
         CsvWriter::new(self.output, self.datatype)
             .write_summary_file(&site, &dna)
             .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
-        summary::print_stats(&site, &dna);
+        summary::print_stats(&site, &dna, &self.datatype);
     }
 
     pub fn get_stats_dir(&mut self, files: &[PathBuf]) {

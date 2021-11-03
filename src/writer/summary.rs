@@ -11,7 +11,7 @@ use crate::helper::types::DataType;
 use crate::helper::utils;
 use crate::writer::FileWriter;
 
-pub fn print_stats(site: &Sites, dna: &Chars) {
+pub fn print_stats(site: &Sites, dna: &Chars, datatype: &DataType) {
     log::info!("{}", Yellow.paint("Alignment"));
     log::info!("{:18}: {}", "Taxa", utils::fmt_num(&dna.ntax));
     log::info!("{:18}: {}", "Length", utils::fmt_num(&site.counts));
@@ -29,9 +29,16 @@ pub fn print_stats(site: &Sites, dna: &Chars) {
         &dna.prop_missing_data * 100.0
     );
 
-    dna.chars
-        .iter()
-        .for_each(|(ch, count)| log::info!("{:18}: {}", ch, utils::fmt_num(count)));
+    let alphabet = match datatype {
+        DataType::Dna => alphabet::DNA_STR_UPPERCASE,
+        DataType::Aa => alphabet::AA_STR_UPPERCASE,
+        _ => unreachable!("Invalid data types! Use dna or aa only"),
+    };
+    alphabet.chars().for_each(|ch| {
+        if let Some(count) = dna.chars.get(&ch) {
+            log::info!("{:18}: {}", ch, utils::fmt_num(count));
+        }
+    });
 
     log::info!("\n{}", Yellow.paint("Sites"));
     log::info!("{:18}: {}", "Conserved", utils::fmt_num(&site.conserved));
