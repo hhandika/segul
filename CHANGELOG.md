@@ -28,7 +28,7 @@
 
 ## 0.8.0
 
-- Add new feature to xtract sequence file based on user-defined IDs.
+- Add new feature to extract sequence file based on user-defined IDs.
 
 ## v0.7.1
 
