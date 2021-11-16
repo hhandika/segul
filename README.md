@@ -54,6 +54,8 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
+### Installation
+
 For a quick installation, we provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For WSL, either the ManyLinux or Linux binary should work. In our test system, the ManyLinux binary is a little faster. For native Linux OS, first check your GLIBC version:
 
 ```Bash
@@ -86,6 +88,8 @@ cargo install segul
 
 You could also install SEGUL from the GitHub repository. Learn more about SEGUL installation [here](https://github.com/hhandika/segul/wiki/2.-Installation).
 
+### Command Structure
+
 The app command structure is similar to git, gh-cli, or any other app that use subcommands. The app file name will be `segul` for Linux/MacOS/WSL and `segul.exe` for Windows.
 
 ```Bash
@@ -106,6 +110,8 @@ segul <SUBCOMMAND> --help
 
 Learn more about SEGUL command structure and expected behaviors for each argument [here](https://github.com/hhandika/segul/wiki/4.-Command-Structure).
 
+### Converting alignments
+
 Segul can convert a single sequence file or multiple sequence files in a directory.
 
 To convert a single file:
@@ -120,17 +126,23 @@ To convert files in a directory:
 segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
 ```
 
+### Concatenating alignments
+
 To concat all alignments in a directory:
 
 ```Bash
 segul concat --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
+### Generating Sequence Summary Statistics
+
 To generate sequence summary statistics of alignments in a directory:
 
 ```Bash
 segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
+
+### Filtering Alignments
 
 Segul provide multiple filtering parameters.
 
@@ -147,6 +159,8 @@ segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keywo
 Other available parameters are multiple minimal taxon completeness `--npercent`, alignment length `--len`, numbers of minimal parsimony informative sites `--pinf`, and percent of minimal parsimony informative sites `--percent-inf`.
 
 By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function above also available for concatenating filtered alignments.
+
+### Extracting Sequences in Alignments
 
 You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly on the command line or in text file. The app finds for the exact match. You can also use regular expression to search for matching IDs.
 
@@ -178,6 +192,8 @@ segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 ```
 
 The app uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
+
+### Other features
 
 Across the app functions, most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
 
