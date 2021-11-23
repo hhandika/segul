@@ -5,6 +5,7 @@ mod extract;
 mod filter;
 mod id;
 mod summary;
+mod translate;
 
 use std::ffi::OsStr;
 use std::fs;
@@ -27,6 +28,7 @@ use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
 use crate::cli::summary::SummaryParser;
+use crate::cli::translate::TranslateParser;
 
 use crate::check_output_path;
 use crate::core::msa;
@@ -48,6 +50,7 @@ pub fn parse_cli(version: &str) {
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
         ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
         ("extract", Some(extract_matches)) => ExtractParser::new(extract_matches).extract(),
+        ("translate", Some(trans_matches)) => TranslateParser::new(trans_matches).translate(),
         _ => unreachable!("Invalid subcommands!"),
     }
 }
