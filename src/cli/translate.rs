@@ -46,12 +46,13 @@ impl<'a> TranslateParser<'a> {
         self.check_output_dir_exist(&outdir);
         self.parse_trans_table();
         let translate = Translate::new(&self.trans_table, &input_fmt, &datatype);
+        translate.translate_sequences(&files, &outdir, &output_fmt);
     }
 
     fn parse_trans_table(&mut self) {
         match self.matches {
-            m if m.is_present("mtdna") => self.trans_table = TransTables::MtDna,
-            _ => unimplemented!(),
+            m if m.is_present("2") => self.trans_table = TransTables::MtDna,
+            _ => (),
         }
     }
 }

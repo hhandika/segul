@@ -675,6 +675,22 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
                 )
+                .arg(
+                    Arg::with_name("table")
+                        .long("output-format")
+                        .help("Sets the ncbi translation table")
+                        .takes_value(true)
+                        .default_value("1")
+                        .value_name("SEQ-FORMAT")
+                        .possible_values(&[
+                            "1",
+                            "2",
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                        ]),
+                )
             
         )
         .get_matches()
