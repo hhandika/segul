@@ -599,5 +599,83 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .possible_values(&["dna", "aa", "ignore"]),
                 )
         )
+        .subcommand(
+            App::new("translate")
+                .about("Translate dna sequences to amino acid sequences")
+                .arg(
+                    Arg::with_name("dir")
+                        .short("d")
+                        .long("dir")
+                        .help("Inputs a directory path to alignments")
+                        .takes_value(true)
+                        .conflicts_with("wildcard")
+                        .value_name("PATH"),
+                )
+                .arg(
+                    Arg::with_name("wildcard")
+                        .short("c")
+                        .long("wcard")
+                        .help("Uses wildcard as an input")
+                        .takes_value(true)
+                        .multiple(true)
+                        .required_unless("input")
+                        .conflicts_with("dir")
+                        .value_name("WILDCARD"),
+                )
+                .arg(
+                    Arg::with_name("input-format")
+                        .short("f")
+                        .long("input-format")
+                        .help("Sets input format")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("SEQ-FORMAT")
+                        .default_value("auto")
+                        .possible_values(&[
+                            "auto",
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                        ]),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .short("o")
+                        .long("output")
+                        .help("Specifies a directory name")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("SEGUL-extract")
+                        .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("output-format")
+                        .short("F")
+                        .long("output-format")
+                        .help("Sets target output format")
+                        .takes_value(true)
+                        .default_value("nexus")
+                        .value_name("SEQ-FORMAT")
+                        .possible_values(&[
+                            "nexus",
+                            "phylip",
+                            "fasta",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
+                )
+                .arg(
+                    Arg::with_name("datatype")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
+                )
+            
+        )
         .get_matches()
 }
