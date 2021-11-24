@@ -58,9 +58,17 @@ impl<'a> TranslateParser<'a> {
         self.check_output_dir_exist(&outdir);
         log::info!("{}", Yellow.paint("Params"));
         self.parse_trans_table();
-        log::info!("{:18}: {}\n", "Reading frame", &frame);
         let translate = Translate::new(&self.trans_table, &input_fmt, &datatype);
-        translate.translate_all(&files, frame, &outdir, &output_fmt);
+        match frame {
+            Some(num) => {
+                log::info!("{:18}: {}\n", "Reading frame", &num);
+                translate.translate_all(&files, num, &outdir, &output_fmt);
+            }
+            None => {
+                log::info!("{:18}: Auto\n", "Reading frame");
+                translate.translate_all_autoframe(&files, &outdir, &output_fmt);
+            }
+        }
     }
 
     fn parse_trans_table(&mut self) {
@@ -78,12 +86,19 @@ impl<'a> TranslateParser<'a> {
         }
     }
 
-    fn get_reading_frame(&self) -> usize {
-        self.matches
+    fn get_reading_frame(&self) -> Option<usize> {
+        let frame = self
+            .matches
             .value_of("reading-frame")
-            .expect("Failed getting reading frame values")
-            .parse::<usize>()
-            .expect("Failed parsing reading frame values")
+            .expect("Failed getting reading frame values");
+        match frame {
+            "auto" => None,
+            _ => Some(
+                frame
+                    .parse::<usize>()
+                    .expect("Failed parsing reading frame values"),
+            ),
+        }
     }
 
     fn show_ncbi_tables(&self) {

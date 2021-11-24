@@ -58,6 +58,45 @@ impl<'a> Translate<'a> {
         self.print_output_info(output);
     }
 
+    pub fn translate_all_autoframe(
+        &self,
+        files: &[PathBuf],
+        output: &Path,
+        output_fmt: &OutputFmt,
+    ) {
+        let spin = utils::set_spinner();
+        spin.set_message("Translating dna sequences...");
+        fs::create_dir_all(output).expect("Failed creating an output directory");
+        files.par_iter().for_each(|file| {
+            let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+            let frame = self.get_reading_frame(&seq);
+            let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
+            let outname = self.get_output_names(output, file, output_fmt);
+            let mut writer =
+                SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
+            writer
+                .write_sequence(output_fmt)
+                .expect("Failed writing the output files");
+        });
+
+        spin.finish_with_message("Finished translating dna sequences!\n");
+        self.print_output_info(output);
+    }
+
+    fn get_reading_frame(&self, matrix: &SeqMatrix) -> usize {
+        let mut frame = 1;
+        let seq = matrix
+            .values()
+            .next()
+            .expect("Failed getting the first sequence");
+        let trans = self.translate_seq(seq, frame);
+        if trans.contains('*') {
+            frame += 1;
+            self.get_reading_frame(matrix);
+        }
+        frame
+    }
+
     fn translate_matrix(&self, matrix: &mut SeqMatrix, frame: usize) -> (SeqMatrix, Header) {
         let mut trans_matrix: SeqMatrix = IndexMap::new();
         matrix.iter().for_each(|(id, seq)| {
