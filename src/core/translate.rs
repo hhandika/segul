@@ -72,6 +72,7 @@ impl<'a> Translate<'a> {
             GeneticCodes::StandardCode => NcbiTables::new().standard_code(),
             GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),
             GeneticCodes::YeastMtDna => NcbiTables::new().yeast_mtdna(),
+            GeneticCodes::MoldProtCoelMtDna => NcbiTables::new().moldprotocoe_mtdna(),
             _ => unimplemented!(),
         };
         let mut translation = String::new();
@@ -180,5 +181,12 @@ mod tests {
         let dna = "CTTATAAAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("TMKGDLVRX"), YeastMtDna);
+    }
+
+    #[test]
+    fn test_translating_mold_etal_simple() {
+        let dna = "TGAAAAGGGGATTTAGTTAGAA-----";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("WKGDLVRX-"), MoldProtCoelMtDna);
     }
 }

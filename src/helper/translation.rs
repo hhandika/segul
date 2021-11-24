@@ -122,4 +122,17 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 4.
+    pub fn moldprotocoe_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TGA" => code.insert(codon.to_string(), String::from("W")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }
