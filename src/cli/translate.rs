@@ -1,5 +1,5 @@
 use crate::cli::*;
-use crate::core::translate::{TransTables, Translate};
+use crate::core::translate::{NCBITable, Translate};
 
 impl InputCli for TranslateParser<'_> {}
 impl InputPrint for TranslateParser<'_> {}
@@ -8,7 +8,7 @@ impl OutputCli for TranslateParser<'_> {}
 pub(in crate::cli) struct TranslateParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_dir: Option<PathBuf>,
-    trans_table: TransTables,
+    trans_table: NCBITable,
 }
 
 #[allow(unused_variables)]
@@ -17,7 +17,7 @@ impl<'a> TranslateParser<'a> {
         Self {
             matches,
             input_dir: None,
-            trans_table: TransTables::StandardCode,
+            trans_table: NCBITable::StandardCode,
         }
     }
 
@@ -51,7 +51,7 @@ impl<'a> TranslateParser<'a> {
 
     fn parse_trans_table(&mut self) {
         match self.matches {
-            m if m.is_present("2") => self.trans_table = TransTables::MtDna,
+            m if m.is_present("2") => self.trans_table = NCBITable::MtDna,
             _ => (),
         }
     }
