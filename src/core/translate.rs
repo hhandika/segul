@@ -107,16 +107,20 @@ impl<'a> Translate<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_translate;
+
+    #[macro_export]
+    macro_rules! test_translate {
+        ($input:expr, $result:expr, $code:ident) => {
+            let trans = Translate::new(&GeneticCodes::$code, &InputFmt::Fasta, &DataType::Dna);
+            assert_eq!($result, trans.match_translation($input, 1));
+        };
+    }
 
     #[test]
     fn test_translation_simple() {
         let dna = "AAAGGGGATTTAGTTAGAA";
-        let trans = Translate::new(
-            &GeneticCodes::StandardCode,
-            &InputFmt::Fasta,
-            &DataType::Dna,
-        );
-        assert_eq!(String::from("KGDLVRX"), trans.match_translation(dna, 1));
+        test_translate!(dna, String::from("KGDLVRX"), StandardCode);
     }
 
     #[test]
@@ -127,25 +131,16 @@ mod tests {
         TGCCGCAGCGTATTACTAATAGCATCACCAACAG\
         AATAACAAAAAGGATGACGAAGAGTGTTGCTGAT\
         GGCGTCGCCGACGGAGTAGCAGAAGGGGTGGCGGAGGG";
-        let trans = Translate::new(
-            &GeneticCodes::StandardCode,
-            &InputFmt::Fasta,
-            &DataType::Dna,
-        );
-        assert_eq!(
+        test_translate!(
+            standard_code,
             String::from("FFLLLLLLIIIMVVVVSSSSPPPPTTTTAAAAYY**HHQQNNKKDDEECC*WRRRRSSRRGGGG"),
-            trans.match_translation(standard_code, 1)
+            StandardCode
         );
     }
 
     #[test]
     fn test_translating_with_gaps() {
         let dna = "AAAGGGGATTTAGTTAGAA-----";
-        let trans = Translate::new(
-            &GeneticCodes::StandardCode,
-            &InputFmt::Fasta,
-            &DataType::Dna,
-        );
-        assert_eq!(String::from("KGDLVRX-"), trans.match_translation(dna, 1));
+        test_translate!(dna, String::from("KGDLVRX-"), StandardCode);
     }
 }
