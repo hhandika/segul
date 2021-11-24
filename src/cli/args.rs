@@ -677,7 +677,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::with_name("table")
-                        .long("output-format")
+                        .long("table")
                         .help("Sets the ncbi translation table")
                         .takes_value(true)
                         .default_value("1")
