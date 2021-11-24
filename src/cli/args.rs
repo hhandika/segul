@@ -618,7 +618,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Uses wildcard as an input")
                         .takes_value(true)
                         .multiple(true)
-                        .required_unless("input")
+                        .required_unless_one(&["dir", "show-tables"])
                         .conflicts_with("dir")
                         .value_name("WILDCARD"),
                 )
@@ -704,6 +704,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "3",
                         ]),
                 )
+                .arg(
+                    Arg::with_name("show-tables")
+                        .long("show-tables")
+                        .help("Sets the translation reading frame")
+                        .takes_value(false)
+                )
+                
             
         )
         .get_matches()
