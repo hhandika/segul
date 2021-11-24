@@ -5,21 +5,21 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::helper::sequence::{SeqCheck, Sequence};
-use crate::helper::translation;
+use crate::helper::translation::NcbiTables;
 use crate::helper::types::{
-    DataType, Header, InputFmt, NCBITable, OutputFmt, PartitionFmt, SeqMatrix,
+    DataType, GeneticCodes, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix,
 };
 use crate::writer::sequences::SeqWriter;
 
 pub struct Translate<'a> {
     input_fmt: &'a InputFmt,
-    trans_table: &'a NCBITable,
+    trans_table: &'a GeneticCodes,
     datatype: &'a DataType,
 }
 
 impl<'a> Translate<'a> {
     pub fn new(
-        trans_table: &'a NCBITable,
+        trans_table: &'a GeneticCodes,
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
     ) -> Self {
@@ -58,11 +58,13 @@ impl<'a> Translate<'a> {
 
     fn match_translation(&self, seq: &str, frame: usize) -> String {
         let table = match self.trans_table {
-            NCBITable::StandardCode => translation::get_standard_code(),
+            GeneticCodes::StandardCode => NcbiTables::new().standard_code(),
+            GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),
             _ => unimplemented!(),
         };
         let mut translation = String::new();
-        seq.chars()
+        seq.to_uppercase()
+            .chars()
             .skip(frame - 1)
             .collect::<Vec<char>>()
             .chunks(3)
@@ -109,7 +111,11 @@ mod tests {
     #[test]
     fn test_translation_simple() {
         let dna = "AAAGGGGATTTAGTTAGAA";
-        let trans = Translate::new(&NCBITable::StandardCode, &InputFmt::Fasta, &DataType::Dna);
+        let trans = Translate::new(
+            &GeneticCodes::StandardCode,
+            &InputFmt::Fasta,
+            &DataType::Dna,
+        );
         assert_eq!(String::from("KGDLVRX"), trans.match_translation(dna, 1));
     }
 
@@ -121,10 +127,25 @@ mod tests {
         TGCCGCAGCGTATTACTAATAGCATCACCAACAG\
         AATAACAAAAAGGATGACGAAGAGTGTTGCTGAT\
         GGCGTCGCCGACGGAGTAGCAGAAGGGGTGGCGGAGGG";
-        let trans = Translate::new(&NCBITable::StandardCode, &InputFmt::Fasta, &DataType::Dna);
+        let trans = Translate::new(
+            &GeneticCodes::StandardCode,
+            &InputFmt::Fasta,
+            &DataType::Dna,
+        );
         assert_eq!(
             String::from("FFLLLLLLIIIMVVVVSSSSPPPPTTTTAAAAYY**HHQQNNKKDDEECC*WRRRRSSRRGGGG"),
             trans.match_translation(standard_code, 1)
         );
+    }
+
+    #[test]
+    fn test_translating_with_gaps() {
+        let dna = "AAAGGGGATTTAGTTAGAA-----";
+        let trans = Translate::new(
+            &GeneticCodes::StandardCode,
+            &InputFmt::Fasta,
+            &DataType::Dna,
+        );
+        assert_eq!(String::from("KGDLVRX-"), trans.match_translation(dna, 1));
     }
 }

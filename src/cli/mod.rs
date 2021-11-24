@@ -50,7 +50,9 @@ pub fn parse_cli(version: &str) {
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
         ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
         ("extract", Some(extract_matches)) => ExtractParser::new(extract_matches).extract(),
-        ("translate", Some(trans_matches)) => TranslateParser::new(trans_matches).translate(),
+        ("translate", Some(trans_matches)) => {
+            TranslateParser::new(trans_matches).parse_translation_cli()
+        }
         _ => unreachable!("Invalid subcommands!"),
     }
 }
