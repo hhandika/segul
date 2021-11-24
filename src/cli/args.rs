@@ -702,9 +702,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "1",
                             "2",
                             "3",
-                            "4",
-                            "5",
-                            "6",
                         ]),
                 )
             
