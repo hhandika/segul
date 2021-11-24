@@ -56,15 +56,25 @@ impl<'a> TranslateParser<'a> {
         );
 
         self.check_output_dir_exist(&outdir);
+        log::info!("{}", Yellow.paint("Params"));
         self.parse_trans_table();
+        log::info!("{:18}: {}\n", "Reading frame", &frame);
         let translate = Translate::new(&self.trans_table, &input_fmt, &datatype, frame);
         translate.translate_all(&files, &outdir, &output_fmt);
     }
 
     fn parse_trans_table(&mut self) {
-        match self.matches {
-            m if m.is_present("2") => self.trans_table = GeneticCodes::VertMtDna,
-            _ => (),
+        let table = self
+            .matches
+            .value_of("table")
+            .expect("Failed parsing table input");
+        match table {
+            "1" => log::info!("{:18}: {}", "Translation Table", table),
+            "2" => {
+                self.trans_table = GeneticCodes::VertMtDna;
+                log::info!("{:18}: {}", "Translation Table", table);
+            }
+            _ => unimplemented!("The Genetic Codes is not yet implemented!"),
         }
     }
 
