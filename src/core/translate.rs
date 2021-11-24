@@ -6,13 +6,10 @@ use rayon::prelude::*;
 
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::translation;
-use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
+use crate::helper::types::{
+    DataType, Header, InputFmt, NCBITable, OutputFmt, PartitionFmt, SeqMatrix,
+};
 use crate::writer::sequences::SeqWriter;
-
-pub enum NCBITable {
-    StandardCode,
-    MtDna,
-}
 
 pub struct Translate<'a> {
     input_fmt: &'a InputFmt,

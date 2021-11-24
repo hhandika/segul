@@ -1,5 +1,6 @@
 use crate::cli::*;
-use crate::core::translate::{NCBITable, Translate};
+use crate::core::translate::Translate;
+use crate::helper::types::NCBITable;
 
 impl InputCli for TranslateParser<'_> {}
 impl InputPrint for TranslateParser<'_> {}

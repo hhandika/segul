@@ -72,3 +72,8 @@ impl Header {
         }
     }
 }
+
+pub enum NCBITable {
+    StandardCode,
+    MtDna,
+}
