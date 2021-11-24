@@ -693,7 +693,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::with_name("reading-frame")
-                        .long("reading-frame")
+                        .long("rf")
                         .help("Sets the translation reading frame")
                         .takes_value(true)
                         .default_value("1")
