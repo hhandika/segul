@@ -43,11 +43,6 @@ impl<'a> Translate<'a> {
                 .write_sequence(output_fmt)
                 .expect("Failed writing the output files");
         });
-
-        match output_fmt {
-            OutputFmt::Fasta => println!("Fasta"),
-            _ => println!("Not fasta"),
-        }
     }
 
     fn translate(&self, matrix: &mut SeqMatrix) -> SeqMatrix {
