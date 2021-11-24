@@ -104,4 +104,22 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 3.
+    pub fn yeast_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "ATA" => code.insert(codon.to_string(), String::from("M")),
+                "CTT" => code.insert(codon.to_string(), String::from("T")),
+                "CTC" => code.insert(codon.to_string(), String::from("T")),
+                "CTA" => code.insert(codon.to_string(), String::from("T")),
+                "CTG" => code.insert(codon.to_string(), String::from("T")),
+                "TGA" => code.insert(codon.to_string(), String::from("W")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }

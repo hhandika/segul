@@ -71,6 +71,7 @@ impl<'a> Translate<'a> {
         let table = match self.trans_table {
             GeneticCodes::StandardCode => NcbiTables::new().standard_code(),
             GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),
+            GeneticCodes::YeastMtDna => NcbiTables::new().yeast_mtdna(),
             _ => unimplemented!(),
         };
         let mut translation = String::new();
@@ -168,9 +169,16 @@ mod tests {
     }
 
     #[test]
-    fn test_translation_mtdna_simple() {
+    fn test_translation_vertmtdna_simple() {
         let dna = "AAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("KGDLV*X"), VertMtDna);
+    }
+
+    #[test]
+    fn test_translation_yestmtdna_simple() {
+        let dna = "CTTATAAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("TMKGDLVRX"), YeastMtDna);
     }
 }
