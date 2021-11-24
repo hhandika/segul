@@ -18,7 +18,7 @@ Features:
 4. Computing alignment summary statistics.
 5. Getting sample IDs from a collection of alignments.
 6. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
-7. Converting dna sequences to amino acid and vice versa (beta).
+7. Converting dna sequences to amino acid (beta).
 
 Supported sequence formats:
 
