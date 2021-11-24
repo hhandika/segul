@@ -66,12 +66,14 @@ impl<'a> Translate<'a> {
     ) {
         let spin = utils::set_spinner();
         spin.set_message("Translating dna sequences...");
-        fs::create_dir_all(output).expect("Failed creating an output directory");
         files.par_iter().for_each(|file| {
             let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-            let frame = self.get_reading_frame(&seq);
+            let mut frame = 1;
+            self.get_reading_frame(&seq, &mut frame);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
-            let outname = self.get_output_names(output, file, output_fmt);
+            let output_dir = output.join(format!("RF-{}", frame));
+            fs::create_dir_all(output).expect("Failed creating an output directory");
+            let outname = self.get_output_names(&output_dir, file, output_fmt);
             let mut writer =
                 SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
             writer
@@ -83,18 +85,16 @@ impl<'a> Translate<'a> {
         self.print_output_info(output);
     }
 
-    fn get_reading_frame(&self, matrix: &SeqMatrix) -> usize {
-        let mut frame = 1;
+    fn get_reading_frame(&self, matrix: &SeqMatrix, frame: &mut usize) {
         let seq = matrix
             .values()
             .next()
             .expect("Failed getting the first sequence");
-        let trans = self.translate_seq(seq, frame);
-        if trans.contains('*') {
-            frame += 1;
-            self.get_reading_frame(matrix);
+        let trans = self.translate_seq(seq, *frame);
+        if trans.contains('*') && *frame < 3 {
+            *frame += 1;
+            self.get_reading_frame(matrix, frame);
         }
-        frame
     }
 
     fn translate_matrix(&self, matrix: &mut SeqMatrix, frame: usize) -> (SeqMatrix, Header) {
