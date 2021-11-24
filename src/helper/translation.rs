@@ -66,6 +66,8 @@ pub fn get_standard_code() -> HashMap<String, String> {
         ("GGC", "G"),
         ("GGA", "G"),
         ("GGG", "G"),
+        ("???", "?"),
+        ("---", "-"),
     ];
 
     let mut code = HashMap::new();
