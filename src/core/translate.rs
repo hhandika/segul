@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use ahash::AHashMap as HashMap;
 use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
@@ -41,8 +42,7 @@ impl<'a> Translate<'a> {
         fs::create_dir_all(output).expect("Failed creating an output directory");
         files.par_iter().for_each(|file| {
             let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-            let trans_mat = self.translate_matrix(&mut seq);
-            let header = self.get_header(&trans_mat);
+            let (trans_mat, header) = self.translate_matrix(&mut seq);
             let outname = self.get_output_names(output, file, output_fmt);
             let mut writer =
                 SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
@@ -56,26 +56,19 @@ impl<'a> Translate<'a> {
         log::info!("{:18}: {}", "Output dir", output.display());
     }
 
-    fn translate_matrix(&self, matrix: &mut SeqMatrix) -> SeqMatrix {
+    fn translate_matrix(&self, matrix: &mut SeqMatrix) -> (SeqMatrix, Header) {
         let mut trans_matrix: SeqMatrix = IndexMap::new();
         matrix.iter().for_each(|(id, seq)| {
             let sequences = self.translate_seq(seq);
             trans_matrix.insert(id.to_string(), sequences);
         });
-
         matrix.clear();
-        trans_matrix
+        let header = self.get_header(&trans_matrix);
+        (trans_matrix, header)
     }
 
     fn translate_seq(&self, seq: &str) -> String {
-        let table = match self.trans_table {
-            GeneticCodes::StandardCode => NcbiTables::new().standard_code(),
-            GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),
-            GeneticCodes::YeastMtDna => NcbiTables::new().yeast_mtdna(),
-            GeneticCodes::MoldProtCoelMtDna => NcbiTables::new().moldprotocoe_mtdna(),
-            GeneticCodes::InvertMtDna => NcbiTables::new().invert_mtdna(),
-            _ => unimplemented!(),
-        };
+        let table = self.get_ncbi_tables();
         let mut translation = String::new();
         seq.to_uppercase()
             .chars()
@@ -92,6 +85,17 @@ impl<'a> Translate<'a> {
             });
 
         translation
+    }
+
+    fn get_ncbi_tables(&self) -> HashMap<String, String> {
+        match self.trans_table {
+            GeneticCodes::StandardCode => NcbiTables::new().standard_code(),
+            GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),
+            GeneticCodes::YeastMtDna => NcbiTables::new().yeast_mtdna(),
+            GeneticCodes::MoldProtCoelMtDna => NcbiTables::new().moldprotocoe_mtdna(),
+            GeneticCodes::InvertMtDna => NcbiTables::new().invert_mtdna(),
+            _ => unimplemented!(),
+        }
     }
 
     fn get_output_names(&self, dir: &Path, file: &Path, output_fmt: &OutputFmt) -> PathBuf {
