@@ -58,7 +58,7 @@ impl<'a> TranslateParser<'a> {
         self.check_output_dir_exist(&outdir);
         self.parse_trans_table();
         let translate = Translate::new(&self.trans_table, &input_fmt, &datatype, frame);
-        translate.translate_sequences(&files, &outdir, &output_fmt);
+        translate.translate_all(&files, &outdir, &output_fmt);
     }
 
     fn parse_trans_table(&mut self) {

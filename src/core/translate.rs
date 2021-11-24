@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
@@ -9,6 +10,7 @@ use crate::helper::translation::NcbiTables;
 use crate::helper::types::{
     DataType, GeneticCodes, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix,
 };
+use crate::helper::utils;
 use crate::writer::sequences::SeqWriter;
 
 pub struct Translate<'a> {
@@ -33,11 +35,13 @@ impl<'a> Translate<'a> {
         }
     }
 
-    pub fn translate_sequences(&self, files: &[PathBuf], output: &Path, output_fmt: &OutputFmt) {
+    pub fn translate_all(&self, files: &[PathBuf], output: &Path, output_fmt: &OutputFmt) {
+        let spin = utils::set_spinner();
+        spin.set_message("Translating dna sequences...");
         fs::create_dir_all(output).expect("Failed creating an output directory");
         files.par_iter().for_each(|file| {
             let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-            let trans_mat = self.translate(&mut seq);
+            let trans_mat = self.translate_matrix(&mut seq);
             let header = self.get_header(&trans_mat);
             let outname = self.get_output_names(output, file, output_fmt);
             let mut writer =
@@ -46,12 +50,16 @@ impl<'a> Translate<'a> {
                 .write_sequence(output_fmt)
                 .expect("Failed writing the output files");
         });
+
+        spin.finish_with_message("Finished translating dna sequences!\n");
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "Output dir", output.display());
     }
 
-    fn translate(&self, matrix: &mut SeqMatrix) -> SeqMatrix {
+    fn translate_matrix(&self, matrix: &mut SeqMatrix) -> SeqMatrix {
         let mut trans_matrix: SeqMatrix = IndexMap::new();
         matrix.iter().for_each(|(id, seq)| {
-            let sequences = self.match_translation(seq);
+            let sequences = self.translate_seq(seq);
             trans_matrix.insert(id.to_string(), sequences);
         });
 
@@ -59,7 +67,7 @@ impl<'a> Translate<'a> {
         trans_matrix
     }
 
-    fn match_translation(&self, seq: &str) -> String {
+    fn translate_seq(&self, seq: &str) -> String {
         let table = match self.trans_table {
             GeneticCodes::StandardCode => NcbiTables::new().standard_code(),
             GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),
@@ -121,7 +129,7 @@ mod tests {
                 &DataType::Dna,
                 $frame,
             );
-            assert_eq!($result, trans.match_translation($input));
+            assert_eq!($result, trans.translate_seq($input));
         };
     }
 
