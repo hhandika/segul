@@ -15,6 +15,7 @@ pub struct Translate<'a> {
     input_fmt: &'a InputFmt,
     trans_table: &'a GeneticCodes,
     datatype: &'a DataType,
+    frame: usize,
 }
 
 impl<'a> Translate<'a> {
@@ -22,11 +23,13 @@ impl<'a> Translate<'a> {
         trans_table: &'a GeneticCodes,
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
+        frame: usize,
     ) -> Self {
         Self {
             trans_table,
             input_fmt,
             datatype,
+            frame,
         }
     }
 
@@ -48,7 +51,7 @@ impl<'a> Translate<'a> {
     fn translate(&self, matrix: &mut SeqMatrix) -> SeqMatrix {
         let mut trans_matrix: SeqMatrix = IndexMap::new();
         matrix.iter().for_each(|(id, seq)| {
-            let sequences = self.match_translation(seq, 1);
+            let sequences = self.match_translation(seq);
             trans_matrix.insert(id.to_string(), sequences);
         });
 
@@ -56,7 +59,7 @@ impl<'a> Translate<'a> {
         trans_matrix
     }
 
-    fn match_translation(&self, seq: &str, frame: usize) -> String {
+    fn match_translation(&self, seq: &str) -> String {
         let table = match self.trans_table {
             GeneticCodes::StandardCode => NcbiTables::new().standard_code(),
             GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),
@@ -65,7 +68,7 @@ impl<'a> Translate<'a> {
         let mut translation = String::new();
         seq.to_uppercase()
             .chars()
-            .skip(frame - 1)
+            .skip(self.frame - 1)
             .collect::<Vec<char>>()
             .chunks(3)
             .map(|c| c.iter().collect::<String>())
@@ -111,16 +114,22 @@ mod tests {
 
     #[macro_export]
     macro_rules! test_translate {
-        ($input:expr, $result:expr, $code:ident) => {
-            let trans = Translate::new(&GeneticCodes::$code, &InputFmt::Fasta, &DataType::Dna);
-            assert_eq!($result, trans.match_translation($input, 1));
+        ($input:expr, $frame:expr, $result:expr, $code:ident) => {
+            let trans = Translate::new(
+                &GeneticCodes::$code,
+                &InputFmt::Fasta,
+                &DataType::Dna,
+                $frame,
+            );
+            assert_eq!($result, trans.match_translation($input));
         };
     }
 
     #[test]
     fn test_translation_simple() {
         let dna = "AAAGGGGATTTAGTTAGAA";
-        test_translate!(dna, String::from("KGDLVRX"), StandardCode);
+        let frame = 1;
+        test_translate!(dna, frame, String::from("KGDLVRX"), StandardCode);
     }
 
     #[test]
@@ -131,8 +140,10 @@ mod tests {
         TGCCGCAGCGTATTACTAATAGCATCACCAACAG\
         AATAACAAAAAGGATGACGAAGAGTGTTGCTGAT\
         GGCGTCGCCGACGGAGTAGCAGAAGGGGTGGCGGAGGG";
+        let frame = 1;
         test_translate!(
             standard_code,
+            frame,
             String::from(
                 "FFLLLLLLIIIMVVVVSSSSPPPPTTTT\
             AAAAYY**HHQQNNKKDDEECC*WRRRRSSRRGGGG"
@@ -144,12 +155,14 @@ mod tests {
     #[test]
     fn test_translating_with_gaps() {
         let dna = "AAAGGGGATTTAGTTAGAA-----";
-        test_translate!(dna, String::from("KGDLVRX-"), StandardCode);
+        let frame = 1;
+        test_translate!(dna, frame, String::from("KGDLVRX-"), StandardCode);
     }
 
     #[test]
     fn test_translation_mtdna_simple() {
         let dna = "AAAGGGGATTTAGTTAGAA";
-        test_translate!(dna, String::from("KGDLV*X"), VertMtDna);
+        let frame = 1;
+        test_translate!(dna, frame, String::from("KGDLV*X"), VertMtDna);
     }
 }

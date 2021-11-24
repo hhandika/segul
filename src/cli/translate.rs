@@ -37,6 +37,7 @@ impl<'a> TranslateParser<'a> {
         let datatype = self.parse_datatype(self.matches);
         let output_fmt = self.parse_output_fmt(self.matches);
         let outdir = self.parse_output(self.matches);
+        let frame = self.get_reading_frame();
         let task_desc = "Sequence Translation";
         let files = if self.matches.is_present("wildcard") {
             self.parse_input_wcard(self.matches)
@@ -56,7 +57,7 @@ impl<'a> TranslateParser<'a> {
 
         self.check_output_dir_exist(&outdir);
         self.parse_trans_table();
-        let translate = Translate::new(&self.trans_table, &input_fmt, &datatype);
+        let translate = Translate::new(&self.trans_table, &input_fmt, &datatype, frame);
         translate.translate_sequences(&files, &outdir, &output_fmt);
     }
 
@@ -65,6 +66,14 @@ impl<'a> TranslateParser<'a> {
             m if m.is_present("2") => self.trans_table = GeneticCodes::VertMtDna,
             _ => (),
         }
+    }
+
+    fn get_reading_frame(&self) -> usize {
+        self.matches
+            .value_of("reading-frame")
+            .expect("Failed getting reading frame values")
+            .parse::<usize>()
+            .expect("Failed parsing reading frame values")
     }
 
     fn show_ncbi_tables(&self) {
