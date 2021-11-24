@@ -645,7 +645,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Specifies a directory name")
                         .takes_value(true)
                         .required(true)
-                        .default_value("SEGUL-extract")
+                        .default_value("SEGUL-translation")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -681,7 +681,23 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets the ncbi translation table")
                         .takes_value(true)
                         .default_value("1")
-                        .value_name("SEQ-FORMAT")
+                        .value_name("INTEGER")
+                        .possible_values(&[
+                            "1",
+                            "2",
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                        ]),
+                )
+                .arg(
+                    Arg::with_name("reading-frame")
+                        .long("reading-frame")
+                        .help("Sets the translation reading frame")
+                        .takes_value(true)
+                        .default_value("1")
+                        .value_name("INTEGER")
                         .possible_values(&[
                             "1",
                             "2",
