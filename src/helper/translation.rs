@@ -135,4 +135,20 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 5.
+    pub fn invert_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "AGA" => code.insert(codon.to_string(), String::from("S")),
+                "AGG" => code.insert(codon.to_string(), String::from("S")),
+                "ATA" => code.insert(codon.to_string(), String::from("M")),
+                "TGA" => code.insert(codon.to_string(), String::from("W")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }
