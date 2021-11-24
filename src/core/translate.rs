@@ -133,7 +133,10 @@ mod tests {
         GGCGTCGCCGACGGAGTAGCAGAAGGGGTGGCGGAGGG";
         test_translate!(
             standard_code,
-            String::from("FFLLLLLLIIIMVVVVSSSSPPPPTTTTAAAAYY**HHQQNNKKDDEECC*WRRRRSSRRGGGG"),
+            String::from(
+                "FFLLLLLLIIIMVVVVSSSSPPPPTTTT\
+            AAAAYY**HHQQNNKKDDEECC*WRRRRSSRRGGGG"
+            ),
             StandardCode
         );
     }
@@ -142,5 +145,11 @@ mod tests {
     fn test_translating_with_gaps() {
         let dna = "AAAGGGGATTTAGTTAGAA-----";
         test_translate!(dna, String::from("KGDLVRX-"), StandardCode);
+    }
+
+    #[test]
+    fn test_translation_mtdna_simple() {
+        let dna = "AAAGGGGATTTAGTTAGAA";
+        test_translate!(dna, String::from("KGDLV*X"), VertMtDna);
     }
 }
