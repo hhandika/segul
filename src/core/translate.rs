@@ -112,4 +112,19 @@ mod tests {
         let trans = Translate::new(&NCBITable::StandardCode, &InputFmt::Fasta, &DataType::Dna);
         assert_eq!(String::from("KGDLVRX"), trans.match_translation(dna, 1));
     }
+
+    #[test]
+    fn test_translate_stdcode() {
+        let standard_code = "TTTTTCTTATTGCTTCTCCTA\
+        CTGATTATCATAATGGTTGTCGTAGTGTCTTC\
+        CTCATCGCCTCCCCCACCGACTACCACAACGGC\
+        TGCCGCAGCGTATTACTAATAGCATCACCAACAG\
+        AATAACAAAAAGGATGACGAAGAGTGTTGCTGAT\
+        GGCGTCGCCGACGGAGTAGCAGAAGGGGTGGCGGAGGG";
+        let trans = Translate::new(&NCBITable::StandardCode, &InputFmt::Fasta, &DataType::Dna);
+        assert_eq!(
+            String::from("FFLLLLLLIIIMVVVVSSSSPPPPTTTTAAAAYY**HHQQNNKKDDEECC*WRRRRSSRRGGGG"),
+            trans.match_translation(standard_code, 1)
+        );
+    }
 }
