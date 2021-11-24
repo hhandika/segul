@@ -114,7 +114,7 @@ mod tests {
     }
 
     #[test]
-    fn test_translate_stdcode() {
+    fn test_translating_stdcode() {
         let standard_code = "TTTTTCTTATTGCTTCTCCTA\
         CTGATTATCATAATGGTTGTCGTAGTGTCTTC\
         CTCATCGCCTCCCCCACCGACTACCACAACGGC\
