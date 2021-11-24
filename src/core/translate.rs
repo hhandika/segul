@@ -18,7 +18,6 @@ pub struct Translate<'a> {
     input_fmt: &'a InputFmt,
     trans_table: &'a GeneticCodes,
     datatype: &'a DataType,
-    frame: usize,
 }
 
 impl<'a> Translate<'a> {
@@ -26,23 +25,27 @@ impl<'a> Translate<'a> {
         trans_table: &'a GeneticCodes,
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
-        frame: usize,
     ) -> Self {
         Self {
             trans_table,
             input_fmt,
             datatype,
-            frame,
         }
     }
 
-    pub fn translate_all(&self, files: &[PathBuf], output: &Path, output_fmt: &OutputFmt) {
+    pub fn translate_all(
+        &self,
+        files: &[PathBuf],
+        frame: usize,
+        output: &Path,
+        output_fmt: &OutputFmt,
+    ) {
         let spin = utils::set_spinner();
         spin.set_message("Translating dna sequences...");
         fs::create_dir_all(output).expect("Failed creating an output directory");
         files.par_iter().for_each(|file| {
             let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-            let (trans_mat, header) = self.translate_matrix(&mut seq);
+            let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
             let outname = self.get_output_names(output, file, output_fmt);
             let mut writer =
                 SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
@@ -52,14 +55,13 @@ impl<'a> Translate<'a> {
         });
 
         spin.finish_with_message("Finished translating dna sequences!\n");
-        log::info!("{}", Yellow.paint("Output"));
-        log::info!("{:18}: {}", "Output dir", output.display());
+        self.print_output_info(output);
     }
 
-    fn translate_matrix(&self, matrix: &mut SeqMatrix) -> (SeqMatrix, Header) {
+    fn translate_matrix(&self, matrix: &mut SeqMatrix, frame: usize) -> (SeqMatrix, Header) {
         let mut trans_matrix: SeqMatrix = IndexMap::new();
         matrix.iter().for_each(|(id, seq)| {
-            let sequences = self.translate_seq(seq);
+            let sequences = self.translate_seq(seq, frame);
             trans_matrix.insert(id.to_string(), sequences);
         });
         matrix.clear();
@@ -67,12 +69,12 @@ impl<'a> Translate<'a> {
         (trans_matrix, header)
     }
 
-    fn translate_seq(&self, seq: &str) -> String {
+    fn translate_seq(&self, seq: &str, frame: usize) -> String {
         let table = self.get_ncbi_tables();
         let mut translation = String::new();
         seq.to_uppercase()
             .chars()
-            .skip(self.frame - 1)
+            .skip(frame - 1)
             .collect::<Vec<char>>()
             .chunks(3)
             .map(|c| c.iter().collect::<String>())
@@ -120,6 +122,11 @@ impl<'a> Translate<'a> {
         header.datatype = String::from("protein");
         header
     }
+
+    fn print_output_info(&self, output: &Path) {
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "Output dir", output.display());
+    }
 }
 
 #[cfg(test)]
@@ -130,13 +137,8 @@ mod tests {
     #[macro_export]
     macro_rules! test_translate {
         ($input:expr, $frame:expr, $result:expr, $code:ident) => {
-            let trans = Translate::new(
-                &GeneticCodes::$code,
-                &InputFmt::Fasta,
-                &DataType::Dna,
-                $frame,
-            );
-            assert_eq!($result, trans.translate_seq($input));
+            let trans = Translate::new(&GeneticCodes::$code, &InputFmt::Fasta, &DataType::Dna);
+            assert_eq!($result, trans.translate_seq($input, $frame));
         };
     }
 

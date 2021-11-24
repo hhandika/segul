@@ -59,8 +59,8 @@ impl<'a> TranslateParser<'a> {
         log::info!("{}", Yellow.paint("Params"));
         self.parse_trans_table();
         log::info!("{:18}: {}\n", "Reading frame", &frame);
-        let translate = Translate::new(&self.trans_table, &input_fmt, &datatype, frame);
-        translate.translate_all(&files, &outdir, &output_fmt);
+        let translate = Translate::new(&self.trans_table, &input_fmt, &datatype);
+        translate.translate_all(&files, frame, &outdir, &output_fmt);
     }
 
     fn parse_trans_table(&mut self) {
