@@ -69,7 +69,7 @@ impl<'a> Translate<'a> {
         files.par_iter().for_each(|file| {
             let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
             let mut frame = 1;
-            self.get_reading_frame(&seq, &mut frame);
+            self.get_reading_frame(file, &seq, &mut frame);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
             let output_dir = output.join(format!("RF-{}", frame));
             fs::create_dir_all(output).expect("Failed creating an output directory");
@@ -85,7 +85,7 @@ impl<'a> Translate<'a> {
         self.print_output_info(output);
     }
 
-    fn get_reading_frame(&self, matrix: &SeqMatrix, frame: &mut usize) {
+    fn get_reading_frame(&self, file: &Path, matrix: &SeqMatrix, frame: &mut usize) {
         let seq = matrix
             .values()
             .next()
@@ -93,7 +93,13 @@ impl<'a> Translate<'a> {
         let trans = self.translate_seq(seq, *frame);
         if trans.contains('*') && *frame < 3 {
             *frame += 1;
-            self.get_reading_frame(matrix, frame);
+            self.get_reading_frame(file, matrix, frame);
+        } else if trans.contains('*') && *frame == 3 {
+            panic!(
+                "The alignment {} still contains stop codons \
+            after testing all possible reading frames",
+                file.display()
+            )
         }
     }
 
