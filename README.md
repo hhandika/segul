@@ -18,7 +18,7 @@ Features:
 4. Computing alignment summary statistics.
 5. Getting sample IDs from a collection of alignments.
 6. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
-7. Converting dna sequences to amino acid and vice versa (in development).
+7. Converting dna sequences to amino acid and vice versa (beta).
 
 Supported sequence formats:
 
@@ -134,7 +134,7 @@ To concat all alignments in a directory:
 segul concat --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
-### Generating Sequence Summary Statistics
+### Generating sequence summary statistics
 
 To generate sequence summary statistics of alignments in a directory:
 
@@ -142,7 +142,7 @@ To generate sequence summary statistics of alignments in a directory:
 segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
-### Filtering Alignments
+### Filtering alignments
 
 Segul provide multiple filtering parameters.
 
@@ -160,7 +160,7 @@ Other available parameters are multiple minimal taxon completeness `--npercent`,
 
 By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function above also available for concatenating filtered alignments.
 
-### Extracting Sequences in Alignments
+### Extracting sequences in alignments
 
 You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly on the command line or in text file. The app finds for the exact match. You can also use regular expression to search for matching IDs.
 
@@ -192,6 +192,34 @@ segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 ```
 
 The app uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
+
+### Translating DNA sequences
+
+The DNA translation feature is still limited to using the [NCBI table 1 to 5](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top).
+
+To translate dna alignment to amino acid:
+
+```Bash
+segul translate -d [path-to-alignment-files] -f [sequence-format-keyword]
+```
+
+By default, the app will use the standard code table (NCBI Table 1). To set the translation table, use the `--table` option. For example, to translate dna sequences using NCBI Table 2 (vertebrate MtDNA):
+
+```Bash
+segul translate -d loci/ -f fasta --table 2
+```
+
+You can also set the reading frame using the `--rf` option:
+
+```Bash
+segul translate -d loci/ -f fasta --table 2 --rf 2
+```
+
+To show all the table options, use the `--show-tables` flag:
+
+```Bash
+segul translate --show-tables
+```
 
 ### Other features
 
