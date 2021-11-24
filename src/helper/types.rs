@@ -73,7 +73,22 @@ impl Header {
     }
 }
 
-pub enum NCBITable {
-    StandardCode,
-    MtDna,
+#[allow(dead_code)]
+pub enum GeneticCodes {
+    StandardCode,      // Ncbi Table 1
+    VertMtDna,         // Ncbi Table 2
+    YeastMtDna,        // Ncbi Table 3
+    MoldProtCoelMtDna, // Ncbi Table 4
+    InvertMtDna,       // Ncbi Table 5
+    CilDasHexNu,       // Ncbi Table 6
+    EchiFlatWormMtDna, // Ncbi Table 9
+    EuplotidNu,        // Ncbi Table 10
+    BacArchPlantPlast, // Ncbi Table 11
+    AltYeastNu,        // Ncbi Table 12
+    AsciMtDna,         // Ncbi Table 13
+    AltFlatWormMtDna,  // Ncbi Table 14
+    ChlorMtDna,        // Ncbi Table 16
+    TrematodeMtDna,    // Ncbi Table 21
+    ScenedesmusMtDna,  // Ncbi Table 22
+    ThrausMtDna,       // Ncbi Table 23
 }
