@@ -81,12 +81,12 @@ pub enum GeneticCodes {
     MoldProtCoelMtDna, // Ncbi Table 4
     InvertMtDna,       // Ncbi Table 5
     CilDasHexNu,       // Ncbi Table 6
-    EchiFlatWormMtDna, // Ncbi Table 9
+    EchiFlatwormMtDna, // Ncbi Table 9
     EuplotidNu,        // Ncbi Table 10
     BacArchPlantPlast, // Ncbi Table 11
     AltYeastNu,        // Ncbi Table 12
     AsciMtDna,         // Ncbi Table 13
-    AltFlatWormMtDna,  // Ncbi Table 14
+    AltFlatwormMtDna,  // Ncbi Table 14
     ChlorMtDna,        // Ncbi Table 16
     TrematodeMtDna,    // Ncbi Table 21
     ScenedesmusMtDna,  // Ncbi Table 22

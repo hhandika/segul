@@ -3,6 +3,7 @@ use ansi_term::Colour::Yellow;
 use crate::cli::*;
 use crate::core::translate::Translate;
 use crate::helper::types::GeneticCodes;
+use crate::parse_table_args;
 
 impl InputCli for TranslateParser<'_> {}
 impl InputPrint for TranslateParser<'_> {}
@@ -14,7 +15,6 @@ pub(in crate::cli) struct TranslateParser<'a> {
     trans_table: GeneticCodes,
 }
 
-#[allow(unused_variables)]
 impl<'a> TranslateParser<'a> {
     pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
         Self {
@@ -78,10 +78,12 @@ impl<'a> TranslateParser<'a> {
             .expect("Failed parsing table input");
         match table {
             "1" => log::info!("{:18}: {}", "Translation Table", table),
-            "2" => {
-                self.trans_table = GeneticCodes::VertMtDna;
-                log::info!("{:18}: {}", "Translation Table", table);
-            }
+            "2" => parse_table_args!(self, VertMtDna, table),
+            "3" => parse_table_args!(self, YeastMtDna, table),
+            "4" => parse_table_args!(self, MoldProtCoelMtDna, table),
+            "5" => parse_table_args!(self, InvertMtDna, table),
+            "6" => parse_table_args!(self, CilDasHexNu, table),
+            "9" => parse_table_args!(self, EchiFlatwormMtDna, table),
             _ => unimplemented!("The Genetic Codes is not yet implemented!"),
         }
     }
@@ -132,4 +134,12 @@ impl<'a> TranslateParser<'a> {
             "
         );
     }
+}
+
+#[macro_export]
+macro_rules! parse_table_args {
+    ($self:ident, $code:ident, $table:ident) => {{
+        $self.trans_table = GeneticCodes::$code;
+        log::info!("{:18}: {}", "Translation Table", $table);
+    }};
 }
