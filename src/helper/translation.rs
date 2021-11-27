@@ -181,4 +181,17 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 10.
+    pub fn euplotid_nudna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TGA" => code.insert(codon.to_string(), String::from("C")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }

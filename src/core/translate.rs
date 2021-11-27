@@ -143,6 +143,8 @@ impl<'a> Translate<'a> {
             GeneticCodes::InvertMtDna => NcbiTables::new().invert_mtdna(),
             GeneticCodes::CilDasHexNu => NcbiTables::new().cildashex_nudna(),
             GeneticCodes::EchiFlatwormMtDna => NcbiTables::new().echiflatworm_mtdna(),
+            GeneticCodes::EuplotidNu => NcbiTables::new().euplotid_nudna(),
+            GeneticCodes::BacArchPlantPlast => NcbiTables::new().standard_code(),
             _ => unimplemented!(),
         }
     }
@@ -262,5 +264,19 @@ mod tests {
         let dna = "TGAAGGAAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("WSNGDLVSX"), EchiFlatwormMtDna);
+    }
+
+    #[test]
+    fn test_translating_euplotid_simple() {
+        let dna = "TGAAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("CKGDLVRX"), EuplotidNu);
+    }
+
+    #[test]
+    fn test_translating_bacteria_simple() {
+        let dna = "AAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("KGDLVRX"), BacArchPlantPlast);
     }
 }
