@@ -711,7 +711,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("show-tables")
                         .long("show-tables")
-                        .help("Sets the translation reading frame")
+                        .help("Show supported NCBI Genetic Code tables")
                         .takes_value(false)
                 )
                 
