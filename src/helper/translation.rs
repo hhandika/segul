@@ -151,4 +151,18 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 6.
+    pub fn cildashex_nudna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TAA" => code.insert(codon.to_string(), String::from("Q")),
+                "TAG" => code.insert(codon.to_string(), String::from("Q")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }

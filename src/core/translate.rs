@@ -141,6 +141,7 @@ impl<'a> Translate<'a> {
             GeneticCodes::YeastMtDna => NcbiTables::new().yeast_mtdna(),
             GeneticCodes::MoldProtCoelMtDna => NcbiTables::new().moldprotocoe_mtdna(),
             GeneticCodes::InvertMtDna => NcbiTables::new().invert_mtdna(),
+            GeneticCodes::CilDasHexNu => NcbiTables::new().cildashex_nudna(),
             _ => unimplemented!(),
         }
     }
@@ -247,5 +248,11 @@ mod tests {
         let dna = "AAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("KGDLVSX"), InvertMtDna);
+    }
+    #[test]
+    fn test_translation_cildashex_simple() {
+        let dna = "TAGTAAAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("QQKGDLVRX"), CilDasHexNu);
     }
 }
