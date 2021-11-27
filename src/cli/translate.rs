@@ -111,10 +111,11 @@ impl<'a> TranslateParser<'a> {
             3. The Yeast Mitochondrial Code\n\
             4. The Mold, Protozoan, and Coelenterate Mitochondrial Code and the Mycoplasma/Spiroplasma Code\n\
             5. The Invertebrate Mitochondrial Code\n\
-            6. The Ciliate, Dasycladacean and Hexamita Nuclear Code\n
+            6. The Ciliate, Dasycladacean and Hexamita Nuclear Code\n\
+            9. The Echinoderm and Flatworm Mitochondrial Code\n
             "
         );
-        // 9. The Echinoderm and Flatworm Mitochondrial Code\n\
+        // \
         // 10. The Euplotid Nuclear Code\n\
         // 11. The Bacterial, Archaeal and Plant Plastid Code\n\
         // 12. The Alternative Yeast Nuclear Code\n\

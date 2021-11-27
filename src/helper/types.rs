@@ -82,13 +82,13 @@ pub enum GeneticCodes {
     InvertMtDna,       // Ncbi Table 5
     CilDasHexNu,       // Ncbi Table 6
     EchiFlatwormMtDna, // Ncbi Table 9
-    EuplotidNu,        // Ncbi Table 10
-    BacArchPlantPlast, // Ncbi Table 11
-    AltYeastNu,        // Ncbi Table 12
-    AsciMtDna,         // Ncbi Table 13
-    AltFlatwormMtDna,  // Ncbi Table 14
-    ChlorMtDna,        // Ncbi Table 16
-    TrematodeMtDna,    // Ncbi Table 21
-    ScenedesmusMtDna,  // Ncbi Table 22
-    ThrausMtDna,       // Ncbi Table 23
+                       // EuplotidNu,        // Ncbi Table 10
+                       // BacArchPlantPlast, // Ncbi Table 11
+                       // AltYeastNu,        // Ncbi Table 12
+                       // AsciMtDna,         // Ncbi Table 13
+                       // AltFlatwormMtDna,  // Ncbi Table 14
+                       // ChlorMtDna,        // Ncbi Table 16
+                       // TrematodeMtDna,    // Ncbi Table 21
+                       // ScenedesmusMtDna,  // Ncbi Table 22
+                       // ThrausMtDna,       // Ncbi Table 23
 }

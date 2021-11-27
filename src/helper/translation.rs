@@ -165,4 +165,20 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 9.
+    pub fn echiflatworm_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "AAA" => code.insert(codon.to_string(), String::from("N")),
+                "AGA" => code.insert(codon.to_string(), String::from("S")),
+                "AGG" => code.insert(codon.to_string(), String::from("S")),
+                "TGA" => code.insert(codon.to_string(), String::from("W")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }
