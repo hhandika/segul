@@ -104,35 +104,35 @@ impl<'a> TranslateParser<'a> {
     }
 
     fn show_ncbi_tables(&self) {
-        println!("{}", Yellow.paint("NCBI Genetic Code Tables"));
+        println!("{}", Yellow.paint("Supported NCBI Genetic Code Tables"));
         println!(
             "1. The Standard Code\n\
             2. The Vertebrate Mitochondrial Code\n\
             3. The Yeast Mitochondrial Code\n\
             4. TheMold, Protozoan, and Coelenterate Mitochondrial Code and the Mycoplasma/Spiroplasma Code\n\
             5. The Invertebrate Mitochondrial Code\n\
-            6. The Ciliate, Dasycladacean and Hexamita Nuclear Code\n\
-            9. The Echinoderm and Flatworm Mitochondrial Code\n\
-            10. The Euplotid Nuclear Code\n\
-            11. The Bacterial, Archaeal and Plant Plastid Code\n\
-            12. The Alternative Yeast Nuclear Code\n\
-            13. The Ascidian Mitochondrial Code\n\
-            14. The Alternative Flatworm Mitochondrial Code\n\
-            16. Chlorophycea nMitochondrial Code\n\
-            21. Trematode Mitochondrial Code\n\
-            22. Scenedesmus obliquus Mitochondrial Code\n\
-            23. Thraustochytrium Mitochondrial Code\n\
-            24. Rhabdopleuridae Mitochondrial Code\n\
-            25. Candidate Division SR1 and Gracilibacteria Code\n\
-            26. Pachysolen tannophilus Nuclear Code\n\
-            27. Karyorelict Nuclear Code\n\
-            28. Condylostoma Nuclear Code\n\
-            29. Mesodinium Nuclear Code\n\
-            30. Peritrich Nuclear Code\n\
-            31. Blastocrithidia Nuclear Code\n\
-            33. Cephalodiscidae Mitochondrial UAA-Tyr Code\n\
+            6. The Ciliate, Dasycladacean and Hexamita Nuclear Code\n
             "
         );
+        // 9. The Echinoderm and Flatworm Mitochondrial Code\n\
+        // 10. The Euplotid Nuclear Code\n\
+        // 11. The Bacterial, Archaeal and Plant Plastid Code\n\
+        // 12. The Alternative Yeast Nuclear Code\n\
+        // 13. The Ascidian Mitochondrial Code\n\
+        // 14. The Alternative Flatworm Mitochondrial Code\n\
+        // 16. Chlorophycea nMitochondrial Code\n\
+        // 21. Trematode Mitochondrial Code\n\
+        // 22. Scenedesmus obliquus Mitochondrial Code\n\
+        // 23. Thraustochytrium Mitochondrial Code\n\
+        // 24. Rhabdopleuridae Mitochondrial Code\n\
+        // 25. Candidate Division SR1 and Gracilibacteria Code\n\
+        // 26. Pachysolen tannophilus Nuclear Code\n\
+        // 27. Karyorelict Nuclear Code\n\
+        // 28. Condylostoma Nuclear Code\n\
+        // 29. Mesodinium Nuclear Code\n\
+        // 30. Peritrich Nuclear Code\n\
+        // 31. Blastocrithidia Nuclear Code\n\
+        // 33. Cephalodiscidae Mitochondrial UAA-Tyr Code\n\
     }
 }
 
