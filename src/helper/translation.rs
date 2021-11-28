@@ -79,7 +79,7 @@ impl NcbiTables {
         }
     }
 
-    // NCBI Table 1.
+    // NCBI Table 1. NCBI Table 2 uses the same translation table as NCBI Table 1.
     pub fn standard_code(&self) -> HashMap<String, String> {
         let mut code = HashMap::new();
 
