@@ -90,5 +90,5 @@ pub enum GeneticCodes {
     ChlorMtDna,        // Ncbi Table 16
     TrematodeMtDna,    // Ncbi Table 21
     ScenedesmusMtDna,  // Ncbi Table 22
-                       // ThrausMtDna,       // Ncbi Table 23
+    ThrausMtDna,       // Ncbi Table 23
 }

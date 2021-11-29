@@ -153,6 +153,7 @@ impl<'a> Translate<'a> {
             GeneticCodes::ChlorMtDna => NcbiTables::new().chlorophycean_mtdna(), // Table 16
             GeneticCodes::TrematodeMtDna => NcbiTables::new().trematode_mtdna(), // Table 21
             GeneticCodes::ScenedesmusMtDna => NcbiTables::new().scenedesmus_mtdna(), // Table 22
+            GeneticCodes::ThrausMtDna => NcbiTables::new().thraustochytrium_mtdna(), // Table 23
         }
     }
 
@@ -327,5 +328,12 @@ mod tests {
         let dna = "TCATAGTGAATAAGGAGAAAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("*L*IRRKGDLVRX"), ScenedesmusMtDna);
+    }
+
+    #[test]
+    fn test_translating_thrasutochytrium_mtdna_simple() {
+        let dna = "TTAAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("*KGD*VRX"), ThrausMtDna);
     }
 }

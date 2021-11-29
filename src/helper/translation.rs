@@ -287,4 +287,17 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 23.
+    pub fn thraustochytrium_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TTA" => code.insert(codon.to_string(), String::from("*")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }
