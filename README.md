@@ -18,7 +18,7 @@ Features:
 4. Computing alignment summary statistics.
 5. Getting sample IDs from a collection of alignments.
 6. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
-7. Converting dna sequences to amino acid (beta).
+7. Converting dna sequences to amino acid.
 
 Supported sequence formats:
 
@@ -182,7 +182,7 @@ sequence_4
 The the command will be:
 
 ```bash
-segul extract --dir [path-to-alignment-directory] --input-format [sequence-format-keyword] --file [path-to-text-file] 
+segul extract --dir [path-to-alignment-directory] --input-format [sequence-format-keyword] --file [path-to-text-file]
 ```
 
 For using regular expression:
@@ -195,7 +195,32 @@ The app uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to par
 
 ### Translating DNA sequences
 
-The DNA translation feature is still limited to using the [NCBI table 1 to 5](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top).
+Supported [NCBI Genetic Code Tables](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top):
+
+| Table No | Genetic Code                                                                                 |
+| -------- | -------------------------------------------------------------------------------------------- |
+| 1        | The Standard Code                                                                            |
+| 2        | The Vertebrate Mitochondrial Code                                                            |
+| 3        | The Yeast Mitochondrial Code                                                                 |
+| 4        | The Mold, Protozoan, and Coelenterate Mitochondrial Code and the Mycoplasma/Spiroplasma Code |
+| 5        | The Invertebrate Mitochondrial Code                                                          |
+| 6        | The Ciliate, Dasycladacean and Hexamita Nuclear Code                                         |
+| 9        | The Echinoderm and Flatworm Mitochondrial Code                                               |
+| 10       | The Euplotid Nuclear Code                                                                    |
+| 11       | The Bacterial, Archaeal and Plant Plastid Code                                               |
+| 12       | The Alternative Yeast Nuclear Code                                                           |
+| 13       | The Ascidian Mitochondrial Code                                                              |
+| 14       | The Alternative Flatworm Mitochondrial Code                                                  |
+| 16       | Chlorophycean Mitochondrial Code                                                             |
+| 21       | Trematode Mitochondrial Code                                                                 |
+| 22       | Scenedesmus obliquus Mitochondrial Code                                                      |
+| 23       | Thraustochytrium Mitochondrial Code                                                          |
+| 24       | Rhabdopleuridae Mitochondrial Code                                                           |
+| 25       | Candidate Division SR1 and Gracilibacteria Code                                              |
+| 26       | Pachysolen tannophilus Nuclear Code                                                          |
+| 29       | Mesodinium Nuclear Code                                                                      |
+| 30       | Peritrich Nuclear Code                                                                       |
+| 33       | Cephalodiscidae Mitochondrial UAA-Tyr Code                                                   |
 
 To translate dna alignment to amino acid:
 
