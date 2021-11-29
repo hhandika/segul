@@ -134,17 +134,20 @@ impl<'a> Translate<'a> {
         translation
     }
 
+    /// Match user input with supported genetic codes
+    /// and return the corresponding translation table
     fn get_ncbi_tables(&self) -> HashMap<String, String> {
         match self.trans_table {
-            GeneticCodes::StandardCode => NcbiTables::new().standard_code(),
-            GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),
-            GeneticCodes::YeastMtDna => NcbiTables::new().yeast_mtdna(),
-            GeneticCodes::MoldProtCoelMtDna => NcbiTables::new().moldprotocoe_mtdna(),
-            GeneticCodes::InvertMtDna => NcbiTables::new().invert_mtdna(),
-            GeneticCodes::CilDasHexNu => NcbiTables::new().cildashex_nudna(),
-            GeneticCodes::EchiFlatwormMtDna => NcbiTables::new().echiflatworm_mtdna(),
-            GeneticCodes::EuplotidNu => NcbiTables::new().euplotid_nudna(),
-            GeneticCodes::BacArchPlantPlast => NcbiTables::new().standard_code(),
+            GeneticCodes::StandardCode => NcbiTables::new().standard_code(), // Table 1
+            GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),       // Table 2
+            GeneticCodes::YeastMtDna => NcbiTables::new().yeast_mtdna(),     // Table 3
+            GeneticCodes::MoldProtCoelMtDna => NcbiTables::new().moldprotocoe_mtdna(), // Table 4
+            GeneticCodes::InvertMtDna => NcbiTables::new().invert_mtdna(),   // Table 5
+            GeneticCodes::CilDasHexNu => NcbiTables::new().cildashex_nudna(), // Table 6
+            GeneticCodes::EchiFlatwormMtDna => NcbiTables::new().echiflatworm_mtdna(), // Table 9
+            GeneticCodes::EuplotidNu => NcbiTables::new().euplotid_nudna(),  // Table 10
+            GeneticCodes::BacArchPlantPlast => NcbiTables::new().standard_code(), // Table 11
+            GeneticCodes::AltYeastNu => NcbiTables::new().alt_yeast_nu(),    // Table 12
             _ => unimplemented!(),
         }
     }
@@ -278,5 +281,12 @@ mod tests {
         let dna = "AAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("KGDLVRX"), BacArchPlantPlast);
+    }
+
+    #[test]
+    fn test_translating_altyeast_nu_simple() {
+        let dna = "CTGAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("SKGDLVRX"), AltYeastNu);
     }
 }

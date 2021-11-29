@@ -79,7 +79,7 @@ impl NcbiTables {
         }
     }
 
-    // NCBI Table 1. NCBI Table 2 uses the same translation table as NCBI Table 1.
+    // NCBI Table 1. NCBI Table 11 uses the same translation table as NCBI Table 1.
     pub fn standard_code(&self) -> HashMap<String, String> {
         let mut code = HashMap::new();
 
@@ -189,6 +189,22 @@ impl NcbiTables {
         self.translation.iter().for_each(|(codon, protein)| {
             match codon.as_ref() {
                 "TGA" => code.insert(codon.to_string(), String::from("C")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
+
+    // NCBI Table 12. NCBI Table 11 is the same as the Table 1.
+    // Uses by Candida albicans, Candida cylindracea, Candida melibiosica,
+    // Candida parapsilosis, and Candida rugosa (Ohama et al., 1993).
+    // Other yeast, uses the standard code.
+    pub fn alt_yeast_nu(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "CTG" => code.insert(codon.to_string(), String::from("S")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
             };
         });

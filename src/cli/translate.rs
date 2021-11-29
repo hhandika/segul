@@ -86,6 +86,7 @@ impl<'a> TranslateParser<'a> {
             "9" => parse_table_args!(self, EchiFlatwormMtDna, table),
             "10" => parse_table_args!(self, EuplotidNu, table),
             "11" => parse_table_args!(self, BacArchPlantPlast, table),
+            "12" => parse_table_args!(self, AltYeastNu, table),
             _ => unimplemented!("The Genetic Codes is not yet implemented!"),
         }
     }
@@ -116,12 +117,13 @@ impl<'a> TranslateParser<'a> {
             6. The Ciliate, Dasycladacean and Hexamita Nuclear Code\n\
             9. The Echinoderm and Flatworm Mitochondrial Code\n\
             10. The Euplotid Nuclear Code\n\
-            11. The Bacterial, Archaeal and Plant Plastid Code\n
+            11. The Bacterial, Archaeal and Plant Plastid Code\n\
+            12. The Alternative Yeast Nuclear Code\n
             "
         );
         // \
         // \
-        // 12. The Alternative Yeast Nuclear Code\n\
+        // \
         // 13. The Ascidian Mitochondrial Code\n\
         // 14. The Alternative Flatworm Mitochondrial Code\n\
         // 16. Chlorophycea nMitochondrial Code\n\
