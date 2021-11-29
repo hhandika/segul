@@ -256,4 +256,21 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 21.
+    pub fn trematode_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TGA" => code.insert(codon.to_string(), String::from("W")),
+                "ATA" => code.insert(codon.to_string(), String::from("M")),
+                "AGA" => code.insert(codon.to_string(), String::from("S")),
+                "AGG" => code.insert(codon.to_string(), String::from("S")),
+                "AAA" => code.insert(codon.to_string(), String::from("N")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }

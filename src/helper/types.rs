@@ -88,7 +88,7 @@ pub enum GeneticCodes {
     AsciMtDna,         // Ncbi Table 13
     AltFlatwormMtDna,  // Ncbi Table 14
     ChlorMtDna,        // Ncbi Table 16
-                       // TrematodeMtDna,    // Ncbi Table 21
+    TrematodeMtDna,    // Ncbi Table 21
                        // ScenedesmusMtDna,  // Ncbi Table 22
                        // ThrausMtDna,       // Ncbi Table 23
 }
