@@ -696,6 +696,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                             "13",
                             "14",
                             "16",
+                            "21",
+                            "22",
                         ]),
                 )
                 .arg(

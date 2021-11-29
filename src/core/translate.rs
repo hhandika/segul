@@ -152,6 +152,7 @@ impl<'a> Translate<'a> {
             GeneticCodes::AltFlatwormMtDna => NcbiTables::new().alt_flatworm_mtdna(), // Table 14
             GeneticCodes::ChlorMtDna => NcbiTables::new().chlorophycean_mtdna(), // Table 16
             GeneticCodes::TrematodeMtDna => NcbiTables::new().trematode_mtdna(), // Table 21
+            GeneticCodes::ScenedesmusMtDna => NcbiTables::new().scenedesmus_mtdna(), // Table 22
         }
     }
 
@@ -319,5 +320,12 @@ mod tests {
         let dna = "TGAATAAGGAGAAAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("WMSSNGDLVSX"), TrematodeMtDna);
+    }
+
+    #[test]
+    fn test_scenedesmus_mtdna_simple() {
+        let dna = "TCATAGTGAATAAGGAGAAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("*L*IRRKGDLVRX"), ScenedesmusMtDna);
     }
 }

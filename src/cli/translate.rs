@@ -91,6 +91,7 @@ impl<'a> TranslateParser<'a> {
             "14" => parse_table_args!(self, AltFlatwormMtDna, table),
             "16" => parse_table_args!(self, ChlorMtDna, table),
             "21" => parse_table_args!(self, TrematodeMtDna, table),
+            "22" => parse_table_args!(self, ScenedesmusMtDna, table),
             _ => unimplemented!("The Genetic Codes is not yet implemented!"),
         }
     }
@@ -126,7 +127,8 @@ impl<'a> TranslateParser<'a> {
             13. The Ascidian Mitochondrial Code\n\
             14. The Alternative Flatworm Mitochondrial Code\n\
             16. Chlorophycean Mitochondrial Code\n\
-            21. Trematode Mitochondrial Code\n
+            21. Trematode Mitochondrial Code\n\
+            22. Scenedesmus obliquus Mitochondrial Code\n
             "
         );
         // \
@@ -136,7 +138,7 @@ impl<'a> TranslateParser<'a> {
         // \
         // \
         // \
-        // 22. Scenedesmus obliquus Mitochondrial Code\n\
+        // \n\
         // 23. Thraustochytrium Mitochondrial Code\n\
         // 24. Rhabdopleuridae Mitochondrial Code\n\
         // 25. Candidate Division SR1 and Gracilibacteria Code\n\

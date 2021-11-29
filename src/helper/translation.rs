@@ -273,4 +273,18 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 22.
+    pub fn scenedesmus_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TCA" => code.insert(codon.to_string(), String::from("*")),
+                "TAG" => code.insert(codon.to_string(), String::from("L")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }
