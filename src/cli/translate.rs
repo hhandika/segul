@@ -93,6 +93,7 @@ impl<'a> TranslateParser<'a> {
             "21" => parse_table_args!(self, TrematodeMtDna, table),
             "22" => parse_table_args!(self, ScenedesmusMtDna, table),
             "23" => parse_table_args!(self, ThrausMtDna, table),
+            "24" => parse_table_args!(self, RhabdopMtDna, table),
             _ => unimplemented!("The Genetic Codes is not supported!"),
         }
     }
@@ -130,27 +131,15 @@ impl<'a> TranslateParser<'a> {
             16. Chlorophycean Mitochondrial Code\n\
             21. Trematode Mitochondrial Code\n\
             22. Scenedesmus obliquus Mitochondrial Code\n\
-            23. Thraustochytrium Mitochondrial Code\n
+            23. Thraustochytrium Mitochondrial Code\n\
+            24. Rhabdopleuridae Mitochondrial Code\n\
+            25. Candidate Division SR1 and Gracilibacteria Code\n\
+            26. Pachysolen tannophilus Nuclear Code\n\
+            29. Mesodinium Nuclear Code\n\
+            30. Peritrich Nuclear Code\n\
+            33. Cephalodiscidae Mitochondrial UAA-Tyr Code\n
             "
         );
-        // \
-        // \
-        // \
-        // \
-        // \
-        // \
-        // \
-        // \n\
-        // 23. Thraustochytrium Mitochondrial Code\n\
-        // 24. Rhabdopleuridae Mitochondrial Code\n\
-        // 25. Candidate Division SR1 and Gracilibacteria Code\n\
-        // 26. Pachysolen tannophilus Nuclear Code\n\
-        // 27. Karyorelict Nuclear Code\n\
-        // 28. Condylostoma Nuclear Code\n\
-        // 29. Mesodinium Nuclear Code\n\
-        // 30. Peritrich Nuclear Code\n\
-        // 31. Blastocrithidia Nuclear Code\n\
-        // 33. Cephalodiscidae Mitochondrial UAA-Tyr Code\n\
     }
 }
 

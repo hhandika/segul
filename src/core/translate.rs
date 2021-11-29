@@ -154,6 +154,7 @@ impl<'a> Translate<'a> {
             GeneticCodes::TrematodeMtDna => NcbiTables::new().trematode_mtdna(), // Table 21
             GeneticCodes::ScenedesmusMtDna => NcbiTables::new().scenedesmus_mtdna(), // Table 22
             GeneticCodes::ThrausMtDna => NcbiTables::new().thraustochytrium_mtdna(), // Table 23
+            GeneticCodes::RhabdopMtDna => NcbiTables::new().rhabdopleuridae_mtdna(), // Table 24
         }
     }
 
@@ -335,5 +336,12 @@ mod tests {
         let dna = "TTAAAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("*KGD*VRX"), ThrausMtDna);
+    }
+
+    #[test]
+    fn test_translating_rhadop_mtdna_simple() {
+        let dna = "TGAAGGAGATTAAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("WKSLKGDLVSX"), RhabdopMtDna);
     }
 }
