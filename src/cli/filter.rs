@@ -5,6 +5,7 @@ use clap::ArgMatches;
 
 use crate::cli::*;
 use crate::core::filter::{Params, SeqFilter};
+use crate::helper::filenames;
 use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl InputCli for FilterParser<'_> {}
@@ -99,7 +100,7 @@ impl<'a> FilterParser<'a> {
                 };
                 let prefix = self.parse_prefix(self.matches, &self.output_dir);
                 let final_path = self.output_dir.join(prefix);
-                let output = self.create_output_fname(&final_path, &output_fmt);
+                let output = filenames::create_output_fname(&final_path, &output_fmt);
                 filter.set_concat(&output, &output_fmt, &part_fmt);
                 filter.filter_aln();
             }

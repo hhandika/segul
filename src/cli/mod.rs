@@ -246,14 +246,6 @@ trait OutputCli {
         }
     }
 
-    fn create_output_fname(&self, path: &Path, ext: &OutputFmt) -> PathBuf {
-        match ext {
-            OutputFmt::Fasta | OutputFmt::FastaInt => path.with_extension("fas"),
-            OutputFmt::Nexus | OutputFmt::NexusInt => path.with_extension("nex"),
-            OutputFmt::Phylip | OutputFmt::PhylipInt => path.with_extension("phy"),
-        }
-    }
-
     fn check_output_file_exist(&self, path: &Path) {
         check_output_path!(
             is_file,

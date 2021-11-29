@@ -11,7 +11,7 @@ use crate::helper::translation::NcbiTables;
 use crate::helper::types::{
     DataType, GeneticCodes, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix,
 };
-use crate::helper::utils;
+use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
 
 pub struct Translate<'a> {
@@ -168,11 +168,7 @@ impl<'a> Translate<'a> {
             file.file_name()
                 .expect("Failed parsing filename for output file"),
         );
-        match output_fmt {
-            OutputFmt::Fasta | OutputFmt::FastaInt => path.with_extension("fas"),
-            OutputFmt::Nexus | OutputFmt::NexusInt => path.with_extension("nex"),
-            OutputFmt::Phylip | OutputFmt::PhylipInt => path.with_extension("phy"),
-        }
+        filenames::create_output_fname(&path, output_fmt)
     }
 
     fn get_header(&self, matrix: &SeqMatrix) -> Header {
