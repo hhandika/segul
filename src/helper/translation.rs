@@ -315,4 +315,17 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 25.
+    pub fn candid_div_sr1_gracil(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TGA" => code.insert(codon.to_string(), String::from("G")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }
