@@ -157,6 +157,9 @@ impl<'a> Translate<'a> {
             GeneticCodes::RhabdopMtDna => NcbiTables::new().rhabdopleuridae_mtdna(), // Table 24
             GeneticCodes::CaDivSR1GraciBac => NcbiTables::new().candid_div_sr1_gracil(), // Table 25
             GeneticCodes::PachyNu => NcbiTables::new().pachysolen_tanno_nu(), // Table 26
+            GeneticCodes::MesodiniumNu => NcbiTables::new().mesodinium_nu(), // Table 29
+            GeneticCodes::PeritrichNu => NcbiTables::new().peritrich_nu(),   // Table 30
+            GeneticCodes::CephalodiscidaeMtDna => NcbiTables::new().cephalodiscidae_mtdna(), // Table 33
         }
     }
 
@@ -359,5 +362,31 @@ mod tests {
         let dna = "CTGAAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("AKGDLVRX"), PachyNu);
+    }
+
+    #[test]
+    fn test_translating_mesodinium_simple() {
+        let dna = "TAGTAAAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("YYKGDLVRX"), MesodiniumNu);
+    }
+
+    #[test]
+    fn test_translating_peritrich_simple() {
+        let dna = "TAGTAACTGAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("EELKGDLVRX"), PeritrichNu);
+    }
+
+    #[test]
+    fn test_translating_cepha_simple() {
+        let dna = "TAATGAAGAAGGCTGAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(
+            dna,
+            frame,
+            String::from("YWSKLKGDLVSX"),
+            CephalodiscidaeMtDna
+        );
     }
 }

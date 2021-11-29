@@ -96,6 +96,9 @@ impl<'a> TranslateParser<'a> {
             "24" => parse_table_args!(self, RhabdopMtDna, table),
             "25" => parse_table_args!(self, CaDivSR1GraciBac, table),
             "26" => parse_table_args!(self, PachyNu, table),
+            "29" => parse_table_args!(self, MesodiniumNu, table),
+            "30" => parse_table_args!(self, PeritrichNu, table),
+            "33" => parse_table_args!(self, CephalodiscidaeMtDna, table),
             _ => unimplemented!("The Genetic Codes is not supported!"),
         }
     }

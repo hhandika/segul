@@ -341,4 +341,48 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 29.
+    pub fn mesodinium_nu(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TAA" => code.insert(codon.to_string(), String::from("Y")),
+                "TAG" => code.insert(codon.to_string(), String::from("Y")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
+
+    // NCBI Table 30.
+    pub fn peritrich_nu(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TAA" => code.insert(codon.to_string(), String::from("E")),
+                "TAG" => code.insert(codon.to_string(), String::from("E")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
+
+    // NCBI Table 33.
+    pub fn cephalodiscidae_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TAA" => code.insert(codon.to_string(), String::from("Y")),
+                "TGA" => code.insert(codon.to_string(), String::from("W")),
+                "AGA" => code.insert(codon.to_string(), String::from("S")),
+                "AGG" => code.insert(codon.to_string(), String::from("K")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }
