@@ -86,7 +86,7 @@ pub enum GeneticCodes {
     BacArchPlantPlast, // Ncbi Table 11
     AltYeastNu,        // Ncbi Table 12
     AsciMtDna,         // Ncbi Table 13
-                       // AltFlatwormMtDna,  // Ncbi Table 14
+    AltFlatwormMtDna,  // Ncbi Table 14
                        // ChlorMtDna,        // Ncbi Table 16
                        // TrematodeMtDna,    // Ncbi Table 21
                        // ScenedesmusMtDna,  // Ncbi Table 22
