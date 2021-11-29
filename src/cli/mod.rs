@@ -4,7 +4,7 @@ mod convert;
 mod extract;
 mod filter;
 mod id;
-mod summary;
+mod summarize;
 mod translate;
 
 use std::ffi::OsStr;
@@ -27,12 +27,12 @@ use crate::cli::convert::ConvertParser;
 use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
-use crate::cli::summary::SummaryParser;
+use crate::cli::summarize::SummaryParser;
 use crate::cli::translate::TranslateParser;
 
 use crate::check_output_path;
 use crate::core::msa;
-use crate::core::summary::SeqStats;
+use crate::core::summarize::SeqStats;
 use crate::helper::finder::{Files, IDs};
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
