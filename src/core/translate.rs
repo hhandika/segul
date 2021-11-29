@@ -156,6 +156,7 @@ impl<'a> Translate<'a> {
             GeneticCodes::ThrausMtDna => NcbiTables::new().thraustochytrium_mtdna(), // Table 23
             GeneticCodes::RhabdopMtDna => NcbiTables::new().rhabdopleuridae_mtdna(), // Table 24
             GeneticCodes::CaDivSR1GraciBac => NcbiTables::new().candid_div_sr1_gracil(), // Table 25
+            GeneticCodes::PachyNu => NcbiTables::new().pachysolen_tanno_nu(), // Table 26
         }
     }
 
@@ -351,5 +352,12 @@ mod tests {
         let dna = "TGAAAAGGGGATTTAGTTAGAA-----";
         let frame = 1;
         test_translate!(dna, frame, String::from("GKGDLVRX-"), CaDivSR1GraciBac);
+    }
+
+    #[test]
+    fn test_translating_pachy_simple() {
+        let dna = "CTGAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("AKGDLVRX"), PachyNu);
     }
 }

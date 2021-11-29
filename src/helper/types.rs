@@ -93,7 +93,7 @@ pub enum GeneticCodes {
     ThrausMtDna,       // Ncbi Table 23
     RhabdopMtDna,      // Ncbi Table 24
     CaDivSR1GraciBac,  // Ncbi Table 25
-                       // PachyNu,              // Ncbi Table 26
+    PachyNu,           // Ncbi Table 26
                        // MesodiniumNu,         // Ncbi Table 29
                        // PeritrichNu,          // Ncbi Table 30
                        // CephalodiscidaeMtDna, // Ncbi Table 33

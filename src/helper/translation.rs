@@ -328,4 +328,17 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 26.
+    pub fn pachysolen_tanno_nu(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "CTG" => code.insert(codon.to_string(), String::from("A")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }
