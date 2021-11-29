@@ -210,4 +210,20 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 13.
+    pub fn ascidian_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "AGA" => code.insert(codon.to_string(), String::from("G")),
+                "AGG" => code.insert(codon.to_string(), String::from("G")),
+                "ATA" => code.insert(codon.to_string(), String::from("M")),
+                "TGA" => code.insert(codon.to_string(), String::from("W")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }

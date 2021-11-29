@@ -148,7 +148,7 @@ impl<'a> Translate<'a> {
             GeneticCodes::EuplotidNu => NcbiTables::new().euplotid_nudna(),  // Table 10
             GeneticCodes::BacArchPlantPlast => NcbiTables::new().standard_code(), // Table 11
             GeneticCodes::AltYeastNu => NcbiTables::new().alt_yeast_nu(),    // Table 12
-            _ => unimplemented!(),
+            GeneticCodes::AsciMtDna => NcbiTables::new().ascidian_mtdna(),   // Table 13
         }
     }
 
@@ -288,5 +288,12 @@ mod tests {
         let dna = "CTGAAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("SKGDLVRX"), AltYeastNu);
+    }
+
+    #[test]
+    fn test_translating_ascidian_mtdna_simple() {
+        let dna = "TGAATAAGGAGAAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("WMGGKGDLVGX"), AsciMtDna);
     }
 }
