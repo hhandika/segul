@@ -84,6 +84,8 @@ impl<'a> TranslateParser<'a> {
             "5" => parse_table_args!(self, InvertMtDna, table),
             "6" => parse_table_args!(self, CilDasHexNu, table),
             "9" => parse_table_args!(self, EchiFlatwormMtDna, table),
+            "10" => parse_table_args!(self, EuplotidNu, table),
+            "11" => parse_table_args!(self, BacArchPlantPlast, table),
             _ => unimplemented!("The Genetic Codes is not yet implemented!"),
         }
     }
