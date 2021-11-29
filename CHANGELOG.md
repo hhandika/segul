@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.9.1
+
+- Fix missing file extension issues when converting multiple sequences
+
 ## 0.9.0
 
 - Add a DNA to Amino Acic translation feature.
