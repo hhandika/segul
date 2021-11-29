@@ -432,4 +432,18 @@ mod tests {
             CephalodiscidaeMtDna
         );
     }
+
+    #[test]
+    fn test_translating_with_missing() {
+        let dna = "NNNAAAGGGGATTTAGTTAGAA?????";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("XKGDLVRX?"), StandardCode);
+    }
+
+    #[test]
+    fn test_translating_lowercase() {
+        let dna = "nnnaaaggggatttagttagaa?????";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("XKGDLVRX?"), StandardCode);
+    }
 }
