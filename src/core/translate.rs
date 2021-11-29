@@ -191,9 +191,7 @@ impl<'a> Translate<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_translate;
 
-    #[macro_export]
     macro_rules! test_translate {
         ($input:expr, $frame:expr, $result:expr, $code:ident) => {
             let trans = Translate::new(&GeneticCodes::$code, &InputFmt::Fasta, &DataType::Dna);
