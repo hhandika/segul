@@ -243,4 +243,17 @@ impl NcbiTables {
         });
         code
     }
+
+    // NCBI Table 16.
+    pub fn chlorophycean_mtdna(&self) -> HashMap<String, String> {
+        let mut code = HashMap::new();
+
+        self.translation.iter().for_each(|(codon, protein)| {
+            match codon.as_ref() {
+                "TAG" => code.insert(codon.to_string(), String::from("L")),
+                _ => code.insert(codon.to_string(), protein.to_string()),
+            };
+        });
+        code
+    }
 }

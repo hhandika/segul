@@ -150,6 +150,7 @@ impl<'a> Translate<'a> {
             GeneticCodes::AltYeastNu => NcbiTables::new().alt_yeast_nu(),    // Table 12
             GeneticCodes::AsciMtDna => NcbiTables::new().ascidian_mtdna(),   // Table 13
             GeneticCodes::AltFlatwormMtDna => NcbiTables::new().alt_flatworm_mtdna(), // Table 14
+            GeneticCodes::ChlorMtDna => NcbiTables::new().chlorophycean_mtdna(), // Table 16
         }
     }
 
@@ -303,5 +304,12 @@ mod tests {
         let dna = "TAATGAAGGAAAGGGGATTTAGTTAGAA";
         let frame = 1;
         test_translate!(dna, frame, String::from("YWSNGDLVSX"), AltFlatwormMtDna);
+    }
+
+    #[test]
+    fn test_chlorophycean_mtdna_simple() {
+        let dna = "TAGAAAGGGGATTTAGTTAGAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("LKGDLVRX"), ChlorMtDna);
     }
 }
