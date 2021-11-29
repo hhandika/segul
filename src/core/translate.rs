@@ -250,6 +250,20 @@ mod tests {
     }
 
     #[test]
+    fn test_translation_yestmtdna() {
+        // Dna from https://www.ncbi.nlm.nih.gov/nuccore/NM_001184304.1. 
+        // Note that the genebank translation is using the standard code.
+        let dna = "ATGTCCGGAAAACCACCAGTTTATAGATTACCCCCTCTTCCCAGACTAAAAGTGAAGAAACCTATCATTA\
+        GGCAAGAAGCGAACAAATGTCTTGTTTTAATGTCAAACTTATTACAATGCTGGTCTTCATATGGTCATAT\
+        GAGCCCTAAATGTGCTGGCTTAGTAACGGAATTGAAAAGTTGCACTAGTGAAAGTGCCCTCGGCAAAAGA\
+        AACAACGTTCAAAAGAGCAATATTAACTATCACGCCGCTAGGCTGTATGATAGGATCAACGGTAAACCCC\
+        ATGATTAA";
+        let frame = 1;
+        test_translate!(dna, frame, String::from("MSGKPPVYRLPPTPRTKVKKPIIRQEANKC\
+        TVLMSNLLQCWSSYGHMSPKCAGLVTELKSCTSESATGKRNNVQKSNINYHAARTYDRINGKPHD*"), YeastMtDna);
+    }
+
+    #[test]
     fn test_translating_mold_etal_simple() {
         let dna = "TGAAAAGGGGATTTAGTTAGAA-----";
         let frame = 1;
