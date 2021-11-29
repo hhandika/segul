@@ -24,15 +24,15 @@ impl<'a> TranslateParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn parse_translation_cli(&mut self) {
+    pub(in crate::cli) fn translate(&mut self) {
         if self.matches.is_present("show-tables") {
             self.show_ncbi_tables();
         } else {
-            self.translate();
+            self.translate_all();
         }
     }
 
-    fn translate(&mut self) {
+    fn translate_all(&mut self) {
         let input_fmt = self.parse_input_fmt(self.matches);
         let datatype = self.parse_datatype(self.matches);
         let output_fmt = self.parse_output_fmt(self.matches);
