@@ -10,12 +10,14 @@ pub fn create_output_fname(path: &Path, output_fmt: &OutputFmt) -> PathBuf {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_create_output_fname() {
         let path = Path::new("tests/test_create_output_fname.nex");
+
         assert_eq!(
             create_output_fname(path, &OutputFmt::Fasta),
             Path::new("tests/test_create_output_fname.fas")
