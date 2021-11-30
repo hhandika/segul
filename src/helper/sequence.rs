@@ -112,7 +112,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn alignment_simple_test() {
+    fn test_alignment_simple() {
         let file = Path::new("test_files/simple.nex");
         let datatype = DataType::Dna;
         let input_fmt = InputFmt::Nexus;
@@ -121,5 +121,12 @@ mod test {
         assert_eq!(1, header.ntax);
         assert_eq!(6, header.nchar);
         assert_eq!(1, matrix.len());
+    }
+
+    #[test]
+    fn test_parsing_input_fmt() {
+        let file = Path::new("test_files/simple.nex");
+        let input_fmt = infer_input_auto(&file);
+        assert_eq!(InputFmt::Nexus, input_fmt);
     }
 }

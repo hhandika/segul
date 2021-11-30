@@ -1,5 +1,6 @@
 use indexmap::IndexMap;
 
+#[derive(Debug, PartialEq)]
 pub enum InputFmt {
     Auto,
     Fasta,
