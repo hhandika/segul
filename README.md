@@ -54,6 +54,8 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
+The instruction below assumes familiarity with command line application and only highlight some common features that users may need for alignment manipulation and generating sequence statistics tasks. We provide more detailed instruction in the [documentation](https://github.com/hhandika/segul/wiki).
+
 ### Installation
 
 For a quick installation, we provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For WSL, either the ManyLinux or Linux binary should work. In our test system, the ManyLinux binary is a little faster. For native Linux OS, first check your GLIBC version:
@@ -106,6 +108,12 @@ To check for available options and flags for each sub-command:
 
 ```Bash
 segul <SUBCOMMAND> --help
+```
+
+Across the app functions, most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
+
+```Bash
+segul concat -d nexus-alignments -f nexus
 ```
 
 Learn more about SEGUL command structure and expected behaviors for each argument [here](https://github.com/hhandika/segul/wiki/4.-Command-Structure).
@@ -247,12 +255,6 @@ segul translate --show-tables
 ```
 
 ### Other features
-
-Across the app functions, most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
-
-```Bash
-segul concat -d nexus-alignments -f nexus
-```
 
 By default, SEGUL will check whether the sequences contain only valid IUPAC characters. It is set for DNA characters by default. If your input is amino acid sequences, you can use `--datatype aa` option to specify the input data type to amino acid. For example to concat sequences of amino acid in a directory named `nexus-alignments`:
 
