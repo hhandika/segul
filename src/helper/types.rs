@@ -74,7 +74,6 @@ impl Header {
     }
 }
 
-#[allow(dead_code)]
 pub enum GeneticCodes {
     StandardCode,         // Ncbi Table 1
     VertMtDna,            // Ncbi Table 2
