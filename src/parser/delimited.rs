@@ -12,6 +12,7 @@ pub fn parse_delimited_text(fpath: &Path) -> Vec<(String, String)> {
         .extension()
         .and_then(OsStr::to_str)
         .expect("Failed parsing extension");
+    assert!(ext == "tsv" || ext == "csv");
 
     buff.lines()
         .filter_map(|ok| ok.ok())
