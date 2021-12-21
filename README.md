@@ -19,6 +19,7 @@ Features:
 5. Getting sample IDs from a collection of alignments.
 6. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
 7. Converting dna sequences to amino acid.
+8. Batch Renaming sequence IDs.
 
 Supported sequence formats:
 
