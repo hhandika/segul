@@ -417,6 +417,65 @@ pub fn get_args(version: &str) -> ArgMatches {
                 ),
         )
         .subcommand(
+            App::new("rename")
+            .about("Batch renaming sequence IDs in multiple alignments")
+                .arg(
+                    Arg::with_name("dir")
+                    .short("d")
+                    .long("dir")
+                    .help("Inputs dir with alignment files")
+                    .takes_value(true)
+                    .value_name("PATH"),
+                )
+                .arg(
+                    Arg::with_name("wildcard")
+                            .short("c")
+                            .long("wcard")
+                            .help("Uses wildcard as an input")
+                            .takes_value(true)
+                            .multiple(true)
+                            .required_unless("input")
+                            .conflicts_with_all(&["input", "dir"])
+                            .value_name("WILDCARD"),
+                )
+                .arg(
+                    Arg::with_name("input-format")
+                        .short("f")
+                        .long("input-format")
+                        .help("Sets input format")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("SEQ-FORMAT")
+                        .default_value("auto")
+                        .possible_values(&[
+                            "auto",
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                        ]),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .short("o")
+                        .long("output")
+                        .help("Uses a costume output filename")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("SEGUL-stats")
+                        .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("datatype")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
+                ),
+        )
+        .subcommand(
             App::new("summary")
                 .about("Gets alignment summary stats")
                 .arg(
@@ -727,8 +786,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Show supported NCBI Genetic Code tables")
                         .takes_value(false)
                 )
-                
-            
         )
         .get_matches()
 }
