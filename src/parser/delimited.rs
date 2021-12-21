@@ -3,7 +3,6 @@ use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 
-#[allow(dead_code)]
 pub fn parse_delimited_text(fpath: &Path) -> Vec<(String, String)> {
     let file = File::open(fpath).expect("Unable to open file");
     let buff = BufReader::new(file);

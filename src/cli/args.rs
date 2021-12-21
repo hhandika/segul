@@ -465,6 +465,23 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("STRING"),
                 )
                 .arg(
+                    Arg::with_name("output-format")
+                        .short("F")
+                        .long("output-format")
+                        .help("Sets target output format")
+                        .takes_value(true)
+                        .default_value("nexus")
+                        .value_name("SEQ-FORMAT")
+                        .possible_values(&[
+                            "nexus",
+                            "phylip",
+                            "fasta",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
+                )
+                .arg(
                     Arg::with_name("datatype")
                         .long("datatype")
                         .help("Sets data type")
@@ -473,6 +490,16 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
+                )
+                .arg(
+                    Arg::with_name("names")
+                        .short("n")
+                        .long("names")
+                        .help("Inputs IDs to rename")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("PATH"),
+
                 ),
         )
         .subcommand(

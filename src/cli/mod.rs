@@ -4,6 +4,7 @@ mod convert;
 mod extract;
 mod filter;
 mod id;
+mod rename;
 mod summarize;
 mod translate;
 
@@ -27,6 +28,7 @@ use crate::cli::convert::ConvertParser;
 use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
+use crate::cli::rename::RenameParser;
 use crate::cli::summarize::SummaryParser;
 use crate::cli::translate::TranslateParser;
 
@@ -48,8 +50,9 @@ pub fn parse_cli(version: &str) {
         ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
         ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).filter(),
         ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
-        ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
         ("extract", Some(extract_matches)) => ExtractParser::new(extract_matches).extract(),
+        ("rename", Some(rename_matches)) => RenameParser::new(rename_matches).rename(),
+        ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
         ("translate", Some(trans_matches)) => TranslateParser::new(trans_matches).translate(),
         _ => unreachable!("Invalid subcommands!"),
     }
