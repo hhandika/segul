@@ -1,3 +1,5 @@
+use ansi_term::Colour::Yellow;
+
 use crate::cli::*;
 use crate::core::rename::Rename;
 
@@ -47,7 +49,14 @@ impl<'a> RenameParser<'a> {
         );
 
         self.check_output_dir_exist(&outdir);
-
+        log::info!("{}", Yellow.paint("Params"));
+        log::info!(
+            "{:18}: {}\n",
+            "Input names",
+            ids.file_name()
+                .expect("Failed parsing name path")
+                .to_string_lossy()
+        );
         if self.matches.is_present("dry-run") {
             Rename::new(&input_fmt, &datatype, ids).dry_run();
         } else {
