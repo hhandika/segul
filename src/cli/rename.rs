@@ -32,10 +32,11 @@ impl<'a> RenameParser<'a> {
             self.get_files(dir, &input_fmt)
         };
 
-        let ids = self
-            .matches
-            .value_of("names")
-            .expect("Failed parsing path to id names");
+        let ids = Path::new(
+            self.matches
+                .value_of("names")
+                .expect("Failed parsing path to id names"),
+        );
 
         self.print_input_multi(
             &self.input_dir,
@@ -46,6 +47,11 @@ impl<'a> RenameParser<'a> {
         );
 
         self.check_output_dir_exist(&outdir);
-        Rename::new(&input_fmt, &datatype).rename(&ids, &outdir, &output_fmt);
+
+        if self.matches.is_present("dry-run") {
+            Rename::new(&input_fmt, &datatype, ids).dry_run();
+        } else {
+            Rename::new(&input_fmt, &datatype, ids).rename(&files, &outdir, &output_fmt);
+        }
     }
 }

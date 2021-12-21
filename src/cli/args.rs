@@ -461,7 +461,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Uses a costume output filename")
                         .takes_value(true)
                         .required(true)
-                        .default_value("SEGUL-stats")
+                        .default_value("SEGUL-rename")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -500,6 +500,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .required(true)
                         .value_name("PATH"),
 
+                )
+                .arg(
+                    Arg::with_name("dry-run")
+                        .long("dry-run")
+                        .help("Check if the program can parse the input ids correctly")
+                        .takes_value(false),
                 ),
         )
         .subcommand(
