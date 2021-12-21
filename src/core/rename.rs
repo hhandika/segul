@@ -37,7 +37,7 @@ impl<'a> Rename<'a> {
 
     pub fn rename(&self, files: &[PathBuf], outdir: &Path, output_fmt: &OutputFmt) {
         let spin = utils::set_spinner();
-        spin.set_message("Renaming dna sequences...");
+        spin.set_message("Batch renaming dna sequence IDs...");
         let names = self.get_names();
         files.par_iter().for_each(|file| {
             let (mut seq, header) = Sequence::new(file, self.datatype).get(self.input_fmt);
@@ -59,7 +59,7 @@ impl<'a> Rename<'a> {
                 .write_sequence(output_fmt)
                 .expect("Failed writing output sequence");
         });
-        spin.finish_with_message("Finished renaming dna sequences!\n");
+        spin.finish_with_message("Finished batch renaming dna sequence IDs!\n");
         self.print_output_info(outdir);
     }
 
