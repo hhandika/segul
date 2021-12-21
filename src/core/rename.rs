@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use ansi_term::Colour::Yellow;
+use rayon::prelude::*;
 
 use crate::helper::filenames;
 use crate::helper::sequence::Sequence;
@@ -38,7 +39,7 @@ impl<'a> Rename<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Renaming dna sequences...");
         let names = self.get_names();
-        files.iter().for_each(|file| {
+        files.par_iter().for_each(|file| {
             let (mut seq, header) = Sequence::new(file, self.datatype).get(self.input_fmt);
             let original_size = seq.len();
             names.iter().for_each(|(origin, destination)| {
