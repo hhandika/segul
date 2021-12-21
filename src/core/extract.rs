@@ -79,14 +79,6 @@ impl<'a> Extract<'a> {
         matrix
     }
 
-    // fn get_output_names(&self, dir: &Path, file: &Path, output_fmt: &OutputFmt) -> PathBuf {
-    //     let path = dir.join(
-    //         file.file_name()
-    //             .expect("Failed parsing filename for output file"),
-    //     );
-
-    // }
-
     fn match_id(&self, id: &str, re: &str) -> bool {
         let re = Regex::new(re).expect("Failed capturing nexus commands");
         re.is_match(id)
