@@ -43,7 +43,7 @@ impl<'a> Extract<'a> {
             let matrix = self.get_matrix(seq);
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
-                let outname = self.get_output_names(output, file, output_fmt);
+                let outname = filenames::create_output_fname(&output, file, output_fmt);
                 let mut writer =
                     SeqWriter::new(&outname, &matrix, &header, None, &PartitionFmt::None);
                 writer
@@ -79,14 +79,13 @@ impl<'a> Extract<'a> {
         matrix
     }
 
-    fn get_output_names(&self, dir: &Path, file: &Path, output_fmt: &OutputFmt) -> PathBuf {
-        let path = dir.join(
-            file.file_name()
-                .expect("Failed parsing filename for output file"),
-        );
+    // fn get_output_names(&self, dir: &Path, file: &Path, output_fmt: &OutputFmt) -> PathBuf {
+    //     let path = dir.join(
+    //         file.file_name()
+    //             .expect("Failed parsing filename for output file"),
+    //     );
 
-        filenames::create_output_fname(&path, output_fmt)
-    }
+    // }
 
     fn match_id(&self, id: &str, re: &str) -> bool {
         let re = Regex::new(re).expect("Failed capturing nexus commands");

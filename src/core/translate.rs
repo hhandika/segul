@@ -46,7 +46,7 @@ impl<'a> Translate<'a> {
         files.par_iter().for_each(|file| {
             let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
-            let outname = self.get_output_names(output, file, output_fmt);
+            let outname = filenames::create_output_fname(output, file, output_fmt);
             let mut writer =
                 SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
             writer
@@ -73,7 +73,7 @@ impl<'a> Translate<'a> {
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
             let output_dir = output.join(format!("RF-{}", frame));
             fs::create_dir_all(output).expect("Failed creating an output directory");
-            let outname = self.get_output_names(&output_dir, file, output_fmt);
+            let outname = filenames::create_output_fname(&output_dir, file, output_fmt);
             let mut writer =
                 SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
             writer
@@ -161,14 +161,6 @@ impl<'a> Translate<'a> {
             GeneticCodes::PeritrichNu => NcbiTables::new().peritrich_nu(),   // Table 30
             GeneticCodes::CephalodiscidaeMtDna => NcbiTables::new().cephalodiscidae_mtdna(), // Table 33
         }
-    }
-
-    fn get_output_names(&self, dir: &Path, file: &Path, output_fmt: &OutputFmt) -> PathBuf {
-        let path = dir.join(
-            file.file_name()
-                .expect("Failed parsing filename for output file"),
-        );
-        filenames::create_output_fname(&path, output_fmt)
     }
 
     fn get_header(&self, matrix: &SeqMatrix) -> Header {

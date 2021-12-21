@@ -35,7 +35,7 @@ impl<'a> Converter<'a> {
         spin.set_message("Converting sequence format...");
         files.par_iter().for_each(|file| {
             let fname = output.join(file.file_stem().unwrap());
-            let output_fname = filenames::create_output_fname(&fname, self.output_fmt);
+            let output_fname = filenames::create_output_fname(&fname, file, self.output_fmt);
             self.convert_any(file, &output_fname);
         });
         spin.finish_with_message("Finished converting sequence format!\n");

@@ -82,7 +82,7 @@ impl<'a> ConvertParser<'a> {
 
     fn convert_file(&self, task_desc: &str) {
         let input = Path::new(self.parse_file_input(self.matches));
-        let output = filenames::create_output_fname(&self.output, &self.output_fmt);
+        let output = filenames::create_output_fname_from_path(&self.output, &self.output_fmt);
         self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
         self.check_output_file_exist(&output);
         let convert = Converter::new(&self.input_fmt, &self.output_fmt, &self.datatype, self.sort);

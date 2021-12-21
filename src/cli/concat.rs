@@ -35,8 +35,8 @@ impl<'a> ConcatParser<'a> {
         let output_fmt = self.parse_output_fmt(self.matches);
         let dir = self.parse_output(self.matches);
         let prefix = self.parse_prefix(self.matches, &dir);
-        let final_path = dir.join(prefix);
-        let output = filenames::create_output_fname(&final_path, &output_fmt);
+        // let final_path = dir.join(prefix);
+        let output = filenames::create_output_fname(&dir, &prefix, &output_fmt);
         let part_fmt = self.parse_partition_fmt(self.matches);
         self.check_partition_format(&output_fmt, &part_fmt);
         let task_desc = "Alignment concatenation";

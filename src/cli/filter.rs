@@ -99,8 +99,7 @@ impl<'a> FilterParser<'a> {
                     OutputFmt::Nexus
                 };
                 let prefix = self.parse_prefix(self.matches, &self.output_dir);
-                let final_path = self.output_dir.join(prefix);
-                let output = filenames::create_output_fname(&final_path, &output_fmt);
+                let output = filenames::create_output_fname(&self.output_dir, &prefix, &output_fmt);
                 filter.set_concat(&output, &output_fmt, &part_fmt);
                 filter.filter_aln();
             }
