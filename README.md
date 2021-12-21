@@ -201,6 +201,35 @@ segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 
 The app uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
 
+### Batch renaming sequence IDs
+
+To rename sequence IDs in multiple alignments, you need to input the sequence IDs in tsv or csv format with header. For example:
+
+| Original_names        | New_names                |
+| --------------------- | ------------------------ |
+| Genus_species1_random | Genus_species1_voucherID |
+| Genus_species2_random | Genus_species2_voucherID |
+
+To simplify this process, you can generate unique IDs for all of your alignments using the `id` sub-command.
+
+```Bash
+segul id -d [alignment-dir] -f [sequence-format-keyword]
+```
+
+Copy the IDs to Excel and then write a new names and the header names as above. Save the file as csv or tsv. The program will infer the file format based on the file extension. Use it as an `--names` or `-n` input for renaming the sequence IDs using `rename` sub-command:
+
+```Bash
+segul rename -d [alignment-dir] -f [sequence-format-keyword] -n [file-path-to-IDs]
+```
+
+Example:
+
+```Bash
+segul rename -d uce-loci/ -f nexus -n new_names.csv
+```
+
+You can also change the output format by using `--output-format` or `-F` option.
+
 ### Translating DNA sequences
 
 List of supported [NCBI Genetic Code Tables](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top) is available [here](https://github.com/hhandika/segul/wiki/5.-Usages#translating-dna-sequences).
