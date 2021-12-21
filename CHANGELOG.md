@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.10.0
+
+- Add feature to batch renaming sequence IDs.
+
 ## 0.9.1
 
 - Fix missing file extension issues when converting multiple sequences
