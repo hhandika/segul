@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.10.1
+
+- Clearer spinner messages.
+
 ## 0.10.0
 
 - Add feature to batch renaming sequence IDs.
