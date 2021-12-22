@@ -36,10 +36,10 @@ impl<'a> Rename<'a> {
     }
 
     pub fn rename(&self, files: &[PathBuf], outdir: &Path, output_fmt: &OutputFmt) {
-        let spin = utils::set_spinner();
-        spin.set_message("Batch renaming dna sequence IDs...");
         let names = self.get_names();
         log::info!("{:18}: {}\n", "New IDs count", names.len());
+        let spin = utils::set_spinner();
+        spin.set_message("Batch renaming dna sequence IDs...");
         files.par_iter().for_each(|file| {
             let (seq, header) = self.rename_seq_id(file, &names);
             let outpath = filenames::create_output_fname(outdir, file, output_fmt);
