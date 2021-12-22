@@ -2,7 +2,8 @@
 
 ## 0.10.1
 
-- Clearer spinner messages.
+- Fix spinner messages.
+- Fix dry-run terminal output.
 
 ## 0.10.0
 
