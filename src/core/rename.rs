@@ -10,7 +10,6 @@ use crate::helper::utils;
 use crate::parser::delimited;
 use crate::writer::sequences::SeqWriter;
 
-#[allow(dead_code)]
 pub struct Rename<'a> {
     input_fmt: &'a InputFmt,
     datatype: &'a DataType,
