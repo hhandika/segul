@@ -27,12 +27,14 @@ impl<'a> Rename<'a> {
     }
 
     pub fn dry_run(&self) {
-        log::info!("{:18}: Dry run\n", "Status");
-        log::info!("Results:");
         let names = self.get_names();
+        log::info!("{:18}: {}", "New ID count", names.len());
+        log::info!("{:18}: Dry run\n", "Status");
+        log::info!("{}", Yellow.paint("Results"));
         names
             .iter()
             .for_each(|(origin, destination)| log::info!("{} -> {}", origin, destination));
+        println!();
     }
 
     pub fn rename(&self, files: &[PathBuf], outdir: &Path, output_fmt: &OutputFmt) {
