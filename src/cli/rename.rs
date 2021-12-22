@@ -49,10 +49,10 @@ impl<'a> RenameParser<'a> {
         );
 
         self.check_output_dir_exist(&outdir);
-        log::info!("{}", Yellow.paint("Params"));
+        log::info!("{}", Yellow.paint("Names"));
         log::info!(
             "{:18}: {}",
-            "Input names",
+            "File",
             ids.file_name()
                 .expect("Failed parsing name path")
                 .to_string_lossy()
