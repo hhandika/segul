@@ -45,11 +45,7 @@ impl<'a> Id<'a> {
             let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
             let mut is_id = Vec::with_capacity(ids.len());
             ids.iter().for_each(|id| {
-                if seq.contains_key(id) {
-                    is_id.push(true);
-                } else {
-                    is_id.push(false);
-                }
+                is_id.push(seq.contains_key(id));
             });
             let fstem = file
                 .file_stem()
