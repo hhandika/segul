@@ -58,11 +58,8 @@ impl<'a> Rename<'a> {
         let original_size = seq.len();
         names.iter().for_each(|(origin, destination)| {
             let values = seq.remove(origin);
-            match values {
-                Some(value) => {
-                    seq.insert(destination.to_string(), value);
-                }
-                None => (),
+            if let Some(value) = values {
+                seq.insert(destination.to_string(), value);
             }
         });
 
