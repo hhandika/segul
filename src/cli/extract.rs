@@ -1,6 +1,9 @@
-use ansi_term::Colour::Yellow;
+use std::path::PathBuf;
 
-use crate::cli::*;
+use ansi_term::Colour::Yellow;
+use clap::ArgMatches;
+
+use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::core::extract::{Extract, Params};
 use crate::parser::txt;
 

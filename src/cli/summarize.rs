@@ -1,12 +1,13 @@
+use std::path::{Path, PathBuf};
+
 use clap::ArgMatches;
 
-use crate::cli::*;
+use crate::cli::{InputCli, InputPrint, InputType, OutputCli};
+use crate::core::summarize::SeqStats;
 use crate::helper::types::{DataType, InputFmt};
 
 impl InputCli for SummaryParser<'_> {}
-
 impl InputPrint for SummaryParser<'_> {}
-
 impl OutputCli for SummaryParser<'_> {
     fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
         let output = matches

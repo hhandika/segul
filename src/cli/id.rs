@@ -2,13 +2,11 @@ use std::path::PathBuf;
 
 use clap::ArgMatches;
 
-use crate::cli::*;
+use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::core::id::Id;
 
 impl InputCli for IdParser<'_> {}
-
 impl OutputCli for IdParser<'_> {}
-
 impl InputPrint for IdParser<'_> {}
 
 pub(in crate::cli) struct IdParser<'a> {

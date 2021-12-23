@@ -1,13 +1,22 @@
-use ansi_term::Colour::Yellow;
+use std::path::PathBuf;
 
-use crate::cli::*;
+use ansi_term::Colour::Yellow;
+use clap::ArgMatches;
+
+use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::core::translate::Translate;
 use crate::helper::types::GeneticCodes;
-use crate::parse_table_args;
 
 impl InputCli for TranslateParser<'_> {}
 impl InputPrint for TranslateParser<'_> {}
 impl OutputCli for TranslateParser<'_> {}
+
+macro_rules! parse_table_args {
+    ($self:ident, $code:ident, $table:ident) => {{
+        $self.trans_table = GeneticCodes::$code;
+        log::info!("{:18}: {}", "Translation Table", $table);
+    }};
+}
 
 pub(in crate::cli) struct TranslateParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -146,12 +155,4 @@ impl<'a> TranslateParser<'a> {
             "
         );
     }
-}
-
-#[macro_export]
-macro_rules! parse_table_args {
-    ($self:ident, $code:ident, $table:ident) => {{
-        $self.trans_table = GeneticCodes::$code;
-        log::info!("{:18}: {}", "Translation Table", $table);
-    }};
 }

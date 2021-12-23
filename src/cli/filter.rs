@@ -1,17 +1,18 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
-use crate::cli::*;
+use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
 use crate::core::filter::{Params, SeqFilter};
-use crate::helper::filenames;
-use crate::helper::types::{DataType, InputFmt, OutputFmt};
+use crate::helper::finder::IDs;
+use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::{filenames, utils};
 
 impl InputCli for FilterParser<'_> {}
 impl InputPrint for FilterParser<'_> {}
 impl OutputCli for FilterParser<'_> {}
-impl ConcatCLi for FilterParser<'_> {}
+impl ConcatCli for FilterParser<'_> {}
 
 pub(in crate::cli) struct FilterParser<'a> {
     matches: &'a ArgMatches<'a>,
