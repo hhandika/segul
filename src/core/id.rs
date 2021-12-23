@@ -3,9 +3,11 @@ use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
 use std::io::{BufWriter, Result};
 use std::path::{Path, PathBuf};
+// use std::sync::{Arc, Mutex};
 
 use ansi_term::Colour::Yellow;
 use indexmap::{IndexMap, IndexSet};
+// use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
 use crate::helper::sequence::Sequence;
@@ -40,6 +42,24 @@ impl<'a> Id<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Mapping IDs..");
         let ids = self.get_unique_id(files);
+        let mapped_ids = self.map_id_to_aln(files, &ids);
+        self.write_mapped_id(&ids, &mapped_ids)
+            .expect("Failed writing results");
+        spin.finish_with_message("DONE!\n");
+        self.print_output(ids.len());
+    }
+
+    fn get_unique_id(&self, files: &[PathBuf]) -> IndexSet<String> {
+        let mut id = IDs::new(files, self.input_fmt, self.datatype).get_id_unique();
+        id.sort();
+        id
+    }
+
+    fn map_id_to_aln(
+        &self,
+        files: &[PathBuf],
+        ids: &IndexSet<String>,
+    ) -> IndexMap<String, Vec<bool>> {
         let mut mapped_ids: IndexMap<String, Vec<bool>> = IndexMap::new();
         files.iter().for_each(|file| {
             let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
@@ -54,16 +74,7 @@ impl<'a> Id<'a> {
                 .to_string();
             mapped_ids.insert(fstem, is_id);
         });
-        self.write_mapped_id(&ids, &mapped_ids)
-            .expect("Failed writing results");
-        spin.finish_with_message("DONE!\n");
-        self.print_output(ids.len());
-    }
-
-    fn get_unique_id(&self, files: &[PathBuf]) -> IndexSet<String> {
-        let mut id = IDs::new(files, self.input_fmt, self.datatype).get_id_unique();
-        id.sort();
-        id
+        mapped_ids
     }
 
     fn write_unique_id(&self, ids: &IndexSet<String>) -> Result<()> {
