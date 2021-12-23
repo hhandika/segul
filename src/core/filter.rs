@@ -7,7 +7,7 @@ use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::core::msa::MSAlignment;
+use crate::core::concat::MSAlignment;
 use crate::helper::sequence::Sequence;
 use crate::helper::stats;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};

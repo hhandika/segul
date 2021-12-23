@@ -56,7 +56,7 @@ impl<'a> ConcatParser<'a> {
         );
 
         self.check_output_dir_exist(&dir);
-        let mut concat = msa::MSAlignment::new(&input_fmt, &output, &output_fmt, &part_fmt);
+        let mut concat = MSAlignment::new(&input_fmt, &output, &output_fmt, &part_fmt);
 
         concat.concat_alignment(&mut files, &datatype);
     }
