@@ -43,7 +43,7 @@ impl<'a> Extract<'a> {
             let matrix = self.get_matrix(seq);
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
-                let outname = filenames::create_output_fname(&output, file, output_fmt);
+                let outname = filenames::create_output_fname(output, file, output_fmt);
                 let mut writer =
                     SeqWriter::new(&outname, &matrix, &header, None, &PartitionFmt::None);
                 writer
