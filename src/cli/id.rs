@@ -12,8 +12,6 @@ impl InputPrint for IdParser<'_> {}
 pub(in crate::cli) struct IdParser<'a> {
     matches: &'a ArgMatches<'a>,
     input_dir: Option<PathBuf>,
-    output: PathBuf,
-    files: Vec<PathBuf>,
 }
 
 impl<'a> IdParser<'a> {
@@ -21,8 +19,6 @@ impl<'a> IdParser<'a> {
         Self {
             matches,
             input_dir: None,
-            output: PathBuf::new(),
-            files: Vec::new(),
         }
     }
 
@@ -30,7 +26,7 @@ impl<'a> IdParser<'a> {
         let input_fmt = self.parse_input_fmt(self.matches);
         let datatype = self.parse_datatype(self.matches);
         let task_desc = "IDs finding";
-        self.files = if self.is_input_dir() {
+        let mut files = if self.is_input_dir() {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
@@ -41,15 +37,23 @@ impl<'a> IdParser<'a> {
         self.print_input_multi(
             &self.input_dir,
             task_desc,
-            self.files.len(),
+            files.len(),
             &input_fmt,
             &datatype,
         );
-
-        self.output = self.parse_output(self.matches).with_extension("txt");
-        let id = Id::new(&self.output, &input_fmt, &datatype);
-        self.check_output_file_exist(&self.output);
-        id.generate_id(&self.files);
+        let output = self.parse_output(self.matches);
+        if self.matches.is_present("map") {
+            let output = output.with_extension("csv");
+            self.check_output_file_exist(&output);
+            let id = Id::new(&output, &input_fmt, &datatype);
+            alphanumeric_sort::sort_path_slice(&mut files);
+            id.map_id(&files);
+        } else {
+            let output = output.with_extension("txt");
+            self.check_output_file_exist(&output);
+            let id = Id::new(&output, &input_fmt, &datatype);
+            id.generate_id(&files);
+        }
     }
 
     fn is_input_dir(&self) -> bool {

@@ -414,6 +414,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .required(true)
                         .default_value("id")
                         .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("map")
+                        .short("m")
+                        .long("map")
+                        .help("Map ID across all alignments")
+                        .takes_value(false),
                 ),
         )
         .subcommand(
