@@ -33,7 +33,7 @@ use crate::cli::summarize::SummaryParser;
 use crate::cli::translate::TranslateParser;
 
 use crate::check_output_path;
-use crate::core::concat::MSAlignment;
+use crate::core::concat::ConcatHandler;
 use crate::core::summarize::SeqStats;
 use crate::helper::finder::{Files, IDs};
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};

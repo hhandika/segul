@@ -16,14 +16,14 @@ use crate::helper::types::{
 use crate::helper::utils;
 use crate::writer::sequences::SeqWriter;
 
-pub struct MSAlignment<'a> {
+pub struct ConcatHandler<'a> {
     input_fmt: &'a InputFmt,
     output: &'a Path,
     output_fmt: &'a OutputFmt,
     part_fmt: &'a PartitionFmt,
 }
 
-impl<'a> MSAlignment<'a> {
+impl<'a> ConcatHandler<'a> {
     pub fn new(
         input_fmt: &'a InputFmt,
         output: &'a Path,

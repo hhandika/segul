@@ -7,7 +7,7 @@ use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::core::concat::MSAlignment;
+use crate::core::concat::ConcatHandler;
 use crate::helper::sequence::Sequence;
 use crate::helper::stats;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
@@ -155,7 +155,7 @@ impl<'a> SeqFilter<'a> {
         output_fmt: &OutputFmt,
         part_fmt: &PartitionFmt,
     ) {
-        let mut concat = MSAlignment::new(self.input_fmt, self.output, output_fmt, part_fmt);
+        let mut concat = ConcatHandler::new(self.input_fmt, self.output, output_fmt, part_fmt);
         concat.concat_alignment(ftr_files, self.datatype);
     }
 
