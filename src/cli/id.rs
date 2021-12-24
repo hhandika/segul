@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::ffi::OsStr;
+use std::path::{Path, PathBuf};
 
 use clap::ArgMatches;
 
@@ -41,19 +42,28 @@ impl<'a> IdParser<'a> {
             &input_fmt,
             &datatype,
         );
+
         let output = self.parse_output(self.matches);
+        let output = output.with_extension("txt");
+        self.check_output_file_exist(&output);
+        let id = Id::new(&output, &input_fmt, &datatype);
         if self.matches.is_present("map") {
-            let output = output.with_extension("csv");
-            self.check_output_file_exist(&output);
-            let id = Id::new(&output, &input_fmt, &datatype);
+            let map_fname = self.create_map_fname(&output);
+            self.check_output_file_exist(&map_fname);
             alphanumeric_sort::sort_path_slice(&mut files);
-            id.map_id(&files);
+            id.map_id(&files, &map_fname);
         } else {
-            let output = output.with_extension("txt");
-            self.check_output_file_exist(&output);
-            let id = Id::new(&output, &input_fmt, &datatype);
             id.generate_id(&files);
         }
+    }
+
+    fn create_map_fname(&self, output: &Path) -> PathBuf {
+        let parent = output.parent().expect("Failed getting parent dir");
+        let fstem = output
+            .file_stem()
+            .and_then(OsStr::to_str)
+            .expect("Failed getting file stem for mapping IDs");
+        parent.join(format!("{}_map", fstem)).with_extension("csv")
     }
 
     fn is_input_dir(&self) -> bool {

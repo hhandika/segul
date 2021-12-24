@@ -38,13 +38,15 @@ impl<'a> Id<'a> {
         self.print_output(ids.len());
     }
 
-    pub fn map_id(&self, files: &[PathBuf]) {
+    pub fn map_id(&self, files: &[PathBuf], output_id: &Path) {
         let spin = utils::set_spinner();
         spin.set_message("Mapping IDs..");
         let ids = self.get_unique_id(files);
         let mapped_ids = self.map_id_to_aln(files, &ids);
-        self.write_mapped_id(&ids, &mapped_ids)
-            .expect("Failed writing results");
+        self.write_unique_id(&ids)
+            .expect("Failed writing unique IDs to file");
+        self.write_mapped_id(&ids, &mapped_ids, output_id)
+            .expect("Failed writing mapped ID to file");
         spin.finish_with_message("DONE!\n");
         self.print_output(ids.len());
     }
@@ -78,7 +80,7 @@ impl<'a> Id<'a> {
     }
 
     fn write_unique_id(&self, ids: &IndexSet<String>) -> Result<()> {
-        let mut writer = self.write_file();
+        let mut writer = self.write_file(self.output);
         ids.iter().for_each(|id| {
             writeln!(writer, "{}", id).unwrap();
         });
@@ -90,8 +92,9 @@ impl<'a> Id<'a> {
         &self,
         ids: &IndexSet<String>,
         mapped_ids: &IndexMap<String, Vec<bool>>,
+        output: &Path,
     ) -> Result<()> {
-        let mut writer = self.write_file();
+        let mut writer = self.write_file(output);
         write!(writer, "Alignments")?;
         ids.iter().for_each(|id| {
             write!(writer, ",{}", id).expect("Failed writing a csv header");
@@ -108,11 +111,11 @@ impl<'a> Id<'a> {
         Ok(())
     }
 
-    fn write_file(&self) -> BufWriter<File> {
+    fn write_file(&self, output: &Path) -> BufWriter<File> {
         let file = OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(&self.output)
+            .open(output)
             .expect("Failed writing id results");
         BufWriter::new(file)
     }
