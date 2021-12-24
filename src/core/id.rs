@@ -49,6 +49,7 @@ impl<'a> Id<'a> {
             .expect("Failed writing mapped ID to file");
         spin.finish_with_message("DONE!\n");
         self.print_output(ids.len());
+        log::info!("{:18}: {}", "Mapped ID output", output_id.display());
     }
 
     fn get_unique_id(&self, files: &[PathBuf]) -> IndexSet<String> {
