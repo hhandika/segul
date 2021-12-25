@@ -99,7 +99,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("dir")
                         .help("Inputs alignment dir")
                         .takes_value(true)
-                        .required_unless("wildcard")
+                        .required_unless("input")
                         .value_name("PATH"),
                 )
                 .arg(
@@ -147,7 +147,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Uses a costume output directory")
                         .takes_value(true)
                         .required(true)
-                        .default_value("concat")
+                        .default_value("SEGUL-Concat")
                         .value_name("STRING"),
                 )
                 .arg(
