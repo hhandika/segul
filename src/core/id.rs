@@ -50,7 +50,7 @@ impl<'a> Id<'a> {
             .expect("Failed writing mapped ID to file");
         spin.finish_with_message("DONE!\n");
         self.print_output(ids.len());
-        log::info!("{:18}: {}", "Mapped ID output", output_id.display());
+        log::info!("{:18}: {}", "Record file", output_id.display());
     }
 
     fn get_unique_id(&self, files: &[PathBuf]) -> IndexSet<String> {
@@ -131,7 +131,7 @@ impl<'a> Id<'a> {
     fn print_output(&self, ids: usize) {
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "Total unique IDs", ids);
-        log::info!("{:18}: {}", "File output", self.output.display());
+        log::info!("{:18}: {}", "ID file", self.output.display());
     }
 }
 
