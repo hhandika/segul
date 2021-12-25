@@ -3,11 +3,12 @@ use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
 use std::io::{BufWriter, Result};
 use std::path::{Path, PathBuf};
+use std::sync::mpsc::channel;
 // use std::sync::{Arc, Mutex};
 
 use ansi_term::Colour::Yellow;
 use indexmap::IndexSet;
-// use rayon::prelude::*;
+use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
 use crate::helper::sequence::Sequence;
@@ -42,7 +43,7 @@ impl<'a> Id<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Mapping IDs..");
         let ids = self.get_unique_id(files);
-        let mapped_ids = self.map_id_to_aln(files, &ids);
+        let mapped_ids = self.par_map_id(files, &ids);
         self.write_unique_id(&ids)
             .expect("Failed writing unique IDs to file");
         self.write_mapped_id(&ids, &mapped_ids, output_id)
@@ -58,40 +59,25 @@ impl<'a> Id<'a> {
         id
     }
 
-    // fn map_id_to_aln(
-    //     &self,
-    //     files: &[PathBuf],
-    //     ids: &IndexSet<String>,
-    // ) -> IndexMap<String, Vec<bool>> {
-    //     let mut mapped_ids: IndexMap<String, Vec<bool>> = IndexMap::new();
-    //     files.iter().for_each(|file| {
-    //         let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-    //         let mut is_id = Vec::with_capacity(ids.len());
-    //         ids.iter().for_each(|id| {
-    //             is_id.push(seq.contains_key(id));
-    //         });
-    //         let fstem = file
-    //             .file_stem()
-    //             .and_then(OsStr::to_str)
-    //             .expect("Failed getting file stem for mapping IDs")
-    //             .to_string();
-    //         mapped_ids.insert(fstem, is_id);
-    //     });
-    //     mapped_ids
-    // }
-
-    fn map_id_to_aln(&self, files: &[PathBuf], ids: &IndexSet<String>) -> Vec<IdRecords> {
-        let mut mapped_ids = Vec::new();
-        files.iter().for_each(|file| {
-            let fstem = self.get_aln_name(file);
-            let mut rec = IdRecords::new(fstem, ids.len());
-            let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-            ids.iter().for_each(|id| {
-                rec.records.push(seq.contains_key(id));
-            });
-            mapped_ids.push(rec);
+    fn par_map_id(&self, files: &[PathBuf], ids: &IndexSet<String>) -> Vec<IdRecords> {
+        let (sender, receiver) = channel();
+        files.par_iter().for_each_with(sender, |s, file| {
+            s.send(self.map_id_to_aln(file, ids))
+                .expect("Error in mapping IDs");
         });
-        mapped_ids
+        let mut records: Vec<IdRecords> = receiver.iter().collect();
+        records.par_sort_by(|a, b| alphanumeric_sort::compare_str(&a.name, &b.name));
+        records
+    }
+
+    fn map_id_to_aln(&self, file: &Path, ids: &IndexSet<String>) -> IdRecords {
+        let fstem = self.get_aln_name(file);
+        let mut rec = IdRecords::new(fstem, ids.len());
+        let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+        ids.iter().for_each(|id| {
+            rec.records.push(seq.contains_key(id));
+        });
+        rec
     }
 
     fn get_aln_name(&self, file: &Path) -> String {

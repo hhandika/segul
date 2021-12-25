@@ -27,7 +27,7 @@ impl<'a> IdParser<'a> {
         let input_fmt = self.parse_input_fmt(self.matches);
         let datatype = self.parse_datatype(self.matches);
         let task_desc = "IDs finding";
-        let mut files = if self.is_input_dir() {
+        let files = if self.is_input_dir() {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
@@ -50,7 +50,6 @@ impl<'a> IdParser<'a> {
         if self.matches.is_present("map") {
             let map_fname = self.create_map_fname(&output);
             self.check_output_file_exist(&map_fname);
-            alphanumeric_sort::sort_path_slice(&mut files);
             id.map_id(&files, &map_fname);
         } else {
             id.generate_id(&files);
