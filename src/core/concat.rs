@@ -98,7 +98,7 @@ impl<'a> ConcatHandler<'a> {
             "Alignment length",
             utils::fmt_num(&header.nchar)
         );
-        log::info!("{:18}: {}", "Sequence file", self.output.display());
+        log::info!("{:18}: {}", "Alignment file", self.output.display());
         log::info!("{:18}: {}", "Partition file", &part_file.display(),);
     }
 }
