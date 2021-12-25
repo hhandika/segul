@@ -11,47 +11,47 @@ use crate::helper::types::DataType;
 use crate::helper::utils;
 use crate::writer::FileWriter;
 
-pub fn print_stats(site: &Sites, dna: &Chars, datatype: &DataType) {
-    log::info!("{}", Yellow.paint("Alignment"));
-    log::info!("{:18}: {}", "Taxa", utils::fmt_num(&dna.ntax));
-    log::info!("{:18}: {}", "Length", utils::fmt_num(&site.counts));
+// pub fn print_stats(site: &Sites, dna: &Chars, datatype: &DataType) {
+//     log::info!("{}", Yellow.paint("Alignment"));
+//     log::info!("{:18}: {}", "Taxa", utils::fmt_num(&dna.ntax));
+//     log::info!("{:18}: {}", "Length", utils::fmt_num(&site.counts));
 
-    log::info!("\n{}", Yellow.paint("Characters"));
-    log::info!("{:18}: {}", "Total", utils::fmt_num(&dna.total_chars));
-    log::info!(
-        "{:18}: {}",
-        "Missing data",
-        utils::fmt_num(&dna.missing_data)
-    );
-    log::info!(
-        "{:18}: {:.2}%",
-        "Prop. missing",
-        &dna.prop_missing_data * 100.0
-    );
+//     log::info!("\n{}", Yellow.paint("Characters"));
+//     log::info!("{:18}: {}", "Total", utils::fmt_num(&dna.total_chars));
+//     log::info!(
+//         "{:18}: {}",
+//         "Missing data",
+//         utils::fmt_num(&dna.missing_data)
+//     );
+//     log::info!(
+//         "{:18}: {:.2}%",
+//         "Prop. missing",
+//         &dna.prop_missing_data * 100.0
+//     );
 
-    let alphabet = match datatype {
-        DataType::Dna => alphabet::DNA_STR_UPPERCASE,
-        DataType::Aa => alphabet::AA_STR_UPPERCASE,
-        _ => unreachable!("Invalid data types! Use dna or aa only"),
-    };
-    alphabet.chars().for_each(|ch| {
-        if let Some(count) = dna.chars.get(&ch) {
-            log::info!("{:18}: {}", ch, utils::fmt_num(count));
-        }
-    });
+//     let alphabet = match datatype {
+//         DataType::Dna => alphabet::DNA_STR_UPPERCASE,
+//         DataType::Aa => alphabet::AA_STR_UPPERCASE,
+//         _ => unreachable!("Invalid data types! Use dna or aa only"),
+//     };
+//     alphabet.chars().for_each(|ch| {
+//         if let Some(count) = dna.chars.get(&ch) {
+//             log::info!("{:18}: {}", ch, utils::fmt_num(count));
+//         }
+//     });
 
-    log::info!("\n{}", Yellow.paint("Sites"));
-    log::info!("{:18}: {}", "Conserved", utils::fmt_num(&site.conserved));
-    log::info!("{:18}: {}", "Variable", utils::fmt_num(&site.variable));
-    log::info!(
-        "{:18}: {}",
-        "Parsimony inf.",
-        utils::fmt_num(&site.pars_inf)
-    );
-    log::info!("{:18}: {:.2}%", "%Conserved", site.prop_cons * 100.0);
-    log::info!("{:18}: {:.2}%", "%Variable", site.prop_var * 100.0);
-    log::info!("{:18}: {:.2}%\n", "%Pars. inf.", site.prop_pinf * 100.0);
-}
+//     log::info!("\n{}", Yellow.paint("Sites"));
+//     log::info!("{:18}: {}", "Conserved", utils::fmt_num(&site.conserved));
+//     log::info!("{:18}: {}", "Variable", utils::fmt_num(&site.variable));
+//     log::info!(
+//         "{:18}: {}",
+//         "Parsimony inf.",
+//         utils::fmt_num(&site.pars_inf)
+//     );
+//     log::info!("{:18}: {:.2}%", "%Conserved", site.prop_cons * 100.0);
+//     log::info!("{:18}: {:.2}%", "%Variable", site.prop_var * 100.0);
+//     log::info!("{:18}: {:.2}%\n", "%Pars. inf.", site.prop_pinf * 100.0);
+// }
 
 trait Alphabet {
     fn get_alphabet(&self, datatype: &DataType) -> &str {
@@ -91,14 +91,14 @@ impl<'a> CsvWriter<'a> {
         Ok(())
     }
 
-    pub fn write_summary_file(&mut self, site: &Sites, chars: &Chars) -> Result<()> {
-        let mut writer = self.create_output_file(self.output)?;
-        let alphabet = self.get_alphabet(self.datatype);
-        self.write_csv_header(&mut writer, alphabet)?;
-        self.write_csv_content(&mut writer, site, chars, alphabet)?;
+    // pub fn write_summary_file(&mut self, site: &Sites, chars: &Chars) -> Result<()> {
+    //     let mut writer = self.create_output_file(self.output)?;
+    //     let alphabet = self.get_alphabet(self.datatype);
+    //     self.write_csv_header(&mut writer, alphabet)?;
+    //     self.write_csv_content(&mut writer, site, chars, alphabet)?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     fn write_csv_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {
         write!(

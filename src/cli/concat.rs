@@ -34,14 +34,14 @@ impl<'a> ConcatParser<'a> {
         let part_fmt = self.parse_partition_fmt(self.matches);
         self.check_partition_format(&output_fmt, &part_fmt);
         let task_desc = "Alignment concatenation";
-        let mut files = if self.matches.is_present("wildcard") {
-            self.parse_input_wcard(self.matches)
-        } else {
+        let mut files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
+        } else {
+            self.parse_input(self.matches)
         };
-        self.print_input_multi(
+        self.print_input(
             &self.input_dir,
             task_desc,
             files.len(),

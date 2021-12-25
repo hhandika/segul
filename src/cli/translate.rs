@@ -48,15 +48,15 @@ impl<'a> TranslateParser<'a> {
         let outdir = self.parse_output(self.matches);
         let frame = self.get_reading_frame();
         let task_desc = "Sequence Translation";
-        let files = if self.matches.is_present("wildcard") {
-            self.parse_input_wcard(self.matches)
-        } else {
+        let files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
+        } else {
+            self.parse_input(self.matches)
         };
 
-        self.print_input_multi(
+        self.print_input(
             &self.input_dir,
             task_desc,
             files.len(),

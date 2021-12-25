@@ -30,7 +30,7 @@ impl<'a> Converter<'a> {
         }
     }
 
-    pub fn convert_multiple(&mut self, files: &[PathBuf], output: &Path) {
+    pub fn convert(&mut self, files: &[PathBuf], output: &Path) {
         let spin = utils::set_spinner();
         spin.set_message("Converting sequence format...");
         files.par_iter().for_each(|file| {
@@ -42,15 +42,15 @@ impl<'a> Converter<'a> {
         log::info!("{:18}: {}", "Output dir", output.display());
     }
 
-    pub fn convert_file(&self, input: &Path, output: &Path) {
-        let spin = utils::set_spinner();
-        let msg = format!("Converting {}...", input.display());
-        spin.set_message(msg);
-        self.convert_any(input, output);
-        spin.finish_with_message("Finished converting sequence format!\n");
-        log::info!("{}", Yellow.paint("Output"));
-        log::info!("{:18}: {}", "Output file", output.display());
-    }
+    // pub fn convert_file(&self, input: &Path, output: &Path) {
+    //     let spin = utils::set_spinner();
+    //     let msg = format!("Converting {}...", input.display());
+    //     spin.set_message(msg);
+    //     self.convert_any(input, output);
+    //     spin.finish_with_message("Finished converting sequence format!\n");
+    //     log::info!("{}", Yellow.paint("Output"));
+    //     log::info!("{:18}: {}", "Output file", output.display());
+    // }
 
     fn convert_any(&self, input: &Path, output: &Path) {
         if self.sort {
@@ -62,13 +62,13 @@ impl<'a> Converter<'a> {
 
     fn convert_unsorted(&self, input: &Path, output: &Path) {
         let (matrix, header) = self.get_sequence(input);
-        self.convert(&matrix, header, output);
+        self.write_results(&matrix, header, output);
     }
 
     fn convert_sorted(&self, input: &Path, output: &Path) {
         let (mut matrix, header) = self.get_sequence(input);
         matrix.sort_keys();
-        self.convert(&matrix, header, output)
+        self.write_results(&matrix, header, output)
     }
 
     fn get_sequence(&self, input: &Path) -> (SeqMatrix, Header) {
@@ -76,7 +76,7 @@ impl<'a> Converter<'a> {
         seq.get(self.input_fmt)
     }
 
-    fn convert(&self, matrix: &SeqMatrix, header: Header, output: &Path) {
+    fn write_results(&self, matrix: &SeqMatrix, header: Header, output: &Path) {
         let mut convert = SeqWriter::new(output, matrix, &header, None, &PartitionFmt::None);
         convert
             .write_sequence(self.output_fmt)

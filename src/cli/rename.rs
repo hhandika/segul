@@ -29,12 +29,12 @@ impl<'a> RenameParser<'a> {
         let output_fmt = self.parse_output_fmt(self.matches);
         let outdir = self.parse_output(self.matches);
         let task_desc = "Sequence Renaming";
-        let files = if self.matches.is_present("wildcard") {
-            self.parse_input_wcard(self.matches)
-        } else {
+        let files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
+        } else {
+            self.parse_input(self.matches)
         };
 
         let ids = Path::new(
@@ -43,7 +43,7 @@ impl<'a> RenameParser<'a> {
                 .expect("Failed parsing path to id names"),
         );
 
-        self.print_input_multi(
+        self.print_input(
             &self.input_dir,
             task_desc,
             files.len(),

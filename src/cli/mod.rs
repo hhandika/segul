@@ -85,29 +85,29 @@ fn setup_logger() -> Result<()> {
     Ok(())
 }
 
-enum InputType {
-    File,
-    Dir,
-    Wildcard,
-}
+// enum InputType {
+//     File,
+//     Dir,
+//     Wildcard,
+// }
 
 trait InputCli {
-    fn parse_file_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
-        Path::new(
-            matches
-                .value_of("input")
-                .expect("Failed parsing an input value"),
-        )
-    }
+    // fn parse_file_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
+    //     Path::new(
+    //         matches
+    //             .value_of("input")
+    //             .expect("Failed parsing an input value"),
+    //     )
+    // }
 
     fn parse_dir_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
         Path::new(matches.value_of("dir").expect("Failed parsing a dir value"))
     }
 
-    fn parse_input_wcard(&self, matches: &ArgMatches) -> Vec<PathBuf> {
+    fn parse_input(&self, matches: &ArgMatches) -> Vec<PathBuf> {
         let inputs = matches
-            .values_of("wildcard")
-            .expect("Failed parsing wildcard values")
+            .values_of("input")
+            .expect("Failed parsing input values")
             .map(PathBuf::from)
             .collect::<Vec<PathBuf>>();
         if cfg!(windows) {
@@ -135,15 +135,15 @@ trait InputCli {
         Files::new(dir, input_fmt).get_files()
     }
 
-    fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
-        if matches.is_present("input") {
-            InputType::File
-        } else if matches.is_present("dir") {
-            InputType::Dir
-        } else {
-            InputType::Wildcard
-        }
-    }
+    // fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
+    //     if matches.is_present("input") {
+    //         InputType::File
+    //     } else if matches.is_present("dir") {
+    //         InputType::Dir
+    //     } else {
+    //         InputType::Wildcard
+    //     }
+    // }
 
     fn parse_input_fmt(&self, matches: &ArgMatches) -> InputFmt {
         let input_fmt = matches
@@ -172,20 +172,20 @@ trait InputCli {
 }
 
 trait InputPrint {
-    fn print_input_file(
-        &self,
-        input: &Path,
-        task_desc: &str,
-        input_fmt: &InputFmt,
-        datatype: &DataType,
-    ) {
-        log::info!("{:18}: {}", "Input", &input.display());
-        self.print_input_fmt(input_fmt);
-        self.print_datatype(datatype);
-        log::info!("{:18}: {}\n", "Task", task_desc);
-    }
+    // fn print_input_file(
+    //     &self,
+    //     input: &Path,
+    //     task_desc: &str,
+    //     input_fmt: &InputFmt,
+    //     datatype: &DataType,
+    // ) {
+    //     log::info!("{:18}: {}", "Input", &input.display());
+    //     self.print_input_fmt(input_fmt);
+    //     self.print_datatype(datatype);
+    //     log::info!("{:18}: {}\n", "Task", task_desc);
+    // }
 
-    fn print_input_multi<P: AsRef<Path>>(
+    fn print_input<P: AsRef<Path>>(
         &self,
         input: &Option<P>,
         task_desc: &str,
@@ -196,7 +196,7 @@ trait InputPrint {
         if let Some(input) = input {
             log::info!("{:18}: {}", "Input dir", &input.as_ref().display());
         } else {
-            log::info!("{:18}: {}", "Input dir", "WILDCARD");
+            log::info!("{:18}: {}", "Input", "STDIN");
         }
         log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
         self.print_input_fmt(input_fmt);

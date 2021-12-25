@@ -10,35 +10,25 @@ pub fn get_args(version: &str) -> ArgMatches {
             App::new("convert")
                 .about("Converts sequence formats")
                 .arg(
-                    Arg::with_name("input")
-                        .short("i")
-                        .long("input")
-                        .help("Convert a fasta file")
-                        .takes_value(true)
-                        .required_unless("dir")
-                        .conflicts_with_all(&["dir", "wildcard"])
-                        .value_name("PATH"),
-                )
-                .arg(
                     Arg::with_name("dir")
                         .short("d")
                         .long("dir")
-                        .help("Convert multiple fasta files inside a dir")
+                        .help("Input a directory")
                         .takes_value(true)
                         .required_unless("input")
-                        .conflicts_with_all(&["input", "wildcard"])
+                        .conflicts_with("input")
                         .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("wildcard")
-                        .short("c")
-                        .long("wcard")
-                        .help("Convert multiple fasta files using wildcard as an input")
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path with wildcard support")
                         .takes_value(true)
                         .multiple(true)
                         .required_unless("input")
-                        .conflicts_with_all(&["input", "dir"])
-                        .value_name("WILDCARD"),
+                        .conflicts_with("dir")
+                        .value_name("INPUT-PATH"),
                 )
                 .arg(
                     Arg::with_name("output")
@@ -46,7 +36,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Sets target directory or use a costume file name for a single input")
                         .takes_value(true)
-                        .required_unless("input")
+                        .required(true)
+                        .default_value("SEGUL-Convert")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -112,15 +103,15 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("wildcard")
-                        .short("c")
-                        .long("wcard")
-                        .help("Uses wildcard as an input")
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path with wildcard support")
                         .takes_value(true)
                         .multiple(true)
-                        .required_unless("input")
-                        .conflicts_with_all(&["input", "dir"])
-                        .value_name("WILDCARD"),
+                        .required_unless("dir")
+                        .conflicts_with("dir")
+                        .value_name("INPUT-PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -213,15 +204,15 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("wildcard")
-                        .short("c")
-                        .long("wcard")
-                        .help("Uses wildcard as an input")
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path with wildcard support")
                         .takes_value(true)
                         .multiple(true)
-                        .required_unless("input")
+                        .required_unless("dir")
                         .conflicts_with("dir")
-                        .value_name("WILDCARD"),
+                        .value_name("INPUT-PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -369,15 +360,15 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("wildcard")
-                        .short("c")
-                        .long("wcard")
-                        .help("Uses wildcard as an input")
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path with wildcard support")
                         .takes_value(true)
                         .multiple(true)
                         .required_unless("input")
                         .conflicts_with("dir")
-                        .value_name("WILDCARD"),
+                        .value_name("INPUT-PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -435,15 +426,15 @@ pub fn get_args(version: &str) -> ArgMatches {
                     .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("wildcard")
-                            .short("c")
-                            .long("wcard")
-                            .help("Uses wildcard as an input")
+                    Arg::with_name("input")
+                            .short("i")
+                            .long("input")
+                            .help("Input path with wildcard support")
                             .takes_value(true)
                             .multiple(true)
                             .required_unless("input")
                             .conflicts_with_all(&["input", "dir"])
-                            .value_name("WILDCARD"),
+                            .value_name("INPUT-PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -468,7 +459,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Uses a costume output filename")
                         .takes_value(true)
                         .required(true)
-                        .default_value("SEGUL-rename")
+                        .default_value("SEGUL-Rename")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -519,34 +510,24 @@ pub fn get_args(version: &str) -> ArgMatches {
             App::new("summary")
                 .about("Gets alignment summary stats")
                 .arg(
-                    Arg::with_name("input")
-                        .short("i")
-                        .long("input")
-                        .help("Gets summary from a file")
-                        .takes_value(true)
-                        .required_unless("dir")
-                        .conflicts_with_all(&["dir", "wildcard"])
-                        .value_name("PATH"),
-                )
-                .arg(
                     Arg::with_name("dir")
                         .short("d")
                         .long("dir")
                         .help("Gets summary from alignment files")
                         .takes_value(true)
-                        .conflicts_with_all(&["input", "wildcard"])
+                        .conflicts_with("input")
                         .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("wildcard")
-                        .short("c")
-                        .long("wcard")
-                        .help("Uses wildcard as an input")
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path with wildcard support")
                         .takes_value(true)
                         .multiple(true)
-                        .required_unless("input")
-                        .conflicts_with_all(&["input", "dir"])
-                        .value_name("WILDCARD"),
+                        .required_unless("dir")
+                        .conflicts_with("dir")
+                        .value_name("INPUT-PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -571,7 +552,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Uses a costume output filename")
                         .takes_value(true)
                         .required(true)
-                        .default_value("SEGUL-stats")
+                        .default_value("SEGUL-Stats")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -603,19 +584,19 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("dir")
                         .help("Inputs a directory path to alignments")
                         .takes_value(true)
-                        .conflicts_with("wildcard")
+                        .conflicts_with("input")
                         .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("wildcard")
-                        .short("c")
-                        .long("wcard")
-                        .help("Uses wildcard as an input")
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path with wildcard support")
                         .takes_value(true)
                         .multiple(true)
-                        .required_unless("input")
+                        .required_unless("dir")
                         .conflicts_with("dir")
-                        .value_name("WILDCARD"),
+                        .value_name("INPUT-PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")
@@ -667,7 +648,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Specifies a directory name")
                         .takes_value(true)
                         .required(true)
-                        .default_value("SEGUL-extract")
+                        .default_value("SEGUL-Extract")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -707,19 +688,19 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("dir")
                         .help("Inputs a directory path to alignments")
                         .takes_value(true)
-                        .conflicts_with("wildcard")
+                        .conflicts_with("input")
                         .value_name("PATH"),
                 )
                 .arg(
-                    Arg::with_name("wildcard")
-                        .short("c")
-                        .long("wcard")
-                        .help("Uses wildcard as an input")
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path with wildcard support")
                         .takes_value(true)
                         .multiple(true)
                         .required_unless_one(&["dir", "show-tables"])
                         .conflicts_with("dir")
-                        .value_name("WILDCARD"),
+                        .value_name("INPUT-PATH"),
                 )
                 .arg(
                     Arg::with_name("input-format")

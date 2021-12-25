@@ -32,14 +32,14 @@ impl<'a> ExtractParser<'a> {
         let output_fmt = self.parse_output_fmt(self.matches);
         let outdir = self.parse_output(self.matches);
         let task_desc = "Sequence extraction";
-        let files = if self.is_input_wcard() {
-            self.parse_input_wcard(self.matches)
-        } else {
+        let files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
+        } else {
+            self.parse_input(self.matches)
         };
-        self.print_input_multi(
+        self.print_input(
             &self.input_dir,
             task_desc,
             files.len(),
@@ -104,9 +104,5 @@ impl<'a> ExtractParser<'a> {
             .expect("Failed parsing IDs input")
             .map(String::from)
             .collect()
-    }
-
-    fn is_input_wcard(&self) -> bool {
-        self.matches.is_present("wildcard")
     }
 }

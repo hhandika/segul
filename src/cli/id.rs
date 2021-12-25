@@ -27,15 +27,15 @@ impl<'a> IdParser<'a> {
         let input_fmt = self.parse_input_fmt(self.matches);
         let datatype = self.parse_datatype(self.matches);
         let task_desc = "IDs finding";
-        let files = if self.is_input_dir() {
+        let files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
         } else {
-            self.parse_input_wcard(self.matches)
+            self.parse_input(self.matches)
         };
 
-        self.print_input_multi(
+        self.print_input(
             &self.input_dir,
             task_desc,
             files.len(),
@@ -63,9 +63,5 @@ impl<'a> IdParser<'a> {
             .and_then(OsStr::to_str)
             .expect("Failed getting file stem for mapping IDs");
         parent.join(format!("{}_map", fstem)).with_extension("csv")
-    }
-
-    fn is_input_dir(&self) -> bool {
-        self.matches.is_present("dir")
     }
 }

@@ -1,8 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use clap::ArgMatches;
 
-use crate::cli::{InputCli, InputPrint, InputType, OutputCli};
+use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::core::summarize::SeqStats;
 use crate::helper::types::{DataType, InputFmt};
 
@@ -23,6 +23,7 @@ pub(in crate::cli) struct SummaryParser<'a> {
     interval: usize,
     input_fmt: InputFmt,
     datatype: DataType,
+    input_dir: Option<PathBuf>,
 }
 
 impl<'a> SummaryParser<'a> {
@@ -32,6 +33,7 @@ impl<'a> SummaryParser<'a> {
             interval: 0,
             input_fmt: InputFmt::Fasta,
             datatype: DataType::Dna,
+            input_dir: None,
         }
     }
 
@@ -39,52 +41,68 @@ impl<'a> SummaryParser<'a> {
         self.input_fmt = self.parse_input_fmt(self.matches);
         self.interval = self.parse_interval();
         self.datatype = self.parse_datatype(self.matches);
-        let input_type = self.parse_input_type(self.matches);
         let task_desc = "Sequence summary statistics";
-        match input_type {
-            InputType::File => self.get_stats_file(task_desc),
-            InputType::Dir => {
-                let dir = self.parse_dir_input(self.matches);
-                let files = self.get_files(dir, &self.input_fmt);
+        let files = if self.matches.is_present("dir") {
+            let dir = self.parse_dir_input(self.matches);
+            self.input_dir = Some(PathBuf::from(dir));
+            self.get_files(dir, &self.input_fmt)
+        } else {
+            self.parse_input(self.matches)
+        };
+        // match input_type {
+        //     InputType::File => self.get_stats_file(task_desc),
+        //     InputType::Dir => {
+        //         let dir = self.parse_dir_input(self.matches);
+        //         let files = self.get_files(dir, &self.input_fmt);
 
-                self.print_input_multi(
-                    &Some(dir),
-                    task_desc,
-                    files.len(),
-                    &self.input_fmt,
-                    &self.datatype,
-                );
-                self.get_stats_multiple(&files);
-            }
-            InputType::Wildcard => {
-                let files = self.parse_input_wcard(self.matches);
-                self.print_input_multi::<PathBuf>(
-                    &None,
-                    task_desc,
-                    files.len(),
-                    &self.input_fmt,
-                    &self.datatype,
-                );
-                self.get_stats_multiple(&files)
-            }
-        }
-    }
+        //         self.print_input_multi(
+        //             &Some(dir),
+        //             task_desc,
+        //             files.len(),
+        //             &self.input_fmt,
+        //             &self.datatype,
+        //         );
+        //         self.get_stats_multiple(&files);
+        //     }
+        //     InputType::Wildcard => {
+        //         let files = self.parse_input_wcard(self.matches);
+        //         self.print_input_multi::<PathBuf>(
+        //             &None,
+        //             task_desc,
+        //             files.len(),
+        //             &self.input_fmt,
+        //             &self.datatype,
+        //         );
+        //         self.get_stats_multiple(&files)
+        //     }
+        // }
 
-    fn get_stats_multiple(&self, files: &[PathBuf]) {
+        self.print_input::<PathBuf>(
+            &self.input_dir,
+            task_desc,
+            files.len(),
+            &self.input_fmt,
+            &self.datatype,
+        );
+
+        // self.get_stats_multiple(&files);
         let output = self.parse_output(self.matches);
-        self.check_output_file_exist(&output);
-        SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype).get_stats_dir(files);
-    }
-
-    fn get_stats_file(&self, task_desc: &str) {
-        self.parse_input_fmt(self.matches);
-        let input = Path::new(self.parse_file_input(self.matches));
-        let output = self.parse_output(self.matches);
-        self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
         self.check_output_file_exist(&output);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
-            .get_seq_stats_file(input);
+            .get_stats_dir(&files);
     }
+
+    // fn get_stats_multiple(&self, files: &[PathBuf]) {}
+
+    // fn get_stats_file(&self, task_desc: &str) {
+    //     self.parse_input_fmt(self.matches);
+    //     let input = Path::new(self.parse_file_input(self.matches));
+    //     let output = self.parse_output(self.matches);
+    //     self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
+    //     self.check_output_file_exist(&output);
+    //     SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
+    //         .get_seq_stats_file(input);
+    // }
 
     fn parse_interval(&self) -> usize {
         let interval = self

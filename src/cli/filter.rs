@@ -45,14 +45,14 @@ impl<'a> FilterParser<'a> {
         self.input_fmt = self.parse_input_fmt(self.matches);
         self.datatype = self.parse_datatype(self.matches);
         let task_desc = "Alignment filtering";
-        self.files = if self.is_input_dir() {
+        self.files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &self.input_fmt)
         } else {
-            self.parse_input_wcard(self.matches)
+            self.parse_input(self.matches)
         };
-        self.print_input_multi(
+        self.print_input(
             &self.input_dir,
             task_desc,
             self.files.len(),
@@ -271,10 +271,6 @@ impl<'a> FilterParser<'a> {
 
     fn is_npercent(&mut self) -> bool {
         self.matches.is_present("npercent")
-    }
-
-    fn is_input_dir(&self) -> bool {
-        self.matches.is_present("dir")
     }
 }
 
