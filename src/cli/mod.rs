@@ -246,21 +246,23 @@ trait OutputCli {
     }
 
     fn check_output_file_exist(&self, path: &Path) {
+        let error_msg = format!("Output file already exists: {}", path.display());
         check_output_path!(
             is_file,
             remove_file,
             path,
-            format!("The {} file exists! Remove it?", path.display()),
+            error_msg,
             "Failed removing files"
         );
     }
 
     fn check_output_dir_exist(&self, path: &Path) {
+        let error_msg = format!("Output dir already exists: {}", path.display());
         check_output_path!(
             is_dir,
             remove_dir_all,
             path,
-            format!("The {} directory exists! Remove it?", path.display()),
+            error_msg,
             "Failed removing a directory"
         )
     }
@@ -324,15 +326,15 @@ trait ConcatCli {
 
 #[macro_export]
 macro_rules! check_output_path {
-    ($type: ident, $execution: ident, $path: ident, $prompt: stmt, $err_msg: stmt) => {
+    ($type: ident, $execution: ident, $path: ident, $prompt: expr, $err_msg: expr) => {
         if $path.$type() {
             let selection = Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt(stringify!($prompt))
+                .with_prompt($prompt)
                 .interact();
             match selection {
                 Ok(yes) => {
                     if yes {
-                        fs::$execution($path).expect(stringify!($err_msg));
+                        fs::$execution($path).expect($err_msg);
                         println!();
                     } else {
                         std::process::abort();
