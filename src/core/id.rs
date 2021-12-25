@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 // use std::sync::{Arc, Mutex};
 
 use ansi_term::Colour::Yellow;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 // use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
@@ -58,26 +58,47 @@ impl<'a> Id<'a> {
         id
     }
 
-    fn map_id_to_aln(
-        &self,
-        files: &[PathBuf],
-        ids: &IndexSet<String>,
-    ) -> IndexMap<String, Vec<bool>> {
-        let mut mapped_ids: IndexMap<String, Vec<bool>> = IndexMap::new();
+    // fn map_id_to_aln(
+    //     &self,
+    //     files: &[PathBuf],
+    //     ids: &IndexSet<String>,
+    // ) -> IndexMap<String, Vec<bool>> {
+    //     let mut mapped_ids: IndexMap<String, Vec<bool>> = IndexMap::new();
+    //     files.iter().for_each(|file| {
+    //         let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+    //         let mut is_id = Vec::with_capacity(ids.len());
+    //         ids.iter().for_each(|id| {
+    //             is_id.push(seq.contains_key(id));
+    //         });
+    //         let fstem = file
+    //             .file_stem()
+    //             .and_then(OsStr::to_str)
+    //             .expect("Failed getting file stem for mapping IDs")
+    //             .to_string();
+    //         mapped_ids.insert(fstem, is_id);
+    //     });
+    //     mapped_ids
+    // }
+
+    fn map_id_to_aln(&self, files: &[PathBuf], ids: &IndexSet<String>) -> Vec<IdRecords> {
+        let mut mapped_ids = Vec::new();
         files.iter().for_each(|file| {
+            let fstem = self.get_aln_name(file);
+            let mut rec = IdRecords::new(fstem, ids.len());
             let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-            let mut is_id = Vec::with_capacity(ids.len());
             ids.iter().for_each(|id| {
-                is_id.push(seq.contains_key(id));
+                rec.records.push(seq.contains_key(id));
             });
-            let fstem = file
-                .file_stem()
-                .and_then(OsStr::to_str)
-                .expect("Failed getting file stem for mapping IDs")
-                .to_string();
-            mapped_ids.insert(fstem, is_id);
+            mapped_ids.push(rec);
         });
         mapped_ids
+    }
+
+    fn get_aln_name(&self, file: &Path) -> String {
+        file.file_stem()
+            .and_then(OsStr::to_str)
+            .expect("Failed getting file stem for mapping IDs")
+            .to_string()
     }
 
     fn write_unique_id(&self, ids: &IndexSet<String>) -> Result<()> {
@@ -92,7 +113,7 @@ impl<'a> Id<'a> {
     fn write_mapped_id(
         &self,
         ids: &IndexSet<String>,
-        mapped_ids: &IndexMap<String, Vec<bool>>,
+        mapped_ids: &[IdRecords],
         output: &Path,
     ) -> Result<()> {
         let mut writer = self.write_file(output);
@@ -101,9 +122,9 @@ impl<'a> Id<'a> {
             write!(writer, ",{}", id).expect("Failed writing a csv header");
         });
         writeln!(writer)?;
-        mapped_ids.iter().for_each(|(loci, is_id)| {
-            write!(writer, "{}", loci).expect("Failed writing a csv header");
-            is_id.iter().for_each(|is_id| {
+        mapped_ids.iter().for_each(|rec| {
+            write!(writer, "{}", rec.name).expect("Failed writing a csv header");
+            rec.records.iter().for_each(|is_id| {
                 write!(writer, ",{}", is_id).expect("Failed writing id map");
             });
             writeln!(writer).expect("Failed writing id map");
@@ -125,5 +146,19 @@ impl<'a> Id<'a> {
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "Total unique IDs", ids);
         log::info!("{:18}: {}", "File output", self.output.display());
+    }
+}
+
+struct IdRecords {
+    name: String,
+    records: Vec<bool>,
+}
+
+impl IdRecords {
+    fn new(name: String, size: usize) -> Self {
+        Self {
+            name,
+            records: Vec::with_capacity(size),
+        }
     }
 }
