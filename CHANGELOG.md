@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.11.0
+
+- Add feature to map sample distribution across a collection of alignments.
+- Dir and file exist prompts now show the file names.
+
 ## 0.10.1
 
 - Fix spinner messages.
