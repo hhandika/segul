@@ -200,7 +200,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("dir")
                         .help("Inputs a path to alignment dir")
                         .takes_value(true)
-                        .required(true)
+                        .required_unless("input")
                         .value_name("PATH"),
                 )
                 .arg(
