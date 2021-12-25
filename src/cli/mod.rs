@@ -250,7 +250,7 @@ trait OutputCli {
             is_file,
             remove_file,
             path,
-            "The same output file exists! Remove it?",
+            format!("The {} file exists! Remove it?", path.display()),
             "Failed removing files"
         );
     }
@@ -260,7 +260,7 @@ trait OutputCli {
             is_dir,
             remove_dir_all,
             path,
-            "The same output directory exists! Remove it?",
+            format!("The {} directory exists! Remove it?", path.display()),
             "Failed removing a directory"
         )
     }
