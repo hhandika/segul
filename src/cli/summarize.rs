@@ -49,33 +49,6 @@ impl<'a> SummaryParser<'a> {
         } else {
             self.parse_input(self.matches)
         };
-        // match input_type {
-        //     InputType::File => self.get_stats_file(task_desc),
-        //     InputType::Dir => {
-        //         let dir = self.parse_dir_input(self.matches);
-        //         let files = self.get_files(dir, &self.input_fmt);
-
-        //         self.print_input_multi(
-        //             &Some(dir),
-        //             task_desc,
-        //             files.len(),
-        //             &self.input_fmt,
-        //             &self.datatype,
-        //         );
-        //         self.get_stats_multiple(&files);
-        //     }
-        //     InputType::Wildcard => {
-        //         let files = self.parse_input_wcard(self.matches);
-        //         self.print_input_multi::<PathBuf>(
-        //             &None,
-        //             task_desc,
-        //             files.len(),
-        //             &self.input_fmt,
-        //             &self.datatype,
-        //         );
-        //         self.get_stats_multiple(&files)
-        //     }
-        // }
 
         self.print_input::<PathBuf>(
             &self.input_dir,
@@ -85,24 +58,11 @@ impl<'a> SummaryParser<'a> {
             &self.datatype,
         );
 
-        // self.get_stats_multiple(&files);
         let output = self.parse_output(self.matches);
         self.check_output_file_exist(&output);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
             .get_stats_dir(&files);
     }
-
-    // fn get_stats_multiple(&self, files: &[PathBuf]) {}
-
-    // fn get_stats_file(&self, task_desc: &str) {
-    //     self.parse_input_fmt(self.matches);
-    //     let input = Path::new(self.parse_file_input(self.matches));
-    //     let output = self.parse_output(self.matches);
-    //     self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
-    //     self.check_output_file_exist(&output);
-    //     SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
-    //         .get_seq_stats_file(input);
-    // }
 
     fn parse_interval(&self) -> usize {
         let interval = self

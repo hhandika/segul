@@ -40,7 +40,6 @@ impl<'a> ConvertParser<'a> {
         self.output_fmt = self.parse_output_fmt(self.matches);
         self.datatype = self.parse_datatype(self.matches);
         self.is_sort();
-        // let input_type = self.parse_input_type(self.matches);
         let task_desc = "Sequence format conversion";
         let files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
@@ -49,24 +48,7 @@ impl<'a> ConvertParser<'a> {
         } else {
             self.parse_input(self.matches)
         };
-        // match input_type {
-        //     InputType::File => self.convert_file(task_desc),
-        //     InputType::Dir => {
-        //         let dir = self.parse_dir_input(self.matches);
-        //         let files = self.get_files(dir, &self.input_fmt);
-        //         self.print_input_multi(
-        //             &Some(dir),
-        //             task_desc,
-        //             files.len(),
-        //             &self.input_fmt,
-        //             &self.datatype,
-        //         );
-        //         self.convert_multiple_files(&files);
-        //     }
-        //     InputType::Wildcard => {
-        //         let files = self.parse_input_wcard(self.matches);
-        //     }
-        // }
+
         self.print_input::<PathBuf>(
             &self.input_dir,
             task_desc,
@@ -80,17 +62,6 @@ impl<'a> ConvertParser<'a> {
             Converter::new(&self.input_fmt, &self.output_fmt, &self.datatype, self.sort);
         convert.convert(&files, &self.output);
     }
-
-    // fn convert_file(&self, task_desc: &str) {
-    //     let input = Path::new(self.parse_file_input(self.matches));
-    //     let output = filenames::create_output_fname_from_path(&self.output, &self.output_fmt);
-    //     self.print_input_file(input, task_desc, &self.input_fmt, &self.datatype);
-    //     self.check_output_file_exist(&output);
-    //     let convert = Converter::new(&self.input_fmt, &self.output_fmt, &self.datatype, self.sort);
-    //     convert.convert_file(input, &output);
-    // }
-
-    // fn convert_multiple_files(&mut self, files: &[PathBuf]) {}
 
     fn is_sort(&mut self) {
         self.sort = self.matches.is_present("sort");

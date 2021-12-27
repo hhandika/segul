@@ -85,21 +85,7 @@ fn setup_logger() -> Result<()> {
     Ok(())
 }
 
-// enum InputType {
-//     File,
-//     Dir,
-//     Wildcard,
-// }
-
 trait InputCli {
-    // fn parse_file_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
-    //     Path::new(
-    //         matches
-    //             .value_of("input")
-    //             .expect("Failed parsing an input value"),
-    //     )
-    // }
-
     fn parse_dir_input<'a>(&self, matches: &'a ArgMatches) -> &'a Path {
         Path::new(matches.value_of("dir").expect("Failed parsing a dir value"))
     }
@@ -135,16 +121,6 @@ trait InputCli {
         Files::new(dir, input_fmt).get_files()
     }
 
-    // fn parse_input_type(&self, matches: &ArgMatches) -> InputType {
-    //     if matches.is_present("input") {
-    //         InputType::File
-    //     } else if matches.is_present("dir") {
-    //         InputType::Dir
-    //     } else {
-    //         InputType::Wildcard
-    //     }
-    // }
-
     fn parse_input_fmt(&self, matches: &ArgMatches) -> InputFmt {
         let input_fmt = matches
             .value_of("input-format")
@@ -172,19 +148,6 @@ trait InputCli {
 }
 
 trait InputPrint {
-    // fn print_input_file(
-    //     &self,
-    //     input: &Path,
-    //     task_desc: &str,
-    //     input_fmt: &InputFmt,
-    //     datatype: &DataType,
-    // ) {
-    //     log::info!("{:18}: {}", "Input", &input.display());
-    //     self.print_input_fmt(input_fmt);
-    //     self.print_datatype(datatype);
-    //     log::info!("{:18}: {}\n", "Task", task_desc);
-    // }
-
     fn print_input<P: AsRef<Path>>(
         &self,
         input: &Option<P>,
