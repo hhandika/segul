@@ -37,18 +37,6 @@ impl<'a> SeqStats<'a> {
         }
     }
 
-    // pub fn get_seq_stats_file(&mut self, path: &Path) {
-    //     self.check_datatype();
-    //     let spin = utils::set_spinner();
-    //     spin.set_message("Getting alignments...");
-    //     let (site, dna) = self.get_stats(path);
-    //     spin.finish_with_message("Finished getting alignments!\n");
-    //     CsvWriter::new(self.output, self.datatype)
-    //         .write_summary_file(&site, &dna)
-    //         .expect("CANNOT WRITE PER LOCUS SUMMARY STATS");
-    //     summary::print_stats(&site, &dna, self.datatype);
-    // }
-
     pub fn get_stats_dir(&mut self, files: &[PathBuf]) {
         self.check_datatype();
         let spin = utils::set_spinner();
