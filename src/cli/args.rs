@@ -26,7 +26,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Input path with wildcard support")
                         .takes_value(true)
                         .multiple(true)
-                        .required_unless("input")
+                        .required_unless("dir")
                         .conflicts_with("dir")
                         .value_name("INPUT-PATH"),
                 )
