@@ -5,6 +5,7 @@
 - Add feature to map sample distribution across a collection of alignments.
 - Dir and file exist prompts now show the file names.
 - Simplify input option. Wildcard option is now a part of input option.
+- Print output format.
 
 ## 0.10.1
 
