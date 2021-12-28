@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.11.1
+
+- Fix file count formatting for sequence extraction terminal output.
+
 ## 0.11.0
 
 - Add feature to map sample distribution across a collection of alignments.
