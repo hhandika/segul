@@ -42,16 +42,6 @@ impl<'a> Converter<'a> {
         log::info!("{:18}: {}", "Output dir", output.display());
     }
 
-    // pub fn convert_file(&self, input: &Path, output: &Path) {
-    //     let spin = utils::set_spinner();
-    //     let msg = format!("Converting {}...", input.display());
-    //     spin.set_message(msg);
-    //     self.convert_any(input, output);
-    //     spin.finish_with_message("Finished converting sequence format!\n");
-    //     log::info!("{}", Yellow.paint("Output"));
-    //     log::info!("{:18}: {}", "Output file", output.display());
-    // }
-
     fn convert_any(&self, input: &Path, output: &Path) {
         if self.sort {
             self.convert_sorted(input, output);
