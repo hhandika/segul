@@ -17,9 +17,10 @@ Features:
 3. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
 4. Computing alignment summary statistics.
 5. Getting sample IDs from a collection of alignments.
-6. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
-7. Converting dna sequences to amino acid.
-8. Batch Renaming sequence IDs.
+6. Map sample distribution in a collection of alignments.
+7. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
+8. Converting dna sequences to amino acid.
+9. Batch Renaming sequence IDs.
 
 Supported sequence formats:
 
