@@ -32,7 +32,6 @@ use crate::cli::rename::RenameParser;
 use crate::cli::summarize::SummaryParser;
 use crate::cli::translate::TranslateParser;
 
-use crate::check_output_path;
 use crate::helper::finder::Files;
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
@@ -83,6 +82,27 @@ fn setup_logger() -> Result<()> {
     log4rs::init_config(config).expect("Cannot initiate log configuration");
 
     Ok(())
+}
+
+macro_rules! check_output_path {
+    ($type: ident, $execution: ident, $path: ident, $prompt: expr, $err_msg: expr) => {
+        if $path.$type() {
+            let selection = Confirm::with_theme(&ColorfulTheme::default())
+                .with_prompt($prompt)
+                .interact();
+            match selection {
+                Ok(yes) => {
+                    if yes {
+                        fs::$execution($path).expect($err_msg);
+                        println!();
+                    } else {
+                        std::process::abort();
+                    }
+                }
+                Err(err) => panic!("Failed parsing user input: {}", err),
+            }
+        }
+    };
 }
 
 trait InputCli {
@@ -285,26 +305,4 @@ trait ConcatCli {
             }
         }
     }
-}
-
-#[macro_export]
-macro_rules! check_output_path {
-    ($type: ident, $execution: ident, $path: ident, $prompt: expr, $err_msg: expr) => {
-        if $path.$type() {
-            let selection = Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt($prompt)
-                .interact();
-            match selection {
-                Ok(yes) => {
-                    if yes {
-                        fs::$execution($path).expect($err_msg);
-                        println!();
-                    } else {
-                        std::process::abort();
-                    }
-                }
-                Err(err) => panic!("Failed parsing user input: {}", err),
-            }
-        }
-    };
 }
