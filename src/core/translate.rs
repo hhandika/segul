@@ -6,6 +6,7 @@ use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
+use crate::core::OutputPrint;
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::translation::NcbiTables;
 use crate::helper::types::{
@@ -14,10 +15,13 @@ use crate::helper::types::{
 use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
 
+impl OutputPrint for Translate<'_> {}
+
 pub struct Translate<'a> {
     input_fmt: &'a InputFmt,
     trans_table: &'a GeneticCodes,
     datatype: &'a DataType,
+    output_fmt: &'a OutputFmt,
 }
 
 impl<'a> Translate<'a> {
@@ -25,32 +29,28 @@ impl<'a> Translate<'a> {
         trans_table: &'a GeneticCodes,
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
+        output_fmt: &'a OutputFmt,
     ) -> Self {
         Self {
             trans_table,
             input_fmt,
             datatype,
+            output_fmt,
         }
     }
 
-    pub fn translate_all(
-        &self,
-        files: &[PathBuf],
-        frame: usize,
-        output: &Path,
-        output_fmt: &OutputFmt,
-    ) {
+    pub fn translate_all(&self, files: &[PathBuf], frame: usize, output: &Path) {
         let spin = utils::set_spinner();
         spin.set_message("Translating dna sequences...");
         fs::create_dir_all(output).expect("Failed creating an output directory");
         files.par_iter().for_each(|file| {
             let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
-            let outname = filenames::create_output_fname(output, file, output_fmt);
+            let outname = filenames::create_output_fname(output, file, self.output_fmt);
             let mut writer =
                 SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
             writer
-                .write_sequence(output_fmt)
+                .write_sequence(self.output_fmt)
                 .expect("Failed writing the output files");
         });
 
@@ -58,12 +58,7 @@ impl<'a> Translate<'a> {
         self.print_output_info(output);
     }
 
-    pub fn translate_all_autoframe(
-        &self,
-        files: &[PathBuf],
-        output: &Path,
-        output_fmt: &OutputFmt,
-    ) {
+    pub fn translate_all_autoframe(&self, files: &[PathBuf], output: &Path) {
         let spin = utils::set_spinner();
         spin.set_message("Translating dna sequences...");
         files.par_iter().for_each(|file| {
@@ -73,11 +68,11 @@ impl<'a> Translate<'a> {
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
             let output_dir = output.join(format!("RF-{}", frame));
             fs::create_dir_all(output).expect("Failed creating an output directory");
-            let outname = filenames::create_output_fname(&output_dir, file, output_fmt);
+            let outname = filenames::create_output_fname(&output_dir, file, self.output_fmt);
             let mut writer =
                 SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
             writer
-                .write_sequence(output_fmt)
+                .write_sequence(self.output_fmt)
                 .expect("Failed writing the output files");
         });
 
@@ -177,6 +172,7 @@ impl<'a> Translate<'a> {
     fn print_output_info(&self, output: &Path) {
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "Output dir", output.display());
+        self.print_output_fmt(self.output_fmt);
     }
 }
 
@@ -186,7 +182,12 @@ mod tests {
 
     macro_rules! test_translate {
         ($input:expr, $frame:expr, $result:expr, $code:ident) => {
-            let trans = Translate::new(&GeneticCodes::$code, &InputFmt::Fasta, &DataType::Dna);
+            let trans = Translate::new(
+                &GeneticCodes::$code,
+                &InputFmt::Fasta,
+                &DataType::Dna,
+                &OutputFmt::Fasta,
+            );
             assert_eq!($result, trans.translate_seq($input, $frame));
         };
     }

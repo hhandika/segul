@@ -67,15 +67,15 @@ impl<'a> TranslateParser<'a> {
         self.check_output_dir_exist(&outdir);
         log::info!("{}", Yellow.paint("Params"));
         self.parse_trans_table();
-        let translate = Translate::new(&self.trans_table, &input_fmt, &datatype);
+        let translate = Translate::new(&self.trans_table, &input_fmt, &datatype, &output_fmt);
         match frame {
             Some(num) => {
                 log::info!("{:18}: {}\n", "Reading frame", &num);
-                translate.translate_all(&files, num, &outdir, &output_fmt);
+                translate.translate_all(&files, num, &outdir);
             }
             None => {
                 log::info!("{:18}: Auto\n", "Reading frame");
-                translate.translate_all_autoframe(&files, &outdir, &output_fmt);
+                translate.translate_all_autoframe(&files, &outdir);
             }
         }
     }

@@ -3,10 +3,13 @@ use std::path::{Path, PathBuf};
 use ansi_term::Colour::Yellow;
 use rayon::prelude::*;
 
+use crate::core::OutputPrint;
 use crate::helper::sequence::Sequence;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
+
+impl OutputPrint for Converter<'_> {}
 
 pub struct Converter<'a> {
     input_fmt: &'a InputFmt,
@@ -38,8 +41,7 @@ impl<'a> Converter<'a> {
             self.convert_any(file, &output_fname);
         });
         spin.finish_with_message("Finished converting sequence format!\n");
-        log::info!("{}", Yellow.paint("Output"));
-        log::info!("{:18}: {}", "Output dir", output.display());
+        self.print_output_info(output);
     }
 
     fn convert_any(&self, input: &Path, output: &Path) {
@@ -71,5 +73,11 @@ impl<'a> Converter<'a> {
         convert
             .write_sequence(self.output_fmt)
             .expect("Failed writing output files");
+    }
+
+    fn print_output_info(&self, output: &Path) {
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "Output dir", output.display());
+        self.print_output_fmt(self.output_fmt);
     }
 }

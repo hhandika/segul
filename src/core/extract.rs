@@ -7,10 +7,13 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 use regex::Regex;
 
+use crate::core::OutputPrint;
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
+
+impl OutputPrint for Extract<'_> {}
 
 pub enum Params {
     Regex(String),
@@ -55,7 +58,7 @@ impl<'a> Extract<'a> {
         spin.finish_with_message("Finished extracting sequences!\n");
         let counts = file_counts.load(Ordering::Relaxed);
         assert!(counts > 0, "No matching IDs found!");
-        self.print_output_info(counts, output);
+        self.print_output_info(counts, output, output_fmt);
     }
 
     fn get_matrix(&self, seqmat: SeqMatrix) -> SeqMatrix {
@@ -94,10 +97,11 @@ impl<'a> Extract<'a> {
         header
     }
 
-    fn print_output_info(&self, file_counts: usize, output: &Path) {
+    fn print_output_info(&self, file_counts: usize, output: &Path, output_fmt: &OutputFmt) {
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "File counts", file_counts);
-        log::info!("{:18}: {}", "Output dir", output.display())
+        log::info!("{:18}: {}", "Output dir", output.display());
+        self.print_output_fmt(output_fmt);
     }
 }
 

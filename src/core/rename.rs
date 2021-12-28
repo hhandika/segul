@@ -3,12 +3,15 @@ use std::path::{Path, PathBuf};
 use ansi_term::Colour::Yellow;
 use rayon::prelude::*;
 
+use crate::core::OutputPrint;
 use crate::helper::filenames;
 use crate::helper::sequence::Sequence;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::utils;
 use crate::parser::delimited;
 use crate::writer::sequences::SeqWriter;
+
+impl OutputPrint for Rename<'_> {}
 
 pub struct Rename<'a> {
     input_fmt: &'a InputFmt,
@@ -50,7 +53,7 @@ impl<'a> Rename<'a> {
                 .expect("Failed writing output sequence");
         });
         spin.finish_with_message("Finished batch renaming dna sequence IDs!\n");
-        self.print_output_info(outdir);
+        self.print_output_info(outdir, output_fmt);
     }
 
     fn rename_seq_id(&self, file: &Path, names: &[(String, String)]) -> (SeqMatrix, Header) {
@@ -71,9 +74,10 @@ impl<'a> Rename<'a> {
         delimited::parse_delimited_text(self.ids)
     }
 
-    fn print_output_info(&self, output: &Path) {
+    fn print_output_info(&self, output: &Path, output_fmt: &OutputFmt) {
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "Output dir", output.display());
+        self.print_output_fmt(output_fmt);
     }
 }
 
