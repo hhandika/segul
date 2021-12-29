@@ -120,17 +120,37 @@ segul concat -d nexus-alignments -f nexus
 
 Learn more about SEGUL command structure and expected behaviors for each argument [here](https://github.com/hhandika/segul/wiki/4.-Command-Structure).
 
-### Converting alignments
+### Input Options
 
-Segul can convert a single sequence file or multiple sequence files in a directory.
-
-To convert a single file:
+The app has two input options. The standard input `--input` or `-i` and `--dir` or `-d`. If your input files are all in a single diretory, you should use the `--dir` or `-d` option and specify the file format:
 
 ```Bash
-segul convert --input [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
+segul [sub-command] -d alignment_dir -f nexus
 ```
 
-To convert files in a directory:
+When dealing with a single file or more complex folder structure, use the `--input` or `-i` option. This option allow you to input a single file:
+
+```Bash
+segul [sub-command] -i alignment-dir/alignment_file.fasta
+```
+
+Multiple file in a directory using wildcard:
+
+```Bash
+segul [sub-command] -i alignment-dir/*.fasta
+```
+
+It can also handle input files from multiple folder:
+
+```Bash
+segul [sub-command] -i alignment-dir1/*.fasta alignment-dir2/*.fasta
+```
+
+This input option available in all subcommands. To keep it simple, the command examples below use `--dir` as an input.
+
+### Converting alignments
+
+Segul can convert a single sequence file or multiple sequence files in a directory:
 
 ```Bash
 segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
