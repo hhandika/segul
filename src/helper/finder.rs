@@ -44,7 +44,8 @@ impl<'a> Files<'a> {
         if files.is_empty() {
             panic!(
                 "Failed finding files that match {}. \
-            Maybe try using wildcard option -c or --wcard",
+            Maybe try construct the path using wilcard \
+            and input it using option -i or --input",
                 self.pattern
             );
         }
@@ -59,7 +60,7 @@ impl<'a> Files<'a> {
                 "The input format is the default auto. \
             The program cannot use auto for dir input. \
             Try to specify input format using the option -f or --format \
-            or use the wildcard option -c or --wcard."
+            or use the wildcard option -i or --input."
             ),
         };
     }

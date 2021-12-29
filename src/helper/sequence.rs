@@ -18,7 +18,7 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
         "phy" | "phylip" => InputFmt::Phylip,
         _ => panic!(
             "Ups... The program cannot recognize the file extension. \
-        Maybe try specify the input format using the -f or --format option."
+        Maybe try to specify the input format using the -f or --input-format option."
         ),
     }
 }
