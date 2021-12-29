@@ -60,7 +60,7 @@ impl<'a> Files<'a> {
                 "The input format is the default auto. \
             The program cannot use auto for dir input. \
             Try to specify input format using the option -f or --format \
-            or use the wildcard option -i or --input."
+            or use wildcard and input it using option -i or --input."
             ),
         };
     }
