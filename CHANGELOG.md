@@ -3,6 +3,7 @@
 ## 0.11.1
 
 - Fix file count formatting for sequence extraction terminal output.
+- Fix outdated error messages.
 
 ## 0.11.0
 
