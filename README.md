@@ -122,7 +122,7 @@ Learn more about SEGUL command structure and expected behaviors for each argumen
 
 ### Input Options
 
-The app has two input options. The standard input `--input` or `-i` and `--dir` or `-d`. If your input files are all in a single diretory, you should use the `--dir` or `-d` option and specify the file format:
+The app has two input options. The standard input `--input` or `-i` and `--dir` or `-d`. If your input files are all in a single directory, you should use the `--dir` or `-d` option and specify the file format:
 
 ```Bash
 segul [sub-command] -d alignment_dir -f nexus
@@ -146,7 +146,7 @@ It can also handle input files from multiple folder:
 segul [sub-command] -i alignment-dir1/*.fasta alignment-dir2/*.fasta
 ```
 
-This input option available in all subcommands. To keep it simple, the command examples below use `--dir` as an input.
+The input options are available in all subcommands. To keep it simple, the command examples below use `--dir` as an input.
 
 ### Converting alignments
 
