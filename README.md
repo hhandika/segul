@@ -5,6 +5,7 @@
 ![Crates-Download](https://img.shields.io/crates/d/segul?color=orange&label=crates.io-downloads)
 ![GH-Release](https://img.shields.io/github/v/release/hhandika/segul)
 ![GH-Downloads](https://img.shields.io/github/downloads/hhandika/segul/total?color=blue&label=binary-downloads)
+[![LoC](https://tokei.rs/b1/github/hhandika/segul?category=code)](https://github.com/XAMPPRocky/tokei)
 ![last-commit](https://img.shields.io/github/last-commit/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
