@@ -61,6 +61,8 @@ The instruction below assumes familiarity with command line application and only
 
 ### Installation
 
+#### Using pre-compiled binary
+
 For a quick installation, we provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For WSL, either the ManyLinux or Linux binary should work. In our test system, the ManyLinux binary is a little faster. For native Linux OS, first check your GLIBC version:
 
 ```Bash
@@ -68,6 +70,8 @@ ldd --version
 ```
 
 If your system GLIBC is >=2.18, use the Linux binary. If lower, use the ManyLinux binary. The installation is similar to any other single executable command-line app, such as the phylogenetic programs IQ-Tree or RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)). If you are still having issues running the program, try to install it using the package manager. This installation method will optimize the compiled binary for your system (see below).
+
+#### Using the Rust Package Manager
 
 The Rust package manager is called [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help you to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). Installing SEGUL through Cargo is similar to installing it from source code, except that it only use the stable version of the code. The source code is managed on [crates.io](https://crates.io/). The badge at top of this Readme has information on the latest version of the app available on [crates.io](https://crates.io/).
 
@@ -290,6 +294,8 @@ segul concat --dir nexus-alignments --input-format nexus --datatype aa
 ```
 
 Learn more about using SEGUL [here](https://github.com/hhandika/segul/wiki/5.-Usages).
+
+### Output
 
 The app outputs are the resulting files from each task and a log file. Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, if the log file (named `segul.log`) exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different folder if you would like to keep a different log file for each task.
 
