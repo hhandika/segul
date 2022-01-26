@@ -305,4 +305,6 @@ For other resulting files, the app forbids over-writting files with similar name
 
 We welcome any kind of contribution, from issue reporting, ideas to improve the app, to code contribution. For ideas and issue reporting please post in [the Github issues page](https://github.com/hhandika/segul/issues). For code contribution, please fork the repository and send pull requests to this repo
 
-<!-- ## Acknowledgment -->
+<!-- ## Acknowledgment
+
+We thank Giovani for testing the earlier version of the app and provide some ideas to further develop it. Some `SEGUL` features are inspired from Phyluce pipelines.  -->
