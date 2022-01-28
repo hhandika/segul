@@ -97,7 +97,6 @@ struct FastaReader<R> {
     reader: BufReader<R>,
     id: String,
     seq: String,
-    found_rec: bool,
 }
 
 impl<R: Read> FastaReader<R> {
@@ -106,16 +105,14 @@ impl<R: Read> FastaReader<R> {
             reader: BufReader::new(file),
             id: String::new(),
             seq: String::new(),
-            found_rec: false,
         }
     }
 
     fn next_seq(&mut self) -> Option<Records> {
         while let Some(Ok(line)) = self.reader.by_ref().lines().next() {
             if let Some(id) = line.strip_prefix('>') {
-                if !self.found_rec {
+                if self.id.is_empty() {
                     self.id = String::from(id);
-                    self.found_rec = true;
                     self.seq.clear();
                 } else {
                     let recs = self.get_recs(&self.id, &self.seq);
@@ -127,9 +124,8 @@ impl<R: Read> FastaReader<R> {
                 self.seq.push_str(line.trim());
             }
         }
-        if self.found_rec {
+        if !self.id.is_empty() {
             let recs = self.get_recs(&self.id, &self.seq);
-            self.found_rec = false;
             self.id.clear();
             self.seq.clear();
             Some(recs)
