@@ -124,6 +124,8 @@ impl<R: Read> FastaReader<R> {
                 self.seq.push_str(line.trim());
             }
         }
+
+        // Return the last found record.
         if !self.id.is_empty() {
             let recs = self.get_recs(&self.id, &self.seq);
             self.id.clear();
