@@ -177,6 +177,24 @@ To generate sequence summary statistics of alignments in a directory:
 segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
+### Getting sample IDs from a collection of alignments
+
+You have multiple alignments and want to know what are samples you have in all of those alignment. You can easily do it using `segul`. The app can find all the unique IDs across thousands of alignments within seconds.
+
+```Bash
+segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
+```
+
+It will generate a text file that contains all the unique IDs across your alignments.
+
+### Map sample distribution in a collection of alignments
+
+If you would like to know how the samples distributed across your alignments, you only need to add the `--map` flag when searching for unique IDs. It will generate both the unique IDs (in a text file) and the sample distribution (in csv).
+
+```Bash
+segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --map
+```
+
 ### Filtering alignments
 
 Segul provide multiple filtering parameters.
