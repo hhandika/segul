@@ -133,7 +133,9 @@ The app has two input options. The standard input `--input` or `-i` and `--dir` 
 segul [sub-command] -d alignment_dir -f nexus
 ```
 
-When dealing with a single file or more complex folder structure, use the `--input` or `-i` option. This option allow you to input a single file:
+When dealing with a single file, more complex folder structure, or unusual file extensions, use the `--input` or `-i` option.
+
+For a single file:
 
 ```Bash
 segul [sub-command] -i alignment-dir/alignment_file.fasta
@@ -145,13 +147,19 @@ Multiple file in a directory using wildcard:
 segul [sub-command] -i alignment-dir/*.fasta
 ```
 
-It can also handle input files from multiple folder:
+Multiple files in multiple directories:
 
 ```Bash
 segul [sub-command] -i alignment-dir1/*.fasta alignment-dir2/*.fasta
 ```
 
-The input options are available in all subcommands. To keep it simple, the command examples below use `--dir` as an input.
+For unusual file extensions or if the app failed to detect the file format, specify the input format:
+
+```Bash
+segul [sub-command] -i alignment-dir/*.aln -f fasta
+```
+
+Both of the input options are available in all subcommands. To keep it simple, the command examples below use `--dir` as an input.
 
 ### Datatype
 
@@ -163,15 +171,11 @@ segul convert -d /alignments -f nexus --datatype aa
 
 ### Output
 
-The app outputs are the resulting files from each task and a log file. Most functions will save into their default folders. For example, the concat function will default to create `SEGUL-concat` directory and will save its output files into the directory. To specify the output directory, use the `--output` or `-o` option. For example:
+Most functions will save into their default folders. For example, the concat function will default to create `SEGUL-concat` directory and will save its output files into the directory. To specify the output directory, use the `--output` or `-o` option. For example:
 
 ```Bash
 segul convert -d /alignments -f nexus -o alignments_concat
 ```
-
-Most information that is printed to the terminal is written to the log file. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, if the log file (named `segul.log`) exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different directory if you would like to keep a different log file for each task.
-
-For other resulting files, the app avoids over-writting files with similar names. The app will check if a such file or directory exists and will ask if you like to remove it. The app will exit if you decide to not remove it.
 
 ### Converting alignments
 
@@ -322,6 +326,12 @@ To show all the table options, use the `--show-tables` flag:
 ```Bash
 segul translate --show-tables
 ```
+
+### Logging
+
+Most information that is printed to the terminal is written to the log file (named `segul.log`). It is written to the current working directoy. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, if the log file exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different directory if you would like to keep a different log file for each task.
+
+For other resulting files, the app avoids over-writting files with similar names. The app will check if a such file or directory exists and will ask if you like to remove it. The app will exit if you decide to not remove it.
 
 Learn more about using SEGUL [here](https://github.com/hhandika/segul/wiki/5.-Usages).
 
