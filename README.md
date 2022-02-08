@@ -163,7 +163,7 @@ Both of the input options are available in all subcommands. To keep it simple, t
 
 ### Datatype
 
-The app support both DNA and amino acid sequences. It will check whether the sequences contain only valid IUPAC characters of the datatype. By default, it sets to DNA sequences.Use the option `--datatype aa` if your input is amino acid sequences. For example:
+The app support both DNA and amino acid sequences. It will check whether the sequences contain only valid IUPAC characters of the datatype. By default, it sets to DNA sequences. Use the option `--datatype aa` if your input is amino acid sequences. For example:
 
 ```Bash
 segul convert -d /alignments -f nexus --datatype aa
@@ -171,7 +171,7 @@ segul convert -d /alignments -f nexus --datatype aa
 
 ### Output
 
-Most functions will save into their default folders. For example, the concat function will default to create `SEGUL-concat` directory and will save its output files into the directory. To specify the output directory, use the `--output` or `-o` option. For example:
+Most functions will save into their default directory. For example, the concat function will default to create `SEGUL-concat` directory and will save its output files into the directory. To specify the output directory, use the `--output` or `-o` option. For example:
 
 ```Bash
 segul convert -d /alignments -f nexus -o alignments_concat
