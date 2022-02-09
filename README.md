@@ -46,13 +46,28 @@ Citation:
 
 ## Quick Links
 
-- [Supported Platforms](#supported-platforms)
-- [Quick Start](#quick-start)
-  - [Installation](#installation)
-    - [Using pre-compiled binary](#using-pre-compiled-binary)
-    - [Install from the rust package manager](#install-from-the-rust-package-manager)
-  - [Command Structure](#command-structure)
-- [Contribution](#contribution)
+- [SEGUL](#segul)
+  - [Quick Links](#quick-links)
+  - [Supported Platforms](#supported-platforms)
+  - [Quick Start](#quick-start)
+    - [Installation](#installation)
+      - [Using pre-compiled binary](#using-pre-compiled-binary)
+      - [Install from the Rust Package Manager](#install-from-the-rust-package-manager)
+    - [Command Structure](#command-structure)
+    - [Input Options](#input-options)
+    - [Datatype](#datatype)
+    - [Output](#output)
+    - [Converting alignments](#converting-alignments)
+    - [Concatenating alignments](#concatenating-alignments)
+    - [Computing sequence summary statistics](#computing-sequence-summary-statistics)
+    - [Getting sample IDs from a collection of alignments](#getting-sample-ids-from-a-collection-of-alignments)
+    - [Map sample distribution in a collection of alignments](#map-sample-distribution-in-a-collection-of-alignments)
+    - [Filtering alignments](#filtering-alignments)
+    - [Extracting sequences in alignments](#extracting-sequences-in-alignments)
+    - [Batch renaming sequence IDs](#batch-renaming-sequence-ids)
+    - [Translating DNA sequences](#translating-dna-sequences)
+    - [Logging](#logging)
+  - [Contribution](#contribution)
 
 ## Supported Platforms
 
