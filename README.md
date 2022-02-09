@@ -44,6 +44,16 @@ Citation:
 
 > Handika, H. and Esselstyn, J. A. In prep. SEGUL: An ultrafast, memory efficient, and cross-platform alignment manipulation tool for phylogenomics.
 
+## Quick Links
+
+- [Supported Platforms](#supported-platforms)
+- [Quick Start](#quick-start)
+  - [Installation](#installation)
+    - [Using pre-compiled binary](#using-pre-compiled-binary)
+    - [Install from the rust package manager](#install-from-the-rust-package-manager)
+  - [Command Structure](#command-structure)
+- [Contribution](#contribution)
+
 ## Supported Platforms
 
 The app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
@@ -71,7 +81,7 @@ ldd --version
 
 If your system GLIBC is >=2.18, use the Linux binary. If lower, use the ManyLinux binary. The installation is similar to any other single executable command-line app, such as the phylogenetic programs IQ-Tree or RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)). If you are still having issues running the program, try to install it using the package manager. This installation method will optimize the compiled binary for your system (see below).
 
-#### Using the Rust Package Manager
+#### Install from the Rust Package Manager
 
 The Rust package manager is called [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help you to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). Installing SEGUL through Cargo is similar to installing it from source code, except that it only use the stable version of the code. The source code is managed on [crates.io](https://crates.io/). The badge at top of this Readme has information on the latest version of the app available on [crates.io](https://crates.io/).
 
@@ -195,7 +205,7 @@ To concat all alignments in a directory:
 segul concat --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
-### Generating sequence summary statistics
+### Computing sequence summary statistics
 
 To generate sequence summary statistics of alignments in a directory:
 
