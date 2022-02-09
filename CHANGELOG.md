@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.11.2
+
+- Fix confusing input name in the terminal output.
+- Improve fasta parsing performance.
+
 ## 0.11.1
 
 - Fix file count formatting for sequence extraction terminal output.
