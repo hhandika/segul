@@ -179,7 +179,7 @@ trait InputPrint {
         if let Some(input) = input {
             log::info!("{:18}: {}", "Input dir", &input.as_ref().display());
         } else {
-            log::info!("{:18}: {}", "Input", "STDIN");
+            log::info!("{:18}: {}", "Input path", "STDIN");
         }
         log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
         self.print_input_fmt(input_fmt);
