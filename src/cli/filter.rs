@@ -261,7 +261,7 @@ impl<'a> FilterParser<'a> {
                 log::info!("{:18}: {}%", "Percent", self.percent * 100.0);
                 log::info!("{:18}: {}\n", "Min tax", min_taxa);
             }
-            Params::AlnLen(len) => log::info!("{:18}: {}bp\n", "Min aln len", len),
+            Params::AlnLen(len) => log::info!("{:18}: {} bp\n", "Min aln len", len),
             Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
             Params::PercInf(perc_inf) => {
                 log::info!("{:18}: {}%\n", "% pars. inf", perc_inf * 100.0)
