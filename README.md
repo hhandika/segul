@@ -66,7 +66,7 @@ Citation:
     - [Extracting sequences in alignments](#extracting-sequences-in-alignments)
     - [Batch renaming sequence IDs](#batch-renaming-sequence-ids)
     - [Translating DNA sequences](#translating-dna-sequences)
-    - [Logging](#logging)
+  - [Logging](#logging)
   - [Contribution](#contribution)
 
 ## Supported Platforms
@@ -354,7 +354,7 @@ To show all the table options, use the `--show-tables` flag:
 segul translate --show-tables
 ```
 
-### Logging
+## Logging
 
 Most information that is printed to the terminal is written to the log file (named `segul.log`). It is written to the current working directoy. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, if the log file exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different directory if you would like to keep a different log file for each task.
 
