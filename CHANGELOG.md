@@ -1,5 +1,9 @@
 # Release Notes
 
+## Upcoming
+
+- Fix spaces issue in showing filtering parameters in the log output.
+
 ## 0.11.2
 
 - Fix confusing input name in the terminal output.
