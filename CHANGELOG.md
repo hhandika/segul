@@ -4,6 +4,7 @@
 
 - Fix confusing input name in the terminal output.
 - Improve fasta parsing performance.
+- Fix issues when the app keeps processing when no alignments left after filtering.
 
 ## 0.11.1
 

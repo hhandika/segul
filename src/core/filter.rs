@@ -54,7 +54,7 @@ impl<'a> SeqFilter<'a> {
             self.par_ftr_aln()
         };
 
-        assert!(!ftr_aln.is_empty(), "No sequences left after filtering");
+        assert!(!ftr_aln.is_empty(), "No alignments left after filtering!");
 
         match self.concat {
             Some((output_fmt, part_fmt)) => self.concat_results(&mut ftr_aln, output_fmt, part_fmt),
