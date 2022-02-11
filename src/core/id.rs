@@ -74,10 +74,29 @@ impl<'a> Id<'a> {
         let fstem = self.get_aln_name(file);
         let mut rec = IdRecords::new(fstem, ids.len());
         let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+        let mut site_counts = Vec::new();
         ids.iter().for_each(|id| {
-            rec.records.push(seq.contains_key(id));
+            let is_id_present = seq.contains_key(id);
+            rec.records.push(is_id_present);
+            if is_id_present {
+                match seq.get(id) {
+                    Some(seq) => {
+                        rec.records.push(true);
+                        site_counts.push(self.count_sites(seq));
+                    }
+                    None => rec.records.push(false),
+                }
+            }
         });
+        rec.loci_counts = site_counts.len();
+        rec.site_counts = site_counts.iter().sum();
         rec
+    }
+
+    fn count_sites(&self, seq: &str) -> usize {
+        let mut seq = seq.to_string();
+        seq.retain(|c| !"?-".contains(c));
+        seq.len()
     }
 
     fn get_aln_name(&self, file: &Path) -> String {
@@ -103,13 +122,17 @@ impl<'a> Id<'a> {
         output: &Path,
     ) -> Result<()> {
         let mut writer = self.write_file(output);
-        write!(writer, "Alignments")?;
+        write!(writer, "Alignments,Loci_counts,Site_counts")?;
         ids.iter().for_each(|id| {
             write!(writer, ",{}", id).expect("Failed writing a csv header");
         });
         writeln!(writer)?;
         mapped_ids.iter().for_each(|rec| {
             write!(writer, "{}", rec.name).expect("Failed writing a csv header");
+            write!(writer, ",{}", utils::fmt_num(&rec.loci_counts))
+                .expect("Failed writing loci counts");
+            write!(writer, ",{}", utils::fmt_num(&rec.site_counts))
+                .expect("Failed writing site counts");
             rec.records.iter().for_each(|is_id| {
                 write!(writer, ",{}", is_id).expect("Failed writing id map");
             });
@@ -138,6 +161,8 @@ impl<'a> Id<'a> {
 struct IdRecords {
     name: String,
     records: Vec<bool>,
+    loci_counts: usize,
+    site_counts: usize,
 }
 
 impl IdRecords {
@@ -145,6 +170,24 @@ impl IdRecords {
         Self {
             name,
             records: Vec::with_capacity(size),
+            loci_counts: 0,
+            site_counts: 0,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const INPUT_FMT: InputFmt = InputFmt::Fasta;
+    const DATATYPE: DataType = DataType::Dna;
+
+    #[test]
+    fn test_site_counts() {
+        let seq = "AGTCT-?";
+        let id = Id::new(Path::new("."), &INPUT_FMT, &DATATYPE);
+        let count = id.count_sites(seq);
+        assert_eq!(count, 5);
     }
 }
