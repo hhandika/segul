@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::io::Write;
 use std::path::Path;
@@ -23,6 +24,28 @@ trait Alphabet {
 
 impl Alphabet for CsvWriter<'_> {}
 impl FileWriter for CsvWriter<'_> {}
+
+impl FileWriter for TaxonStatsWriter<'_> {}
+
+#[allow(dead_code)]
+pub struct TaxonStatsWriter<'a> {
+    output: &'a Path,
+    datatype: &'a DataType,
+}
+
+#[allow(dead_code)]
+impl<'a> TaxonStatsWriter<'a> {
+    pub fn new(output: &'a Path, datatype: &'a DataType) -> Self {
+        Self { output, datatype }
+    }
+
+    #[allow(unused_variables)]
+    pub fn write_taxon_stats(&self, taxon_stats: &BTreeMap<String, Vec<usize>>) -> Result<()> {
+        self.create_output_file(self.output)?;
+
+        Ok(())
+    }
+}
 
 pub struct CsvWriter<'a> {
     output: &'a Path,

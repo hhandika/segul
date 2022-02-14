@@ -1,5 +1,5 @@
 // A module for sequence statistics.
-// use std::collections::BTreeMap;
+use std::collections::BTreeMap;
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
@@ -38,6 +38,7 @@ impl<'a> SeqStats<'a> {
         }
     }
 
+    #[allow(unused_variables)]
     pub fn get_stats_dir(&mut self, files: &[PathBuf]) {
         self.check_datatype();
         let spin = utils::set_spinner();
@@ -48,6 +49,7 @@ impl<'a> SeqStats<'a> {
         let mut stats: Vec<(Sites, Chars)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.get_summary_dna(&stats);
+        let taxon_stats = self.compute_taxon_stats(files, &ids);
         spin.finish_with_message("Finished computing summary stats!\n");
         let sum = SummaryWriter::new(&sites, &dna, &complete, self.datatype);
         sum.print_summary().expect("Failed writing to stdout");
@@ -56,33 +58,35 @@ impl<'a> SeqStats<'a> {
             .expect("Failed writing a per locus csv file");
     }
 
-    // fn count_sites(&self, seq: &str) -> usize {
-    //     let mut seq = seq.to_string();
-    //     seq.retain(|c| !"?-".contains(c));
-    //     seq.len()
-    // }
+    fn count_sites(&self, seq: &str) -> usize {
+        let mut seq = seq.to_string();
+        seq.retain(|c| !"?-".contains(c));
+        seq.len()
+    }
 
-    // fn compute_taxon_stats(
-    //     &self,
-    //     locus_files: &[PathBuf],
-    //     ids: &IndexSet<String>,
-    // ) -> BTreeMap<String, Vec<usize>> {
-    //     let mut taxon_stats = BTreeMap::new();
-    //     locus_files.iter().for_each(|file| {
-    //         ids.iter().for_each(|id| {
-    //             let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
-    //             match seq.get(id) {
-    //                 Some(seq) => {
-    //                     taxon_stats.insert(id.to_string(), seq.len());
-    //                 }
-    //                 None => {
-    //                     taxon_stats.insert(id.to_string(), 0);
-    //                 }
-    //             }
-    //         })
-    //     });
-    //     taxon_stats
-    // }
+    fn compute_taxon_stats(
+        &self,
+        locus_files: &[PathBuf],
+        ids: &IndexSet<String>,
+    ) -> BTreeMap<String, Vec<usize>> {
+        let mut taxon_stats: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+        locus_files.iter().for_each(|file| {
+            ids.iter().for_each(|id| {
+                let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+                match seq.get(id) {
+                    Some(seq) => {
+                        let site_counts = self.count_sites(seq);
+                        taxon_stats
+                            .entry(id.to_string())
+                            .or_insert(vec![])
+                            .push(site_counts);
+                    }
+                    None => (),
+                }
+            })
+        });
+        taxon_stats
+    }
 
     fn get_id(&mut self, files: &[PathBuf]) -> IndexSet<String> {
         IDs::new(files, self.input_fmt, self.datatype).get_id_unique()
