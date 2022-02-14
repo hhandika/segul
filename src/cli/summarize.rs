@@ -8,15 +8,7 @@ use crate::helper::types::{DataType, InputFmt};
 
 impl InputCli for SummaryParser<'_> {}
 impl InputPrint for SummaryParser<'_> {}
-impl OutputCli for SummaryParser<'_> {
-    // fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
-    //     let output = matches
-    //         .value_of("output")
-    //         .expect("Failed parsing an output value");
-    //     let csv = format!("{}_per_locus", output);
-    //     PathBuf::from(csv).with_extension("csv")
-    // }
-}
+impl OutputCli for SummaryParser<'_> {}
 
 pub(in crate::cli) struct SummaryParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -41,6 +33,7 @@ impl<'a> SummaryParser<'a> {
         self.input_fmt = self.parse_input_fmt(self.matches);
         self.interval = self.parse_interval();
         self.datatype = self.parse_datatype(self.matches);
+        let prefix = self.parse_prefix();
         let task_desc = "Sequence summary statistics";
         let files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
@@ -59,9 +52,22 @@ impl<'a> SummaryParser<'a> {
         );
 
         let output = self.parse_output(self.matches);
-        self.check_output_file_exist(&output);
+        self.check_output_dir_exist(&output);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
-            .get_stats_all(&files);
+            .get_stats_all(&files, &prefix);
+    }
+
+    fn parse_prefix(&self) -> Option<String> {
+        if self.matches.is_present("prefix") {
+            Some(
+                self.matches
+                    .value_of("prefix")
+                    .expect("Failed parsing prefix input")
+                    .to_string(),
+            )
+        } else {
+            None
+        }
     }
 
     fn parse_interval(&self) -> usize {

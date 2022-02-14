@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use ansi_term::Colour::Yellow;
 use anyhow::{Context, Result};
@@ -28,6 +28,7 @@ impl FileWriter for CsvWriter<'_> {}
 
 pub struct CsvWriter<'a> {
     output: &'a Path,
+    prefix: &'a Option<String>,
     datatype: &'a DataType,
     stats: &'a [(Sites, Chars, Taxa)],
 }
@@ -35,18 +36,27 @@ pub struct CsvWriter<'a> {
 impl<'a> CsvWriter<'a> {
     pub fn new(
         output: &'a Path,
+        prefix: &'a Option<String>,
         datatype: &'a DataType,
         stats: &'a [(Sites, Chars, Taxa)],
     ) -> Self {
         Self {
             output,
+            prefix,
             datatype,
             stats,
         }
     }
 
     pub fn write_taxon_summary(&self, ids: &IndexSet<String>) -> Result<()> {
-        let output = self.output.join("taxon_stats.csv");
+        let default_prefix = "taxon_summary";
+        let output = match self.prefix {
+            Some(fname) => {
+                let out_name = format!("{}_{}", fname, default_prefix);
+                self.create_output_fnames(&out_name)
+            }
+            None => self.create_output_fnames(default_prefix),
+        };
         let mut writer = self.create_output_file(&output)?;
         writeln!(writer, "taxon,locus_counts,site_counts")?;
         let taxon_summary = self.get_taxon_summary(ids);
@@ -57,6 +67,33 @@ impl<'a> CsvWriter<'a> {
                 .expect("Failed taxon summary stats");
         });
         Ok(())
+    }
+
+    pub fn write_locus_summary(&self) -> Result<()> {
+        let default_prefix = "locus_summary";
+        let output = match self.prefix {
+            Some(fname) => {
+                let out_name = format!("{}_{}", fname, default_prefix);
+                self.create_output_fnames(&out_name)
+            }
+            None => self.create_output_fnames(default_prefix),
+        };
+        let mut writer = self.create_output_file(&output)?;
+        let alphabet = self.get_alphabet(self.datatype);
+        self.write_locus_header(&mut writer, alphabet)?;
+        self.stats.iter().for_each(|(site, chars, _)| {
+            self.write_locus_content(&mut writer, site, chars, alphabet)
+                .unwrap();
+        });
+
+        log::info!("{}", Yellow.paint("Output Files"));
+        log::info!("{:18}: {}", "Alignment summary", self.output.display());
+
+        Ok(())
+    }
+
+    fn create_output_fnames(&self, prefix: &str) -> PathBuf {
+        self.output.join(prefix).with_extension("csv")
     }
 
     fn get_taxon_summary(&self, ids: &IndexSet<String>) -> BTreeMap<String, Vec<usize>> {
@@ -73,22 +110,6 @@ impl<'a> CsvWriter<'a> {
             })
         });
         taxon_summary
-    }
-
-    pub fn write_locus_summary(&self) -> Result<()> {
-        let output = self.output.join("summary.csv");
-        let mut writer = self.create_output_file(&output)?;
-        let alphabet = self.get_alphabet(self.datatype);
-        self.write_locus_header(&mut writer, alphabet)?;
-        self.stats.iter().for_each(|(site, chars, _)| {
-            self.write_locus_content(&mut writer, site, chars, alphabet)
-                .unwrap();
-        });
-
-        log::info!("{}", Yellow.paint("Output Files"));
-        log::info!("{:18}: {}", "Alignment summary", self.output.display());
-
-        Ok(())
     }
 
     fn write_locus_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {

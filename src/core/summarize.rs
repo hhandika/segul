@@ -37,7 +37,7 @@ impl<'a> SeqStats<'a> {
         }
     }
 
-    pub fn get_stats_all(&mut self, files: &[PathBuf]) {
+    pub fn get_stats_all(&mut self, files: &[PathBuf], prefix: &Option<String>) {
         self.check_datatype();
         let spin = utils::set_spinner();
         spin.set_message("Indexing alignments...");
@@ -50,7 +50,7 @@ impl<'a> SeqStats<'a> {
         spin.finish_with_message("Finished computing summary stats!\n");
         let sum = SummaryWriter::new(&sites, &dna, &complete, self.datatype);
         sum.print_summary().expect("Failed writing to stdout");
-        let csv = CsvWriter::new(self.output, self.datatype, &stats);
+        let csv = CsvWriter::new(self.output, prefix, self.datatype, &stats);
         csv.write_taxon_summary(&ids)
             .expect("Failed writing a taxon stats file");
         csv.write_locus_summary()

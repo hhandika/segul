@@ -549,10 +549,17 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("output")
                         .short("o")
                         .long("output")
-                        .help("Uses a costume output filename")
+                        .help("Uses a costume output directory name")
                         .takes_value(true)
                         .required(true)
                         .default_value("SEGUL-Stats")
+                        .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("prefix")
+                        .long("prefix")
+                        .help("Use a costum output filename")
+                        .takes_value(true)
                         .value_name("STRING"),
                 )
                 .arg(
