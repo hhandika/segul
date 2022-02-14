@@ -2,6 +2,9 @@
 
 ## Upcoming
 
+- Add taxon summary to the summary stats feature.
+- Summary stats now write the csv ouput files to a directory.
+- Allow to add prefix for summary stats csv output files.
 - Fix spaces issue in showing filtering parameters in the log output.
 
 ## 0.11.2
