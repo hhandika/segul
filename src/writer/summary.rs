@@ -86,8 +86,8 @@ impl<'a> CsvWriter<'a> {
                 .unwrap();
         });
 
-        log::info!("{}", Yellow.paint("Output Files"));
-        log::info!("{:18}: {}", "Alignment summary", self.output.display());
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "Output dir", self.output.display());
 
         Ok(())
     }
