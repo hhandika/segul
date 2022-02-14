@@ -9,13 +9,13 @@ use crate::helper::types::{DataType, InputFmt};
 impl InputCli for SummaryParser<'_> {}
 impl InputPrint for SummaryParser<'_> {}
 impl OutputCli for SummaryParser<'_> {
-    fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
-        let output = matches
-            .value_of("output")
-            .expect("Failed parsing an output value");
-        let csv = format!("{}_per_locus", output);
-        PathBuf::from(csv).with_extension("csv")
-    }
+    // fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
+    //     let output = matches
+    //         .value_of("output")
+    //         .expect("Failed parsing an output value");
+    //     let csv = format!("{}_per_locus", output);
+    //     PathBuf::from(csv).with_extension("csv")
+    // }
 }
 
 pub(in crate::cli) struct SummaryParser<'a> {
@@ -61,7 +61,7 @@ impl<'a> SummaryParser<'a> {
         let output = self.parse_output(self.matches);
         self.check_output_file_exist(&output);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
-            .get_stats_dir(&files);
+            .get_stats_all(&files);
     }
 
     fn parse_interval(&self) -> usize {

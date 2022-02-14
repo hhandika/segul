@@ -229,6 +229,31 @@ impl Completeness {
     }
 }
 
+pub struct Taxa {
+    pub records: HashMap<String, usize>,
+}
+
+impl Taxa {
+    pub fn new() -> Self {
+        Self {
+            records: HashMap::new(),
+        }
+    }
+
+    pub fn summarize_taxa(&mut self, aln: &SeqMatrix) {
+        aln.iter().for_each(|(id, seq)| {
+            let site_count = self.count_sites(seq);
+            self.records.insert(id.to_string(), site_count);
+        });
+    }
+
+    fn count_sites(&self, seq: &str) -> usize {
+        let mut seq = seq.to_string();
+        seq.retain(|c| !"?-".contains(c));
+        seq.len()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Sites {
     pub path: PathBuf,
@@ -552,5 +577,13 @@ mod test {
         assert_eq!(Some(&24), dna.chars.get(&'?'));
         assert_eq!(24, dna.missing_data);
         assert_eq!(None, dna.chars.get(&'-'));
+    }
+
+    #[test]
+    fn test_site_counts() {
+        let seq = "AGTCT-?";
+        let taxa = Taxa::new();
+        let count = taxa.count_sites(seq);
+        assert_eq!(count, 5);
     }
 }

@@ -5,9 +5,10 @@ use std::path::Path;
 
 use ansi_term::Colour::Yellow;
 use anyhow::{Context, Result};
+use indexmap::IndexSet;
 
 use crate::helper::alphabet;
-use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites};
+use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites, Taxa};
 use crate::helper::types::DataType;
 use crate::helper::utils;
 use crate::writer::FileWriter;
@@ -25,44 +26,62 @@ trait Alphabet {
 impl Alphabet for CsvWriter<'_> {}
 impl FileWriter for CsvWriter<'_> {}
 
-impl FileWriter for TaxonStatsWriter<'_> {}
-
-#[allow(dead_code)]
-pub struct TaxonStatsWriter<'a> {
-    output: &'a Path,
-    datatype: &'a DataType,
-}
-
-#[allow(dead_code)]
-impl<'a> TaxonStatsWriter<'a> {
-    pub fn new(output: &'a Path, datatype: &'a DataType) -> Self {
-        Self { output, datatype }
-    }
-
-    #[allow(unused_variables)]
-    pub fn write_taxon_stats(&self, taxon_stats: &BTreeMap<String, Vec<usize>>) -> Result<()> {
-        self.create_output_file(self.output)?;
-
-        Ok(())
-    }
-}
-
 pub struct CsvWriter<'a> {
     output: &'a Path,
     datatype: &'a DataType,
+    stats: &'a [(Sites, Chars, Taxa)],
 }
 
 impl<'a> CsvWriter<'a> {
-    pub fn new(output: &'a Path, datatype: &'a DataType) -> Self {
-        Self { output, datatype }
+    pub fn new(
+        output: &'a Path,
+        datatype: &'a DataType,
+        stats: &'a [(Sites, Chars, Taxa)],
+    ) -> Self {
+        Self {
+            output,
+            datatype,
+            stats,
+        }
     }
 
-    pub fn write_summary_dir(&mut self, stats: &[(Sites, Chars)]) -> Result<()> {
-        let mut writer = self.create_output_file(self.output)?;
+    pub fn write_taxon_summary(&self, ids: &IndexSet<String>) -> Result<()> {
+        let output = self.output.join("taxon_stats.csv");
+        let mut writer = self.create_output_file(&output)?;
+        writeln!(writer, "taxon,locus_counts,site_counts")?;
+        let taxon_summary = self.get_taxon_summary(ids);
+        taxon_summary.iter().for_each(|(taxa, counts)| {
+            let loci_counts = counts.len();
+            let site_counts = counts.iter().sum::<usize>();
+            writeln!(writer, "{},{},{}", taxa, loci_counts, site_counts)
+                .expect("Failed taxon summary stats");
+        });
+        Ok(())
+    }
+
+    fn get_taxon_summary(&self, ids: &IndexSet<String>) -> BTreeMap<String, Vec<usize>> {
+        let mut taxon_summary = BTreeMap::new();
+        self.stats.iter().for_each(|(_, _, taxa)| {
+            ids.iter().for_each(|id| match taxa.records.get(id) {
+                Some(site_counts) => {
+                    taxon_summary
+                        .entry(id.to_string())
+                        .or_insert(vec![])
+                        .push(site_counts.clone());
+                }
+                None => (),
+            })
+        });
+        taxon_summary
+    }
+
+    pub fn write_locus_summary(&self) -> Result<()> {
+        let output = self.output.join("summary.csv");
+        let mut writer = self.create_output_file(&output)?;
         let alphabet = self.get_alphabet(self.datatype);
-        self.write_csv_header(&mut writer, alphabet)?;
-        stats.iter().for_each(|(site, chars)| {
-            self.write_csv_content(&mut writer, site, chars, alphabet)
+        self.write_locus_header(&mut writer, alphabet)?;
+        self.stats.iter().for_each(|(site, chars, _)| {
+            self.write_locus_content(&mut writer, site, chars, alphabet)
                 .unwrap();
         });
 
@@ -72,7 +91,7 @@ impl<'a> CsvWriter<'a> {
         Ok(())
     }
 
-    fn write_csv_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {
+    fn write_locus_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {
         write!(
             writer,
             "path,\
@@ -99,7 +118,7 @@ impl<'a> CsvWriter<'a> {
         Ok(())
     }
 
-    fn write_csv_content<W: Write>(
+    fn write_locus_content<W: Write>(
         &self,
         writer: &mut W,
         site: &Sites,
