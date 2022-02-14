@@ -4,6 +4,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
+use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
@@ -41,7 +42,8 @@ impl<'a> SeqStats<'a> {
         self.check_datatype();
         let spin = utils::set_spinner();
         spin.set_message("Indexing alignments...");
-        self.get_ntax(files);
+        let ids = self.get_id(files);
+        self.ntax = ids.len();
         spin.set_message("Computing summary stats...");
         let mut stats: Vec<(Sites, Chars)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
@@ -54,10 +56,8 @@ impl<'a> SeqStats<'a> {
             .expect("Failed writing a per locus csv file");
     }
 
-    fn get_ntax(&mut self, files: &[PathBuf]) {
-        self.ntax = IDs::new(files, self.input_format, self.datatype)
-            .get_id_unique()
-            .len();
+    fn get_id(&mut self, files: &[PathBuf]) -> IndexSet<String> {
+        IDs::new(files, self.input_format, self.datatype).get_id_unique()
     }
 
     fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, Chars)> {
