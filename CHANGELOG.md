@@ -1,74 +1,74 @@
 # Release Notes
 
-## Upcoming
+## v0.12.0
 
 - Add taxon summary to the summary stats feature.
 - Summary stats now write the csv ouput files to a directory.
 - Allow to add prefix for summary stats csv output files.
 - Fix spaces issue in showing filtering parameters in the log output.
 
-## 0.11.2
+## v0.11.2
 
 - Fix confusing input name in the terminal output.
 - Improve fasta parsing performance.
 - Fix issues when the app keeps processing when no alignments left after filtering.
 
-## 0.11.1
+## v0.11.1
 
 - Fix file count formatting for sequence extraction terminal output.
 - Fix outdated error messages.
 
-## 0.11.0
+## v0.11.0
 
 - Add feature to map sample distribution across a collection of alignments.
 - Dir and file exist prompts now show the file names.
 - Simplify input option. Wildcard option is now a part of input option.
 - Print output format.
 
-## 0.10.1
+## v0.10.1
 
 - Fix spinner messages.
 - Fix dry-run terminal output.
 
-## 0.10.0
+## v0.10.0
 
 - Add feature to batch renaming sequence IDs.
 
-## 0.9.1
+## v0.9.1
 
 - Fix missing file extension issues when converting multiple sequences
 
-## 0.9.0
+## v0.9.0
 
 - Add a DNA to Amino Acic translation feature.
 
-## 0.8.6
+## v0.8.6
 
 - Fix inconsistent DNA character ordering when using a single input for summary statistics.
 
-## 0.8.5
+## v0.8.5
 
 - Fix missing wildcard options for filter and id subcommands.
 
-## 0.8.4
+## v0.8.4
 
 - Fix errors in displaying proportion of parsimony informative sites for a single file input.
 
-## 0.8.3
+## v0.8.3
 
 - Minor performance improvement for sequence extraction.
 - Fix multiple newlines after spinners when using ID subcommands.
 
-## 0.8.2
+## v0.8.2
 
 - Fix wrong help messages in the extract command arguments.
 - Shows output directory in the stdout after extracting sequences.
 
-## 0.8.1
+## v0.8.1
 
 - Fix issues missing summary subcommands.
 
-## 0.8.0
+## v0.8.0
 
 - Add new feature to extract sequence file based on user-defined IDs.
 
