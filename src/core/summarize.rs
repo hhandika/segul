@@ -15,7 +15,7 @@ use crate::helper::utils;
 use crate::writer::summary::{CsvWriter, SummaryWriter};
 
 pub struct SeqStats<'a> {
-    input_format: &'a InputFmt,
+    input_fmt: &'a InputFmt,
     output: &'a Path,
     datatype: &'a DataType,
     ntax: usize,
@@ -24,13 +24,13 @@ pub struct SeqStats<'a> {
 
 impl<'a> SeqStats<'a> {
     pub fn new(
-        input_format: &'a InputFmt,
+        input_fmt: &'a InputFmt,
         output: &'a Path,
         interval: usize,
         datatype: &'a DataType,
     ) -> Self {
         Self {
-            input_format,
+            input_fmt,
             output,
             ntax: 0,
             interval,
@@ -56,8 +56,36 @@ impl<'a> SeqStats<'a> {
             .expect("Failed writing a per locus csv file");
     }
 
+    // fn count_sites(&self, seq: &str) -> usize {
+    //     let mut seq = seq.to_string();
+    //     seq.retain(|c| !"?-".contains(c));
+    //     seq.len()
+    // }
+
+    // fn compute_taxon_stats(
+    //     &self,
+    //     locus_files: &[PathBuf],
+    //     ids: &IndexSet<String>,
+    // ) -> BTreeMap<String, Vec<usize>> {
+    //     let mut taxon_stats = BTreeMap::new();
+    //     locus_files.iter().for_each(|file| {
+    //         ids.iter().for_each(|id| {
+    //             let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+    //             match seq.get(id) {
+    //                 Some(seq) => {
+    //                     taxon_stats.insert(id.to_string(), seq.len());
+    //                 }
+    //                 None => {
+    //                     taxon_stats.insert(id.to_string(), 0);
+    //                 }
+    //             }
+    //         })
+    //     });
+    //     taxon_stats
+    // }
+
     fn get_id(&mut self, files: &[PathBuf]) -> IndexSet<String> {
-        IDs::new(files, self.input_format, self.datatype).get_id_unique()
+        IDs::new(files, self.input_fmt, self.datatype).get_id_unique()
     }
 
     fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, Chars)> {
@@ -76,7 +104,7 @@ impl<'a> SeqStats<'a> {
 
     fn get_stats(&self, path: &Path) -> (Sites, Chars) {
         let aln = Sequence::new(path, self.datatype);
-        let (matrix, header) = aln.get_alignment(self.input_format);
+        let (matrix, header) = aln.get_alignment(self.input_fmt);
         let mut dna = Chars::new();
         dna.count_chars(&matrix, &header);
         let mut sites = Sites::new();
@@ -100,3 +128,19 @@ impl<'a> SeqStats<'a> {
         (sum_sites, sum_dna, mat_comp)
     }
 }
+
+// #[cfg(test)]
+// mod test {
+//     use super::*;
+
+//     const INPUT_FMT: InputFmt = InputFmt::Fasta;
+//     const DATATYPE: DataType = DataType::Dna;
+
+//     #[test]
+//     fn test_site_counts() {
+//         let seq = "AGTCT-?";
+//         let id = Id::new(Path::new("."), &INPUT_FMT, &DATATYPE);
+//         let count = id.count_sites(seq);
+//         assert_eq!(count, 5);
+//     }
+// }

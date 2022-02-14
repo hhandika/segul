@@ -81,12 +81,6 @@ impl<'a> Id<'a> {
         rec
     }
 
-    // fn count_sites(&self, seq: &str) -> usize {
-    //     let mut seq = seq.to_string();
-    //     seq.retain(|c| !"?-".contains(c));
-    //     seq.len()
-    // }
-
     fn get_aln_name(&self, file: &Path) -> String {
         file.file_stem()
             .and_then(OsStr::to_str)
@@ -155,19 +149,3 @@ impl IdRecords {
         }
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-
-//     const INPUT_FMT: InputFmt = InputFmt::Fasta;
-//     const DATATYPE: DataType = DataType::Dna;
-
-//     #[test]
-//     fn test_site_counts() {
-//         let seq = "AGTCT-?";
-//         let id = Id::new(Path::new("."), &INPUT_FMT, &DATATYPE);
-//         let count = id.count_sites(seq);
-//         assert_eq!(count, 5);
-//     }
-// }
