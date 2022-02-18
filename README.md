@@ -96,7 +96,7 @@ ldd --version
 
 If your system GLIBC is >=2.18, use the Linux binary. If lower, use the ManyLinux binary. The installation is similar to any other single executable command-line app, such as the phylogenetic programs IQ-Tree or RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)). If you are still having issues running the program, try to install it using the package manager. This installation method will optimize the compiled binary for your system (see below).
 
-> ATTENTION!: For MacOS users, when you run `segul` for the first time, MacOS gatekeeper will prevent the program to run because `segul` is not signed by Apple. Go to Security Setting to allow `segul` to run. More details are here in [Apple Website](https://support.apple.com/en-us/HT202491)
+> ATTENTION!: For MacOS users, when you run `segul` for the first time, MacOS gatekeeper will prevent the program to run because `segul` is not signed by Apple. Go to Security Setting to allow `segul` to run. More details are here in [Apple Website](https://support.apple.com/en-us/HT202491).
 
 #### Install from the Rust Package Manager
 
