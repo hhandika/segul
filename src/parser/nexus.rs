@@ -79,8 +79,10 @@ impl<'a> Nexus<'a> {
         let input = File::open(self.input).expect("Failed opening nexus file");
         let mut buff = BufReader::new(input);
         let mut header = String::new();
-        buff.read_line(&mut header)
-            .expect("Failed reading nexus header file");
+        buff.read_line(&mut header).expect(&format!(
+            "Failed reading nexus header for {}",
+            self.input.display()
+        ));
         self.check_nexus(header.trim());
         let reader = NexusReader::new(buff);
         reader.into_iter().collect()
