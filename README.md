@@ -154,7 +154,7 @@ Learn more about SEGUL command structure and expected behaviors for each argumen
 
 ### Input Options
 
-The app has two input options. The standard input `--input` or `-i` and `--dir` or `-d`. If your input files are all in a single directory, you should use the `--dir` or `-d` option and specify the file format:
+The app has two input options. The standard input `--input` or `-i` in short format and `--dir` or `-d` in short format. If your input files are all in a single directory, you should use the `--dir` or `-d` option and specify the file format:
 
 ```Bash
 segul <SUBCOMMAND> -d alignment_dir -f nexus
