@@ -1,0 +1,6 @@
+#nexus
+begin sets;
+    charset Subset1 = 1-5;
+    charset Subset2 = 6-10;
+    charset Subset3 = 11-15;
+end;
