@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming
+
+- Fix errors in the nexus output datatype for amino acid sequence.
+- Add a feature to split alignment given partition information.
+
 ## v0.12.0
 
 - Add taxon summary to the summary stats feature.
