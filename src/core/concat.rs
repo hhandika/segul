@@ -131,6 +131,7 @@ impl<'a> Concat<'a> {
         spin.set_message("Concatenating alignments...");
         self.concat(&id);
         self.header.ntax = self.alignment.len();
+        self.match_header_datatype();
     }
 
     fn concat(&mut self, id: &IndexSet<String>) {
@@ -200,6 +201,12 @@ impl<'a> Concat<'a> {
     fn get_missings(&self, len: usize) -> String {
         "?".repeat(len)
     }
+
+    fn match_header_datatype(&mut self) {
+        if let DataType::Aa = self.datatype {
+            self.header.datatype = String::from("protein")
+        };
+    }
 }
 
 #[cfg(test)]
@@ -265,5 +272,14 @@ mod test {
             gaps,
             Concat::new(&mut [PathBuf::from(".")], &InputFmt::Fasta, &DNA).get_missings(len)
         )
+    }
+
+    #[test]
+    fn test_header_datatype() {
+        let path = Path::new("test_files/concat/");
+        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DataType::Aa);
+        concat.match_header_datatype();
+        assert_eq!(concat.header.datatype, String::from("protein"));
     }
 }
