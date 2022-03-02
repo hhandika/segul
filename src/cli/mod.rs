@@ -5,9 +5,9 @@ mod extract;
 mod filter;
 mod id;
 mod rename;
+mod split;
 mod summarize;
 mod translate;
-// mod split;
 
 use std::ffi::OsStr;
 use std::fs;
@@ -30,6 +30,7 @@ use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
 use crate::cli::rename::RenameParser;
+use crate::cli::split::SplitParser;
 use crate::cli::summarize::SummaryParser;
 use crate::cli::translate::TranslateParser;
 
@@ -52,6 +53,7 @@ pub fn parse_cli(version: &str) {
         ("rename", Some(rename_matches)) => RenameParser::new(rename_matches).rename(),
         ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
         ("translate", Some(trans_matches)) => TranslateParser::new(trans_matches).translate(),
+        ("split", Some(split_matches)) => SplitParser::new(split_matches).split(),
         _ => unreachable!("Invalid subcommands!"),
     }
 }
