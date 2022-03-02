@@ -99,14 +99,13 @@ impl<'a> CsvWriter<'a> {
     fn get_taxon_summary(&self, ids: &IndexSet<String>) -> BTreeMap<String, Vec<usize>> {
         let mut taxon_summary = BTreeMap::new();
         self.stats.iter().for_each(|(_, _, taxa)| {
-            ids.iter().for_each(|id| match taxa.records.get(id) {
-                Some(site_counts) => {
+            ids.iter().for_each(|id| {
+                if let Some(site_counts) = taxa.records.get(id) {
                     taxon_summary
                         .entry(id.to_string())
-                        .or_insert(vec![])
-                        .push(site_counts.clone());
+                        .or_insert_with(Vec::new)
+                        .push(*site_counts);
                 }
-                None => (),
             })
         });
         taxon_summary
