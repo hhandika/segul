@@ -3,18 +3,29 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 
-#[allow(unused_imports)]
-use crate::helper::types::Partition;
+use crate::helper::types::{Partition, PartitionFmt};
 
 #[allow(dead_code)]
 pub struct PartitionParser<'a> {
     path: &'a Path,
+    partition_fmt: &'a PartitionFmt,
 }
 
 #[allow(dead_code)]
 impl<'a> PartitionParser<'a> {
-    pub fn new(path: &'a Path) -> Self {
-        Self { path }
+    pub fn new(path: &'a Path, partition_fmt: &'a PartitionFmt) -> Self {
+        Self {
+            path,
+            partition_fmt,
+        }
+    }
+
+    pub fn parse(&self) -> Vec<Partition> {
+        match self.partition_fmt {
+            PartitionFmt::Nexus => self.parse_nexus(),
+            PartitionFmt::Raxml => self.parse_raxml(),
+            _ => panic!("Unsupported partition format."),
+        }
     }
 
     fn parse_raxml(&self) -> Vec<Partition> {
@@ -68,7 +79,7 @@ mod test {
     #[test]
     fn test_parse_partition_raxml() {
         let path = Path::new("test_files/partition/partition.txt");
-        let parser = PartitionParser::new(path);
+        let parser = PartitionParser::new(path, &PartitionFmt::Raxml);
         let partitions = parser.parse_raxml();
         assert_eq!(partitions.len(), 3);
         assert_eq!(partitions[0].gene, "Subset1");
@@ -85,7 +96,7 @@ mod test {
     #[test]
     fn test_parse_partition_nexus() {
         let path = Path::new("test_files/partition/partition.nex");
-        let parser = PartitionParser::new(path);
+        let parser = PartitionParser::new(path, &PartitionFmt::Nexus);
         let partitions = parser.parse_nexus();
         assert_eq!(partitions.len(), 3);
         assert_eq!(partitions[0].gene, "Subset1");
