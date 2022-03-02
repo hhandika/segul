@@ -29,6 +29,7 @@ impl<'a> SplitParser<'a> {
         let part_fmt = self.parse_partition_fmt(&partitions);
         let task_desc = "Alignment splitting";
         self.print_input(&None::<PathBuf>, task_desc, 1, &input_fmt, &datatype);
+        self.check_output_dir_exist(&output);
         let split = Splitter::new(&input, &datatype, &input_fmt, &output, &output_fmt);
         split.split_alignment(&partitions, &part_fmt);
     }
