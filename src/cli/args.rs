@@ -815,5 +815,81 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(false)
                 )
         )
+        .subcommand(
+            App::new("split")
+                .about("Split alignments by partitions")
+                .arg(
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path with wildcard support")
+                        .takes_value(true)
+                        .multiple(false)
+                        .required_unless("dir")
+                        .conflicts_with("dir")
+                        .value_name("INPUT-PATH"),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .short("o")
+                        .long("output")
+                        .help("Sets target directory or use a costume file name for a single input")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("SEGUL-Split")
+                        .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("input-format")
+                        .short("f")
+                        .long("input-format")
+                        .help("Sets input format")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("SEQ-FORMAT")
+                        .default_value("auto")
+                        .possible_values(&[
+                            "auto",
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                        ]),
+                )
+                .arg(
+                    Arg::with_name("output-format")
+                        .short("F")
+                        .long("output-format")
+                        .help("Sets target output format")
+                        .takes_value(true)
+                        .default_value("nexus")
+                        .value_name("SEQ-FORMAT")
+                        .possible_values(&[
+                            "nexus",
+                            "phylip",
+                            "fasta",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
+                )
+                .arg(
+                    Arg::with_name("datatype")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
+                )
+                .arg(
+                    Arg::with_name("partition")
+                        .long("partition")
+                        .help("Input sequence partitions")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("PARTITION-PATH"),
+                ),
+        )
         .get_matches()
 }
