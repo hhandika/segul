@@ -1,5 +1,10 @@
 # Release Notes
 
+## vO.13.1
+
+- Fix issues including empty sequences in splitted alignments.
+- Fix unmatched nchar counts in nexus and phylip output when splitting alignments.
+
 ## v0.13.0
 
 - Fix errors in the nexus output datatype for amino acid sequence.
