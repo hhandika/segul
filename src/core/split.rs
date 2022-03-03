@@ -127,7 +127,7 @@ impl<'a> Splitter<'a> {
 
     fn print_output_info(&self, file_counts: usize) {
         log::info!("{}", Yellow.paint("Output"));
-        log::info!("{:18}: {}", "File counts", file_counts);
+        log::info!("{:18}: {}", "File counts", utils::fmt_num(&file_counts));
         log::info!("{:18}: {}", "Output dir", self.output.display());
         self.print_output_fmt(self.output_fmt);
     }
