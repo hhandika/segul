@@ -3,7 +3,7 @@
 ## Upcoming
 
 - Add support for RaXML partition that does not contain datatype
-- Allow dot ('.') in the gene name for splitting partition.
+- Replace dot in the locus name for partition with underscore
 
 ## vO.13.1
 

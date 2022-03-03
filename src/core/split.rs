@@ -77,6 +77,10 @@ impl<'a> Splitter<'a> {
     fn parse_filename(&self, gene_name: &str) -> PathBuf {
         let mut filename = String::from(gene_name);
         filename.retain(|c| !r#"()/\,"';:?!"#.contains(c));
+        if filename.contains('.') {
+            filename = filename.replace('.', "_");
+        }
+
         PathBuf::from(filename)
     }
 
