@@ -15,13 +15,14 @@ Features:
 
 1. Converting alignments to different formats.
 2. Concatenating alignments with partition settings.
-3. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
-4. Computing alignment summary statistics.
-5. Getting sample IDs from a collection of alignments.
-6. Map sample distribution in a collection of alignments.
-7. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
-8. Batch renaming sequence IDs.
-9. Converting dna sequences to amino acid.
+3. Splitting alignments by partitions.
+4. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
+5. Computing alignment summary statistics.
+6. Getting sample IDs from a collection of alignments.
+7. Map sample distribution in a collection of alignments.
+8. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
+9. Batch renaming sequence IDs.
+10. Converting dna sequences to amino acid.
 
 Supported sequence formats:
 
@@ -59,6 +60,7 @@ Citation:
     - [Output](#output)
     - [Converting alignments](#converting-alignments)
     - [Concatenating alignments](#concatenating-alignments)
+    - [Splitting alignments by partitions](#splitting-alignments-by-partitions)
     - [Computing sequence summary statistics](#computing-sequence-summary-statistics)
     - [Getting sample IDs from a collection of alignments](#getting-sample-ids-from-a-collection-of-alignments)
     - [Map sample distribution in a collection of alignments](#map-sample-distribution-in-a-collection-of-alignments)
@@ -220,6 +222,14 @@ To concat all alignments in a directory:
 
 ```Bash
 segul concat --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
+```
+
+### Splitting alignments by partitions
+
+To split alignment by partions, you need the alignment file and the alignment partion in a separate file:
+
+```Bash
+segul split -i [a-path-to-an-alignment] --partition [a-path-to-partition-file]
 ```
 
 ### Computing sequence summary statistics
