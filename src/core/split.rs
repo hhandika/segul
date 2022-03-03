@@ -64,12 +64,12 @@ impl<'a> Splitter<'a> {
             let mut out = SeqWriter::new(&output_path, &matrix, &header, None, &PartitionFmt::None);
             out.write_sequence(self.output_fmt)
                 .expect("Failed writing the output file");
-            file_counts.fetch_add(1, Ordering::SeqCst);
+            file_counts.fetch_add(1, Ordering::Relaxed);
         });
 
         spin.finish_with_message("Finished splitting alignment!\n");
 
-        self.print_output_info(file_counts.load(Ordering::SeqCst));
+        self.print_output_info(file_counts.load(Ordering::Relaxed));
     }
 
     // Generate a filename for each locus based on the locus name
@@ -129,6 +129,15 @@ mod test {
                 &OutputFmt::Fasta,
             );
         };
+    }
+
+    #[test]
+    fn test_parse_filename() {
+        input_split!(splitter, "test_files/test.fasta");
+        assert_eq!(
+            splitter.parse_filename(r#"'test!?'"#),
+            PathBuf::from("test")
+        );
     }
 
     #[test]
