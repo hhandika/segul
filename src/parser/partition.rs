@@ -5,13 +5,11 @@ use std::path::Path;
 
 use crate::helper::types::{Partition, PartitionFmt};
 
-#[allow(dead_code)]
 pub struct PartitionParser<'a> {
     path: &'a Path,
     partition_fmt: &'a PartitionFmt,
 }
 
-#[allow(dead_code)]
 impl<'a> PartitionParser<'a> {
     pub fn new(path: &'a Path, partition_fmt: &'a PartitionFmt) -> Self {
         Self {
@@ -21,16 +19,16 @@ impl<'a> PartitionParser<'a> {
     }
 
     pub fn parse(&self) -> Vec<Partition> {
+        let file = File::open(self.path).expect("Unable to open file");
+        let mut reader = BufReader::new(file);
         match self.partition_fmt {
-            PartitionFmt::Nexus => self.parse_nexus(),
-            PartitionFmt::Raxml => self.parse_raxml(),
+            PartitionFmt::Nexus => self.parse_nexus(&mut reader),
+            PartitionFmt::Raxml => self.parse_raxml(&mut reader),
             _ => panic!("Unsupported partition format."),
         }
     }
 
-    fn parse_raxml(&self) -> Vec<Partition> {
-        let file = File::open(self.path).expect("Unable to open file");
-        let reader = BufReader::new(file);
+    fn parse_raxml<R: BufRead>(&self, reader: &mut R) -> Vec<Partition> {
         let mut partitions = Vec::new();
         reader.lines().filter_map(|ok| ok.ok()).for_each(|line| {
             if !line.contains(',') {
@@ -43,9 +41,7 @@ impl<'a> PartitionParser<'a> {
         partitions
     }
 
-    fn parse_nexus(&self) -> Vec<Partition> {
-        let file = File::open(self.path).expect("Unable to open file");
-        let reader = BufReader::new(file);
+    fn parse_nexus<R: BufRead>(&self, reader: &mut R) -> Vec<Partition> {
         let mut partitions = Vec::new();
         reader.lines().filter_map(|ok| ok.ok()).for_each(|line| {
             let nex_line = line.trim();
@@ -84,7 +80,7 @@ mod test {
     fn test_parse_partition_raxml() {
         let path = Path::new("test_files/partition/partition.txt");
         let parser = PartitionParser::new(path, &PartitionFmt::Raxml);
-        let partitions = parser.parse_raxml();
+        let partitions = parser.parse();
         assert_eq!(partitions.len(), 3);
         assert_eq!(partitions[0].gene, "Subset1");
         assert_eq!(partitions[0].start, 1);
@@ -101,7 +97,7 @@ mod test {
     fn test_parse_partition_nexus() {
         let path = Path::new("test_files/partition/partition.nex");
         let parser = PartitionParser::new(path, &PartitionFmt::Nexus);
-        let partitions = parser.parse_nexus();
+        let partitions = parser.parse();
         assert_eq!(partitions.len(), 3);
         assert_eq!(partitions[0].gene, "Subset1");
         assert_eq!(partitions[0].start, 1);
