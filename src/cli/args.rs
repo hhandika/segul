@@ -884,11 +884,23 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::with_name("partition")
-                        .long("partition")
+                        .short("-I")
+                        .long("input-partition")
                         .help("Input sequence partitions")
                         .takes_value(true)
                         .required(true)
                         .value_name("PARTITION-PATH"),
+                )
+                .arg(
+                    Arg::with_name("partition")
+                        .short("-p")
+                        .long("part")
+                        .help("Sets partition format")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("nexus")
+                        .value_name("PART-FORMAT")
+                        .possible_values(&["nexus", "raxml"]),
                 ),
         )
         .get_matches()
