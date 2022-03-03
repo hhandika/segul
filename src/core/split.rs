@@ -55,7 +55,7 @@ impl<'a> Splitter<'a> {
             if let DataType::Aa = self.datatype {
                 header.datatype = String::from("protein");
             }
-            header.nchar = start_pos - end_pos;
+            header.nchar = end_pos - start_pos;
             header.ntax = matrix.len();
             header.aligned = true;
             let filename = self.parse_filename(&part.gene);
@@ -90,9 +90,16 @@ impl<'a> Splitter<'a> {
         matrix.iter().for_each(|(taxon, seq)| {
             // We substract the start position to match rust indexing.
             let part_seq = self.slice_sequence(seq, start_pos, end_pos);
-            seq_matrix.insert(taxon.clone(), part_seq);
+            if !self.is_contain_seq(&part_seq) {
+                seq_matrix.insert(taxon.clone(), part_seq);
+            }
         });
         seq_matrix
+    }
+
+    fn is_contain_seq(&self, seq: &str) -> bool {
+        let empty_seq = b"-?";
+        seq.bytes().all(|char| empty_seq.contains(&char))
     }
 
     fn slice_sequence(&self, seq: &str, start: usize, end: usize) -> String {
