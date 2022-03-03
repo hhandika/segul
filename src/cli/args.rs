@@ -835,8 +835,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Sets target directory or use a costume file name for a single input")
                         .takes_value(true)
-                        .required(true)
-                        .default_value("SEGUL-Split")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -897,7 +895,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("part")
                         .help("Sets partition format")
                         .takes_value(true)
-                        .required(true)
                         .value_name("PART-FORMAT")
                         .possible_values(&["nexus", "raxml"]),
                 ),
