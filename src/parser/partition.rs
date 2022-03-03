@@ -76,37 +76,31 @@ impl<'a> PartitionParser<'a> {
 mod test {
     use super::*;
 
+    macro_rules! test_partition_parser {
+        ($input:expr, $format:ident) => {
+            let path = Path::new($input);
+            let parser = PartitionParser::new(path, &PartitionFmt::$format);
+            let partitions = parser.parse();
+            assert_eq!(partitions.len(), 3);
+            assert_eq!(partitions[0].gene, "Subset1");
+            assert_eq!(partitions[0].start, 1);
+            assert_eq!(partitions[0].end, 5);
+            assert_eq!(partitions[1].gene, "Subset2");
+            assert_eq!(partitions[1].start, 6);
+            assert_eq!(partitions[1].end, 10);
+            assert_eq!(partitions[2].gene, "Subset3");
+            assert_eq!(partitions[2].start, 11);
+            assert_eq!(partitions[2].end, 15);
+        };
+    }
+
     #[test]
     fn test_parse_partition_raxml() {
-        let path = Path::new("test_files/partition/partition.txt");
-        let parser = PartitionParser::new(path, &PartitionFmt::Raxml);
-        let partitions = parser.parse();
-        assert_eq!(partitions.len(), 3);
-        assert_eq!(partitions[0].gene, "Subset1");
-        assert_eq!(partitions[0].start, 1);
-        assert_eq!(partitions[0].end, 5);
-        assert_eq!(partitions[1].gene, "Subset2");
-        assert_eq!(partitions[1].start, 6);
-        assert_eq!(partitions[1].end, 10);
-        assert_eq!(partitions[2].gene, "Subset3");
-        assert_eq!(partitions[2].start, 11);
-        assert_eq!(partitions[2].end, 15);
+        test_partition_parser!("test_files/partition/partition.txt", Raxml);
     }
 
     #[test]
     fn test_parse_partition_nexus() {
-        let path = Path::new("test_files/partition/partition.nex");
-        let parser = PartitionParser::new(path, &PartitionFmt::Nexus);
-        let partitions = parser.parse();
-        assert_eq!(partitions.len(), 3);
-        assert_eq!(partitions[0].gene, "Subset1");
-        assert_eq!(partitions[0].start, 1);
-        assert_eq!(partitions[0].end, 5);
-        assert_eq!(partitions[1].gene, "Subset2");
-        assert_eq!(partitions[1].start, 6);
-        assert_eq!(partitions[1].end, 10);
-        assert_eq!(partitions[2].gene, "Subset3");
-        assert_eq!(partitions[2].start, 11);
-        assert_eq!(partitions[2].end, 15);
+        test_partition_parser!("test_files/partition/partition.nex", Nexus);
     }
 }
