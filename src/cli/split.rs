@@ -58,7 +58,7 @@ impl<'a> SplitParser<'a> {
             .expect("Failed getting file extension as string");
         match ext {
             "txt" | "raxml" => PartitionFmt::Raxml,
-            "nex" | "nexus" => PartitionFmt::Nexus,
+            "nex" | "nexus" | "charset" => PartitionFmt::Nexus,
             _ => panic!("Unsupported partition file format"),
         }
     }
