@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming
+
+- Add support for RaXML partition that does not contain datatype
+- Allow dot ('.') in the gene name for splitting partition.
+
 ## vO.13.1
 
 - Fix issues including empty sequences in splitted alignments.

@@ -28,14 +28,31 @@ impl<'a> PartitionParser<'a> {
         }
     }
 
+    /// This function will parse two kinds of raxml partition file:
+    /// ```Text
+    /// DNA, locus_1 = 1-100
+    /// DNA, locus_2 = 101-200
+    /// ```
+    /// or
+    /// ```Text
+    /// locus_1 = 1-100
+    /// locus_2 = 101-200
     fn parse_raxml<R: BufRead>(&self, reader: &mut R) -> Vec<Partition> {
         let mut partitions = Vec::new();
         reader.lines().filter_map(|ok| ok.ok()).for_each(|line| {
-            if !line.contains(',') {
-                panic!("Invalid partition file format.");
-            }
             let parts = line.trim().split('=').collect::<Vec<&str>>();
-            partitions.push(self.parse_partition(&parts[0].trim(), &parts[1].trim()));
+            let mut gene_name = parts[0].to_string();
+            let pos: &str = parts[1].trim();
+
+            // Raxml have so many different datatype written in the partition.
+            // Here we will just brute force to remove it.
+            if gene_name.contains(',') {
+                let raxml_type = parts[0]
+                    .find(',')
+                    .expect("Error in parsing raxml partition file");
+                gene_name.replace_range(..=raxml_type, "");
+            }
+            partitions.push(self.parse_partition(&gene_name, pos));
         });
 
         partitions
@@ -47,24 +64,30 @@ impl<'a> PartitionParser<'a> {
             let nex_line = line.trim();
             if nex_line.to_lowercase().starts_with("charset") {
                 let parts = line.split('=').collect::<Vec<&str>>();
-                partitions.push(
-                    self.parse_partition(&parts[0].trim(), &parts[1].replace(";", "").trim()),
-                );
+                // We will split the gene part of the partition.
+                // and exlude the first element, which is the "charset".
+                let gene_parts = parts[0].split_whitespace().collect::<Vec<&str>>();
+                let gene_name = gene_parts[1];
+                let pos = parts[1].trim().replace(";", "");
+                partitions.push(self.parse_partition(gene_name, pos.trim()));
             }
         });
         partitions
     }
 
-    fn parse_partition(&self, part_gene: &str, part_pos: &str) -> Partition {
+    fn parse_partition(&self, gene_name: &str, pos: &str) -> Partition {
         let mut partition = Partition::new();
-        let gene_line = part_gene.split_whitespace().collect::<Vec<&str>>();
-        partition.gene = gene_line[1].to_string();
-        let pos = part_pos.split('-').collect::<Vec<&str>>();
-        partition.start = pos[0]
+        partition.gene = gene_name.trim().to_string();
+        assert!(
+            !partition.gene.contains(' '),
+            "Failed parsing partition file. Gene name cannot contain spaces"
+        );
+        let part_pos = pos.split('-').collect::<Vec<&str>>();
+        partition.start = part_pos[0]
             .trim()
             .parse::<usize>()
             .expect("Failed parsing gene start location");
-        partition.end = pos[1]
+        partition.end = part_pos[1]
             .trim()
             .parse::<usize>()
             .expect("Failed parsing gene end location");
@@ -102,5 +125,30 @@ mod test {
     #[test]
     fn test_parse_partition_nexus() {
         test_partition_parser!("test_files/partition/partition.nex", Nexus);
+    }
+
+    #[test]
+    fn test_parse_partition_raxml_with_whitespaces() {
+        let path = Path::new("test_files/partition/partition_whitespaces.txt");
+        test_partition_parser!(path, Raxml);
+    }
+
+    #[test]
+    fn test_partition_nexus_with_whitespaces() {
+        let path = Path::new("test_files/partition/partition_whitespaces.nex");
+        test_partition_parser!(path, Nexus);
+    }
+
+    #[test]
+    fn test_partition_raxml_no_datatype() {
+        let path = Path::new("test_files/partition/partition_no_datatype.txt");
+        test_partition_parser!(path, Raxml);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_partition_raxml_with_invalid_format() {
+        let path = Path::new("test_files/partition/partition_invalid.txt");
+        test_partition_parser!(path, Raxml);
     }
 }

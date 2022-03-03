@@ -1,0 +1,3 @@
+DNA, Subset 1 = 1-5
+DNA, Subset 2 = 6-10
+DNA, Subset 3 = 11-15
