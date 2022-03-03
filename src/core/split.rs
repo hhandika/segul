@@ -76,7 +76,7 @@ impl<'a> Splitter<'a> {
     // We get rid of any characters that are not alphanumeric, underscore, or dash
     fn parse_filename(&self, gene_name: &str) -> PathBuf {
         let mut filename = String::from(gene_name);
-        filename.retain(|c| !r#"()/\,"'.;:?!"#.contains(c));
+        filename.retain(|c| !r#"()/\,"';:?!"#.contains(c));
         PathBuf::from(filename)
     }
 
