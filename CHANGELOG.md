@@ -4,6 +4,7 @@
 
 - Add support for RaXML partition that does not contain datatype
 - Replace dot in the locus name for partition with underscore
+- Print partition information when splitting alignments
 
 ## vO.13.1
 

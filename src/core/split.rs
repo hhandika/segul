@@ -40,8 +40,9 @@ impl<'a> Splitter<'a> {
         }
     }
 
-    pub fn split_alignment(&self, partition: &Path, partition_fmt: &PartitionFmt) {
-        let partitions = PartitionParser::new(partition, partition_fmt).parse();
+    pub fn split_alignment(&self, part_path: &Path, partition_fmt: &PartitionFmt) {
+        let partitions = PartitionParser::new(part_path, partition_fmt).parse();
+        self.print_partition_info(part_path, &partitions.len());
         let spin = utils::set_spinner();
         spin.set_message("Parsing input sequence file...");
         let aln_matrix = self.parse_sequence();
@@ -116,6 +117,16 @@ impl<'a> Splitter<'a> {
         let aln = Sequence::new(self.input, self.datatype);
         let (matrix, _) = aln.get_alignment(self.input_fmt);
         matrix
+    }
+
+    fn print_partition_info(&self, part_path: &Path, part_counts: &usize) {
+        log::info!("{}", Yellow.paint("Partitions"));
+        log::info!("{:18}: {}", "File path", part_path.display());
+        log::info!(
+            "{:18}: {}\n",
+            "Partition counts",
+            utils::fmt_num(part_counts)
+        );
     }
 
     fn print_output_info(&self, file_counts: usize) {
