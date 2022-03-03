@@ -232,6 +232,8 @@ To split alignment by partions, you need the alignment file and the alignment pa
 segul split -i [a-path-to-an-alignment] --input-partition [a-path-to-partition-file]
 ```
 
+If it is not provided, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option.
+
 ### Computing sequence summary statistics
 
 To generate sequence summary statistics of alignments in a directory:
