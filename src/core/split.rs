@@ -80,13 +80,6 @@ impl<'a> Splitter<'a> {
         PathBuf::from(filename)
     }
 
-    fn print_output_info(&self, file_counts: usize) {
-        log::info!("{}", Yellow.paint("Output"));
-        log::info!("{:18}: {}", "File counts", file_counts);
-        log::info!("{:18}: {}", "Output dir", self.output.display());
-        self.print_output_fmt(self.output_fmt);
-    }
-
     fn generate_new_matrix(
         &self,
         matrix: &SeqMatrix,
@@ -112,6 +105,13 @@ impl<'a> Splitter<'a> {
         let aln = Sequence::new(self.input, self.datatype);
         let (matrix, _) = aln.get_alignment(self.input_fmt);
         matrix
+    }
+
+    fn print_output_info(&self, file_counts: usize) {
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "File counts", file_counts);
+        log::info!("{:18}: {}", "Output dir", self.output.display());
+        self.print_output_fmt(self.output_fmt);
     }
 }
 
