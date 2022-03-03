@@ -883,7 +883,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
-                    Arg::with_name("partition")
+                    Arg::with_name("input-partition")
                         .short("-I")
                         .long("input-partition")
                         .help("Input sequence partitions")
@@ -898,7 +898,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets partition format")
                         .takes_value(true)
                         .required(true)
-                        .default_value("nexus")
                         .value_name("PART-FORMAT")
                         .possible_values(&["nexus", "raxml"]),
                 ),

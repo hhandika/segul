@@ -2,13 +2,37 @@ use std::path::{Path, PathBuf};
 
 use clap::ArgMatches;
 
-use crate::cli::{InputCli, InputPrint, OutputCli};
+use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
 use crate::core::split::Splitter;
 use crate::helper::types::PartitionFmt;
 
 impl InputPrint for SplitParser<'_> {}
 impl OutputCli for SplitParser<'_> {}
 impl InputCli for SplitParser<'_> {}
+impl ConcatCli for SplitParser<'_> {
+    fn parse_partition_fmt(&self, matches: &ArgMatches) -> PartitionFmt {
+        if !self.matches.is_present("partition") {
+            let ext = part_path
+                .extension()
+                .expect("Failed getting file extension")
+                .to_str()
+                .expect("Failed getting file extension as string");
+            match ext {
+                "txt" | "raxml" => PartitionFmt::Raxml,
+                "nex" | "nexus" | "charset" => PartitionFmt::Nexus,
+                _ => panic!("Unsupported partition file format"),
+            }
+        } else {
+        let part_fmt = matches
+            .value_of("partition")
+            .expect("Failed parsing partition format");
+        match part_fmt {
+            "nexus" => PartitionFmt::Nexus,
+            "raxml" => PartitionFmt::Raxml,
+            _ => PartitionFmt::Nexus,
+        }
+    }
+}
 
 pub(in crate::cli) struct SplitParser<'a> {
     matches: &'a ArgMatches<'a>,
@@ -26,7 +50,7 @@ impl<'a> SplitParser<'a> {
         let output_fmt = self.parse_output_fmt(self.matches);
         let output = self.parse_output(self.matches);
         let partitions = self.parse_partition_path();
-        let part_fmt = self.parse_partition_fmt(&partitions);
+        let part_fmt = self.parse_part_fmt(&partitions);
         let task_desc = "Alignment splitting";
         self.print_input(&None::<PathBuf>, task_desc, 1, &input_fmt, &datatype);
         self.check_output_dir_exist(&output);
@@ -45,21 +69,14 @@ impl<'a> SplitParser<'a> {
     fn parse_partition_path(&self) -> PathBuf {
         PathBuf::from(
             self.matches
-                .value_of("partition")
+                .value_of("input-partition")
                 .expect("No partition file provided"),
         )
     }
 
-    fn parse_partition_fmt(&self, part_path: &Path) -> PartitionFmt {
-        let ext = part_path
-            .extension()
-            .expect("Failed getting file extension")
-            .to_str()
-            .expect("Failed getting file extension as string");
-        match ext {
-            "txt" | "raxml" => PartitionFmt::Raxml,
-            "nex" | "nexus" | "charset" => PartitionFmt::Nexus,
-            _ => panic!("Unsupported partition file format"),
+    fn parse_part_fmt(&self, part_path: &Path) -> PartitionFmt {
+        
+            self.parse_partition_fmt(self.matches)
         }
     }
 }

@@ -229,7 +229,7 @@ segul concat --dir [a-path-to-a-directory] --input-format [sequence-format-keywo
 To split alignment by partions, you need the alignment file and the alignment partion in a separate file:
 
 ```Bash
-segul split -i [a-path-to-an-alignment] --partition [a-path-to-partition-file]
+segul split -i [a-path-to-an-alignment] --input-partition [a-path-to-partition-file]
 ```
 
 ### Computing sequence summary statistics
