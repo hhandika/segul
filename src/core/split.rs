@@ -121,12 +121,8 @@ impl<'a> Splitter<'a> {
 
     fn print_partition_info(&self, part_path: &Path, part_counts: &usize) {
         log::info!("{}", Yellow.paint("Partitions"));
-        log::info!("{:18}: {}", "File path", part_path.display());
-        log::info!(
-            "{:18}: {}\n",
-            "Partition counts",
-            utils::fmt_num(part_counts)
-        );
+        log::info!("{:18}: {}", "Partition counts", utils::fmt_num(part_counts));
+        log::info!("{:18}: {}\n", "File path", part_path.display());
     }
 
     fn print_output_info(&self, file_counts: usize) {
