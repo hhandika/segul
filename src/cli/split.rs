@@ -11,18 +11,6 @@ impl OutputCli for SplitParser<'_> {}
 impl InputCli for SplitParser<'_> {}
 impl ConcatCli for SplitParser<'_> {
     fn parse_partition_fmt(&self, matches: &ArgMatches) -> PartitionFmt {
-        if !self.matches.is_present("partition") {
-            let ext = part_path
-                .extension()
-                .expect("Failed getting file extension")
-                .to_str()
-                .expect("Failed getting file extension as string");
-            match ext {
-                "txt" | "raxml" => PartitionFmt::Raxml,
-                "nex" | "nexus" | "charset" => PartitionFmt::Nexus,
-                _ => panic!("Unsupported partition file format"),
-            }
-        } else {
         let part_fmt = matches
             .value_of("partition")
             .expect("Failed parsing partition format");
@@ -75,7 +63,18 @@ impl<'a> SplitParser<'a> {
     }
 
     fn parse_part_fmt(&self, part_path: &Path) -> PartitionFmt {
-        
+        if !self.matches.is_present("partition") {
+            let ext = part_path
+                .extension()
+                .expect("Failed getting file extension")
+                .to_str()
+                .expect("Failed getting file extension as string");
+            match ext {
+                "txt" | "raxml" => PartitionFmt::Raxml,
+                "nex" | "nexus" | "charset" => PartitionFmt::Nexus,
+                _ => panic!("Unsupported partition file format"),
+            }
+        } else {
             self.parse_partition_fmt(self.matches)
         }
     }
