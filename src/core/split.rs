@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use ansi_term::Colour::Yellow;
@@ -58,9 +58,9 @@ impl<'a> Splitter<'a> {
             header.nchar = start_pos - end_pos;
             header.ntax = matrix.len();
             header.aligned = true;
-            let filename = Path::new(&part.gene);
+            let filename = self.parse_filename(&part.gene);
             let output_path =
-                filenames::create_output_fname(self.output, filename, self.output_fmt);
+                filenames::create_output_fname(self.output, &filename, self.output_fmt);
             let mut out = SeqWriter::new(&output_path, &matrix, &header, None, &PartitionFmt::None);
             out.write_sequence(self.output_fmt)
                 .expect("Failed writing the output file");
@@ -70,6 +70,14 @@ impl<'a> Splitter<'a> {
         spin.finish_with_message("Finished splitting alignment!\n");
 
         self.print_output_info(file_counts.load(Ordering::SeqCst));
+    }
+
+    // Generate a filename for each locus based on the locus name
+    // We get rid of any characters that are not alphanumeric, underscore, or dash
+    fn parse_filename(&self, gene_name: &str) -> PathBuf {
+        let mut filename = String::from(gene_name);
+        filename.retain(|c| !r#"()/\,"'.;:?!"#.contains(c));
+        PathBuf::from(filename)
     }
 
     fn print_output_info(&self, file_counts: usize) {

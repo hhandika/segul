@@ -36,10 +36,10 @@ impl<'a> PartitionParser<'a> {
             if !line.contains(',') {
                 panic!("Invalid partition file format.");
             }
-            let parts = line.split_whitespace().collect::<Vec<&str>>();
-            assert_eq!(parts.len(), 4);
-            partitions.push(self.parse_partition(&parts));
+            let parts = line.trim().split('=').collect::<Vec<&str>>();
+            partitions.push(self.parse_partition(&parts[0].trim(), &parts[1].trim()));
         });
+
         partitions
     }
 
@@ -48,24 +48,28 @@ impl<'a> PartitionParser<'a> {
         let reader = BufReader::new(file);
         let mut partitions = Vec::new();
         reader.lines().filter_map(|ok| ok.ok()).for_each(|line| {
-            let nex_line = line.trim().replace(";", "");
+            let nex_line = line.trim();
             if nex_line.to_lowercase().starts_with("charset") {
-                let parts = nex_line.split_whitespace().collect::<Vec<&str>>();
-                assert_eq!(parts.len(), 4);
-                partitions.push(self.parse_partition(&parts));
+                let parts = line.split('=').collect::<Vec<&str>>();
+                partitions.push(
+                    self.parse_partition(&parts[0].trim(), &parts[1].replace(";", "").trim()),
+                );
             }
         });
         partitions
     }
 
-    fn parse_partition(&self, parts: &[&str]) -> Partition {
+    fn parse_partition(&self, part_gene: &str, part_pos: &str) -> Partition {
         let mut partition = Partition::new();
-        partition.gene = parts[1].to_string();
-        let genes = parts[3].split('-').collect::<Vec<&str>>();
-        partition.start = genes[0]
+        let gene_line = part_gene.split_whitespace().collect::<Vec<&str>>();
+        partition.gene = gene_line[1].to_string();
+        let pos = part_pos.split('-').collect::<Vec<&str>>();
+        partition.start = pos[0]
+            .trim()
             .parse::<usize>()
             .expect("Failed parsing gene start location");
-        partition.end = genes[1]
+        partition.end = pos[1]
+            .trim()
             .parse::<usize>()
             .expect("Failed parsing gene end location");
         partition
