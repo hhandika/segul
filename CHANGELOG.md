@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.13.0
 
 - Fix errors in the nexus output datatype for amino acid sequence.
 - Add a feature to split alignment given partition information.
