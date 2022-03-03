@@ -119,20 +119,37 @@ impl<'a> Splitter<'a> {
 mod test {
     use super::*;
 
+    macro_rules! input_split {
+        ($var:ident, $input:expr) => {
+            let $var = Splitter::new(
+                &Path::new($input),
+                &DataType::Dna,
+                &InputFmt::Fasta,
+                &Path::new("test_files/"),
+                &OutputFmt::Fasta,
+            );
+        };
+    }
+
     #[test]
     fn test_sequence_slicing() {
-        let split = Splitter::new(
-            &Path::new("tests/data/alignment.fasta"),
-            &DataType::Dna,
-            &InputFmt::Fasta,
-            &Path::new("tests/data/alignment.fasta"),
-            &OutputFmt::Fasta,
-        );
+        input_split!(split, "test_files/test_aln.fasta");
         let seq = "AAAAAAAAGGGGTTTTCCCC";
 
         let slice = split.slice_sequence(seq, 0, 10);
         let slice_2 = split.slice_sequence(seq, 10, 15);
         assert_eq!(slice, "AAAAAAAAGG");
         assert_eq!(slice_2, "GGTTT");
+    }
+
+    #[test]
+    fn test_generate_new_matrix() {
+        input_split!(split, "test_files/partition/concat_part.fas");
+        let matrix = split.parse_sequence();
+        let new_matrix = split.generate_new_matrix(&matrix, 0, 10);
+        let new_matrix_2 = split.generate_new_matrix(&matrix, 10, 15);
+        assert_eq!(new_matrix.len(), 4);
+        assert_eq!(new_matrix.get("ABCD").unwrap(), "aaaaaggggg");
+        assert_eq!(new_matrix_2.get("ABCD").unwrap(), "ttttt");
     }
 }
