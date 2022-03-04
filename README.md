@@ -9,7 +9,7 @@
 ![last-commit](https://img.shields.io/github/last-commit/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments that is typically done using interpreted programming languages, such as Python, R, or Perl. It is a cross-platform single executable app and has zero runtime dependency on MacOS and Windows and only relies on a library provided by the OS on Linux. It is designed to handle genomic datasets, but just as capable for Sanger datasets. In our test using a dataset with 4060 UCE loci, for instance, compare to an app written using [the biopython library](https://biopython.org/), SEGUL is >40x faster for alignment concatenation while using 3x less RAM space.
+SSEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments. As a cross-platform, single executable app, SEGUL has zero runtime dependency on MacOS and Windows and only relies on a library provided by the Linux OS. It is designed to handle the computational burden of operations on large genomic datasets, but it also provides convenient features that users with smaller datasets (e.g., Sanger datasets) may find equally helpful. Testing of SEGUL on genomic datasets of various sizes has shown that it consistently offers a faster and more efficient alternative to existing applications for a wide variety of sequence alignment manipulations. For instance, with 4060 UCE loci, we found that SEGUL performed >40x faster for alignment concatenation while using 3x less RAM space compared to an app written in python ([see benchmark](https://github.com/hhandika/segul-bench)).
 
 Features:
 
@@ -19,25 +19,25 @@ Features:
 4. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
 5. Computing alignment summary statistics.
 6. Getting sample IDs from a collection of alignments.
-7. Map sample distribution in a collection of alignments.
-8. Extracting sequences from a collection of alignments based on user-defined IDs. The feature comes with regular expression support.
+7. Mapping sample distribution in a collection of alignments.
+8. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
 9. Batch renaming sequence IDs.
-10. Converting dna sequences to amino acid.
+10. Converting DNA sequences to amino acid sequences.
 
 Supported sequence formats:
 
-1. Nexus
-2. Relaxed phylip
-3. Fasta
+1. NEXUS
+2. Relaxed PHYLIP
+3. FASTA
 
-All of the formats are supported in interleave and sequential. The app supports both DNA and amino acid sequences.
+All of the formats are supported in interleave and sequential versions. The app supports both DNA and amino acid sequences.
 
 Supported partition formats:
 
 1. RaXML
-2. Nexus
+2. NEXUS
 
-The Nexus partition can be written as a charset block embedded in Nexus formatted sequences or be written in a separate file.
+The NEXUS partition can be written as a charset block embedded in NEXUS formatted sequences or a separate file.
 
 Documentation: [GitHub Wiki](https://github.com/hhandika/segul/wiki)
 
