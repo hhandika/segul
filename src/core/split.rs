@@ -95,14 +95,14 @@ impl<'a> Splitter<'a> {
         matrix.iter().for_each(|(taxon, seq)| {
             // We substract the start position to match rust indexing.
             let part_seq = self.slice_sequence(seq, start_pos, end_pos);
-            if !self.is_contain_seq(&part_seq) {
+            if !self.is_empty_seq(&part_seq) {
                 seq_matrix.insert(taxon.clone(), part_seq);
             }
         });
         seq_matrix
     }
 
-    fn is_contain_seq(&self, seq: &str) -> bool {
+    fn is_empty_seq(&self, seq: &str) -> bool {
         let empty_seq = b"-?";
         seq.bytes().all(|char| empty_seq.contains(&char))
     }
