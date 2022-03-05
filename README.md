@@ -234,7 +234,9 @@ To split alignment by partions, you need the alignment file and the alignment pa
 segul split -i [a-path-to-an-alignment] --input-partition [a-path-to-partition-file]
 ```
 
-If it is not provided, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option.
+If it is not provided, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option. The
+
+By default, `segul` will use the locus name in the partition file as the output filename for each of the locus. You can prefix this filename by using `--prefix` option.
 
 ### Computing sequence summary statistics
 
