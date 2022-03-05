@@ -40,7 +40,12 @@ impl<'a> Splitter<'a> {
         }
     }
 
-    pub fn split_alignment(&self, part_path: &Path, partition_fmt: &PartitionFmt) {
+    pub fn split_alignment(
+        &self,
+        part_path: &Path,
+        partition_fmt: &PartitionFmt,
+        prefix: &Option<String>,
+    ) {
         let partitions = PartitionParser::new(part_path, partition_fmt).parse();
         self.print_partition_info(part_path, &partitions.len());
         let spin = utils::set_spinner();
@@ -59,7 +64,7 @@ impl<'a> Splitter<'a> {
             header.nchar = end_pos - start_pos;
             header.ntax = matrix.len();
             header.aligned = true;
-            let filename = self.parse_filename(&part.gene);
+            let filename = self.parse_filename(&part.gene, prefix);
             let output_path =
                 filenames::create_output_fname(self.output, &filename, self.output_fmt);
             let mut out = SeqWriter::new(&output_path, &matrix, &header, None, &PartitionFmt::None);
@@ -69,14 +74,17 @@ impl<'a> Splitter<'a> {
         });
 
         spin.finish_with_message("Finished splitting alignment!\n");
-
         self.print_output_info(file_counts.load(Ordering::Relaxed));
     }
 
     // Generate a filename for each locus based on the locus name
     // We get rid of any characters that are not alphanumeric, underscore, or dash
-    fn parse_filename(&self, gene_name: &str) -> PathBuf {
-        let mut filename = String::from(gene_name);
+    fn parse_filename(&self, gene_name: &str, prefix: &Option<String>) -> PathBuf {
+        let mut filename = match prefix {
+            Some(prefix) => format!("{}_{}", prefix, gene_name),
+            None => String::from(gene_name),
+        };
+
         filename.retain(|c| !r#"()/\,"';:?!"#.contains(c));
         if filename.contains('.') {
             filename = filename.replace('.', "_");
@@ -151,10 +159,14 @@ mod test {
 
     #[test]
     fn test_parse_filename() {
-        input_split!(splitter, "test_files/test.fasta");
+        input_split!(split, "test_files/test.fasta");
         assert_eq!(
-            splitter.parse_filename(r#"'test!?'"#),
+            split.parse_filename(r#"'test!?'"#, &None),
             PathBuf::from("test")
+        );
+        assert_eq!(
+            split.parse_filename(r#"'test!?'"#, &Some("test".to_string())),
+            PathBuf::from("test_test")
         );
     }
 

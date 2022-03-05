@@ -52,11 +52,12 @@ impl<'a> SplitParser<'a> {
         let output = self.parse_output(self.matches);
         let partitions = self.parse_partition_path();
         let part_fmt = self.parse_part_fmt(&partitions);
+        let prefix = self.parse_prefix_input();
         let task_desc = "Alignment splitting";
         self.print_input(&None::<PathBuf>, task_desc, 1, &input_fmt, &datatype);
         self.check_output_dir_exist(&output);
         let split = Splitter::new(&input, &datatype, &input_fmt, &output, &output_fmt);
-        split.split_alignment(&partitions, &part_fmt);
+        split.split_alignment(&partitions, &part_fmt, &prefix);
     }
 
     fn parse_input_path(&self) -> PathBuf {
@@ -65,6 +66,21 @@ impl<'a> SplitParser<'a> {
             .value_of("input")
             .expect("Input file is required");
         PathBuf::from(input_file)
+    }
+
+    // Because this prefix is used for all output files
+    // We have to parse it separately instead of using
+    // the concat prefix that return PathBuf
+    fn parse_prefix_input(&self) -> Option<String> {
+        if self.matches.is_present("prefix") {
+            let prefix = self
+                .matches
+                .value_of("prefix")
+                .expect("Failed parsing prefix");
+            Some(prefix.to_string())
+        } else {
+            None
+        }
     }
 
     fn parse_partition_path(&self) -> PathBuf {

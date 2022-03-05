@@ -897,6 +897,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .value_name("PART-FORMAT")
                         .possible_values(&["nexus", "raxml"]),
+                )
+                .arg(
+                    Arg::with_name("prefix")
+                        .long("prefix")
+                        .help("Add prefix to output file names")
+                        .takes_value(true)
+                        .value_name("STRING"),
                 ),
         )
         .get_matches()
