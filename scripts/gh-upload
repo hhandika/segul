@@ -3,4 +3,6 @@ TAG=$(git describe --tags --abbrev=0)
 
 echo "Tag found: ${TAG}"
 
+conda activate base
+
 gh release upload $TAG $@
