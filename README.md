@@ -9,9 +9,9 @@
 ![last-commit](https://img.shields.io/github/last-commit/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments. It is a cross-platform, single executable app, and has zero runtime dependency on MacOS and Windows. On Linux, it only relies on a library provided by the OS. In a simple word, you don't need to worry about dependencies. It is designed to handle the computational burden of operations on large genomic datasets, but it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our test, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a wide variety of sequence alignment manipulations ([see benchmark](https://github.com/hhandika/segul-bench)).
+SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments. It is a cross-platform, single executable app, and has zero runtime dependency on MacOS and Windows. On Linux, it only relies on a library provided by the OS. In simple words, you don't need to worry about dependencies. It is designed to handle the computational burden of operations on large genomic datasets, but it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our test, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a wide variety of sequence alignment manipulations ([see benchmark](https://github.com/hhandika/segul-bench)).
 
-SEGUL is designed with data safety and repeatability in mind. It prevents overwriting files with the same names. By defaults, it checks whether input sequences contain IUPAC characters. The program also logs its output for record keeping.
+SEGUL is designed with data safety and repeatability in mind. It prevents overwriting files with the same names. By defaults, it checks whether input sequences contain only valid IUPAC characters. The program also logs its output for record keeping.
 
 Features:
 
