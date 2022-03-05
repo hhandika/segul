@@ -28,7 +28,7 @@ log = "0.4.14"
 log4rs = "1.0.0"
 nom = "6.*"
 num-format = "0.4.*"
-rayon = "1.5.*"
+rayon = "1.*"
 regex = "1.4.5"
 
 [profile.release]
