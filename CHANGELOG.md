@@ -1,10 +1,11 @@
 # Release Notes
 
-## Upcoming
+## v0.14.0
 
-- Add support for RaXML partition that does not contain datatype
-- Replace dot with underscore in the partition locus name
-- Print partition information when splitting alignments
+- Add support for RaXML partition that does not contain datatype.
+- Add an option to prefix output filename when splitting alignments.
+- Replace dot with underscore in the partition locus name.
+- Print partition information when splitting alignments.
 
 ## vO.13.1
 
