@@ -240,8 +240,8 @@ trait OutputCli {
         let rm_err_msg = "Failed removing existing output files";
         if overwrite {
             log::warn!(
-                "{}: {}\n",
-                Red.paint("Overwriting existing files"),
+                "{} Overwriting existing files: {}\n",
+                Red.paint("Warning!"),
                 path.display()
             );
             fs::remove_file(path).expect(rm_err_msg);
@@ -255,8 +255,8 @@ trait OutputCli {
         let rm_err_msg = "Failed removing a directory";
         if overwrite {
             log::warn!(
-                "{}: {}\n",
-                Red.paint("Removing existing directory"),
+                "{} Removing existing directory: {}\n",
+                Red.paint("Warning!"),
                 path.display()
             );
             fs::remove_dir_all(path).expect(rm_err_msg);
