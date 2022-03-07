@@ -1,10 +1,11 @@
 #!/bin/bash
 NAME="segul-MacOS-Arm64.zip"
+EXE="segul"
 
 echo "Filename: ${NAME}"
 
-INPUT=$@
+INPUT=$EXE
 echo "Stripping ${INPUT}"
-strip $@
+strip $EXE
 
-zip $NAME $@
+zip $NAME $EXE
