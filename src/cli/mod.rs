@@ -15,6 +15,7 @@ use std::io::Result;
 
 use std::path::{Path, PathBuf};
 
+use ansi_term::Colour::Red;
 use clap::ArgMatches;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use glob::glob;
@@ -238,7 +239,11 @@ trait OutputCli {
     fn check_output_file_exist(&self, path: &Path, overwrite: bool) {
         let rm_err_msg = "Failed removing existing output files";
         if overwrite {
-            log::warn!("Overwriting output file: {}", path.display());
+            log::warn!(
+                "{}: {}\n",
+                Red.paint("Overwriting existing files"),
+                path.display()
+            );
             fs::remove_file(path).expect(rm_err_msg);
         } else {
             let error_msg = format!("Output file already exists: {}. Remove?", path.display());
@@ -249,7 +254,11 @@ trait OutputCli {
     fn check_output_dir_exist(&self, path: &Path, overwrite: bool) {
         let rm_err_msg = "Failed removing a directory";
         if overwrite {
-            log::warn!("Removing directory: {}", path.display());
+            log::warn!(
+                "{}: {}\n",
+                Red.paint("Removing existing directory"),
+                path.display()
+            );
             fs::remove_dir_all(path).expect(rm_err_msg);
         } else {
             let error_msg = format!("Output dir already exists: {}. Remove?", path.display());
