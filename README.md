@@ -60,16 +60,17 @@ Citation:
     - [Input Options](#input-options)
     - [Datatype](#datatype)
     - [Output](#output)
-    - [Converting alignments](#converting-alignments)
-    - [Concatenating alignments](#concatenating-alignments)
-    - [Splitting alignments by partitions](#splitting-alignments-by-partitions)
-    - [Computing sequence summary statistics](#computing-sequence-summary-statistics)
-    - [Getting sample IDs from a collection of alignments](#getting-sample-ids-from-a-collection-of-alignments)
-    - [Map sample distribution in a collection of alignments](#map-sample-distribution-in-a-collection-of-alignments)
-    - [Filtering alignments](#filtering-alignments)
-    - [Extracting sequences in alignments](#extracting-sequences-in-alignments)
-    - [Batch renaming sequence IDs](#batch-renaming-sequence-ids)
-    - [Translating DNA sequences](#translating-dna-sequences)
+    - [Usages](#usages)
+      - [Converting alignments](#converting-alignments)
+      - [Concatenating alignments](#concatenating-alignments)
+      - [Splitting alignments by partitions](#splitting-alignments-by-partitions)
+      - [Computing sequence summary statistics](#computing-sequence-summary-statistics)
+      - [Getting sample IDs from a collection of alignments](#getting-sample-ids-from-a-collection-of-alignments)
+      - [Map sample distribution in a collection of alignments](#map-sample-distribution-in-a-collection-of-alignments)
+      - [Filtering alignments](#filtering-alignments)
+      - [Extracting sequences in alignments](#extracting-sequences-in-alignments)
+      - [Batch renaming sequence IDs](#batch-renaming-sequence-ids)
+      - [Translating DNA sequences](#translating-dna-sequences)
   - [Logging](#logging)
   - [Contribution](#contribution)
 
@@ -210,7 +211,9 @@ segul convert -d /alignments -f nexus -o alignments_concat
 
 The app avoids over-writting files with similar names. The app will check if a such file or directory exists and will ask if you like to remove it. The app will exit if you decide to not remove it.
 
-### Converting alignments
+### Usages
+
+#### Converting alignments
 
 Segul can convert a single sequence file or multiple sequence files in a directory:
 
@@ -218,7 +221,7 @@ Segul can convert a single sequence file or multiple sequence files in a directo
 segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
 ```
 
-### Concatenating alignments
+#### Concatenating alignments
 
 To concat all alignments in a directory:
 
@@ -226,7 +229,7 @@ To concat all alignments in a directory:
 segul concat --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
-### Splitting alignments by partitions
+#### Splitting alignments by partitions
 
 To split alignment by partions, you need the alignment file and the alignment partion in a separate file:
 
@@ -238,7 +241,7 @@ If it is not provided, `segul` will use the alignment name as an output director
 
 By default, `segul` will use the locus name in the partition file as the output filename for each of the locus. You can prefix this filename by using `--prefix` option.
 
-### Computing sequence summary statistics
+#### Computing sequence summary statistics
 
 To generate sequence summary statistics of alignments in a directory:
 
@@ -246,7 +249,7 @@ To generate sequence summary statistics of alignments in a directory:
 segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
-### Getting sample IDs from a collection of alignments
+#### Getting sample IDs from a collection of alignments
 
 You have multiple alignments and want to know what are samples you have in all of those alignment. You can easily do it using `segul`. The app can find all the unique IDs across thousands of alignments within seconds.
 
@@ -256,7 +259,7 @@ segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 
 It will generate a text file that contains all the unique IDs across your alignments.
 
-### Map sample distribution in a collection of alignments
+#### Map sample distribution in a collection of alignments
 
 If you would like to know how the samples distributed across your alignments, you only need to add the `--map` flag when searching for unique IDs. It will generate both the unique IDs (in a text file) and the sample distribution (in csv).
 
@@ -264,7 +267,7 @@ If you would like to know how the samples distributed across your alignments, yo
 segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --map
 ```
 
-### Filtering alignments
+#### Filtering alignments
 
 Segul provide multiple filtering parameters.
 
@@ -282,7 +285,7 @@ Other available parameters are multiple minimal taxon completeness `--npercent`,
 
 By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function above also available for concatenating filtered alignments.
 
-### Extracting sequences in alignments
+#### Extracting sequences in alignments
 
 You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly on the command line or in text file. The app finds for the exact match. You can also use regular expression to search for matching IDs.
 
@@ -315,7 +318,7 @@ segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 
 The app uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
 
-### Batch renaming sequence IDs
+#### Batch renaming sequence IDs
 
 To rename sequence IDs in multiple alignments, you need to input the sequence IDs in tsv or csv format with header. For example:
 
@@ -344,7 +347,7 @@ segul rename -d uce-loci/ -f nexus -n new_names.csv
 
 You can also change the output format by using `--output-format` or `-F` option.
 
-### Translating DNA sequences
+#### Translating DNA sequences
 
 List of supported [NCBI Genetic Code Tables](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top) is available [here](https://github.com/hhandika/segul/wiki/5.-Usages#translating-dna-sequences).
 
