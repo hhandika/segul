@@ -4,12 +4,14 @@ use std::io::{BufReader, Result};
 use std::path::Path;
 
 use ahash::AHashMap as HashMap;
+use ansi_term::Colour::Red;
 use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
 use crate::helper::types::{DataType, Header, SeqMatrix};
+use crate::parser;
 
 pub struct Phylip<'a> {
     input: &'a Path,
@@ -51,19 +53,7 @@ impl<'a> Phylip<'a> {
                 }
             });
 
-        assert!(
-            ids.len() == self.header.ntax,
-            "Failed parsing {}. \
-        The number of taxa does not match the information in the header.\
-            In the header: {} \
-            and taxa found: {}. \
-            Please check if the header matches the sample count in the phylip file. \
-            Or no duplicate IDs are present.
-        ",
-            self.input.display(),
-            self.header.ntax,
-            ids.len()
-        );
+        parser::warn_duplicate_ids!(self, ids);
 
         ids
     }
@@ -77,7 +67,7 @@ impl<'a> Phylip<'a> {
             Some(id) => {
                 alphabet::check_valid_seq(self.input, self.datatype, &id, &rec.seq);
                 ids.insert(rec.pos, id.clone());
-                self.insert_matrix(id, rec.seq);
+                self.insert_matrix(&id, &rec.seq);
             }
             None => {
                 if let Some(id) = ids.get(&rec.pos) {
@@ -104,17 +94,9 @@ impl<'a> Phylip<'a> {
         Ok(buff)
     }
 
-    fn insert_matrix(&mut self, id: String, dna: String) {
-        match self.matrix.get(&id) {
-            Some(_) => panic!(
-                "Found uplicate samples for file {}. First duplicate found: {}",
-                self.input.display(),
-                id
-            ),
-            None => {
-                self.matrix.insert(id, dna);
-            }
-        }
+    #[inline]
+    fn insert_matrix(&mut self, id: &str, seq: &str) {
+        parser::insert_matrix!(self, id, seq);
     }
 
     fn parse_header(&mut self, header_line: &str) {

@@ -60,10 +60,14 @@ impl<'a> Fasta<'a> {
         fasta
             .into_iter()
             .for_each(|fas| match self.matrix.get(&fas.id) {
-                Some(_) => panic!(
-                    "Found duplicat samples for {}. First duplicate found: {}",
+                Some(original_seq) => panic!(
+                    "\nFound duplicate IDs for file {}. \
+                    First duplicate ID found: {}. \
+                Sequence is the same: {}.\n
+                ",
                     self.input.display(),
-                    fas.id
+                    fas.id,
+                    *original_seq == fas.seq
                 ),
                 None => {
                     alphabet::check_valid_seq(self.input, self.datatype, &fas.id, &fas.seq);

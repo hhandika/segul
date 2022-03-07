@@ -3,6 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Read};
 use std::path::Path;
 
+use ansi_term::Colour::Red;
 use indexmap::{IndexMap, IndexSet};
 use lazy_static::lazy_static;
 use nom::{bytes::complete, character, sequence, IResult};
@@ -11,6 +12,7 @@ use regex::Regex;
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
 use crate::helper::types::{DataType, Header, SeqMatrix};
+use crate::parser;
 
 pub struct Nexus<'a> {
     input: &'a Path,
@@ -58,19 +60,7 @@ impl<'a> Nexus<'a> {
             _ => (),
         });
 
-        assert!(
-            ids.len() == self.header.ntax,
-            "Failed parsing {}. \
-        The number of taxa does not match the information in the header.\
-            In the header: {} \
-            and taxa found: {}. \
-            Please check if the header matches the sample count in the nexus file. \
-            Or no duplicate IDs are present.
-        ",
-            self.input.display(),
-            self.header.ntax,
-            ids.len()
-        );
+        parser::warn_duplicate_ids!(self, ids);
 
         ids
     }
@@ -126,22 +116,9 @@ impl<'a> Nexus<'a> {
             if self.interleave {
                 self.insert_matrix_interleave(id.to_string(), seq.to_string());
             } else {
-                self.insert_matrix(id.to_string(), seq.to_string());
+                parser::insert_matrix!(self, id, seq);
             }
         });
-    }
-
-    fn insert_matrix(&mut self, id: String, dna: String) {
-        match self.matrix.get(&id) {
-            Some(_) => panic!(
-                "Found duplicate samples for file {}. First duplicate found: {}",
-                self.input.display(),
-                id
-            ),
-            None => {
-                self.matrix.insert(id, dna);
-            }
-        }
     }
 
     fn insert_matrix_interleave(&mut self, id: String, dna: String) {
@@ -420,14 +397,6 @@ mod test {
         let sample = Path::new("test_files/duplicates.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_nexus_id_duplicate_panic() {
-        let sample = Path::new("test_files/duplicates.nex");
-        let mut nex = Nexus::new(sample, &DNA);
-        nex.parse_only_id();
     }
 
     #[test]
