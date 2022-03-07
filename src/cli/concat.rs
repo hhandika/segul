@@ -49,9 +49,10 @@ impl<'a> ConcatParser<'a> {
             &datatype,
         );
 
-        self.check_output_dir_exist(&dir);
-        let mut concat = ConcatHandler::new(&input_fmt, &output, &output_fmt, &part_fmt);
+        let overwrite = self.parse_overwrite_opts(self.matches);
+        self.check_output_dir_exist(&dir, overwrite);
 
+        let mut concat = ConcatHandler::new(&input_fmt, &output, &output_fmt, &part_fmt);
         concat.concat_alignment(&mut files, &datatype);
     }
 }

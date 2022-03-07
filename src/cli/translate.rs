@@ -64,7 +64,8 @@ impl<'a> TranslateParser<'a> {
             &datatype,
         );
 
-        self.check_output_dir_exist(&outdir);
+        let overwrite = self.parse_overwrite_opts(self.matches);
+        self.check_output_dir_exist(&outdir, overwrite);
         log::info!("{}", Yellow.paint("Params"));
         self.parse_trans_table();
         let translate = Translate::new(&self.trans_table, &input_fmt, &datatype, &output_fmt);

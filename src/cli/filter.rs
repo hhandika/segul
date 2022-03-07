@@ -83,7 +83,8 @@ impl<'a> FilterParser<'a> {
     }
 
     fn filter_aln(&self) {
-        self.check_output_dir_exist(&self.output_dir);
+        let overwrite = self.parse_overwrite_opts(self.matches);
+        self.check_output_dir_exist(&self.output_dir, overwrite);
         self.print_params();
         let mut filter = SeqFilter::new(
             &self.files,

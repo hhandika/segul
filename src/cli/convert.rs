@@ -56,7 +56,8 @@ impl<'a> ConvertParser<'a> {
             &self.datatype,
         );
 
-        self.check_output_dir_exist(&self.output);
+        let overwrite = self.parse_overwrite_opts(self.matches);
+        self.check_output_dir_exist(&self.output, overwrite);
         let mut convert =
             Converter::new(&self.input_fmt, &self.output_fmt, &self.datatype, self.sort);
         convert.convert(&files, &self.output);

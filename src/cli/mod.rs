@@ -168,6 +168,10 @@ trait InputCli {
             _ => unreachable!(),
         }
     }
+
+    fn parse_overwrite_opts(&self, matches: &ArgMatches) -> bool {
+        matches.is_present("overwrite")
+    }
 }
 
 trait InputPrint {
@@ -231,26 +235,26 @@ trait OutputCli {
         }
     }
 
-    fn check_output_file_exist(&self, path: &Path) {
-        let error_msg = format!("Output file already exists: {}. Remove?", path.display());
-        check_output_path!(
-            is_file,
-            remove_file,
-            path,
-            error_msg,
-            "Failed removing files"
-        );
+    fn check_output_file_exist(&self, path: &Path, overwrite: bool) {
+        let rm_err_msg = "Failed removing existing output files";
+        if overwrite {
+            log::warn!("Overwriting output file: {}", path.display());
+            fs::remove_file(path).expect(rm_err_msg);
+        } else {
+            let error_msg = format!("Output file already exists: {}. Remove?", path.display());
+            check_output_path!(is_file, remove_file, path, error_msg, rm_err_msg);
+        }
     }
 
-    fn check_output_dir_exist(&self, path: &Path) {
-        let error_msg = format!("Output dir already exists: {}. Remove?", path.display());
-        check_output_path!(
-            is_dir,
-            remove_dir_all,
-            path,
-            error_msg,
-            "Failed removing a directory"
-        )
+    fn check_output_dir_exist(&self, path: &Path, overwrite: bool) {
+        let rm_err_msg = "Failed removing a directory";
+        if overwrite {
+            log::warn!("Removing directory: {}", path.display());
+            fs::remove_dir_all(path).expect(rm_err_msg);
+        } else {
+            let error_msg = format!("Output dir already exists: {}. Remove?", path.display());
+            check_output_path!(is_dir, remove_dir_all, path, error_msg, rm_err_msg)
+        }
     }
 }
 

@@ -52,7 +52,8 @@ impl<'a> SummaryParser<'a> {
         );
 
         let output = self.parse_output(self.matches);
-        self.check_output_dir_exist(&output);
+        let overwrite = self.parse_overwrite_opts(self.matches);
+        self.check_output_dir_exist(&output, overwrite);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
             .get_stats_all(&files, &prefix);
     }
