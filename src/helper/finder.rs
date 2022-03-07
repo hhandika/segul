@@ -44,7 +44,7 @@ impl<'a> Files<'a> {
         if files.is_empty() {
             panic!(
                 "Failed finding files that match {}. \
-            Maybe try construct the path using wilcard \
+            Maybe try construct the path using wildcard \
             and input it using option -i or --input",
                 self.pattern
             );
