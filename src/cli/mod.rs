@@ -232,7 +232,7 @@ trait OutputCli {
     }
 
     fn check_output_file_exist(&self, path: &Path) {
-        let error_msg = format!("Output file already exists: {}", path.display());
+        let error_msg = format!("Output file already exists: {}. Remove?", path.display());
         check_output_path!(
             is_file,
             remove_file,
@@ -243,7 +243,7 @@ trait OutputCli {
     }
 
     fn check_output_dir_exist(&self, path: &Path) {
-        let error_msg = format!("Output dir already exists: {}", path.display());
+        let error_msg = format!("Output dir already exists: {}. Remove?", path.display());
         check_output_path!(
             is_dir,
             remove_dir_all,
