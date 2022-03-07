@@ -209,7 +209,7 @@ Most functions will save into their default directory. For example, the concat f
 segul convert -d /alignments -f nexus -o alignments_concat
 ```
 
-The app avoids over-writting files with similar names. The app will check if a such file or directory exists and will ask if you like to remove it. The app will exit if you decide to not remove it.
+The app avoids over-writing files with similar names. The app will check if a such file or directory exists and will ask if you like to remove it. The app will exit if you decide to not remove it. You can pass `--overwrite` flag to remove existing output files or directories without asking first.
 
 ### Usages
 
