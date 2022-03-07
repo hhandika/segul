@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.15.0
+
+- Add an overwriting flag to all subcommands to allow overwriting existing output files or directories.
+- Fix typos in error messages.
+- Check sequences for duplicate IDs are the same. Let users know in the error messages.
+
 ## v0.14.0
 
 - Add support for RaXML partition that does not contain datatype.
