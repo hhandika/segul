@@ -1,10 +1,10 @@
 #!/bin/bash
 NAME="segul-ManyLinux-x86_64.tar.gz"
+EXE="segul"
 
 echo "Filename: ${NAME}"
 
-INPUT=$@
-echo "Stripping ${INPUT}"
-strip $@
+echo "Stripping ${EXE}"
+strip $EXE
 
-tar czvf $NAME $@
+tar czvf $NAME $EXE
