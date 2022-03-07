@@ -11,7 +11,7 @@ macro_rules! insert_matrix {
             Some(original_seq) => panic!(
                 "Found duplicate IDs for file {}. \
                 First duplicate ID found: {}. \
-                Sequence is the same: {}.",
+                Both sequences are the same: {}.",
                 $self.input.display(),
                 $id,
                 original_seq == $seq

@@ -63,7 +63,7 @@ impl<'a> Fasta<'a> {
                 Some(original_seq) => panic!(
                     "\nFound duplicate IDs for file {}. \
                     First duplicate ID found: {}. \
-                Sequence is the same: {}.\n
+                Both sequences are the same: {}.\n
                 ",
                     self.input.display(),
                     fas.id,
