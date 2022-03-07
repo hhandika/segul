@@ -88,6 +88,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("sort")
                         .help("Sorts the alignments")
                         .takes_value(false),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
                 ),
         )
         .subcommand(
@@ -189,6 +195,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("codon")
                         .help("Sets codon model partition format")
                         .takes_value(false),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
                 ),
         )
         .subcommand(
@@ -346,6 +358,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .requires("concat")
                         .help("Sets codon model partition format")
                         .takes_value(false),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
                 ),
         )
         .subcommand(
@@ -412,6 +430,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("map")
                         .help("Map ID across all alignments")
                         .takes_value(false),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
                 ),
         )
         .subcommand(
@@ -504,6 +528,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("dry-run")
                         .help("Check if the program can parse the input ids correctly")
                         .takes_value(false),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
                 ),
         )
         .subcommand(
@@ -580,6 +610,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("INTEGER")
                         .default_value("5")
                         .possible_values(&["1", "2", "5", "10"]),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
                 ),
         )
         .subcommand(
@@ -684,6 +720,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
                 )
         )
         .subcommand(
@@ -814,6 +856,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Show supported NCBI Genetic Code tables")
                         .takes_value(false)
                 )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
+                )
         )
         .subcommand(
             App::new("split")
@@ -904,6 +952,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Add prefix to output file names")
                         .takes_value(true)
                         .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
                 ),
         )
         .get_matches()
