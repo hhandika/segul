@@ -66,7 +66,14 @@ impl<'a> Rename<'a> {
             }
         });
 
-        assert_eq!(original_size, seq.len());
+        assert_eq!(
+            original_size,
+            seq.len(),
+            "Failed renaming files. New ID counts does not match original ID counts. \
+         Original ID counts: {}. New ID counts: {}",
+            original_size,
+            seq.len()
+        );
         (seq, header)
     }
 
