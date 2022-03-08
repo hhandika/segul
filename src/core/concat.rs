@@ -14,7 +14,7 @@ use crate::helper::types::{
     DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt, SeqMatrix,
 };
 use crate::helper::utils;
-use crate::writer::sequences::SeqWriter;
+use crate::writer::{partition::PartWriter, sequences::SeqWriter};
 
 pub struct ConcatHandler<'a> {
     input_fmt: &'a InputFmt,
@@ -46,30 +46,29 @@ impl<'a> ConcatHandler<'a> {
 
     fn write_alignment(&mut self, concat: &mut Concat, spin: &ProgressBar) {
         concat.concat_alignment(spin);
-        let mut save = SeqWriter::new(
-            self.output,
-            &concat.alignment,
-            &concat.header,
-            Some(&concat.partition),
-            self.part_fmt,
-        );
+        let mut seq_writer = SeqWriter::new(self.output, &concat.alignment, &concat.header);
         let part_fname = self.get_partition_path();
-        save.set_partition_name(&part_fname);
+        let part_writer = PartWriter::new(
+            &part_fname,
+            &concat.partition,
+            self.part_fmt,
+            &concat.datatype,
+        );
         spin.set_message("Writing output files...");
-        save.write_sequence(self.output_fmt)
+        seq_writer
+            .write_sequence(self.output_fmt)
             .expect("Failed writing the output file");
+        part_writer.write_partition();
         spin.finish_with_message("Finished concatenating alignments!\n");
         self.print_output_info(concat.partition.len(), &concat.header, &part_fname);
     }
 
     fn get_partition_path(&mut self) -> PathBuf {
         match self.part_fmt {
-            PartitionFmt::Charset | PartitionFmt::CharsetCodon => {
-                PathBuf::from("charset (in-file)")
-            }
+            PartitionFmt::Charset | PartitionFmt::CharsetCodon => PathBuf::from(self.output),
             PartitionFmt::Nexus | PartitionFmt::NexusCodon => self.get_part_fname("nex"),
             PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => self.get_part_fname("txt"),
-            _ => unreachable!("Please, define a valid partition format!"),
+            // _ => unreachable!("Please, define a valid partition format!"),
         }
     }
 

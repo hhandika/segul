@@ -9,9 +9,7 @@ use rayon::prelude::*;
 use crate::core::OutputPrint;
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::translation::NcbiTables;
-use crate::helper::types::{
-    DataType, GeneticCodes, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix,
-};
+use crate::helper::types::{DataType, GeneticCodes, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
 
@@ -47,8 +45,7 @@ impl<'a> Translate<'a> {
             let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
             let outname = filenames::create_output_fname(output, file, self.output_fmt);
-            let mut writer =
-                SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
+            let mut writer = SeqWriter::new(&outname, &trans_mat, &header);
             writer
                 .write_sequence(self.output_fmt)
                 .expect("Failed writing the output files");
@@ -69,8 +66,7 @@ impl<'a> Translate<'a> {
             let output_dir = output.join(format!("RF-{}", frame));
             fs::create_dir_all(output).expect("Failed creating an output directory");
             let outname = filenames::create_output_fname(&output_dir, file, self.output_fmt);
-            let mut writer =
-                SeqWriter::new(&outname, &trans_mat, &header, None, &PartitionFmt::None);
+            let mut writer = SeqWriter::new(&outname, &trans_mat, &header);
             writer
                 .write_sequence(self.output_fmt)
                 .expect("Failed writing the output files");

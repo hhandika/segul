@@ -5,7 +5,7 @@ use rayon::prelude::*;
 
 use crate::core::OutputPrint;
 use crate::helper::sequence::Sequence;
-use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
+use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
 
@@ -69,7 +69,7 @@ impl<'a> Converter<'a> {
     }
 
     fn write_results(&self, matrix: &SeqMatrix, header: Header, output: &Path) {
-        let mut convert = SeqWriter::new(output, matrix, &header, None, &PartitionFmt::None);
+        let mut convert = SeqWriter::new(output, matrix, &header);
         convert
             .write_sequence(self.output_fmt)
             .expect("Failed writing output files");

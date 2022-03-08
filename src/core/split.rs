@@ -67,7 +67,7 @@ impl<'a> Splitter<'a> {
             let filename = self.parse_filename(&part.gene, prefix);
             let output_path =
                 filenames::create_output_fname(self.output, &filename, self.output_fmt);
-            let mut out = SeqWriter::new(&output_path, &matrix, &header, None, &PartitionFmt::None);
+            let mut out = SeqWriter::new(&output_path, &matrix, &header);
             out.write_sequence(self.output_fmt)
                 .expect("Failed writing the output file");
             file_counts.fetch_add(1, Ordering::Relaxed);

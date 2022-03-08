@@ -9,7 +9,7 @@ use regex::Regex;
 
 use crate::core::OutputPrint;
 use crate::helper::sequence::{SeqCheck, Sequence};
-use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
+use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
 
@@ -47,8 +47,7 @@ impl<'a> Extract<'a> {
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
                 let outname = filenames::create_output_fname(output, file, output_fmt);
-                let mut writer =
-                    SeqWriter::new(&outname, &matrix, &header, None, &PartitionFmt::None);
+                let mut writer = SeqWriter::new(&outname, &matrix, &header);
                 writer
                     .write_sequence(output_fmt)
                     .expect("Failed writing the output files");

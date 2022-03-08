@@ -24,9 +24,10 @@ pub enum PartitionFmt {
     NexusCodon,
     Raxml,
     RaxmlCodon,
-    None,
+    // None,
 }
 
+#[derive(PartialEq)]
 pub enum DataType {
     Dna,
     Aa,

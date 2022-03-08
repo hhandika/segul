@@ -1,3 +1,4 @@
+pub mod partition;
 pub mod sequences;
 pub mod summary;
 
@@ -16,7 +17,15 @@ trait FileWriter {
         let file = OpenOptions::new().write(true).create_new(true).open(path);
         match file {
             Ok(writer) => Ok(BufWriter::new(writer)),
-            Err(error) => panic!("Failed writing to file: {}", error),
+            Err(error) => panic!("Failed writing to {}: {}", path.display(), error),
+        }
+    }
+
+    fn append_output_file(&self, path: &Path) -> Result<BufWriter<File>> {
+        let file = OpenOptions::new().append(true).open(path);
+        match file {
+            Ok(writer) => Ok(BufWriter::new(writer)),
+            Err(error) => panic!("Failed appending to {}: {}", path.display(), error),
         }
     }
 }

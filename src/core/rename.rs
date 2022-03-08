@@ -6,7 +6,7 @@ use rayon::prelude::*;
 use crate::core::OutputPrint;
 use crate::helper::filenames;
 use crate::helper::sequence::Sequence;
-use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
+use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
 use crate::parser::delimited;
 use crate::writer::sequences::SeqWriter;
@@ -47,7 +47,7 @@ impl<'a> Rename<'a> {
         files.par_iter().for_each(|file| {
             let (seq, header) = self.rename_seq_id(file, &names);
             let outpath = filenames::create_output_fname(outdir, file, output_fmt);
-            let mut writer = SeqWriter::new(&outpath, &seq, &header, None, &PartitionFmt::None);
+            let mut writer = SeqWriter::new(&outpath, &seq, &header);
             writer
                 .write_sequence(output_fmt)
                 .expect("Failed writing output sequence");

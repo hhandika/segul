@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 use std::io::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::Result;
 use indexmap::IndexMap;
 
-use crate::helper::types::{Header, OutputFmt, Partition, PartitionFmt};
+use crate::helper::types::{Header, OutputFmt};
 use crate::writer::FileWriter;
 
 impl FileWriter for SeqWriter<'_> {}
@@ -15,27 +15,15 @@ pub struct SeqWriter<'a> {
     matrix: &'a IndexMap<String, String>,
     id_len: usize,
     header: &'a Header,
-    partition: Option<&'a [Partition]>,
-    part_fmt: &'a PartitionFmt,
-    part_file: PathBuf,
 }
 
 impl<'a> SeqWriter<'a> {
-    pub fn new(
-        output: &'a Path,
-        matrix: &'a IndexMap<String, String>,
-        header: &'a Header,
-        partition: Option<&'a [Partition]>,
-        part_fmt: &'a PartitionFmt,
-    ) -> Self {
+    pub fn new(output: &'a Path, matrix: &'a IndexMap<String, String>, header: &'a Header) -> Self {
         Self {
             output,
             id_len: 0,
             matrix,
             header,
-            partition,
-            part_fmt,
-            part_file: PathBuf::new(),
         }
     }
 
@@ -52,9 +40,9 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    pub fn set_partition_name(&mut self, part_name: &Path) {
-        self.part_file = PathBuf::from(part_name);
-    }
+    // pub fn set_partition_name(&mut self, part_name: &Path) {
+    //     self.part_file = PathBuf::from(part_name);
+    // }
 
     fn write_fasta(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self
@@ -73,9 +61,9 @@ impl<'a> SeqWriter<'a> {
             }
         });
 
-        if self.partition.is_some() {
-            self.write_part_sep();
-        }
+        // if self.partition.is_some() {
+        //     self.write_part_sep();
+        // }
 
         writer.flush()?;
         Ok(())
@@ -101,17 +89,17 @@ impl<'a> SeqWriter<'a> {
         writeln!(writer, ";")?;
         writeln!(writer, "end;")?;
 
-        if self.partition.is_some() {
-            match self.part_fmt {
-                PartitionFmt::Charset => self
-                    .write_part_charset(&mut writer, false)
-                    .expect("CANNOT WRITER NEXUS PARTITION"),
-                PartitionFmt::CharsetCodon => self
-                    .write_part_charset(&mut writer, true)
-                    .expect("CANNOT WRITER NEXUS PARTITION"),
-                _ => self.write_part_sep(),
-            }
-        }
+        // if self.partition.is_some() {
+        //     match self.part_fmt {
+        //         PartitionFmt::Charset => self
+        //             .write_part_charset(&mut writer, false)
+        //             .expect("CANNOT WRITER NEXUS PARTITION"),
+        //         PartitionFmt::CharsetCodon => self
+        //             .write_part_charset(&mut writer, true)
+        //             .expect("CANNOT WRITER NEXUS PARTITION"),
+        //         _ => self.write_part_sep(),
+        //     }
+        // }
 
         writer.flush()?;
         Ok(())
@@ -129,9 +117,9 @@ impl<'a> SeqWriter<'a> {
             self.write_matrix_phy_int(&mut writer);
         }
 
-        if self.partition.is_some() {
-            self.write_part_sep();
-        }
+        // if self.partition.is_some() {
+        //     self.write_part_sep();
+        // }
 
         writer.flush()?;
         Ok(())
@@ -235,120 +223,6 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    fn write_part_sep(&self) {
-        match self.part_fmt {
-            PartitionFmt::Nexus => self.write_part_nexus(false),
-            PartitionFmt::NexusCodon => self.write_part_nexus(true),
-            PartitionFmt::Raxml => self.write_part_raxml(false),
-            PartitionFmt::RaxmlCodon => self.write_part_raxml(true),
-            _ => log::warn!("Ups. Error while parsing partition format"),
-        }
-    }
-
-    fn write_part_raxml(&self, codon: bool) {
-        let mut writer = self
-            .create_output_file(Path::new(&self.part_file))
-            .expect("Failed writing a RaXML formatted partition file");
-        match &self.partition {
-            Some(partition) => partition.iter().for_each(|part| {
-                if codon {
-                    self.write_raxml_codon(&mut writer, part).unwrap();
-                } else {
-                    writeln!(writer, "DNA, {} = {}-{}", part.gene, part.start, part.end).unwrap();
-                }
-            }),
-            None => log::warn!("Failed to find partition data"),
-        }
-    }
-
-    fn write_part_nexus(&self, codon: bool) {
-        let mut writer = self
-            .create_output_file(&self.part_file)
-            .expect("Failed writing a NEXUS formatted partition file");
-        writeln!(writer, "#nexus").unwrap();
-        self.write_part_charset(&mut writer, codon)
-            .expect("Failed writing nexus partition");
-    }
-
-    fn write_part_charset<W: Write>(&self, writer: &mut W, codon: bool) -> Result<()> {
-        writeln!(writer, "begin sets;")?;
-        match &self.partition {
-            Some(partition) => partition.iter().for_each(|part| {
-                if codon {
-                    self.write_nex_codon(writer, part).unwrap();
-                } else {
-                    writeln!(
-                        writer,
-                        "charset {} = {}-{};",
-                        self.get_gene_name(&part.gene),
-                        part.start,
-                        part.end
-                    )
-                    .unwrap();
-                }
-            }),
-            None => panic!("Failed parsing partition data"),
-        }
-        writeln!(writer, "end;")?;
-        Ok(())
-    }
-
-    fn get_gene_name(&self, name: &str) -> String {
-        if name.contains('-') {
-            format!("'{}'", name)
-        } else {
-            name.to_string()
-        }
-    }
-
-    fn write_raxml_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
-        writeln!(
-            writer,
-            "DNA, {}_Subset1 = {}-{}\\3",
-            part.gene, part.start, part.end
-        )?;
-        writeln!(
-            writer,
-            "DNA, {}_Subset2 = {}-{}\\3",
-            part.gene,
-            part.start + 1,
-            part.end
-        )?;
-        writeln!(
-            writer,
-            "DNA, {}_Subset3 = {}-{}\\3",
-            part.gene,
-            part.start + 2,
-            part.end
-        )?;
-
-        Ok(())
-    }
-
-    fn write_nex_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
-        writeln!(
-            writer,
-            "charset {}_Subset1 = {}-{}\\3;",
-            part.gene, part.start, part.end
-        )?;
-        writeln!(
-            writer,
-            "charset {}_Subset2 = {}-{}\\3;",
-            part.gene,
-            part.start + 1,
-            part.end
-        )?;
-        writeln!(
-            writer,
-            "charset {}_Subset3 = {}-{}\\3;",
-            part.gene,
-            part.start + 2,
-            part.end
-        )?;
-
-        Ok(())
-    }
-
     fn get_interleave_len(&self) -> usize {
         if self.header.nchar < 2000 {
             80
@@ -397,7 +271,7 @@ mod test {
         let id = "ABCDE";
         let matrix = IndexMap::new();
         let header = Header::new();
-        let convert = SeqWriter::new(Path::new("."), &matrix, &header, None, &PartitionFmt::None);
+        let convert = SeqWriter::new(Path::new("."), &matrix, &header);
         assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
     }
 
@@ -406,7 +280,7 @@ mod test {
         let path = Path::new(".");
         let matrix = IndexMap::new();
         let header = Header::new();
-        let convert = SeqWriter::new(path, &matrix, &header, None, &PartitionFmt::None);
+        let convert = SeqWriter::new(path, &matrix, &header);
         let seq = "AGTCAGTC";
         let chunk = String::from("AGTC");
         let chunk2 = String::from("AGTC");
@@ -442,7 +316,7 @@ mod test {
         let res1 = String::from("ATGTGTGTGTGTGTGTAAAA");
 
         matrix.insert(id.clone(), seq);
-        let convert = SeqWriter::new(path, &matrix, &header, None, &PartitionFmt::None);
+        let convert = SeqWriter::new(path, &matrix, &header);
         let int = convert.get_matrix_int();
         let mat_int = int.get(&0).unwrap();
         let mat_int1 = int.get(&1).unwrap();
