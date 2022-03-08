@@ -40,10 +40,6 @@ impl<'a> SeqWriter<'a> {
         Ok(())
     }
 
-    // pub fn set_partition_name(&mut self, part_name: &Path) {
-    //     self.part_file = PathBuf::from(part_name);
-    // }
-
     fn write_fasta(&mut self, interleave: bool) -> Result<()> {
         let mut writer = self
             .create_output_file(self.output)
@@ -60,10 +56,6 @@ impl<'a> SeqWriter<'a> {
                 })
             }
         });
-
-        // if self.partition.is_some() {
-        //     self.write_part_sep();
-        // }
 
         writer.flush()?;
         Ok(())
@@ -89,18 +81,6 @@ impl<'a> SeqWriter<'a> {
         writeln!(writer, ";")?;
         writeln!(writer, "end;")?;
 
-        // if self.partition.is_some() {
-        //     match self.part_fmt {
-        //         PartitionFmt::Charset => self
-        //             .write_part_charset(&mut writer, false)
-        //             .expect("CANNOT WRITER NEXUS PARTITION"),
-        //         PartitionFmt::CharsetCodon => self
-        //             .write_part_charset(&mut writer, true)
-        //             .expect("CANNOT WRITER NEXUS PARTITION"),
-        //         _ => self.write_part_sep(),
-        //     }
-        // }
-
         writer.flush()?;
         Ok(())
     }
@@ -116,10 +96,6 @@ impl<'a> SeqWriter<'a> {
         } else {
             self.write_matrix_phy_int(&mut writer);
         }
-
-        // if self.partition.is_some() {
-        //     self.write_part_sep();
-        // }
 
         writer.flush()?;
         Ok(())

@@ -24,7 +24,6 @@ pub enum PartitionFmt {
     NexusCodon,
     Raxml,
     RaxmlCodon,
-    // None,
 }
 
 #[derive(PartialEq)]

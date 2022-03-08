@@ -1,5 +1,9 @@
 # Release Notes
 
+## Upcoming
+
+- Fix issues writing raxml partition
+
 ## v0.15.0
 
 - Add an overwriting flag to all subcommands to allow overwriting existing output files or directories.
