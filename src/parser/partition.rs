@@ -52,8 +52,13 @@ macro_rules! parse_partition {
     };
 }
 
-macro_rules! assert_partition_start {
+macro_rules! assert_partition {
     ($partitions: ident) => {
+        assert!(
+            !$partitions.is_empty(),
+            "Failed parsing partition. \
+        No partition found."
+        );
         assert_eq!(
             $partitions[0].start, 1,
             "Invalid partition input. \
@@ -121,7 +126,7 @@ impl<'a> PartitionParser<'a> {
                 current_end_pos
             );
         });
-        assert_partition_start!(partitions);
+        assert_partition!(partitions);
         partitions
     }
 
@@ -148,7 +153,7 @@ impl<'a> PartitionParser<'a> {
                 );
             }
         });
-        assert_partition_start!(partitions);
+        assert_partition!(partitions);
         partitions
     }
 
