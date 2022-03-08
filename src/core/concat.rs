@@ -40,6 +40,7 @@ impl<'a> ConcatHandler<'a> {
 
     pub fn concat_alignment(&mut self, files: &mut [PathBuf], datatype: &DataType) {
         let mut concat = Concat::new(files, self.input_fmt, datatype);
+        concat.set_codon_part(&self.part_fmt);
         let spin = utils::set_spinner();
         self.write_alignment(&mut concat, &spin);
     }
@@ -47,7 +48,7 @@ impl<'a> ConcatHandler<'a> {
     fn write_alignment(&mut self, concat: &mut Concat, spin: &ProgressBar) {
         concat.concat_alignment(spin);
         let mut seq_writer = SeqWriter::new(self.output, &concat.alignment, &concat.header);
-        let part_fname = self.get_partition_path();
+        let part_fname = self.construct_part_fpath();
         let part_writer = PartWriter::new(
             &part_fname,
             &concat.partition,
@@ -63,12 +64,11 @@ impl<'a> ConcatHandler<'a> {
         self.print_output_info(concat.partition.len(), &concat.header, &part_fname);
     }
 
-    fn get_partition_path(&mut self) -> PathBuf {
+    fn construct_part_fpath(&mut self) -> PathBuf {
         match self.part_fmt {
             PartitionFmt::Charset | PartitionFmt::CharsetCodon => PathBuf::from(self.output),
             PartitionFmt::Nexus | PartitionFmt::NexusCodon => self.get_part_fname("nex"),
             PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => self.get_part_fname("txt"),
-            // _ => unreachable!("Please, define a valid partition format!"),
         }
     }
 
@@ -109,6 +109,7 @@ struct Concat<'a> {
     header: Header,
     partition: Vec<Partition>,
     files: &'a mut [PathBuf],
+    is_codon: bool,
 }
 
 impl<'a> Concat<'a> {
@@ -120,6 +121,7 @@ impl<'a> Concat<'a> {
             header: Header::new(),
             partition: Vec::new(),
             files,
+            is_codon: false,
         }
     }
 
@@ -131,6 +133,15 @@ impl<'a> Concat<'a> {
         self.concat(&id);
         self.header.ntax = self.alignment.len();
         self.match_header_datatype();
+    }
+
+    fn set_codon_part(&mut self, part_fmt: &PartitionFmt) {
+        match part_fmt {
+            PartitionFmt::CharsetCodon | PartitionFmt::NexusCodon | PartitionFmt::RaxmlCodon => {
+                self.is_codon = true;
+            }
+            _ => (),
+        }
     }
 
     fn concat(&mut self, id: &IndexSet<String>) {
@@ -177,6 +188,7 @@ impl<'a> Concat<'a> {
         part.gene = gene_name.to_string();
         part.start = start;
         part.end = end;
+        part.is_codon = self.is_codon;
         part
     }
 

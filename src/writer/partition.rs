@@ -9,12 +9,12 @@ use crate::writer::FileWriter;
 impl FileWriter for PartWriter<'_> {}
 
 macro_rules! write_partition {
-    ($self:ident, $write_type:ident, $partition:ident, $codon:expr) => {{
+    ($self:ident, $write_type:ident, $partition:ident) => {{
         let mut writer = $self
             .$write_type($self.fpath)
             .expect("Failed creating/appending a partition file");
         $self
-            .$partition(&mut writer, $codon)
+            .$partition(&mut writer)
             .expect("Failed writing a partition file");
     }};
 }
@@ -43,41 +43,32 @@ impl<'a> PartWriter<'a> {
 
     pub fn write_partition(&self) {
         match self.part_fmt {
-            PartitionFmt::Charset => {
-                write_partition!(self, append_output_file, write_part_charset, false)
+            PartitionFmt::Charset | PartitionFmt::CharsetCodon => {
+                write_partition!(self, append_output_file, write_part_charset)
             }
-            PartitionFmt::CharsetCodon => {
-                write_partition!(self, append_output_file, write_part_charset, true)
+            PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
+                write_partition!(self, create_output_file, write_part_nexus)
             }
-            PartitionFmt::Nexus => {
-                write_partition!(self, create_output_file, write_part_nexus, false)
-            }
-            PartitionFmt::NexusCodon => {
-                write_partition!(self, create_output_file, write_part_nexus, true)
-            }
-            PartitionFmt::Raxml => {
-                write_partition!(self, create_output_file, write_part_raxml, false)
-            }
-            PartitionFmt::RaxmlCodon => {
-                write_partition!(self, create_output_file, write_part_raxml, true)
+            PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => {
+                write_partition!(self, create_output_file, write_part_raxml)
             }
         }
     }
 
-    fn write_part_nexus<W: Write>(&self, writer: &mut W, codon: bool) -> Result<()> {
+    fn write_part_nexus<W: Write>(&self, writer: &mut W) -> Result<()> {
         writeln!(writer, "#nexus")?;
-        self.write_part_charset(writer, codon)?;
+        self.write_part_charset(writer)?;
         Ok(())
     }
 
-    fn write_part_raxml<W: Write>(&self, writer: &mut W, codon: bool) -> Result<()> {
+    fn write_part_raxml<W: Write>(&self, writer: &mut W) -> Result<()> {
         let dtype = if DataType::Dna == *self.datatype {
             "DNA, "
         } else {
             ""
         };
         self.partition.iter().for_each(|part| {
-            if codon {
+            if part.is_codon {
                 self.write_raxml_codon(writer, part, dtype).unwrap();
             } else {
                 writeln!(
@@ -92,10 +83,10 @@ impl<'a> PartWriter<'a> {
         Ok(())
     }
 
-    fn write_part_charset<W: Write>(&self, writer: &mut W, codon: bool) -> Result<()> {
+    fn write_part_charset<W: Write>(&self, writer: &mut W) -> Result<()> {
         writeln!(writer, "begin sets;")?;
         self.partition.iter().for_each(|part| {
-            if codon {
+            if part.is_codon {
                 self.write_nex_codon(writer, part).unwrap();
             } else {
                 writeln!(

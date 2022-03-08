@@ -39,6 +39,7 @@ pub struct Partition {
     pub gene: String,
     pub start: usize,
     pub end: usize,
+    pub is_codon: bool,
 }
 
 impl Partition {
@@ -47,6 +48,7 @@ impl Partition {
             gene: String::new(),
             start: 0,
             end: 0,
+            is_codon: false,
         }
     }
 }
