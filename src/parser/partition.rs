@@ -36,6 +36,17 @@ macro_rules! parse_partition {
     };
 }
 
+macro_rules! assert_partition_start {
+    ($partitions: ident) => {
+        assert!(
+            $partitions[0].start == 1,
+            "Invalid partition input. \
+            First partition start position is {} not 1.",
+            $partitions[0].start
+        );
+    };
+}
+
 pub struct PartitionParser<'a> {
     path: &'a Path,
     partition_fmt: &'a PartitionFmt,
@@ -94,7 +105,7 @@ impl<'a> PartitionParser<'a> {
                 current_end_pos
             );
         });
-
+        assert_partition_start!(partitions);
         partitions
     }
 
@@ -121,6 +132,7 @@ impl<'a> PartitionParser<'a> {
                 );
             }
         });
+        assert_partition_start!(partitions);
         partitions
     }
 
@@ -241,6 +253,13 @@ mod test {
     #[should_panic]
     fn test_parse_partition_raxml_inv() {
         let path = Path::new("test_files/partition/partition_inv_pos.txt");
+        test_partition_parser!(path, Raxml);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_partition_raxml_inv_start() {
+        let path = Path::new("test_files/partition/partition_inv_start.txt");
         test_partition_parser!(path, Raxml);
     }
 }
