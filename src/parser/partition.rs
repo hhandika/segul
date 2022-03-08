@@ -12,23 +12,39 @@ macro_rules! parse_partition {
     ($self: ident, $pos: ident, $gene_name: ident, $partitions: ident, $current_start_pos: ident, $current_end_pos: ident) => {
         if $pos.contains(r#"\3"#) {
             let partition = $self.parse_partition($gene_name, $pos.trim(), true);
-            let end_pos = partition.end;
             let start_pos = partition.start;
-            if start_pos == end_pos {
-                panic!("Invalid partition format. Start and end position are the same.");
-            }
+            let end_pos = partition.end;
+            assert!(
+                start_pos != end_pos,
+                "Invalid partition format. \
+                Start and end position are the same."
+            );
             if $current_end_pos != partition.end {
+                assert_eq!(
+                    start_pos,
+                    $current_end_pos + 1,
+                    "Invalid partition format. \
+                Start position ({}) is not the next position \
+                after the previous end position ({}).",
+                    start_pos,
+                    $current_end_pos
+                );
                 $partitions.push(partition);
             }
             $current_start_pos = start_pos;
             $current_end_pos = end_pos;
         } else {
             let partition = $self.parse_partition($gene_name, $pos.trim(), false);
-            let end_pos = partition.end;
             let start_pos = partition.start;
-            if start_pos == end_pos {
-                panic!("Invalid partition format. Start and end position are the same.");
-            }
+            let end_pos = partition.end;
+            assert!(
+                start_pos == $current_end_pos + 1,
+                "Invalid partition format. \
+                Start position ({}) is not the next position \
+                after the previous end position ({}).",
+                start_pos,
+                $current_end_pos
+            );
             $partitions.push(partition);
             $current_start_pos = start_pos;
             $current_end_pos = end_pos;
@@ -38,8 +54,8 @@ macro_rules! parse_partition {
 
 macro_rules! assert_partition_start {
     ($partitions: ident) => {
-        assert!(
-            $partitions[0].start == 1,
+        assert_eq!(
+            $partitions[0].start, 1,
             "Invalid partition input. \
             First partition start position is {} not 1.",
             $partitions[0].start
