@@ -1,3 +1,3 @@
-Subset1 = 1-5
-Subset2 = 6-10
-Subset3 = 11-15
+locus1 = 1-5
+locus2 = 6-10
+locus3 = 11-15

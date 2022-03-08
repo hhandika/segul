@@ -80,15 +80,10 @@ impl<'a> Splitter<'a> {
     // Generate a filename for each locus based on the locus name
     // We get rid of any characters that are not alphanumeric, underscore, or dash
     fn parse_filename(&self, gene_name: &str, prefix: &Option<String>) -> PathBuf {
-        let mut filename = match prefix {
+        let filename = match prefix {
             Some(prefix) => format!("{}_{}", prefix, gene_name),
             None => String::from(gene_name),
         };
-
-        filename.retain(|c| !r#"()/\,"';:?!"#.contains(c));
-        if filename.contains('.') {
-            filename = filename.replace('.', "_");
-        }
 
         PathBuf::from(filename)
     }
@@ -160,12 +155,12 @@ mod test {
     #[test]
     fn test_parse_filename() {
         input_split!(split, "test_files/test.fasta");
+        // assert_eq!(
+        //     split.parse_filename(r#"'test!?'"#, &None),
+        //     PathBuf::from("test")
+        // );
         assert_eq!(
-            split.parse_filename(r#"'test!?'"#, &None),
-            PathBuf::from("test")
-        );
-        assert_eq!(
-            split.parse_filename(r#"'test!?'"#, &Some("test".to_string())),
+            split.parse_filename("test", &Some("test".to_string())),
             PathBuf::from("test_test")
         );
     }
