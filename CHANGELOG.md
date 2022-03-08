@@ -2,7 +2,9 @@
 
 ## Upcoming
 
-- Fix issues writing raxml partition
+- Fix issues writing raxml partition.
+- Allow parsing partition in the sequence file when splitting alignments.
+- Now, can parse codon partition.
 
 ## v0.15.0
 
