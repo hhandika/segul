@@ -50,7 +50,14 @@ impl<'a> SplitParser<'a> {
         let datatype = self.parse_datatype(self.matches);
         let output_fmt = self.parse_output_fmt(self.matches);
         let output = self.parse_output(self.matches);
-        let partitions = self.parse_partition_path();
+
+        // If users do not specify input partition.
+        // Assume partition is in the sequence file.
+        let partitions = if self.matches.is_present("input-partition") {
+            self.parse_partition_path()
+        } else {
+            PathBuf::from(&input)
+        };
         let part_fmt = self.parse_part_fmt(&partitions);
         let prefix = self.parse_prefix_input();
         let task_desc = "Alignment splitting";

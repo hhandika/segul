@@ -934,7 +934,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-partition")
                         .help("Input sequence partitions")
                         .takes_value(true)
-                        .required(true)
                         .value_name("PARTITION-PATH"),
                 )
                 .arg(
