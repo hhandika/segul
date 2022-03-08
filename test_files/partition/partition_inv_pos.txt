@@ -1,0 +1,3 @@
+DNA, locus1 = 1-5
+DNA, locus2 = 5-10
+DNA, locus3 = 11-15

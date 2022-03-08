@@ -236,4 +236,11 @@ mod test {
         let path = Path::new("test_files/partition/partition_codon.txt");
         test_partition_parser!(path, Raxml);
     }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_partition_raxml_inv() {
+        let path = Path::new("test_files/partition/partition_inv_pos.txt");
+        test_partition_parser!(path, Raxml);
+    }
 }
