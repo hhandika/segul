@@ -93,7 +93,7 @@ The instruction below assumes familiarity with command line application and only
 
 ### Installation
 
-We offer multiple options to install `segul`. The easiest and quickest way is using the pre-compiled binary (see below). You won't have to worry about having the Rust compiler tool-chain installed in your system. If you already using application written in Rust, or if none of the compiled binary works for your system, we recommend installing `segul` using the Rust Package Manager (see below).
+We offer multiple options to install `segul`. The easiest and quickest way is using the pre-compiled binary. You won't have to worry about having the Rust compiler tool-chain installed in your system. If you are already using application written in Rust, or if none of the available compiled binaries work for your system, we recommend installing `segul` using the Rust Package Manager.
 
 #### Using pre-compiled binary
 
