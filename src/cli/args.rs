@@ -35,7 +35,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("output")
                         .short('o')
                         .long("output")
-                        .help("Specify target directory or use a custom file name for a single input")
+                        .help("Specify an output directory")
                         .takes_value(true)
                         .required(true)
                         .default_value("SEGUL-Convert")
@@ -45,7 +45,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -61,7 +61,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("output-format")
                         .short('F')
                         .long("output-format")
-                        .help("Specify target output format")
+                        .help("Specify an output sequence format")
                         .takes_value(true)
                         .default_value("nexus")
                         .value_name("SEQ-FORMAT")
@@ -93,7 +93,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -124,7 +124,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -161,7 +161,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("output-format")
                         .short('f')
                         .long("output-format")
-                        .help("Specify target output format")
+                        .help("Specify an output sequence format")
                         .takes_value(true)
                         .default_value("nexus")
                         .value_name("SEQ-FORMAT")
@@ -200,7 +200,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -231,7 +231,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -256,7 +256,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("percent")
                         .long("percent")
-                        .help("Specify percentage of minimal taxa")
+                        .help("Filtered based on percentage of minimal taxa")
                         .takes_value(true)
                         .required_unless_present_all(&["npercent", "aln-len", "pars-inf", "percent-inf"])
                         .conflicts_with_all(&["npercent", "aln-len", "pars-inf", "percent-inf"])
@@ -265,7 +265,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("npercent")
                         .long("npercent")
-                        .help("Input percentages of minimal taxa (allow multiple values)")
+                        .help("Filtered based on percentages of minimal taxa (allow multiple values)")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "aln-len", "pars-inf"])
                         .multiple_values(true)
@@ -282,7 +282,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("aln-len")
                         .long("len")
-                        .help("Input minimal alignment length")
+                        .help("Filter based on minimal alignment length")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "pars-inf"])
                         .value_name("INTEGER"),
@@ -290,7 +290,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("pars-inf")
                         .long("pinf")
-                        .help("Input minimal parsimony informative sites")
+                        .help("Filter based on minimal parsimony informative sites")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "aln-len"])
                         .value_name("INTEGER"),
@@ -298,7 +298,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("percent-inf")
                         .long("percent-inf")
-                        .help("Input percent parsimony informative sites")
+                        .help("Filter based on percent parsimony informative sites")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "aln-len", "pars-inf"])
                         .value_name("FLOAT"),
@@ -316,7 +316,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("output-format")
                         .short('f')
                         .long("output-format")
-                        .help("Specify output format if concat")
+                        .help("Specify an output sequence format if concat")
                         .takes_value(true)
                         .value_name("SEQ-FORMAT")
                         .possible_values(&[
@@ -340,7 +340,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("partition")
                         .short('p')
                         .long("part")
-                        .help("Specify partition format if concat")
+                        .help("Specify a partition format if concat")
                         .takes_value(true)
                         .requires("concat")
                         .value_name("PART-FORMAT")
@@ -349,7 +349,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("concat")
                         .long("concat")
-                        .help("Concat the final results")
+                        .help("Concat filtered alignments")
                         .requires("partition")
                         .takes_value(false),
                 )
@@ -357,13 +357,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("codon")
                         .long("codon")
                         .requires("concat")
-                        .help("Specify codon model partition format")
+                        .help("Specify a codon model partition format")
                         .takes_value(false),
                 )
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -393,7 +393,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -434,7 +434,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -464,7 +464,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -490,7 +490,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("output-format")
                         .short('f')
                         .long("output-format")
-                        .help("Specify target output format")
+                        .help("Specify an output sequence format")
                         .takes_value(true)
                         .default_value("nexus")
                         .value_name("SEQ-FORMAT")
@@ -532,13 +532,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
         .subcommand(
             Command::new("summary")
-                .about("Compute alignment summary stats")
+                .about("Compute alignment summary statistics")
                 .arg(
                     Arg::new("dir")
                         .short('d')
@@ -563,7 +563,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -614,7 +614,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -645,7 +645,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -698,7 +698,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("output-format")
                         .short('f')
                         .long("output-format")
-                        .help("Specify target output format")
+                        .help("Specify an output sequence format")
                         .takes_value(true)
                         .default_value("nexus")
                         .value_name("SEQ-FORMAT")
@@ -724,13 +724,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 )
         )
         .subcommand(
             Command::new("translate")
-                .about("Translate dna sequences to amino acid sequences")
+                .about("Translate DNA sequences to amino acid sequences")
                 .arg(
                     Arg::new("dir")
                         .short('d')
@@ -755,7 +755,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -781,7 +781,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("output-format")
                         .short('f')
                         .long("output-format")
-                        .help("Specify target output format")
+                        .help("Specify an output sequence format")
                         .takes_value(true)
                         .default_value("nexus")
                         .value_name("SEQ-FORMAT")
@@ -859,7 +859,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrites the output file/directory if it exists")
+                        .help("Overwrites the output file/directory if exist")
                         .takes_value(false)
                 )
         )
@@ -889,7 +889,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input-format")
                         .short('f')
                         .long("input-format")
-                        .help("Specify input format")
+                        .help("Specify an input format")
                         .takes_value(true)
                         .required(true)
                         .value_name("SEQ-FORMAT")
@@ -905,7 +905,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("output-format")
                         .short('f')
                         .long("output-format")
-                        .help("Specify target output format")
+                        .help("Specify an output sequence format")
                         .takes_value(true)
                         .default_value("nexus")
                         .value_name("SEQ-FORMAT")
@@ -955,7 +955,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 )
                 .arg(
@@ -1020,7 +1020,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Overwrite the output file/directory if it exists")
+                        .help("Remove existing output file(s)/directory")
                         .takes_value(false)
                 )
                 .arg(
