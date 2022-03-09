@@ -24,6 +24,7 @@ impl<'a> PartParser<'a> {
 
     pub(in crate::cli) fn convert(&self) {
         let inputs = self.parse_input(self.matches);
+        let input_counts = inputs.len();
         let in_part_fmt = if self.matches.is_present("partition") {
             self.parse_partition_fmt(self.matches)
         } else {
@@ -34,12 +35,14 @@ impl<'a> PartParser<'a> {
         let overwrite = self.parse_overwrite_opts(self.matches);
         let task_desc = "Converting partitions";
         inputs.iter().for_each(|input| {
-            self.print_input_info(&input, task_desc, inputs.len(), &datatype);
+            self.print_input_info(&input, task_desc, input_counts, &datatype);
             let output = self.construct_output_path(input, &out_part_fmt);
             self.check_output_file_exist(&output, overwrite);
             let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
             converter.convert(&datatype);
-            utils::print_divider();
+            if input_counts > 1 {
+                utils::print_divider();
+            }
         });
     }
 
