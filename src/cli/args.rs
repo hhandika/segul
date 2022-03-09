@@ -931,7 +931,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("input-partition")
                         .short('I')
-                        .long("input-partition")
+                        .long("input-part")
                         .help("Input sequence partitions")
                         .takes_value(true)
                         .value_name("PARTITION-PATH"),
