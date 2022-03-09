@@ -7,12 +7,22 @@ use glob::glob;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
-use crate::get_id_non_fasta;
 use crate::helper::sequence;
 use crate::helper::types::{DataType, InputFmt};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
+
+macro_rules! get_id_non_fasta {
+    ($self:ident,  $type: ident, $datatype:ident) => {{
+        let (sender, receiver) = channel();
+        $self.files.par_iter().for_each_with(sender, |s, file| {
+            s.send($type::new(file, $self.$datatype).parse_only_id())
+                .expect("Failed parallel processing IDs");
+        });
+        receiver.iter().collect()
+    }};
+}
 
 pub struct Files<'a> {
     dir: &'a Path,
@@ -133,18 +143,6 @@ impl<'a> IDs<'a> {
 
         id
     }
-}
-
-#[macro_export]
-macro_rules! get_id_non_fasta {
-    ($self:ident,  $type: ident, $datatype:ident) => {{
-        let (sender, receiver) = channel();
-        $self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send($type::new(file, $self.$datatype).parse_only_id())
-                .expect("Failed parallel processing IDs");
-        });
-        receiver.iter().collect()
-    }};
 }
 
 #[cfg(test)]
