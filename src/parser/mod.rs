@@ -34,7 +34,7 @@ macro_rules! warn_duplicate_ids {
                 for other subcommands.\n\
                 If the cause is duplicate IDs, \
                 the other subcommands will show the first found duplicate.\n\n",
-                Red.paint("Warning!"),
+                Red.paint("WARNING!"),
                 $self.input.display(),
                 $ids.len(),
                 $self.header.ntax
