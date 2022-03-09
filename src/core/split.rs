@@ -5,7 +5,7 @@ use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::core::OutputPrint;
+use crate::core::{OutputPrint, PartitionPrint};
 use crate::helper::filenames;
 use crate::helper::sequence::Sequence;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
@@ -14,6 +14,7 @@ use crate::parser::partition::PartitionParser;
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for Splitter<'_> {}
+impl PartitionPrint for Splitter<'_> {}
 
 pub struct Splitter<'a> {
     input: &'a Path,
@@ -120,12 +121,6 @@ impl<'a> Splitter<'a> {
         let aln = Sequence::new(self.input, self.datatype);
         let (matrix, _) = aln.get_alignment(self.input_fmt);
         matrix
-    }
-
-    fn print_partition_info(&self, part_path: &Path, part_counts: &usize) {
-        log::info!("{}", Yellow.paint("Partitions"));
-        log::info!("{:18}: {}", "Partition counts", utils::fmt_num(part_counts));
-        log::info!("{:18}: {}\n", "File path", part_path.display());
     }
 
     fn print_output_info(&self, file_counts: usize) {

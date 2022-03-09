@@ -4,6 +4,7 @@ mod convert;
 mod extract;
 mod filter;
 mod id;
+mod partition;
 mod rename;
 mod split;
 mod summarize;
@@ -30,6 +31,7 @@ use crate::cli::convert::ConvertParser;
 use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
+use crate::cli::partition::PartParser;
 use crate::cli::rename::RenameParser;
 use crate::cli::split::SplitParser;
 use crate::cli::summarize::SummaryParser;
@@ -55,6 +57,7 @@ pub fn parse_cli(version: &str) {
         ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
         ("translate", Some(trans_matches)) => TranslateParser::new(trans_matches).translate(),
         ("split", Some(split_matches)) => SplitParser::new(split_matches).split(),
+        ("partition", Some(part_matches)) => PartParser::new(part_matches).convert(),
         _ => unreachable!("Invalid subcommands!"),
     }
 }

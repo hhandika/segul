@@ -870,7 +870,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("input")
                         .short("i")
                         .long("input")
-                        .help("Input path with wildcard support")
+                        .help("Input path")
                         .takes_value(true)
                         .multiple(false)
                         .required_unless("dir")
@@ -951,6 +951,63 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Add prefix to output file names")
                         .takes_value(true)
                         .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("overwrite")
+                        .long("overwrite")
+                        .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
+                ),
+        )
+        .subcommand(
+            App::new("partition")
+                .about("Convert partition formats")
+                .arg(
+                    Arg::with_name("input")
+                        .short("i")
+                        .long("input")
+                        .help("Input path")
+                        .takes_value(true)
+                        .multiple(false)
+                        .required_unless("dir")
+                        .conflicts_with("dir")
+                        .value_name("INPUT-PATH"),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .short("o")
+                        .long("output")
+                        .help("Sets target directory or use a custom file name for a single input")
+                        .takes_value(true)
+                        .value_name("STRING"),
+                )
+                .arg(
+                    Arg::with_name("partition")
+                        .short("-p")
+                        .long("part")
+                        .help("Sets input partition format")
+                        .takes_value(true)
+                        .value_name("PART-FORMAT")
+                        .possible_values(&["nexus", "raxml", "charset"]),
+                )
+                .arg(
+                    Arg::with_name("output-partition")
+                        .short("-P")
+                        .long("out-part")
+                        .help("Sets output partition format")
+                        .takes_value(true)
+                        .value_name("PART-FORMAT")
+                        .possible_values(&["nexus", "raxml"]),
+                )
+                .arg(
+                    Arg::with_name("datatype")
+                        .long("datatype")
+                        .help("Sets data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
                     Arg::with_name("overwrite")
