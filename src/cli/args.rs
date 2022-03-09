@@ -159,7 +159,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("output-format")
-                        .short('f')
+                        .short('F')
                         .long("output-format")
                         .help("Sets target output format")
                         .takes_value(true)
@@ -314,7 +314,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("output-format")
-                        .short('f')
+                        .short('F')
                         .long("output-format")
                         .help("Sets output format if concat")
                         .takes_value(true)
@@ -488,7 +488,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("output-format")
-                        .short('f')
+                        .short('F')
                         .long("output-format")
                         .help("Sets target output format")
                         .takes_value(true)
@@ -696,7 +696,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("output-format")
-                        .short('f')
+                        .short('F')
                         .long("output-format")
                         .help("Sets target output format")
                         .takes_value(true)
@@ -779,7 +779,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("output-format")
-                        .short('f')
+                        .short('F')
                         .long("output-format")
                         .help("Sets target output format")
                         .takes_value(true)
@@ -903,7 +903,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("output-format")
-                        .short('f')
+                        .short('F')
                         .long("output-format")
                         .help("Sets target output format")
                         .takes_value(true)
