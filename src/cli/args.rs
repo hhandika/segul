@@ -968,7 +968,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input")
                         .help("Input path")
                         .takes_value(true)
-                        .multiple(false)
+                        .multiple(true)
                         .required_unless("dir")
                         .conflicts_with("dir")
                         .value_name("INPUT-PATH"),
@@ -997,6 +997,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Sets output partition format")
                         .takes_value(true)
                         .value_name("PART-FORMAT")
+                        .required(true)
+                        .default_value("nexus")
                         .possible_values(&["nexus", "raxml"]),
                 )
                 .arg(

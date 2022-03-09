@@ -24,15 +24,22 @@ impl<'a> PartParser<'a> {
 
     pub(in crate::cli) fn convert(&self) {
         let inputs = self.parse_input(self.matches);
-        let in_part_fmt = self.parse_partition_fmt(self.matches);
+        let in_part_fmt = if self.matches.is_present("partition") {
+            self.parse_partition_fmt(self.matches)
+        } else {
+            PartitionFmt::Charset
+        };
         let datatype = self.parse_datatype(self.matches);
         let out_part_fmt = self.parse_out_part_fmt();
+        let overwrite = self.parse_overwrite_opts(self.matches);
         let task_desc = "Converting partitions";
         inputs.iter().for_each(|input| {
             self.print_input_info(&input, task_desc, inputs.len(), &datatype);
             let output = self.construct_output_path(input, &out_part_fmt);
+            self.check_output_file_exist(&output, overwrite);
             let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
             converter.convert(&datatype);
+            utils::print_divider();
         });
     }
 
@@ -41,13 +48,13 @@ impl<'a> PartParser<'a> {
             .file_stem()
             .and_then(OsStr::to_str)
             .expect("Failed to parse input file stem");
-        let mut fname = PathBuf::from(format!("{}_partition", fstem));
+        let mut fname = PathBuf::from(format!("{}_part", fstem));
         match *out_part_fmt {
             PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
                 fname.set_extension("nex");
             }
             PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => {
-                fname.set_extension("part");
+                fname.set_extension("txt");
             }
             _ => unreachable!("Failed to parse partition format"),
         }

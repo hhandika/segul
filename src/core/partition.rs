@@ -39,7 +39,7 @@ impl<'a> PartConverter<'a> {
         spin.set_message("Converting partitions...");
         let writer = PartWriter::new(self.output, &partitions, self.out_part_fmt, datatype);
         writer.write_partition();
-        spin.finish_with_message("Finished converting partitions!");
+        spin.finish_with_message("Finished converting partitions!\n");
         self.print_output_info()
     }
 

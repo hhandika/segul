@@ -20,15 +20,15 @@ macro_rules! parse_partition {
                 Start and end position are the same."
             );
             if $current_end_pos != partition.end {
-                assert_eq!(
-                    start_pos,
-                    $current_end_pos + 1,
-                    "Invalid partition format. \
-                Start position ({}) is not the next position \
-                after the previous end position ({}).",
-                    start_pos,
-                    $current_end_pos
-                );
+                // assert_eq!(
+                //     start_pos,
+                //     $current_end_pos + 1,
+                //     "Invalid partition format. \
+                // Start position ({}) is not the next position \
+                // after the previous end position ({}).",
+                //     start_pos,
+                //     $current_end_pos
+                // );
                 $partitions.push(partition);
             }
             $current_start_pos = start_pos;
@@ -37,14 +37,14 @@ macro_rules! parse_partition {
             let partition = $self.parse_partition($gene_name, $pos.trim(), false);
             let start_pos = partition.start;
             let end_pos = partition.end;
-            assert!(
-                start_pos == $current_end_pos + 1,
-                "Invalid partition format. \
-                Start position ({}) is not the next position \
-                after the previous end position ({}).",
-                start_pos,
-                $current_end_pos
-            );
+            // assert!(
+            //     start_pos == $current_end_pos + 1,
+            //     "Invalid partition format. \
+            //     Start position ({}) is not the next position \
+            //     after the previous end position ({}).",
+            //     start_pos,
+            //     $current_end_pos
+            // );
             $partitions.push(partition);
             $current_start_pos = start_pos;
             $current_end_pos = end_pos;
@@ -59,12 +59,12 @@ macro_rules! assert_partition {
             "Failed parsing partition. \
         No partition found."
         );
-        assert_eq!(
-            $partitions[0].start, 1,
-            "Invalid partition input. \
-            First partition start position is {} not 1.",
-            $partitions[0].start
-        );
+        // assert_eq!(
+        //     $partitions[0].start, 1,
+        //     "Invalid partition input. \
+        //     First partition start position is {} not 1.",
+        //     $partitions[0].start
+        // );
     };
 }
 
@@ -85,9 +85,11 @@ impl<'a> PartitionParser<'a> {
         let file = File::open(self.path).expect("Unable to open file");
         let mut reader = BufReader::new(file);
         match self.partition_fmt {
-            PartitionFmt::Nexus => self.parse_nexus(&mut reader),
-            PartitionFmt::Raxml => self.parse_raxml(&mut reader),
-            _ => panic!("Unsupported partition format."),
+            PartitionFmt::Nexus
+            | PartitionFmt::NexusCodon
+            | PartitionFmt::Charset
+            | PartitionFmt::CharsetCodon => self.parse_nexus(&mut reader),
+            PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => self.parse_raxml(&mut reader),
         }
     }
 
