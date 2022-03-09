@@ -61,9 +61,9 @@ Citation:
     - [Datatype](#datatype)
     - [Output](#output)
     - [Usages](#usages)
-      - [Converting alignments](#converting-alignments)
+      - [Converting sequence formats](#converting-sequence-formats)
       - [Concatenating alignments](#concatenating-alignments)
-      - [Splitting alignments by partitions](#splitting-alignments-by-partitions)
+      - [Splitting concatenated alignments by partitions](#splitting-concatenated-alignments-by-partitions)
       - [Computing sequence summary statistics](#computing-sequence-summary-statistics)
       - [Getting sample IDs from a collection of alignments](#getting-sample-ids-from-a-collection-of-alignments)
       - [Map sample distribution in a collection of alignments](#map-sample-distribution-in-a-collection-of-alignments)
@@ -191,7 +191,7 @@ For unusual file extensions or if the app failed to detect the file format, spec
 segul <SUBCOMMAND> -i alignment-dir/*.aln -f fasta
 ```
 
-Both of the input options are available in all subcommands. To keep it simple, the command examples below use `--dir` as an input.
+Both of the input options are available in all subcommands. Learn more ([here](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)).
 
 ### Datatype
 
@@ -209,70 +209,126 @@ Most functions will save into their default directory. For example, the concat f
 segul convert -d /alignments -f nexus -o alignments_concat
 ```
 
-The app avoids over-writing files with similar names. The app will check if a such file or directory exists and will ask if you like to remove it. The app will exit if you decide to not remove it. You can pass `--overwrite` flag to remove existing output files or directories without asking first.
+By default, the app avoids over-writing files with similar names. The app will check if a such file or directory exists and will ask if you would like to remove it. The app will exit if you decide to not remove it. You can pass `--overwrite` flag to remove existing output files or directories without asking first.
 
 ### Usages
 
-#### Converting alignments
+#### Converting sequence formats
 
-Segul can convert a single sequence file or multiple sequence files in a directory:
+Segul can convert a single sequence file or multiple sequence files in a directory. To input the file, use `--dir` or `-d` option:
 
 ```Bash
 segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
 ```
 
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul convert --input [path/wildcard-to-your-files] --output-format [sequence-format-keyword]
+```
+
+Learn more about converting sequence formats [here](https://github.com/hhandika/segul/wiki/5.-Usages#converting-sequences-to-a-different-format).
+
 #### Concatenating alignments
 
-To concat all alignments in a directory:
+To concat all alignments in a directory using `--dir` (or `-d` in short version):
 
 ```Bash
 segul concat --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
-#### Splitting alignments by partitions
-
-To split alignment by partions, you need the alignment file and the alignment partion in a separate file:
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
 
 ```Bash
-segul split -i [a-path-to-an-alignment] --input-partition [a-path-to-partition-file]
+segul concat --input [path/wildcard-to-your-files]
 ```
 
-If it is not provided, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option. The
+Learn more about concatenating alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#concatenating-alignments).
 
-By default, `segul` will use the locus name in the partition file as the output filename for each of the locus. You can prefix this filename by using `--prefix` option.
+#### Splitting concatenated alignments by partitions
+
+To split alignment by partitions, you need the alignment file and the alignment partition. If the input partition file is not provided, `segul` will assume the partition is in the alignment file. It will fail to run if it could not find the partition in the input alignment.
+
+The input option accepts a single file only. The `--dir` option is not available for this subcommand.
+
+```Bash
+segul split --input [a-path-to-a-concatenated-alignment] --input-partition [a-path-to-partition-file]
+```
+
+By default, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option.
+
+For the resulting alignments, `segul` will use the locus name in the partition file as the output filename. You can prefix this filename by using `--prefix` option. The resulting filenames will be {prefix}\_{locus-name}.{file-extension}.
+
+Learn more about splitting concatenated alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#splitting-concatenated-alignments-by-partition).
 
 #### Computing sequence summary statistics
 
-To generate sequence summary statistics of alignments in a directory:
+`segul` generate summary statistics for all alignment, each locus, and each taxon. To generate the summary statistics in for alignment files in a directory (usign `--dir` or `-d` option):
 
 ```Bash
 segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul summary --input [a-path/wilcard-to-files]
+```
+
+Learn more about computing sequence summary statistics [here](https://github.com/hhandika/segul/wiki/5.-Usages#computing-sequence-summary-statistics).
+
 #### Getting sample IDs from a collection of alignments
 
 You have multiple alignments and want to know what are samples you have in all of those alignment. You can easily do it using `segul`. The app can find all the unique IDs across thousands of alignments within seconds.
+
+The command using a `--dir` (or `-d` in short version):
 
 ```Bash
 segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul id --input [a-path/wilcard-to-files]
+```
+
+Learn more about getting sample IDs [here](https://github.com/hhandika/segul/wiki/5.-Usages#finding-unique-ids-in-alignments).
+
 It will generate a text file that contains all the unique IDs across your alignments.
 
 #### Map sample distribution in a collection of alignments
 
-If you would like to know how the samples distributed across your alignments, you only need to add the `--map` flag when searching for unique IDs. It will generate both the unique IDs (in a text file) and the sample distribution (in csv).
+If you would like to know how the samples distributed across your alignments, you only need to add the `--map` flag when searching for unique IDs. It will generate both the unique IDs (in a text file) and the sample distribution in boolean format (save to a csv file).
+
+Using a `--dir` (or `-d` in short version):
 
 ```Bash
 segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --map
 ```
 
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul id --input [a-path/wilcard-to-files] --map
+```
+
+Learn more about mapping sample distribution [here](https://github.com/hhandika/segul/wiki/5.-Usages#mapping-sample-distribution-in-a-collection-of-alignments).
+
 #### Filtering alignments
 
-Segul provide multiple filtering parameters.
+Segul provide multiple filtering parameters (see below).
+
+Using a directory `--dir` (or `-d` in short version):
 
 ```Bash
 segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] <parameters>
+```
+
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul filter --input [a-path/wilcard-to-files] <parameters>
 ```
 
 For example, to filter based on taxon completeness:
@@ -283,11 +339,13 @@ segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keywo
 
 Other available parameters are multiple minimal taxon completeness `--npercent`, alignment length `--len`, numbers of minimal parsimony informative sites `--pinf`, and percent of minimal parsimony informative sites `--percent-inf`.
 
-By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function above also available for concatenating filtered alignments.
+By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function [above](#concatenating-alignments) also available for concatenating filtered alignments.
+
+Learn more about filtering alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#filtering-alignments).
 
 #### Extracting sequences in alignments
 
-You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly on the command line or in text file. The app finds for the exact match. You can also use regular expression to search for matching IDs.
+You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly using the command line or in a text file. `segul` will look for the exact match of the IDs and is case sensitive. You can also use regular expression for more flexiple option.
 
 To extract sequences by inputing the IDs in the command line:
 
@@ -295,7 +353,13 @@ To extract sequences by inputing the IDs in the command line:
 segul extract --dir [path-to-alignment-directory] --input-format [sequence-format-keyword] --id [id_1] [id_2] [id_3]
 ```
 
-You can specify as many id as you would like. However, for long list of IDs, it may be better to input it using a text file. In the file it should be only the ID list, one ID each line:
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```bash
+segul extract --input [a-path/wilcard-to-files] --id [id_1] [id_2] [id_3]
+```
+
+You can specify as many id as you would like. However, for a long list of IDs, it may be more convenient to input a text file. In the file, the content should be only the list of IDs, one ID each line:
 
 ```bash
 sequence_1
@@ -316,7 +380,9 @@ For using regular expression:
 segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 ```
 
-The app uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
+`segul`` uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
+
+Learn more about extracting sequences [here](https://github.com/hhandika/segul/wiki/5.-Usages#extracting-sequences-in-alignments).
 
 #### Batch renaming sequence IDs
 
@@ -330,13 +396,19 @@ To rename sequence IDs in multiple alignments, you need to input the sequence ID
 To simplify this process, you can generate unique IDs for all of your alignments using the `id` sub-command.
 
 ```Bash
-segul id -d [alignment-dir] -f [sequence-format-keyword]
+segul id --dir [alignment-dir] -f [sequence-format-keyword]
 ```
 
-Copy the IDs to Excel and then write a new names and the header names as above. Save the file as csv or tsv. The program will infer the file format based on the file extension. Use it as an `--names` or `-n` input for renaming the sequence IDs using `rename` sub-command:
+Copy the IDs to a spreadsheet application, such as Microsoft Excel and then write new names and the header names as above. Save the file as csv or tsv. The program will infer the file format based on the file extension. Use it as an `--names` or `-n` input:
 
 ```Bash
-segul rename -d [alignment-dir] -f [sequence-format-keyword] -n [file-path-to-IDs]
+segul rename --dir [alignment-dir] -f [sequence-format-keyword] -n [file-path-to-IDs]
+```
+
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul rename --input [a-path/wilcard-to-files] -n [file-path-to-IDs]
 ```
 
 Example:
@@ -347,17 +419,25 @@ segul rename -d uce-loci/ -f nexus -n new_names.csv
 
 You can also change the output format by using `--output-format` or `-F` option.
 
+Learn more about batch renaming sequence IDs [here](https://github.com/hhandika/segul/wiki/5.-Usages#batch-renaming-sequence-ids).
+
 #### Translating DNA sequences
 
-List of supported [NCBI Genetic Code Tables](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top) is available [here](https://github.com/hhandika/segul/wiki/5.-Usages#translating-dna-sequences).
+`segul` translate DNA sequence based on [NCBI Genetic Code Tables](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top). List of the supported tables is available [here](https://github.com/hhandika/segul/wiki/5.-Usages#translating-dna-sequences).
 
-To translate dna alignment to amino acid:
+To translate dna alignment to amino acid using `--dir` (or `-d` in short version):
 
 ```Bash
-segul translate -d [path-to-alignment-files] -f [sequence-format-keyword]
+segul translate --dir [path-to-alignment-files] -f [sequence-format-keyword]
 ```
 
-By default, the app will use the standard code table (NCBI Table 1). To set the translation table, use the `--table` option. For example, to translate dna sequences using NCBI Table 2 (vertebrate MtDNA):
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul translate --input [a-path/wilcard-to-files]
+```
+
+By default, the app will use the NCBI standard code table (Table 1). To set the translation table, use the `--table` option. For example, to translate dna sequences using NCBI Table 2 (vertebrate MtDNA):
 
 ```Bash
 segul translate -d loci/ -f fasta --table 2
@@ -374,6 +454,8 @@ To show all the table options, use the `--show-tables` flag:
 ```Bash
 segul translate --show-tables
 ```
+
+Learn more about translating DNA sequences to amino acid sequences [here](https://github.com/hhandika/segul/wiki/5.-Usages#translating-dna-sequences).
 
 ## Logging
 
