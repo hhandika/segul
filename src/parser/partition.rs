@@ -199,8 +199,8 @@ impl<'a> PartitionParser<'a> {
 }
 
 fn capture_subsets(text: &str) -> String {
-    lazy_static! { // Match the first word in the block
-        static ref RE: Regex = Regex::new(r"(?i)(_subset\d)").expect("Failed capturing partition subset");
+    lazy_static! { // Match subset1, subset_1 or 1stpos
+        static ref RE: Regex = Regex::new(r"(?i)(_subset_?\d|1stpos)").expect("Failed capturing partition subset");
     }
     match RE.captures(text) {
         Some(subset) => subset[0].to_string(),
