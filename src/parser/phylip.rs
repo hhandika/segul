@@ -120,6 +120,7 @@ impl<'a> Phylip<'a> {
             .expect("Header char length is not a number.");
     }
 
+    #[inline]
     fn match_header_datatype(&mut self) {
         if let DataType::Aa = self.datatype {
             self.header.datatype = String::from("protein")
@@ -140,6 +141,7 @@ impl<'a> Phylip<'a> {
         }
     }
 
+    #[inline]
     fn check_nchar_matches(&self, longest: usize) {
         if self.header.nchar != longest {
             panic!(

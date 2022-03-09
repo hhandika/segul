@@ -76,6 +76,7 @@ impl<'a> Fasta<'a> {
             });
     }
 
+    #[inline]
     fn match_header_datatype(&mut self) {
         if let DataType::Aa = self.datatype {
             self.header.datatype = String::from("protein")
@@ -140,6 +141,7 @@ impl<R: Read> FastaReader<R> {
         }
     }
 
+    #[inline]
     fn get_recs(&self, id: &str, seq: &str) -> Records {
         Records::new(id, seq)
     }
