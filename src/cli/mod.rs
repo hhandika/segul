@@ -306,6 +306,10 @@ trait ConcatCli {
         }
     }
 
+    fn parse_uncheck_part_flag(&self, matches: &ArgMatches) -> bool {
+        matches.is_present("uncheck")
+    }
+
     fn parse_partition_fmt_codon(&self, part_fmt: &str) -> PartitionFmt {
         match part_fmt {
             "charset" => PartitionFmt::CharsetCodon,

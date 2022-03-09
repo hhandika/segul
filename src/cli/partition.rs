@@ -32,14 +32,15 @@ impl<'a> PartParser<'a> {
         };
         let datatype = self.parse_datatype(self.matches);
         let out_part_fmt = self.parse_out_part_fmt();
-        let overwrite = self.parse_overwrite_opts(self.matches);
+        let is_overwrite = self.parse_overwrite_opts(self.matches);
+        let is_uncheck = self.parse_uncheck_part_flag(self.matches);
         let task_desc = "Converting partitions";
         inputs.iter().for_each(|input| {
             self.print_input_info(&input, task_desc, input_counts, &datatype);
             let output = self.construct_output_path(input, &out_part_fmt);
-            self.check_output_file_exist(&output, overwrite);
+            self.check_output_file_exist(&output, is_overwrite);
             let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
-            converter.convert(&datatype);
+            converter.convert(&datatype, is_uncheck);
             if input_counts > 1 {
                 utils::print_divider();
             }

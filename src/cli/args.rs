@@ -948,7 +948,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::with_name("prefix")
                         .long("prefix")
-                        .help("Add prefix to output file names")
+                        .help("Adds prefix to output file names")
                         .takes_value(true)
                         .value_name("STRING"),
                 )
@@ -956,6 +956,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("overwrite")
                         .long("overwrite")
                         .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
+                )
+                .arg(
+                    Arg::with_name("uncheck")
+                        .long("uncheck")
+                        .help("Skips checking partition formats")
                         .takes_value(false)
                 ),
         )
@@ -1015,6 +1021,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::with_name("overwrite")
                         .long("overwrite")
                         .help("Overwrites the output file/directory if it exists")
+                        .takes_value(false)
+                )
+                .arg(
+                    Arg::with_name("uncheck")
+                        .long("uncheck")
+                        .help("Skips checking partition formats")
                         .takes_value(false)
                 ),
         )

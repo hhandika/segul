@@ -51,8 +51,8 @@ impl<'a> RenameParser<'a> {
             &datatype,
         );
 
-        let overwrite = self.parse_overwrite_opts(self.matches);
-        self.check_output_dir_exist(&outdir, overwrite);
+        let is_overwrite = self.parse_overwrite_opts(self.matches);
+        self.check_output_dir_exist(&outdir, is_overwrite);
         log::info!("{}", Yellow.paint("Names"));
         log::info!(
             "{:18}: {}",

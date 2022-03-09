@@ -32,8 +32,8 @@ impl<'a> PartConverter<'a> {
         }
     }
 
-    pub fn convert(&self, datatype: &DataType) {
-        let partitions = PartitionParser::new(self.input, self.partition_fmt).parse();
+    pub fn convert(&self, datatype: &DataType, is_uncheck: bool) {
+        let partitions = PartitionParser::new(self.input, self.partition_fmt, is_uncheck).parse();
         self.print_partition_info(self.input, &partitions.len());
         let spin = utils::set_spinner();
         spin.set_message("Converting partitions...");

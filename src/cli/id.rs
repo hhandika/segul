@@ -45,12 +45,12 @@ impl<'a> IdParser<'a> {
 
         let output = self.parse_output(self.matches);
         let output = output.with_extension("txt");
-        let overwrite = self.parse_overwrite_opts(self.matches);
-        self.check_output_file_exist(&output, overwrite);
+        let is_overwrite = self.parse_overwrite_opts(self.matches);
+        self.check_output_file_exist(&output, is_overwrite);
         let id = Id::new(&output, &input_fmt, &datatype);
         if self.matches.is_present("map") {
             let map_fname = self.create_map_fname(&output);
-            self.check_output_file_exist(&map_fname, overwrite);
+            self.check_output_file_exist(&map_fname, is_overwrite);
             id.map_id(&files, &map_fname);
         } else {
             id.generate_id(&files);

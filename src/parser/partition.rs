@@ -20,15 +20,9 @@ macro_rules! parse_partition {
                 Start and end position are the same."
             );
             if $current_end_pos != partition.end {
-                // assert_eq!(
-                //     start_pos,
-                //     $current_end_pos + 1,
-                //     "Invalid partition format. \
-                // Start position ({}) is not the next position \
-                // after the previous end position ({}).",
-                //     start_pos,
-                //     $current_end_pos
-                // );
+                if !$self.is_uncheck {
+                    $self.check_partition_format(start_pos, $current_end_pos);
+                }
                 $partitions.push(partition);
             }
             $current_start_pos = start_pos;
@@ -37,14 +31,9 @@ macro_rules! parse_partition {
             let partition = $self.parse_partition($gene_name, $pos.trim(), false);
             let start_pos = partition.start;
             let end_pos = partition.end;
-            // assert!(
-            //     start_pos == $current_end_pos + 1,
-            //     "Invalid partition format. \
-            //     Start position ({}) is not the next position \
-            //     after the previous end position ({}).",
-            //     start_pos,
-            //     $current_end_pos
-            // );
+            if !$self.is_uncheck {
+                $self.check_partition_format(start_pos, $current_end_pos);
+            }
             $partitions.push(partition);
             $current_start_pos = start_pos;
             $current_end_pos = end_pos;
@@ -53,31 +42,35 @@ macro_rules! parse_partition {
 }
 
 macro_rules! assert_partition {
-    ($partitions: ident) => {
+    ($self: ident, $partitions: ident) => {
         assert!(
             !$partitions.is_empty(),
             "Failed parsing partition. \
         No partition found."
         );
-        // assert_eq!(
-        //     $partitions[0].start, 1,
-        //     "Invalid partition input. \
-        //     First partition start position is {} not 1.",
-        //     $partitions[0].start
-        // );
+        if !$self.is_uncheck {
+            assert_eq!(
+                $partitions[0].start, 1,
+                "Invalid partition input. \
+                First partition start position is {} not 1.",
+                $partitions[0].start
+            );
+        }
     };
 }
 
 pub struct PartitionParser<'a> {
     path: &'a Path,
     partition_fmt: &'a PartitionFmt,
+    is_uncheck: bool,
 }
 
 impl<'a> PartitionParser<'a> {
-    pub fn new(path: &'a Path, partition_fmt: &'a PartitionFmt) -> Self {
+    pub fn new(path: &'a Path, partition_fmt: &'a PartitionFmt, is_uncheck: bool) -> Self {
         Self {
             path,
             partition_fmt,
+            is_uncheck,
         }
     }
 
@@ -91,6 +84,18 @@ impl<'a> PartitionParser<'a> {
             | PartitionFmt::CharsetCodon => self.parse_nexus(&mut reader),
             PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => self.parse_raxml(&mut reader),
         }
+    }
+
+    fn check_partition_format(&self, start_pos: usize, curr_end_pos: usize) {
+        assert_eq!(
+            start_pos,
+            curr_end_pos + 1,
+            "Invalid partition format. \
+        Start position ({}) is not the next position \
+        after the previous end position ({}).",
+            start_pos,
+            curr_end_pos
+        );
     }
 
     /// This function will parse two kinds of raxml partition file:
@@ -128,7 +133,7 @@ impl<'a> PartitionParser<'a> {
                 current_end_pos
             );
         });
-        assert_partition!(partitions);
+        assert_partition!(self, partitions);
         partitions
     }
 
@@ -155,7 +160,7 @@ impl<'a> PartitionParser<'a> {
                 );
             }
         });
-        assert_partition!(partitions);
+        assert_partition!(self, partitions);
         partitions
     }
 
@@ -215,7 +220,7 @@ mod test {
     macro_rules! test_partition_parser {
         ($input:expr, $format:ident) => {
             let path = Path::new($input);
-            let parser = PartitionParser::new(path, &PartitionFmt::$format);
+            let parser = PartitionParser::new(path, &PartitionFmt::$format, true);
             let partitions = parser.parse();
             assert_eq!(partitions.len(), 3);
             assert_eq!(partitions[0].gene, "locus1");

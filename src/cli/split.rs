@@ -62,10 +62,11 @@ impl<'a> SplitParser<'a> {
         let prefix = self.parse_prefix_input();
         let task_desc = "Alignment splitting";
         self.print_input(&None::<PathBuf>, task_desc, 1, &input_fmt, &datatype);
-        let overwrite = self.parse_overwrite_opts(self.matches);
-        self.check_output_dir_exist(&output, overwrite);
+        let is_overwrite = self.parse_overwrite_opts(self.matches);
+        let is_uncheck = self.parse_uncheck_part_flag(self.matches);
+        self.check_output_dir_exist(&output, is_overwrite);
         let split = Splitter::new(&input, &datatype, &input_fmt, &output, &output_fmt);
-        split.split_alignment(&partitions, &part_fmt, &prefix);
+        split.split_alignment(&partitions, &part_fmt, &prefix, is_uncheck);
     }
 
     fn parse_input_path(&self) -> PathBuf {

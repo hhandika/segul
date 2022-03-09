@@ -46,8 +46,9 @@ impl<'a> Splitter<'a> {
         part_path: &Path,
         partition_fmt: &PartitionFmt,
         prefix: &Option<String>,
+        is_uncheck: bool,
     ) {
-        let partitions = PartitionParser::new(part_path, partition_fmt).parse();
+        let partitions = PartitionParser::new(part_path, partition_fmt, is_uncheck).parse();
         self.print_partition_info(part_path, &partitions.len());
         let spin = utils::set_spinner();
         spin.set_message("Parsing input sequence file...");
