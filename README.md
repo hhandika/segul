@@ -18,13 +18,14 @@ Features:
 1. Converting alignments to different formats.
 2. Concatenating alignments with partition settings.
 3. Splitting alignments by partitions.
-4. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
-5. Computing alignment summary statistics.
-6. Getting sample IDs from a collection of alignments.
-7. Mapping sample distribution in a collection of alignments.
-8. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
-9. Batch renaming sequence IDs.
-10. Converting DNA sequences to amino acid sequences.
+4. Converting partition formats.
+5. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
+6. Computing alignment summary statistics.
+7. Getting sample IDs from a collection of alignments.
+8. Mapping sample distribution in a collection of alignments.
+9. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
+10. Batch renaming sequence IDs.
+11. Converting DNA sequences to amino acid sequences.
 
 Supported sequence formats:
 
