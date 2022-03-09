@@ -15,17 +15,17 @@ The app is designed with data safety and repeatability in mind. By default, it p
 
 Features:
 
-1. Converting alignments to different formats.
+1. Computing alignment summary statistics.
 2. Concatenating alignments with partition settings.
-3. Splitting alignments by partitions.
+3. Converting alignments to different formats.
 4. Converting partition formats.
-5. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
-6. Computing alignment summary statistics.
-7. Getting sample IDs from a collection of alignments.
-8. Mapping sample distribution in a collection of alignments.
-9. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
+5. Converting DNA sequences to amino acid sequences
+6. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
+7. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
+8. Getting sample IDs from a collection of alignments.
+9. Mapping sample distribution in a collection of alignments.
 10. Batch renaming sequence IDs.
-11. Converting DNA sequences to amino acid sequences.
+11. Splitting alignments by partitions.
 
 Supported sequence formats:
 
