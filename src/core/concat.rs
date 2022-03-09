@@ -40,7 +40,6 @@ impl<'a> ConcatHandler<'a> {
 
     pub fn concat_alignment(&mut self, files: &mut [PathBuf], datatype: &DataType) {
         let mut concat = Concat::new(files, self.input_fmt, datatype);
-        concat.set_codon_part(&self.part_fmt);
         let spin = utils::set_spinner();
         self.write_alignment(&mut concat, &spin);
     }
@@ -109,7 +108,6 @@ struct Concat<'a> {
     header: Header,
     partition: Vec<Partition>,
     files: &'a mut [PathBuf],
-    is_codon: bool,
 }
 
 impl<'a> Concat<'a> {
@@ -121,7 +119,6 @@ impl<'a> Concat<'a> {
             header: Header::new(),
             partition: Vec::new(),
             files,
-            is_codon: false,
         }
     }
 
@@ -133,15 +130,6 @@ impl<'a> Concat<'a> {
         self.concat(&id);
         self.header.ntax = self.alignment.len();
         self.match_header_datatype();
-    }
-
-    fn set_codon_part(&mut self, part_fmt: &PartitionFmt) {
-        match part_fmt {
-            PartitionFmt::CharsetCodon | PartitionFmt::NexusCodon | PartitionFmt::RaxmlCodon => {
-                self.is_codon = true;
-            }
-            _ => (),
-        }
     }
 
     fn concat(&mut self, id: &IndexSet<String>) {
@@ -188,7 +176,6 @@ impl<'a> Concat<'a> {
         part.gene = gene_name.to_string();
         part.start = start;
         part.end = end;
-        part.is_codon = self.is_codon;
         part
     }
 

@@ -172,7 +172,6 @@ impl<'a> PartitionParser<'a> {
         );
         let (start, end) = if is_codon {
             let codon = pos.replace(r#"\3"#, "");
-            partition.is_codon = true;
             let subset = capture_subsets(&partition.gene);
             partition.gene = partition.gene.replace(&subset, "");
             self.parse_pos(&codon)
