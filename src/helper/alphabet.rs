@@ -19,9 +19,9 @@ const AA: &[u8] = b"?-ARNDCQEGHILKMFPSTWYVYXBZJU*.~";
 pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
     if !is_valid_dna(dna) {
         panic!(
-            "Ups... The {} is not a dna sequence. Found {} in file {}",
+            "Ups... The {} in file {} is not a dna sequence. \
+            Check if the sequence is amino acid or not.",
             id,
-            dna,
             input.display()
         );
     }
@@ -38,9 +38,8 @@ pub fn check_valid_seq(input: &Path, datatype: &DataType, id: &str, seq: &str) {
 fn check_valid_aa(input: &Path, id: &str, aa: &str) {
     if !is_valid_aa(aa) {
         panic!(
-            "Ups... The {} is not an amino acid sequence. Found {} in file {}",
+            "Ups... The {} in file {} is not an amino acid sequence.",
             id,
-            aa,
             input.display()
         );
     }
