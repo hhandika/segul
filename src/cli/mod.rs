@@ -48,16 +48,16 @@ pub fn parse_cli(version: &str) {
     setup_logger().expect("Failed setting up a log file.");
     utils::print_welcome_text(version);
     match args.subcommand() {
-        ("convert", Some(convert_matches)) => ConvertParser::new(convert_matches).convert(),
-        ("concat", Some(concat_matches)) => ConcatParser::new(concat_matches).concat(),
-        ("filter", Some(pick_matches)) => FilterParser::new(pick_matches).filter(),
-        ("id", Some(id_matches)) => IdParser::new(id_matches).get_id(),
-        ("extract", Some(extract_matches)) => ExtractParser::new(extract_matches).extract(),
-        ("rename", Some(rename_matches)) => RenameParser::new(rename_matches).rename(),
-        ("summary", Some(stats_matches)) => SummaryParser::new(stats_matches).stats(),
-        ("translate", Some(trans_matches)) => TranslateParser::new(trans_matches).translate(),
-        ("split", Some(split_matches)) => SplitParser::new(split_matches).split(),
-        ("partition", Some(part_matches)) => PartParser::new(part_matches).convert(),
+        Some(("convert", convert_matches)) => ConvertParser::new(convert_matches).convert(),
+        Some(("concat", concat_matches)) => ConcatParser::new(concat_matches).concat(),
+        Some(("filter", pick_matches)) => FilterParser::new(pick_matches).filter(),
+        Some(("id", id_matches)) => IdParser::new(id_matches).get_id(),
+        Some(("extract", extract_matches)) => ExtractParser::new(extract_matches).extract(),
+        Some(("rename", rename_matches)) => RenameParser::new(rename_matches).rename(),
+        Some(("summary", stats_matches)) => SummaryParser::new(stats_matches).stats(),
+        Some(("translate", trans_matches)) => TranslateParser::new(trans_matches).translate(),
+        Some(("split", split_matches)) => SplitParser::new(split_matches).split(),
+        Some(("partition", part_matches)) => PartParser::new(part_matches).convert(),
         _ => unreachable!("Invalid subcommands!"),
     }
 }

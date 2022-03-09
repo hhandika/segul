@@ -12,12 +12,12 @@ impl OutputCli for ConcatParser<'_> {}
 impl InputCli for ConcatParser<'_> {}
 
 pub(in crate::cli) struct ConcatParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
     input_dir: Option<PathBuf>,
 }
 
 impl<'a> ConcatParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self {
             matches,
             input_dir: None,

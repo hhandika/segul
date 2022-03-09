@@ -14,11 +14,11 @@ impl ConcatCli for PartParser<'_> {}
 impl OutputCli for PartParser<'_> {}
 
 pub(in crate::cli) struct PartParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
 }
 
 impl<'a> PartParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self { matches }
     }
 

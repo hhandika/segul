@@ -11,7 +11,7 @@ impl InputPrint for SummaryParser<'_> {}
 impl OutputCli for SummaryParser<'_> {}
 
 pub(in crate::cli) struct SummaryParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
     interval: usize,
     input_fmt: InputFmt,
     datatype: DataType,
@@ -19,7 +19,7 @@ pub(in crate::cli) struct SummaryParser<'a> {
 }
 
 impl<'a> SummaryParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self {
             matches,
             interval: 0,

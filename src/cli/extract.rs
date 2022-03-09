@@ -12,13 +12,13 @@ impl InputPrint for ExtractParser<'_> {}
 impl OutputCli for ExtractParser<'_> {}
 
 pub(in crate::cli) struct ExtractParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
     input_dir: Option<PathBuf>,
     params: Params,
 }
 
 impl<'a> ExtractParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self {
             matches,
             input_dir: None,

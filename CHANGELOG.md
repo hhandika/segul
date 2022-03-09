@@ -6,6 +6,7 @@
 - Now, can parse codon partition.
 - Detect partition in the sequence file when splitting alignments.
 - Fix issues writing raxml partition.
+- Improve command parsing performance (now use [clap](https://docs.rs/clap/latest/clap/) v3).
 
 ## v0.15.0
 

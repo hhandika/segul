@@ -15,7 +15,7 @@ impl OutputCli for FilterParser<'_> {}
 impl ConcatCli for FilterParser<'_> {}
 
 pub(in crate::cli) struct FilterParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
     input_fmt: InputFmt,
     input_dir: Option<PathBuf>,
     output_dir: PathBuf,
@@ -27,7 +27,7 @@ pub(in crate::cli) struct FilterParser<'a> {
 }
 
 impl<'a> FilterParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self {
             matches,
             input_fmt: InputFmt::Fasta,
@@ -278,12 +278,12 @@ impl<'a> FilterParser<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use clap::{App, Arg};
+    use clap::{Arg, Command};
 
     #[test]
     fn test_min_taxa_output_dir() {
-        let arg = App::new("segul-test")
-            .arg(Arg::with_name("test"))
+        let arg = Command::new("segul-test")
+            .arg(Arg::new("test"))
             .get_matches();
         let mut min_taxa = FilterParser::new(&arg);
         let dir = "./test_taxa/";
@@ -295,8 +295,8 @@ mod test {
 
     #[test]
     fn test_min_taxa() {
-        let arg = App::new("segul-test")
-            .arg(Arg::with_name("filter-test"))
+        let arg = Command::new("segul-test")
+            .arg(Arg::new("filter-test"))
             .get_matches();
         let mut filter = FilterParser::new(&arg);
         filter.percent = 0.65;

@@ -11,12 +11,12 @@ impl InputPrint for RenameParser<'_> {}
 impl OutputCli for RenameParser<'_> {}
 
 pub(in crate::cli) struct RenameParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
     input_dir: Option<PathBuf>,
 }
 
 impl<'a> RenameParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self {
             matches,
             input_dir: None,

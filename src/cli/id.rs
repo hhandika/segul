@@ -11,7 +11,7 @@ impl OutputCli for IdParser<'_> {}
 impl InputPrint for IdParser<'_> {}
 
 pub(in crate::cli) struct IdParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
     input_dir: Option<PathBuf>,
 }
 

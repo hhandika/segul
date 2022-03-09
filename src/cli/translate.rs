@@ -19,13 +19,13 @@ macro_rules! parse_table_args {
 }
 
 pub(in crate::cli) struct TranslateParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
     input_dir: Option<PathBuf>,
     trans_table: GeneticCodes,
 }
 
 impl<'a> TranslateParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self {
             matches,
             input_dir: None,

@@ -36,11 +36,11 @@ impl ConcatCli for SplitParser<'_> {
 }
 
 pub(in crate::cli) struct SplitParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
 }
 
 impl<'a> SplitParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self { matches }
     }
 

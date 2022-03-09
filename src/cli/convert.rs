@@ -11,7 +11,7 @@ impl InputPrint for ConvertParser<'_> {}
 impl OutputCli for ConvertParser<'_> {}
 
 pub(in crate::cli) struct ConvertParser<'a> {
-    matches: &'a ArgMatches<'a>,
+    matches: &'a ArgMatches,
     input_fmt: InputFmt,
     output: PathBuf,
     output_fmt: OutputFmt,
@@ -21,7 +21,7 @@ pub(in crate::cli) struct ConvertParser<'a> {
 }
 
 impl<'a> ConvertParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches<'a>) -> Self {
+    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
         Self {
             matches,
             input_fmt: InputFmt::Auto,
