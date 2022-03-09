@@ -93,6 +93,8 @@ The instruction below assumes familiarity with command line application and only
 
 ### Installation
 
+We offer multiple options to install `segul`. The easiest and quickest way is using the pre-compiled binary (see below). You won't have to worry about having the Rust compiler tool-chain installed in your system. If you already using application written in Rust, or if none of the compiled binary works for your system, we recommend installing `segul` using the Rust Package Manager (see below).
+
 #### Using pre-compiled binary
 
 For a quick installation, we provide pre-compiled binaries in [the release page](https://github.com/hhandika/segul/releases/). For WSL, either the ManyLinux or Linux binary should work. In our test system, the ManyLinux binary is a little faster. For native Linux OS, first check your GLIBC version:
