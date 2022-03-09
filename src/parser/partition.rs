@@ -149,7 +149,7 @@ impl<'a> PartitionParser<'a> {
                 // and exlude the first element, which is the "charset".
                 let gene_parts = parts[0].split_whitespace().collect::<Vec<&str>>();
                 let gene_name = gene_parts[1];
-                let pos = parts[1].trim().replace(";", "");
+                let pos = parts[1].trim().replace(';', "");
                 parse_partition!(
                     self,
                     pos,

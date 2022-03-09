@@ -217,7 +217,7 @@ trait InputPrint {
 }
 
 trait OutputCli {
-    fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
+    fn parse_output(&self, matches: &ArgMatches) -> PathBuf {
         let output = matches
             .value_of("output")
             .expect("Failed parsing an output value");

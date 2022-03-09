@@ -48,7 +48,7 @@ impl<'a> ConcatHandler<'a> {
             &part_fname,
             &concat.partition,
             self.part_fmt,
-            &concat.datatype,
+            concat.datatype,
         );
         spin.set_message("Writing output files...");
         seq_writer
