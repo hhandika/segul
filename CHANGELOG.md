@@ -4,8 +4,8 @@
 
 - New feature to convert partition formats.
 - Now, can parse codon partition.
-- Detect partition in the sequence file when splitting alignments.
-- Fix issues writing raxml partition.
+- Check partition format in the sequence file when splitting alignments.
+- Fix incorrect data type in raxml partition when the input is amino acid sequences.
 - Improve command parsing performance (now use [clap](https://docs.rs/clap/latest/clap/) v3).
 
 ## v0.15.0
