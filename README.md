@@ -65,6 +65,7 @@ Citation:
       - [Computing sequence summary statistics](#computing-sequence-summary-statistics)
       - [Concatenating alignments](#concatenating-alignments)
       - [Converting sequence formats](#converting-sequence-formats)
+      - [Converting partition formats](#converting-partition-formats)
       - [Extracting sequences in alignments](#extracting-sequences-in-alignments)
       - [Filtering alignments](#filtering-alignments)
       - [Getting sample IDs from a collection of alignments](#getting-sample-ids-from-a-collection-of-alignments)
@@ -192,7 +193,7 @@ For unusual file extensions or if the app failed to detect the file format, spec
 segul <SUBCOMMAND> -i alignment-dir/*.aln -f fasta
 ```
 
-Both of the input options are available in all subcommands. Learn more ([here](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)).
+Both of the input options are available in all subcommands. Learn more about input options ([here](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)).
 
 ### Datatype
 
@@ -201,6 +202,8 @@ The app support both DNA and amino acid sequences. It will check whether the seq
 ```Bash
 segul convert -d /alignments -f nexus --datatype aa
 ```
+
+Learn more about supported data type [here](https://github.com/hhandika/segul/wiki/4.-Command-Options#data-types).
 
 ### Output
 
@@ -211,6 +214,8 @@ segul convert -d /alignments -f nexus -o alignments_concat
 ```
 
 By default, the app avoids over-writing files with similar names. The app will check if a such file or directory exists and will ask if you would like to remove it. The app will exit if you decide to not remove it. You can pass `--overwrite` flag to remove existing output files or directories without asking first.
+
+Learn more about specifying the output [here](https://github.com/hhandika/segul/wiki/4.-Command-Options#output).
 
 ### Usages
 
@@ -261,6 +266,28 @@ segul convert --input [path/wildcard-to-your-files] --output-format [sequence-fo
 ```
 
 Learn more about converting sequence formats [here](https://github.com/hhandika/segul/wiki/5.-Usages#converting-sequences-to-a-different-format).
+
+#### Converting partition formats
+
+`segul` can convert a single and multiple partition files in multiple folders. You can also use this function to extract partition embedded in NEXUS sequence files. For this command, the input option is only available using the `--input` option (or `-i` in short version).
+
+```Bash
+segul partition --input <a-path/wildcard-to-partition> --part <input-partition-format> --out-part<output-partition-format>
+```
+
+For example, to extract nexus in-file partitions (called charset format in `segul`):
+
+```Bash
+segul partition --input concatenated_alignment.nex --part charset --out-part nexus
+```
+
+You can also use wildcard to convert multiple concatenated alignment partitions at once:
+
+```Bash
+segul partition --input ./*/concatenated_alignment.nex --part charset --out-part nexus
+```
+
+Learn more about converting partition formats [here](https://github.com/hhandika/segul/wiki/5.-Usages#converting-partition-formats).
 
 #### Extracting sequences in alignments
 
