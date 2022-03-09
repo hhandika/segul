@@ -196,6 +196,7 @@ impl<'a> Concat<'a> {
         "?".repeat(len)
     }
 
+    #[inline]
     fn match_header_datatype(&mut self) {
         if let DataType::Aa = self.datatype {
             self.header.datatype = String::from("protein")

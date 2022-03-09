@@ -139,22 +139,26 @@ impl<'a> Nexus<'a> {
         }
     }
 
+    #[inline]
     fn parse_datatype(&self, input: &str) -> String {
         let tag: IResult<&str, &str> =
             sequence::preceded(complete::tag("datatype="), character::complete::alpha1)(input);
         self.parse_string(tag)
     }
 
+    #[inline]
     fn parse_gap(&self, input: &str) -> char {
         let gap = input.replace("gap=", "");
         self.parse_char(&gap)
     }
 
+    #[inline]
     fn parse_missing(&self, input: &str) -> char {
         let missing = input.replace("missing=", "");
         self.parse_char(&missing)
     }
 
+    #[inline]
     fn parse_string(&self, tag: IResult<&str, &str>) -> String {
         let mut text = String::new();
         self.convert_nomtag_to_string(tag, &mut text);
@@ -192,6 +196,7 @@ impl<'a> Nexus<'a> {
         }
     }
 
+    #[inline]
     fn check_nexus(&self, line: &str) {
         if !line.to_lowercase().starts_with("#nexus") {
             panic!("The file {} is invalid nexus format.", self.input.display());
