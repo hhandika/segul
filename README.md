@@ -19,13 +19,13 @@ Features:
 2. Concatenating alignments with partition settings.
 3. Converting alignments to different formats.
 4. Converting partition formats.
-5. Converting DNA sequences to amino acid sequences
-6. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
-7. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
-8. Getting sample IDs from a collection of alignments.
-9. Mapping sample distribution in a collection of alignments.
-10. Batch renaming sequence IDs.
-11. Splitting alignments by partitions.
+5. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
+6. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
+7. Getting sample IDs from a collection of alignments.
+8. Mapping sample distribution in a collection of alignments.
+9. Batch renaming sequence IDs.
+10. Splitting alignments by partitions.
+11. Translating DNA sequences to amino acid sequences
 
 Supported sequence formats:
 
@@ -62,14 +62,14 @@ Citation:
     - [Datatype](#datatype)
     - [Output](#output)
     - [Usages](#usages)
-      - [Converting sequence formats](#converting-sequence-formats)
-      - [Concatenating alignments](#concatenating-alignments)
-      - [Splitting concatenated alignments by partitions](#splitting-concatenated-alignments-by-partitions)
       - [Computing sequence summary statistics](#computing-sequence-summary-statistics)
+      - [Concatenating alignments](#concatenating-alignments)
+      - [Converting sequence formats](#converting-sequence-formats)
+      - [Extracting sequences in alignments](#extracting-sequences-in-alignments)
+      - [Filtering alignments](#filtering-alignments)
       - [Getting sample IDs from a collection of alignments](#getting-sample-ids-from-a-collection-of-alignments)
       - [Map sample distribution in a collection of alignments](#map-sample-distribution-in-a-collection-of-alignments)
-      - [Filtering alignments](#filtering-alignments)
-      - [Extracting sequences in alignments](#extracting-sequences-in-alignments)
+      - [Splitting concatenated alignments by partitions](#splitting-concatenated-alignments-by-partitions)
       - [Batch renaming sequence IDs](#batch-renaming-sequence-ids)
       - [Translating DNA sequences](#translating-dna-sequences)
   - [Logging](#logging)
@@ -214,21 +214,21 @@ By default, the app avoids over-writing files with similar names. The app will c
 
 ### Usages
 
-#### Converting sequence formats
+#### Computing sequence summary statistics
 
-Segul can convert a single sequence file or multiple sequence files in a directory. To input the file, use `--dir` or `-d` option:
+`segul` generate summary statistics for all alignment, each locus, and each taxon. To generate the summary statistics in for alignment files in a directory (usign `--dir` or `-d` option):
 
 ```Bash
-segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
+segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
 Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
 
 ```Bash
-segul convert --input [path/wildcard-to-your-files] --output-format [sequence-format-keyword]
+segul summary --input [a-path/wilcard-to-files]
 ```
 
-Learn more about converting sequence formats [here](https://github.com/hhandika/segul/wiki/5.-Usages#converting-sequences-to-a-different-format).
+Learn more about computing sequence summary statistics [here](https://github.com/hhandika/segul/wiki/5.-Usages#computing-sequence-summary-statistics).
 
 #### Concatenating alignments
 
@@ -246,103 +246,21 @@ segul concat --input [path/wildcard-to-your-files]
 
 Learn more about concatenating alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#concatenating-alignments).
 
-#### Splitting concatenated alignments by partitions
+#### Converting sequence formats
 
-To split alignment by partitions, you need the alignment file and the alignment partition. If the input partition file is not provided, `segul` will assume the partition is in the alignment file. It will fail to run if it could not find the partition in the input alignment.
-
-The input option accepts a single file only. The `--dir` option is not available for this subcommand.
+Segul can convert a single sequence file or multiple sequence files in a directory. To input the file, use `--dir` or `-d` option:
 
 ```Bash
-segul split --input [a-path-to-a-concatenated-alignment] --input-partition [a-path-to-partition-file]
-```
-
-By default, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option.
-
-For the resulting alignments, `segul` will use the locus name in the partition file as the output filename. You can prefix this filename by using `--prefix` option. The resulting filenames will be {prefix}\_{locus-name}.{file-extension}.
-
-Learn more about splitting concatenated alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#splitting-concatenated-alignments-by-partition).
-
-#### Computing sequence summary statistics
-
-`segul` generate summary statistics for all alignment, each locus, and each taxon. To generate the summary statistics in for alignment files in a directory (usign `--dir` or `-d` option):
-
-```Bash
-segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
+segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
 ```
 
 Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
 
 ```Bash
-segul summary --input [a-path/wilcard-to-files]
+segul convert --input [path/wildcard-to-your-files] --output-format [sequence-format-keyword]
 ```
 
-Learn more about computing sequence summary statistics [here](https://github.com/hhandika/segul/wiki/5.-Usages#computing-sequence-summary-statistics).
-
-#### Getting sample IDs from a collection of alignments
-
-You have multiple alignments and want to know what are samples you have in all of those alignment. You can easily do it using `segul`. The app can find all the unique IDs across thousands of alignments within seconds.
-
-The command using a `--dir` (or `-d` in short version):
-
-```Bash
-segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
-```
-
-Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
-
-```Bash
-segul id --input [a-path/wilcard-to-files]
-```
-
-Learn more about getting sample IDs [here](https://github.com/hhandika/segul/wiki/5.-Usages#finding-unique-ids-in-alignments).
-
-It will generate a text file that contains all the unique IDs across your alignments.
-
-#### Map sample distribution in a collection of alignments
-
-If you would like to know how the samples distributed across your alignments, you only need to add the `--map` flag when searching for unique IDs. It will generate both the unique IDs (in a text file) and the sample distribution in boolean format (save to a csv file).
-
-Using a `--dir` (or `-d` in short version):
-
-```Bash
-segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --map
-```
-
-Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
-
-```Bash
-segul id --input [a-path/wilcard-to-files] --map
-```
-
-Learn more about mapping sample distribution [here](https://github.com/hhandika/segul/wiki/5.-Usages#mapping-sample-distribution-in-a-collection-of-alignments).
-
-#### Filtering alignments
-
-Segul provide multiple filtering parameters (see below).
-
-Using a directory `--dir` (or `-d` in short version):
-
-```Bash
-segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] <parameters>
-```
-
-Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
-
-```Bash
-segul filter --input [a-path/wilcard-to-files] <parameters>
-```
-
-For example, to filter based on taxon completeness:
-
-```Bash
-segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --percent [percentages-of-minimal-taxa]
-```
-
-Other available parameters are multiple minimal taxon completeness `--npercent`, alignment length `--len`, numbers of minimal parsimony informative sites `--pinf`, and percent of minimal parsimony informative sites `--percent-inf`.
-
-By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function [above](#concatenating-alignments) also available for concatenating filtered alignments.
-
-Learn more about filtering alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#filtering-alignments).
+Learn more about converting sequence formats [here](https://github.com/hhandika/segul/wiki/5.-Usages#converting-sequences-to-a-different-format).
 
 #### Extracting sequences in alignments
 
@@ -384,6 +302,88 @@ segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 `segul`` uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
 
 Learn more about extracting sequences [here](https://github.com/hhandika/segul/wiki/5.-Usages#extracting-sequences-in-alignments).
+
+#### Filtering alignments
+
+Segul provide multiple filtering parameters (see below).
+
+Using a directory `--dir` (or `-d` in short version):
+
+```Bash
+segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] <parameters>
+```
+
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul filter --input [a-path/wilcard-to-files] <parameters>
+```
+
+For example, to filter based on taxon completeness:
+
+```Bash
+segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --percent [percentages-of-minimal-taxa]
+```
+
+Other available parameters are multiple minimal taxon completeness `--npercent`, alignment length `--len`, numbers of minimal parsimony informative sites `--pinf`, and percent of minimal parsimony informative sites `--percent-inf`.
+
+By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function [above](#concatenating-alignments) also available for concatenating filtered alignments.
+
+Learn more about filtering alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#filtering-alignments).
+
+#### Getting sample IDs from a collection of alignments
+
+You have multiple alignments and want to know what are samples you have in all of those alignment. You can easily do it using `segul`. The app can find all the unique IDs across thousands of alignments within seconds.
+
+The command using a `--dir` (or `-d` in short version):
+
+```Bash
+segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
+```
+
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul id --input [a-path/wilcard-to-files]
+```
+
+It will generate a text file that contains all the unique IDs across your alignments.
+
+Learn more about getting sample IDs [here](https://github.com/hhandika/segul/wiki/5.-Usages#finding-unique-ids-in-alignments).
+
+#### Map sample distribution in a collection of alignments
+
+If you would like to know how the samples distributed across your alignments, you only need to add the `--map` flag when searching for unique IDs. It will generate both the unique IDs (in a text file) and the sample distribution in boolean format (save to a csv file).
+
+Using a `--dir` (or `-d` in short version):
+
+```Bash
+segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --map
+```
+
+Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
+
+```Bash
+segul id --input [a-path/wilcard-to-files] --map
+```
+
+Learn more about mapping sample distribution [here](https://github.com/hhandika/segul/wiki/5.-Usages#mapping-sample-distribution-in-a-collection-of-alignments).
+
+#### Splitting concatenated alignments by partitions
+
+To split alignment by partitions, you need the alignment file and the alignment partition. If the input partition file is not provided, `segul` will assume the partition is in the alignment file. It will fail to run if it could not find the partition in the input alignment.
+
+The input option accepts a single file only. The `--dir` option is not available for this subcommand.
+
+```Bash
+segul split --input [a-path-to-a-concatenated-alignment] --input-partition [a-path-to-partition-file]
+```
+
+By default, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option.
+
+For the resulting alignments, `segul` will use the locus name in the partition file as the output filename. You can prefix this filename by using `--prefix` option. The resulting filenames will be {prefix}\_{locus-name}.{file-extension}.
+
+Learn more about splitting concatenated alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#splitting-concatenated-alignments-by-partition).
 
 #### Batch renaming sequence IDs
 
