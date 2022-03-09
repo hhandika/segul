@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.16.0
 
 - New feature to convert partition formats.
 - Now, can parse codon partition.
