@@ -41,11 +41,7 @@ impl<'a> ConcatHandler<'a> {
     pub fn concat_alignment(&mut self, files: &mut [PathBuf], datatype: &DataType) {
         let mut concat = Concat::new(files, self.input_fmt, datatype);
         let spin = utils::set_spinner();
-        self.write_alignment(&mut concat, &spin);
-    }
-
-    fn write_alignment(&mut self, concat: &mut Concat, spin: &ProgressBar) {
-        concat.concat_alignment(spin);
+        concat.concat_alignment(&spin);
         let mut seq_writer = SeqWriter::new(self.output, &concat.alignment, &concat.header);
         let part_fname = self.construct_part_fpath();
         let part_writer = PartWriter::new(
