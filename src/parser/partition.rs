@@ -199,8 +199,8 @@ impl<'a> PartitionParser<'a> {
 }
 
 fn capture_subsets(text: &str) -> String {
-    lazy_static! { // Match subset1, subset_1 or 1stpos
-        static ref RE: Regex = Regex::new(r"(?i)(_subset_?\d|1stpos)").expect("Failed capturing partition subset");
+    lazy_static! { // Match this formats: subset1, subset_1, or 1stpos
+        static ref RE: Regex = Regex::new(r"(?i)(_subset_?\d|_\d\D{2}pos)").expect("Failed capturing partition subset");
     }
     match RE.captures(text) {
         Some(subset) => subset[0].to_string(),
@@ -283,5 +283,21 @@ mod test {
     fn test_parse_partition_raxml_inv_start() {
         let path = Path::new("test_files/partition/partition_inv_start.txt");
         test_partition_parser!(path, Raxml);
+    }
+
+    #[test]
+    fn test_subset_regex_match() {
+        let subset_1 = "locus1_subset_1";
+        let subset2 = "locus1_subset2";
+        let subset_3 = "locus1_subset3";
+        let stpos = "locus1_1stpos";
+        let ndpos = "locus1_2ndpos";
+        let rdpos = "locus1_3rdpos";
+        assert_eq!(capture_subsets(subset_1), "_subset_1");
+        assert_eq!(capture_subsets(subset2), "_subset2");
+        assert_eq!(capture_subsets(subset_3), "_subset3");
+        assert_eq!(capture_subsets(stpos), "_1stpos");
+        assert_eq!(capture_subsets(ndpos), "_2ndpos");
+        assert_eq!(capture_subsets(rdpos), "_3rdpos");
     }
 }
