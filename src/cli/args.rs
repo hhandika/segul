@@ -998,7 +998,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("output-partition")
-                        .short('p')
+                        .short('P')
                         .long("out-part")
                         .help("Specify output partition format")
                         .takes_value(true)
