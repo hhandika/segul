@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.16.2
+
+- Fix version number errors.
+
 ## v0.16.1
 
 - Fix conflicting short commands.
