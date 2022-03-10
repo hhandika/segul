@@ -271,7 +271,7 @@ Learn more about converting sequence formats [here](https://github.com/hhandika/
 
 #### Converting partition formats
 
-`segul` can convert a single and multiple partition files in multiple folders. You can also use this function to extract partition embedded in NEXUS sequence files. For this command, the input option is only available using the `--input` option (or `-i` in short version).
+`segul partition` can convert a single and multiple partition files in multiple folders. It can extract partition embedded in NEXUS sequence files or merge codon model partition. For this command, the input option is only available using the `--input` option (or `-i` in short version).
 
 ```Bash
 segul partition --input <a-path/wildcard-to-partition> --input-part <input-partition-format> --output-part<output-partition-format>
@@ -288,6 +288,37 @@ You can also use wildcard to convert multiple concatenated alignment partitions 
 ```Bash
 segul partition --input ./*/concatenated_alignment.nex --input-part charset --output-part nexus
 ```
+
+When merging codon model partition, `segul` can clean up locus names if they are suffixes with subset{codon_pos}, subset\_{codon_pos}, or {codon_pos}\_pos.For example, for this partition format:
+
+```Text
+DNA, locus_1_subset1 = 1-10
+DNA, locus_1_subest2 = 2-10
+DNA, locus_1_subset3 = 3-10
+DNA, locus_2_subset1 = 11-20
+DNA, locus_2_subest2 = 12-20
+DNA, locus_2_subset3 = 13-20
+```
+
+or
+
+```Text
+DNA, locus_1_1stpos = 1-10
+DNA, locus_1_2ndpos = 2-10
+DNA, locus_1_3rdpos = 3-10
+DNA, locus_2_1stpos = 11-20
+DNA, locus_2_2ndpos = 12-20
+DNA, locus_2_3rdpos = 13-20
+```
+
+Will be merge as:
+
+```Text
+DNA, locus_1 = 1-10
+DNA, locus_2 = 11-20
+```
+
+`segul` will save the resulting partition file in the current directory and the output file name will be the input file suffixed it with `_partition`. For example, if the input file is `alignment.nexus`, the output filename will be `alignment_partition.nex` or`alignment_partition.txt` (if the output is in a RaxML format)
 
 Learn more about converting partition formats [here](https://github.com/hhandika/segul/wiki/5.-Usages#converting-partition-formats).
 
