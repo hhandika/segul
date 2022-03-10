@@ -13,23 +13,23 @@ categories = ["command-line-utilities", "science"]
 
 [dependencies]
 ahash = "0.7.4"
-alphanumeric-sort = "1.4.*"
-ansi_term = "0.12.1"
+alphanumeric-sort = "1.*"
+ansi_term = "0.*"
 anyhow = "1.0.*"
-bytecount = "0.6.2"
-chrono = "0.4.*"
+bytecount = "0.*"
+chrono = "0.*"
 clap = { version = "3.*", features = ["cargo"] }
 dialoguer = "0.8.*"
 glob = "0.3.*"
 indexmap = "1.6.*"
-indicatif = "0.16.*"
-lazy_static = "1.4.0"
+indicatif = "0.*"
+lazy_static = "1.*"
 log = "0.4.14"
-log4rs = "1.0.0"
+log4rs = "1.*"
 nom = "6.*"
-num-format = "0.4.*"
+num-format = "0.*"
 rayon = "1.*"
-regex = "1.4.5"
+regex = "1.*"
 
 [profile.release]
 debug = false
