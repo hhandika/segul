@@ -110,7 +110,10 @@ impl<'a> SplitParser<'a> {
             match ext {
                 "txt" | "raxml" => PartitionFmt::Raxml,
                 "nex" | "nexus" | "charset" => PartitionFmt::Nexus,
-                _ => panic!("Unsupported partition file format"),
+                _ => panic!(
+                    "Cannot infer partition format from the file extension.\
+                Please, specify using the --partition (or -p in short version) option"
+                ),
             }
         } else {
             self.parse_partition_fmt(self.matches)
