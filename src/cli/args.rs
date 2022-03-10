@@ -870,7 +870,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("input")
                         .short('i')
                         .long("input")
-                        .help("Input path")
+                        .help("Input partition path")
                         .takes_value(true)
                         .multiple_values(false)
                         .required_unless_present("dir")
@@ -934,7 +934,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-part")
                         .help("Input sequence partitions")
                         .takes_value(true)
-                        .value_name("PARTITION-PATH"),
+                        .value_name("PART-PATH"),
                 )
                 .arg(
                     Arg::new("partition")
@@ -978,14 +978,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .required_unless_present("dir")
                         .conflicts_with("dir")
                         .value_name("INPUT-PATH"),
-                )
-                .arg(
-                    Arg::new("output")
-                        .short('o')
-                        .long("output")
-                        .help("Specify target directory or use a custom file name for a single input")
-                        .takes_value(true)
-                        .value_name("STRING"),
                 )
                 .arg(
                     Arg::new("partition")

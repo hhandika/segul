@@ -52,7 +52,7 @@ impl<'a> PartParser<'a> {
             .file_stem()
             .and_then(OsStr::to_str)
             .expect("Failed to parse input file stem");
-        let mut fname = PathBuf::from(format!("{}_part", fstem));
+        let mut fname = PathBuf::from(format!("{}_partition", fstem));
         match *out_part_fmt {
             PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
                 fname.set_extension("nex");
