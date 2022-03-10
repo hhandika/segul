@@ -149,7 +149,7 @@ impl<'a> PartitionParser<'a> {
                 // and exlude the first element, which is the "charset".
                 let gene_parts = parts[0].split_whitespace().collect::<Vec<&str>>();
                 let gene_name = gene_parts[1];
-                let pos = parts[1].trim().replace(";", "");
+                let pos = parts[1].trim().replace(';', "");
                 parse_partition!(
                     self,
                     pos,
@@ -205,7 +205,7 @@ impl<'a> PartitionParser<'a> {
 
 fn capture_subsets(text: &str) -> String {
     lazy_static! { // Match this formats: subset1, subset_1, or 1stpos
-        static ref RE: Regex = Regex::new(r"(?i)(_subset_?\d|_\d\D{2}pos)").expect("Failed capturing partition subset");
+        static ref RE: Regex = Regex::new(r"(?i)(_subset_?\d|_\d{1}\D{2}pos)").expect("Failed capturing partition subset");
     }
     match RE.captures(text) {
         Some(subset) => subset[0].to_string(),

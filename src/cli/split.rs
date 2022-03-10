@@ -8,7 +8,7 @@ use crate::helper::types::PartitionFmt;
 
 impl InputPrint for SplitParser<'_> {}
 impl OutputCli for SplitParser<'_> {
-    fn parse_output<'a>(&self, matches: &'a ArgMatches) -> PathBuf {
+    fn parse_output(&self, matches: &ArgMatches) -> PathBuf {
         if !matches.is_present("output") {
             let output = matches.value_of("input").expect("Failed parsing input");
             let output_path = Path::new(output).file_stem().expect("Failed parsing input");
