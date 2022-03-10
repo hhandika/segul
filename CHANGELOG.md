@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.16.3
+
+- Fix output option show up when it does not use by the partition subcommand.
+- Fix unclear error messages when failing to infer partition based on the file extension.
+
 ## v0.16.2
 
 - Fix version number errors.
