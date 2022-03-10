@@ -274,19 +274,19 @@ Learn more about converting sequence formats [here](https://github.com/hhandika/
 `segul` can convert a single and multiple partition files in multiple folders. You can also use this function to extract partition embedded in NEXUS sequence files. For this command, the input option is only available using the `--input` option (or `-i` in short version).
 
 ```Bash
-segul partition --input <a-path/wildcard-to-partition> --part <input-partition-format> --out-part<output-partition-format>
+segul partition --input <a-path/wildcard-to-partition> --input-part <input-partition-format> --output-part<output-partition-format>
 ```
 
 For example, to extract nexus in-file partitions (called charset format in `segul`):
 
 ```Bash
-segul partition --input concatenated_alignment.nex --part charset --out-part nexus
+segul partition --input concatenated_alignment.nex --input-part charset --output-part nexus
 ```
 
 You can also use wildcard to convert multiple concatenated alignment partitions at once:
 
 ```Bash
-segul partition --input ./*/concatenated_alignment.nex --part charset --out-part nexus
+segul partition --input ./*/concatenated_alignment.nex --input-part charset --output-part nexus
 ```
 
 Learn more about converting partition formats [here](https://github.com/hhandika/segul/wiki/5.-Usages#converting-partition-formats).
