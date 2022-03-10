@@ -93,7 +93,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -200,7 +200,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -363,7 +363,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -434,7 +434,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -532,7 +532,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -614,7 +614,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 ),
         )
@@ -724,7 +724,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 )
         )
@@ -955,7 +955,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 )
                 .arg(
@@ -990,7 +990,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("partition")
                         .short('p')
-                        .long("part")
+                        .long("input-part")
                         .help("Specify input partition format")
                         .takes_value(true)
                         .value_name("PART-FORMAT")
@@ -999,7 +999,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("output-partition")
                         .short('P')
-                        .long("out-part")
+                        .long("output-part")
                         .help("Specify output partition format")
                         .takes_value(true)
                         .value_name("PART-FORMAT")
@@ -1020,7 +1020,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
-                        .help("Remove existing output file(s)/directory")
+                        .help("Overwrite existing output file(s)/directory")
                         .takes_value(false)
                 )
                 .arg(
