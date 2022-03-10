@@ -289,7 +289,7 @@ You can also use wildcard to convert multiple concatenated alignment partitions 
 segul partition --input ./*/concatenated_alignment.nex --input-part charset --output-part nexus
 ```
 
-When merging codon model partition, `segul` can clean up locus names if they are suffixes with subset{codon_pos}, subset\_{codon_pos}, or {codon_pos}\_pos.For example, for this partition format:
+When merging codon model partition, `segul` can clean up locus names if they are suffixes with subset{codon_pos}, subset\_{codon_pos}, or {codon_pos}\_pos. For example, for this partition format:
 
 ```Text
 DNA, locus_1_subset1 = 1-10
@@ -359,7 +359,7 @@ For using regular expression:
 segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 ```
 
-`segul`` uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
+`segul` uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
 
 Learn more about extracting sequences [here](https://github.com/hhandika/segul/wiki/5.-Usages#extracting-sequences-in-alignments).
 
