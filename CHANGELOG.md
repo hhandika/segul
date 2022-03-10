@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.16.1
+
+- Fix conflicting short commands.
+
 ## v0.16.0
 
 - New feature to convert partition formats.
