@@ -1,5 +1,9 @@
 # Release Notes
 
+## Upcoming
+
+- Fix error messages when finding empty matrix.
+
 ## v0.16.3
 
 - Fix output option show up when it does not use by the partition subcommand.
