@@ -2,10 +2,17 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 use crate::helper::types::{DataType, Header, InputFmt, SeqMatrix};
-use crate::parse_sequence;
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
+
+macro_rules! parse_sequence {
+    ($self:ident, $format:ident) => {{
+        let mut seq = $format::new($self.file, $self.datatype);
+        seq.parse();
+        (seq.matrix, seq.header)
+    }};
+}
 
 pub fn infer_input_auto(input: &Path) -> InputFmt {
     let ext: &str = input
@@ -72,6 +79,11 @@ impl SeqCheck {
     }
 
     pub fn check(&mut self, matrix: &SeqMatrix) {
+        assert!(
+            !matrix.is_empty(),
+            "The data matrix is empty. \
+        Make user the input format is correct."
+        );
         self.get_shortest_seq_len(matrix);
         self.get_longest_seq_len(matrix);
         self.check_is_alignment();
@@ -96,15 +108,6 @@ impl SeqCheck {
             .max_by(|a, b| a.cmp(b))
             .expect("Failed getting the longest sequence length");
     }
-}
-
-#[macro_export]
-macro_rules! parse_sequence {
-    ($self:ident, $format:ident) => {{
-        let mut seq = $format::new($self.file, $self.datatype);
-        seq.parse();
-        (seq.matrix, seq.header)
-    }};
 }
 
 #[cfg(test)]
