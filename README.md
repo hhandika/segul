@@ -3,15 +3,15 @@
 ![Segul-Tests](https://github.com/hhandika/segul/workflows/Segul-Tests/badge.svg)
 ![Crate-IO](https://img.shields.io/crates/v/segul)
 ![Crates-Download](https://img.shields.io/crates/d/segul?color=orange&label=crates.io-downloads)
-![GH-Release](https://img.shields.io/github/v/release/hhandika/segul)
-![GH-Downloads](https://img.shields.io/github/downloads/hhandika/segul/total?color=blue&label=binary-downloads)
+![GH-Release](https://img.shields.io/github/v/tag/hhandika/segul?label=gh-releases)
+![GH-Downloads](https://img.shields.io/github/downloads/hhandika/segul/total?color=blue&label=gh-release-downloads)
 [![LoC](https://tokei.rs/b1/github/hhandika/segul?category=code)](https://github.com/XAMPPRocky/tokei)
 ![last-commit](https://img.shields.io/github/last-commit/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-SEGUL is an ultrafast and memory efficient command-line (cli) application for working with sequence alignments. It is a cross-platform, single executable app, and has zero runtime dependency on MacOS and Windows. On Linux, it only relies on a library provided by the OS. In simple words, you don't need to worry about dependencies. It is designed to handle the computational burden of operations on large genomic datasets, but it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our test, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a wide variety of sequence alignment manipulations ([see benchmark](https://github.com/hhandika/segul-bench)).
+SEGUL is an ultrafast, memory-efficient command-line (cli) application for working with sequence alignments. It is a cross-platform, single executable app, and has zero runtime dependency on MacOS and Windows. On Linux, it relies on only a library provided by the OS. In simple words, you don't need to worry about dependencies. It is designed to handle the computational burden of operations on large genomic datasets, but it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a variety of sequence alignment manipulations ([see benchmark](https://github.com/hhandika/segul-bench)).
 
-The app is designed with data safety and repeatability in mind. By default, it prevents overwriting files and checks whether input sequences contain only valid IUPAC characters. When concatenating alignment, the app checks if all the sequences in each input file are aligned. It will abort processing if the input sequences are not aligned. It also carries the memory and multi-threading safety features provided by [the Rust programming language](https://www.rust-lang.org/). The program also logs its terminal output for record keeping.
+The app is designed with data security and repeatability in mind. By default, it prevents overwriting files and checks whether input sequences contain only valid IUPAC characters. When concatenating alignment, the app checks if all the sequences in each input file are aligned. It will abort processing if the input sequences are not aligned. It also carries the memory and multi-threading safety features provided by [the Rust programming language](https://www.rust-lang.org/). The program also logs its terminal output for record keeping.
 
 Features:
 
@@ -271,7 +271,7 @@ Learn more about converting sequence formats [here](https://github.com/hhandika/
 
 #### Converting partition formats
 
-`segul` can convert a single and multiple partition files in multiple folders. You can also use this function to extract partition embedded in NEXUS sequence files. For this command, the input option is only available using the `--input` option (or `-i` in short version).
+`segul` can convert a single and multiple partition files in multiple folders. It can extract partition embedded in NEXUS sequence files or merge codon model partition. For this command, the input option is only available using the `--input` option (or `-i` in short version).
 
 ```Bash
 segul partition --input <a-path/wildcard-to-partition> --input-part <input-partition-format> --output-part<output-partition-format>
@@ -288,6 +288,37 @@ You can also use wildcard to convert multiple concatenated alignment partitions 
 ```Bash
 segul partition --input ./*/concatenated_alignment.nex --input-part charset --output-part nexus
 ```
+
+When merging codon model partition, `segul` can clean up locus names if they are suffixes with subset{codon_pos}, subset\_{codon_pos}, or {codon_pos}\_pos. For example, for this partition format:
+
+```Text
+DNA, locus_1_subset1 = 1-10
+DNA, locus_1_subest2 = 2-10
+DNA, locus_1_subset3 = 3-10
+DNA, locus_2_subset1 = 11-20
+DNA, locus_2_subest2 = 12-20
+DNA, locus_2_subset3 = 13-20
+```
+
+or
+
+```Text
+DNA, locus_1_1stpos = 1-10
+DNA, locus_1_2ndpos = 2-10
+DNA, locus_1_3rdpos = 3-10
+DNA, locus_2_1stpos = 11-20
+DNA, locus_2_2ndpos = 12-20
+DNA, locus_2_3rdpos = 13-20
+```
+
+Will be merge as:
+
+```Text
+DNA, locus_1 = 1-10
+DNA, locus_2 = 11-20
+```
+
+`segul` will save the resulting partition file in the current directory and the output file name will be the input file suffixed it with `_partition`. For example, if the input file is `alignment.nexus`, the output filename will be `alignment_partition.nex` or`alignment_partition.txt` (if the output is in a RaxML format)
 
 Learn more about converting partition formats [here](https://github.com/hhandika/segul/wiki/5.-Usages#converting-partition-formats).
 
@@ -328,7 +359,7 @@ For using regular expression:
 segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 ```
 
-`segul`` uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
+`segul` uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
 
 Learn more about extracting sequences [here](https://github.com/hhandika/segul/wiki/5.-Usages#extracting-sequences-in-alignments).
 
@@ -405,7 +436,7 @@ To split alignment by partitions, you need the alignment file and the alignment 
 The input option accepts a single file only. The `--dir` option is not available for this subcommand.
 
 ```Bash
-segul split --input [a-path-to-a-concatenated-alignment] --input-partition [a-path-to-partition-file]
+segul split --input [a-path-to-a-concatenated-alignment] --input-part [a-path-to-partition-file]
 ```
 
 By default, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option.
