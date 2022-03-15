@@ -24,7 +24,7 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
         "nex" | "nexus" => InputFmt::Nexus,
         "phy" | "phylip" => InputFmt::Phylip,
         _ => panic!(
-            "Ups... The program cannot recognize the file extension. \
+            "The program cannot recognize the file extension. \
         Maybe try to specify the input format using the -f or --input-format option."
         ),
     }
@@ -44,7 +44,9 @@ impl<'a> Sequence<'a> {
         let (matrix, header) = self.get(input_fmt);
         assert!(
             header.aligned,
-            "Ups. Something is wrong. {} is not an alignment",
+            "Found an invalid alignment file. \
+            {} is not an alignment. \
+            SEGUL assumes the sequences are aligned if they are the same length.",
             self.file.display()
         );
         (matrix, header)
@@ -79,13 +81,8 @@ impl SeqCheck {
     }
 
     pub fn check(&mut self, matrix: &SeqMatrix) {
-        assert!(
-            !matrix.is_empty(),
-            "The data matrix is empty. \
-        Make user the input format is correct."
-        );
-        self.get_shortest_seq_len(matrix);
-        self.get_longest_seq_len(matrix);
+        self.shortest_seq_len(matrix);
+        self.longest_seq_len(matrix);
         self.check_is_alignment();
     }
 
@@ -93,7 +90,7 @@ impl SeqCheck {
         self.is_alignment = self.shortest == self.longest;
     }
 
-    fn get_shortest_seq_len(&mut self, matrix: &SeqMatrix) {
+    fn shortest_seq_len(&mut self, matrix: &SeqMatrix) {
         self.shortest = matrix
             .values()
             .map(|s| s.len())
@@ -101,7 +98,7 @@ impl SeqCheck {
             .expect("Failed getting the shortest sequence length");
     }
 
-    fn get_longest_seq_len(&mut self, matrix: &SeqMatrix) {
+    fn longest_seq_len(&mut self, matrix: &SeqMatrix) {
         self.longest = matrix
             .values()
             .map(|s| s.len())

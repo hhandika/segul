@@ -48,6 +48,12 @@ impl<'a> Fasta<'a> {
         let buff = BufReader::new(file);
         self.parse_matrix(buff);
         let mut seq_info = SeqCheck::new();
+        assert!(
+            !self.matrix.is_empty(),
+            "{} is empty. \
+        Make sure the file format is fasta or it is not an empty file!",
+            self.input.display()
+        );
         seq_info.check(&self.matrix);
         self.header.aligned = seq_info.is_alignment;
         self.header.nchar = seq_info.longest;

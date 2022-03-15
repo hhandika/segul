@@ -112,12 +112,22 @@ impl<'a> Phylip<'a> {
     }
 
     fn parse_num(&mut self, tax: &str, seq: &str) {
-        self.header.ntax = tax
-            .parse::<usize>()
-            .expect("Header taxa number is not a number.");
-        self.header.nchar = seq
-            .parse::<usize>()
-            .expect("Header char length is not a number.");
+        self.header.ntax = tax.parse::<usize>().unwrap_or_else(|_| {
+            panic!(
+                "Failed parsing taxa counts in file: {}. \
+            It is not a number. \
+            Make sure it is a relaxed phylip file.",
+                self.input.display()
+            )
+        });
+        self.header.nchar = seq.parse::<usize>().unwrap_or_else(|_| {
+            panic!(
+                "Failed parsing char length in file: {}. \
+            It is not a number. \
+            Make sure it is a relaxed phylip file.",
+                self.input.display()
+            )
+        });
     }
 
     #[inline]
