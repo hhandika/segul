@@ -436,7 +436,7 @@ To split alignment by partitions, you need the alignment file and the alignment 
 The input option accepts a single file only. The `--dir` option is not available for this subcommand.
 
 ```Bash
-segul split --input [a-path-to-a-concatenated-alignment] --input-partition [a-path-to-partition-file]
+segul split --input [a-path-to-a-concatenated-alignment] --input-part [a-path-to-partition-file]
 ```
 
 By default, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option.
