@@ -284,7 +284,11 @@ impl<'s> SummaryWriter<'s> {
 
         match self.datatype {
             DataType::Dna => self.write_dna_sum(),
-            DataType::Aa => log::info!("\n"),
+            DataType::Aa => log::info!(
+                "{:18}: {}\n",
+                "Characters",
+                utils::fmt_num(&self.chars.total_chars)
+            ),
             _ => panic!("Please specify datatype"),
         }
     }
