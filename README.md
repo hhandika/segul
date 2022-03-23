@@ -292,23 +292,23 @@ segul partition --input ./*/concatenated_alignment.nex --input-part charset --ou
 When merging codon model partition, `segul` can clean up locus names if they are suffixes with subset{codon_pos}, subset\_{codon_pos}, or {codon_pos}\_pos. For example, for this partition format:
 
 ```Text
-DNA, locus_1_subset1 = 1-10
-DNA, locus_1_subest2 = 2-10
-DNA, locus_1_subset3 = 3-10
-DNA, locus_2_subset1 = 11-20
-DNA, locus_2_subest2 = 12-20
-DNA, locus_2_subset3 = 13-20
+DNA, locus_1_subset1 = 1-10\3
+DNA, locus_1_subest2 = 2-10\3
+DNA, locus_1_subset3 = 3-10\3
+DNA, locus_2_subset1 = 11-20\3
+DNA, locus_2_subest2 = 12-20\3
+DNA, locus_2_subset3 = 13-20\3
 ```
 
 or
 
 ```Text
-DNA, locus_1_1stpos = 1-10
-DNA, locus_1_2ndpos = 2-10
-DNA, locus_1_3rdpos = 3-10
-DNA, locus_2_1stpos = 11-20
-DNA, locus_2_2ndpos = 12-20
-DNA, locus_2_3rdpos = 13-20
+DNA, locus_1_1stpos = 1-10\3
+DNA, locus_1_2ndpos = 2-10\3
+DNA, locus_1_3rdpos = 3-10\3
+DNA, locus_2_1stpos = 11-20\3
+DNA, locus_2_2ndpos = 12-20\3
+DNA, locus_2_3rdpos = 13-20\3
 ```
 
 Will be merge as:
