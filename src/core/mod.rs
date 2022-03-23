@@ -25,12 +25,12 @@ macro_rules! log_output_fmt {
 trait OutputPrint {
     fn print_output_fmt(&self, output_fmt: &OutputFmt) {
         match output_fmt {
-            OutputFmt::Fasta => log_output_fmt!("Fasta Sequential"),
-            OutputFmt::Nexus => log_output_fmt!("Nexus Sequential"),
-            OutputFmt::Phylip => log_output_fmt!("Phylip Sequential"),
-            OutputFmt::FastaInt => log_output_fmt!("Fasta Interleaved"),
-            OutputFmt::NexusInt => log_output_fmt!("Nexus Interleaved"),
-            OutputFmt::PhylipInt => log_output_fmt!("Phylip Interleaved"),
+            OutputFmt::Fasta => log_output_fmt!("FASTA sequential"),
+            OutputFmt::Nexus => log_output_fmt!("NEXUS sequential"),
+            OutputFmt::Phylip => log_output_fmt!("PHYLIP sequential"),
+            OutputFmt::FastaInt => log_output_fmt!("FASTA interleaved"),
+            OutputFmt::NexusInt => log_output_fmt!("NEXUS interleaved"),
+            OutputFmt::PhylipInt => log_output_fmt!("PHYLIP interleaved"),
         }
     }
 }

@@ -4,6 +4,7 @@
 
 - Fix error messages when finding empty matrix.
 - Fix missing character counts in amino acid alignment summary.
+- Fix input and output format character cases.
 
 ## v0.16.3
 

@@ -209,9 +209,9 @@ trait InputPrint {
     fn print_input_fmt(&self, input_fmt: &InputFmt) {
         match input_fmt {
             InputFmt::Auto => log::info!("{:18}: {}", "Input format", "Auto"),
-            InputFmt::Fasta => log::info!("{:18}: {}", "Input format", "Fasta"),
-            InputFmt::Nexus => log::info!("{:18}: {}", "Input format", "Nexus"),
-            InputFmt::Phylip => log::info!("{:18}: {}", "Input format", "Phylip"),
+            InputFmt::Fasta => log::info!("{:18}: {}", "Input format", "FASTA"),
+            InputFmt::Nexus => log::info!("{:18}: {}", "Input format", "NEXUS"),
+            InputFmt::Phylip => log::info!("{:18}: {}", "Input format", "PHYLIP"),
         }
     }
 }
