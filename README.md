@@ -9,23 +9,23 @@
 ![last-commit](https://img.shields.io/github/last-commit/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-SEGUL is an ultrafast, memory-efficient command-line (cli) application for working with sequence alignments. It is a cross-platform, single executable app, with zero runtime dependency on MacOS and Windows. On Linux, it relies on only a library provided by the OS. In simple words, you need not worry about dependencies. It is designed to handle operations on large genomic datasets, while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a variety of sequence alignment manipulations ([see benchmark](https://github.com/hhandika/segul-bench)).
+SEGUL is an ultrafast, memory-efficient command-line (cli) application for working with sequence alignments. It is a cross-platform, single executable app, with zero runtime dependency on MacOS and Windows. On Linux, it relies on only a library provided by the OS. In simple terms, you need not worry about dependencies. It is designed to handle operations on large genomic datasets, while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a variety of sequence alignment manipulations ([see benchmark](https://github.com/hhandika/segul-bench)).
 
-The app is designed with data security and repeatability in mind. By default, it prevents overwriting files and checks whether input sequences contain only valid IUPAC characters. When concatenating alignment, the app checks if all the sequences in each input file are aligned. It will abort processing if the input sequences are not aligned. It also carries the memory and multi-threading safety features provided by [the Rust programming language](https://www.rust-lang.org/). The program also logs its terminal output for record keeping.
+The app is designed with data security and repeatability in mind. By default, it prevents overwriting files and checks whether input sequences contain only valid IUPAC characters. When concatenating alignments, the app checks if all the sequences in each input file are aligned. It will abort processing if the input sequences are not aligned. It also carries the memory and multi-threading safety features provided by [the Rust programming language](https://www.rust-lang.org/). SEGUL logs terminal output for record keeping.
 
 Features:
 
-1. Computing alignment summary statistics.
-2. Concatenating alignments with partition settings.
-3. Converting alignments to different formats.
-4. Converting partition formats.
-5. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
-6. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
-7. Getting sample IDs from a collection of alignments.
-8. Mapping sample distribution in a collection of alignments.
-9. Batch renaming sequence IDs.
-10. Splitting alignments by partitions.
-11. Translating DNA sequences to amino acid sequences
+1. Compute alignment summary statistics.
+2. Concatenate alignments with partition settings.
+3. Convert alignments to different formats.
+4. Convert partition formats.
+5. Extract user-defined sequences from a collection of alignments (includes regular expression support).
+6. Filter alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
+7. Get sample IDs from a collection of alignments.
+8. Map sample distribution in a collection of alignments.
+9. Batch rename sequence labels.
+10. Split alignments by partitions.
+11. Translate DNA sequences to amino acid sequences
 
 Supported sequence formats:
 
@@ -40,7 +40,7 @@ Supported partition formats:
 1. RaXML
 2. NEXUS
 
-The NEXUS partition can be written as a charset block embedded in NEXUS formatted sequences or a separate file.
+The NEXUS partition can be written as a charset block embedded in NEXUS-formatted sequences or as a separate file.
 
 Documentation: [GitHub Wiki](https://github.com/hhandika/segul/wiki)
 
@@ -78,7 +78,7 @@ Citation:
 
 ## Supported Platforms
 
-The app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). Below is a list of operating system that we tested and is guaranteed to work:
+The app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). SEGUL has been tested on the following operating systems:
 
 - Linux
 - MacOS
@@ -89,11 +89,11 @@ The app may work in any Rust supported [platform](https://doc.rust-lang.org/nigh
 
 ## Quick Start
 
-The instruction below assumes familiarity with command line application and only highlight some common features that users may need for alignment manipulation and generating sequence statistics tasks. We provide more detailed instruction in the [documentation](https://github.com/hhandika/segul/wiki).
+The quick start instructions assume familiarity with command-line applications and highlight some common features for alignment manipulation and summary statistic generation. We provide more detailed instructions in the [documentation](https://github.com/hhandika/segul/wiki).
 
 ### Installation
 
-We offer multiple options to install `segul`. The easiest and quickest way is using the pre-compiled binary. You won't have to worry about having the Rust compiler tool-chain installed in your system. If you are already using applications written in Rust, or if none of the available compiled binaries work for your system, we recommend installing `segul` using the Rust Package Manager.
+We offer multiple options to install `segul`. The simplest way is using the pre-compiled binary. You won't have to worry about having the Rust compiler tool chain installed in your system. If you are already using applications written in Rust, or if none of the available compiled binaries work for your system, we recommend installing `segul` using the Rust Package Manager.
 
 #### Using pre-compiled binary
 
@@ -103,15 +103,15 @@ For a quick installation, we provide pre-compiled binaries in [the release page]
 ldd --version
 ```
 
-If your system GLIBC is >=2.18, use the Linux binary. If lower, use the ManyLinux binary. The installation is similar to any other single executable command-line app, such as the phylogenetic programs IQ-Tree or RaXML. You only need to make sure the path to the app is registered in your environment variable, so that the app can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)). If you are still having issues running the program, try to install it using the package manager. This installation method will optimize the compiled binary for your system (see below).
+If your system GLIBC is >=2.18, use the Linux binary. If lower, use the ManyLinux binary. Installation is similar to many other single executable command-line apps, such as the phylogenetic programs IQ-Tree and RaXML. You only need to make sure the path to the app is registered in your environment variable, so that it can be called from anywhere in your system ([see instructions](https://github.com/hhandika/segul/wiki/2.-Installation#using-a-pre-compiled-binary)). If you are still having issues running the program, try to install it using the package manager. This installation method will optimize the compiled binary for your system (see below).
 
-> ATTENTION!: For MacOS users, when you run `segul` for the first time, MacOS gatekeeper will prevent the program to run because `segul` is not signed by Apple. Go to Security Setting to allow `segul` to run. More details are here in [Apple Website](https://support.apple.com/en-us/HT202491).
+> ATTENTION!: For MacOS users, when you run `segul` for the first time, MacOS gatekeeper will block the program because `segul` is not signed by Apple. Go to Security & Privacy under System Preferences to allow `segul` to run. More details are here in [Apple Website](https://support.apple.com/en-us/HT202491).
 
 #### Install from the Rust Package Manager
 
-The Rust package manager is called [cargo](https://crates.io/). Cargo is easy to install (also easy to uninstall) and will help you to manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). Installing SEGUL through Cargo is similar to installing it from source code, except that it only use the stable version of the code. The source code is managed on [crates.io](https://crates.io/). The badge at top of this Readme has information on the latest version of the app available on [crates.io](https://crates.io/).
+The Rust package manager is called [cargo](https://crates.io/). Cargo is easy to install (and uninstall) and will help you manage the app ([see details in the installation instruction](https://github.com/hhandika/segul/wiki/2.-Installation)). Installing SEGUL through Cargo is similar to installing it from source code, except that it uses only the stable version of the code. The source code is managed on [crates.io](https://crates.io/). The badge at the top of this Readme has information on the latest version of the app available on [crates.io](https://crates.io/).
 
-After you have Cargo installed in your computer, in Linux system (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, PopOS, Linux Mint, etc.) or its equivalent in other Linux distributions:
+After you have Cargo installed, in Linux systems (including WSL), first install the C-development toolkit, `build-essential` for Debian-based distributions (Debian, Ubuntu, PopOS, Linux Mint, etc.) or its equivalent in other Linux distributions:
 
 ```Bash
 sudo apt install build-essential
@@ -153,7 +153,7 @@ To check for available options and flags for each sub-command:
 segul <SUBCOMMAND> --help
 ```
 
-Across the app functions, most generic arguments are also available in short format to save time typing them. For example, below we use short arguments to concat alignments in a directory named `nexus-alignments`:
+Across the app functions, most generic arguments are also available in short format. For example, below we use short arguments to concatenate alignments in a directory named `nexus-alignments`:
 
 ```Bash
 segul concat -d nexus-alignments -f nexus
@@ -177,7 +177,7 @@ For a single file:
 segul <SUBCOMMAND> -i alignment-dir/alignment_file.fasta
 ```
 
-Multiple file in a directory using wildcard:
+Multiple files in a directory using wildcard:
 
 ```Bash
 segul <SUBCOMMAND> -i alignment-dir/*.fasta
@@ -199,13 +199,13 @@ Both of the input options are available in all subcommands. Learn more about inp
 
 ### Datatype
 
-The app support both DNA and amino acid sequences. It will check whether the sequences contain only valid IUPAC characters of the datatype. By default, it sets to DNA sequences. Use the option `--datatype aa` if your input is amino acid sequences. For example:
+SEGUL supports both DNA and amino acid sequences. It will check whether the sequences contain only valid IUPAC characters of the datatype. By default, it sets to DNA sequences. Use the option `--datatype aa` if your input is amino acid sequences. For example:
 
 ```Bash
 segul convert -d /alignments -f nexus --datatype aa
 ```
 
-Learn more about supported data type [here](https://github.com/hhandika/segul/wiki/4.-Command-Options#data-types).
+Learn more about supported data types [here](https://github.com/hhandika/segul/wiki/4.-Command-Options#data-types).
 
 ### Output
 
@@ -215,7 +215,7 @@ Most functions will save into their default directory. For example, the concat f
 segul convert -d /alignments -f nexus -o alignments_concat
 ```
 
-By default, the app avoids over-writing files with similar names. The app will check if a such file or directory exists and will ask if you would like to remove it. The app will exit if you decide to not remove it. You can pass `--overwrite` flag to remove existing output files or directories without asking first.
+By default, SEGUL will not over-write files with identical names. The app will check if such a file or directory exists and will ask if you would like to remove it. SEGUL will exit if you decide to not remove it. You can pass the `--overwrite` flag to remove existing output files or directories.
 
 Learn more about specifying the output [here](https://github.com/hhandika/segul/wiki/4.-Command-Options#output).
 
@@ -223,10 +223,10 @@ Learn more about specifying the output [here](https://github.com/hhandika/segul/
 
 #### Computing sequence summary statistics
 
-`segul` generate summary statistics for all alignment, each locus, and each taxon. To generate the summary statistics in for alignment files in a directory (usign `--dir` or `-d` option):
+`segul` generates summary statistics for all alignments, each locus, and each taxon. To generate the summary statistics for alignment files in a directory use the `--dir` or `-d` flag:
 
 ```Bash
-segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
+segul summary --dir [path-to-a-directory] --input-format [sequence-format-keyword]
 ```
 
 Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
@@ -255,7 +255,7 @@ Learn more about concatenating alignments [here](https://github.com/hhandika/seg
 
 #### Converting sequence formats
 
-Segul can convert a single sequence file or multiple sequence files in a directory. To input the file, use `--dir` or `-d` option:
+SEGUL can convert a single sequence file or multiple sequence files in a directory. To input the file, use `--dir` or `-d` option:
 
 ```Bash
 segul convert --dir [path-to-your-repository] --input-format [sequence-format-keyword] --output-format [sequence-format-keyword]
@@ -271,7 +271,7 @@ Learn more about converting sequence formats [here](https://github.com/hhandika/
 
 #### Converting partition formats
 
-`segul` can convert a single and multiple partition files in multiple folders. It can extract partition embedded in NEXUS sequence files or merge codon model partition. For this command, the input option is only available using the `--input` option (or `-i` in short version).
+`segul` can convert a single and multiple partition files in multiple folders. It can extract partitions embedded in NEXUS sequence files or merge codon model partitions. For this command, the input option is only available using the `--input` option (or `-i` in short version).
 
 ```Bash
 segul partition --input <a-path/wildcard-to-partition> --input-part <input-partition-format> --output-part<output-partition-format>
@@ -283,35 +283,35 @@ For example, to extract nexus in-file partitions (called charset format in `segu
 segul partition --input concatenated_alignment.nex --input-part charset --output-part nexus
 ```
 
-You can also use wildcard to convert multiple concatenated alignment partitions at once:
+You can also use the wildcard to convert multiple concatenated alignment partitions at once:
 
 ```Bash
 segul partition --input ./*/concatenated_alignment.nex --input-part charset --output-part nexus
 ```
 
-When merging codon model partition, `segul` can clean up locus names if they are suffixes with subset{codon_pos}, subset\_{codon_pos}, or {codon_pos}\_pos. For example, for this partition format:
+When merging codon model partitions, `segul` can clean up locus names if they are suffixes with subset{codon_pos}, subset\_{codon_pos}, or {codon_pos}\_pos. For example, for this partition format:
 
 ```Text
-DNA, locus_1_subset1 = 1-10\3
-DNA, locus_1_subest2 = 2-10\3
-DNA, locus_1_subset3 = 3-10\3
-DNA, locus_2_subset1 = 11-20\3
-DNA, locus_2_subest2 = 12-20\3
-DNA, locus_2_subset3 = 13-20\3
+DNA, locus_1_subset1 = 1-10
+DNA, locus_1_subest2 = 2-10
+DNA, locus_1_subset3 = 3-10
+DNA, locus_2_subset1 = 11-20
+DNA, locus_2_subest2 = 12-20
+DNA, locus_2_subset3 = 13-20
 ```
 
 or
 
 ```Text
-DNA, locus_1_1stpos = 1-10\3
-DNA, locus_1_2ndpos = 2-10\3
-DNA, locus_1_3rdpos = 3-10\3
-DNA, locus_2_1stpos = 11-20\3
-DNA, locus_2_2ndpos = 12-20\3
-DNA, locus_2_3rdpos = 13-20\3
+DNA, locus_1_1stpos = 1-10
+DNA, locus_1_2ndpos = 2-10
+DNA, locus_1_3rdpos = 3-10
+DNA, locus_2_1stpos = 11-20
+DNA, locus_2_2ndpos = 12-20
+DNA, locus_2_3rdpos = 13-20
 ```
 
-Will be merge as:
+Will be merged as:
 
 ```Text
 DNA, locus_1 = 1-10
@@ -324,7 +324,7 @@ Learn more about converting partition formats [here](https://github.com/hhandika
 
 #### Extracting sequences in alignments
 
-You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly using the command line or in a text file. `segul` will look for the exact match of the IDs and is case sensitive. You can also use regular expression for more flexiple option.
+You can also extract sequences from a collection of alignments. It can be done by supplying a list of IDs directly using the command line or in a text file. `segul` will look for the exact match of the IDs and is case sensitive. You can also use regular expressions.
 
 To extract sequences by inputing the IDs in the command line:
 
@@ -338,7 +338,7 @@ Using `--input` (or `-i` in short version) option ([learn the difference](https:
 segul extract --input [a-path/wilcard-to-files] --id [id_1] [id_2] [id_3]
 ```
 
-You can specify as many id as you would like. However, for a long list of IDs, it may be more convenient to input a text file. In the file, the content should be only the list of IDs, one ID each line:
+You can specify as many IDs as you like. However, for a long list of IDs, it may be more convenient to input a text file. In the file, the contents should be only a list of the IDs, separated by hard returns:
 
 ```bash
 sequence_1
@@ -353,19 +353,19 @@ The the command will be:
 segul extract --dir [path-to-alignment-directory] --input-format [sequence-format-keyword] --file [path-to-text-file]
 ```
 
-For using regular expression:
+For using a regular expression:
 
 ```bash
 segul extract -d gblock_trimmed_80p/ -f nexus --re="regex-syntax"
 ```
 
-`segul` uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expression. The syntax is similar to Perl regular expression (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
+`segul` uses the rust [regex library](https://docs.rs/regex/1.5.4/regex/) to parse regular expressions. The syntax is similar to Perl regular expressions (find out more [here](https://docs.rs/regex/1.5.4/regex/)).
 
 Learn more about extracting sequences [here](https://github.com/hhandika/segul/wiki/5.-Usages#extracting-sequences-in-alignments).
 
 #### Filtering alignments
 
-Segul provide multiple filtering parameters (see below).
+Segul provides multiple filtering possibilities (see below).
 
 Using a directory `--dir` (or `-d` in short version):
 
@@ -385,17 +385,17 @@ For example, to filter based on taxon completeness:
 segul filter --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --percent [percentages-of-minimal-taxa]
 ```
 
-Other available parameters are multiple minimal taxon completeness `--npercent`, alignment length `--len`, numbers of minimal parsimony informative sites `--pinf`, and percent of minimal parsimony informative sites `--percent-inf`.
+Other available parameters are minimal taxon completeness `--npercent`, minimum alignment length `--len`, minimum number of minimal parsimony informative sites `--pinf`, and minimum percent of parsimony informative sites `--percent-inf`.
 
-By default, the app will copy files that are match with the parameter to a new folder. If you would like to concat the results instead, you can specify it by passing `--concat` flags. All the options available for the concat function [above](#concatenating-alignments) also available for concatenating filtered alignments.
+By default, the app will copy files that pass the filter to a new folder. If you would like to concatenate the results instead, use the `--concat` flag. All the options available for the concat function [above](#concatenating-alignments) are also available for concatenating filtered alignments.
 
 Learn more about filtering alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#filtering-alignments).
 
 #### Getting sample IDs from a collection of alignments
 
-You have multiple alignments and want to know what are samples you have in all of those alignment. You can easily do it using `segul`. The app can find all the unique IDs across thousands of alignments within seconds.
+You have multiple alignments and want to know which samples are present in all alignments. You can easily do this using `segul`. The app can find all the unique IDs across thousands of alignments within seconds.
 
-The command using a `--dir` (or `-d` in short version):
+Using `--dir` (or `-d`):
 
 ```Bash
 segul id --dir [a-path-to-a-directory] --input-format [sequence-format-keyword]
@@ -407,13 +407,13 @@ Using `--input` (or `-i` in short version) option ([learn the difference](https:
 segul id --input [a-path/wilcard-to-files]
 ```
 
-It will generate a text file that contains all the unique IDs across your alignments.
+SEGUL will generate a text file containing all the unique IDs.
 
 Learn more about getting sample IDs [here](https://github.com/hhandika/segul/wiki/5.-Usages#finding-unique-ids-in-alignments).
 
 #### Map sample distribution in a collection of alignments
 
-If you would like to know how the samples distributed across your alignments, you only need to add the `--map` flag when searching for unique IDs. It will generate both the unique IDs (in a text file) and the sample distribution in boolean format (save to a csv file).
+If you would like to know how the samples are distributed across your alignments, you only need to add the `--map` flag when searching for unique IDs, which will generate both the unique IDs (in a text file) and the sample distribution in boolean format (saved to a csv file).
 
 Using a `--dir` (or `-d` in short version):
 
@@ -431,15 +431,15 @@ Learn more about mapping sample distribution [here](https://github.com/hhandika/
 
 #### Splitting concatenated alignments by partitions
 
-To split alignment by partitions, you need the alignment file and the alignment partition. If the input partition file is not provided, `segul` will assume the partition is in the alignment file. It will fail to run if it could not find the partition in the input alignment.
+To split an alignment by partitions, you need the alignment file and the alignment partitions. If the input partition file is not provided, `segul` will assume the partition is in the alignment file. It will fail to run if it could not find the partitions.
 
 The input option accepts a single file only. The `--dir` option is not available for this subcommand.
 
 ```Bash
-segul split --input [a-path-to-a-concatenated-alignment] --input-part [a-path-to-partition-file]
+segul split --input [a-path-to-a-concatenated-alignment] --input-partition [a-path-to-partition-file]
 ```
 
-By default, `segul` will use the alignment name as an output directory. To provide the output directory name, use the `--output` or `-o` option.
+By default, `segul` will use the alignment name as an output directory. To provide the output directory name, use `--output` or `-o`.
 
 For the resulting alignments, `segul` will use the locus name in the partition file as the output filename. You can prefix this filename by using `--prefix` option. The resulting filenames will be {prefix}\_{locus-name}.{file-extension}.
 
@@ -463,13 +463,13 @@ segul id --dir [alignment-dir] -f [sequence-format-keyword]
 Copy the IDs to a spreadsheet application, such as Microsoft Excel and then write new names and the header names as above. Save the file as csv or tsv. The program will infer the file format based on the file extension. Use it as an `--names` or `-n` input:
 
 ```Bash
-segul rename --dir [alignment-dir] -f [sequence-format-keyword] -n [file-path-to-IDs]
+segul rename --dir [alignment-dir] -f [sequence-format-keyword] -n [file-path-to-new-IDs]
 ```
 
 Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
 
 ```Bash
-segul rename --input [a-path/wilcard-to-files] -n [file-path-to-IDs]
+segul rename --input [a-path/wilcard-to-files] -n [file-path-to-new-IDs]
 ```
 
 Example:
@@ -478,15 +478,15 @@ Example:
 segul rename -d uce-loci/ -f nexus -n new_names.csv
 ```
 
-You can also change the output format by using `--output-format` or `-F` option.
+You can also change the output format using `--output-format` or `-F`.
 
 Learn more about batch renaming sequence IDs [here](https://github.com/hhandika/segul/wiki/5.-Usages#batch-renaming-sequence-ids).
 
 #### Translating DNA sequences
+<!--Sometimes you use segul, other times SEGUL. Why not be consistent?-->
+`segul` translates DNA sequences based on [NCBI Genetic Code Tables](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top). List of the supported tables is available [here](https://github.com/hhandika/segul/wiki/5.-Usages#translating-dna-sequences).
 
-`segul` translate DNA sequence based on [NCBI Genetic Code Tables](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#top). List of the supported tables is available [here](https://github.com/hhandika/segul/wiki/5.-Usages#translating-dna-sequences).
-
-To translate dna alignment to amino acid using `--dir` (or `-d` in short version):
+To translate a DNA alignment to amino acid using `--dir` (or `-d` in short version):
 
 ```Bash
 segul translate --dir [path-to-alignment-files] -f [sequence-format-keyword]
@@ -520,14 +520,14 @@ Learn more about translating DNA sequences to amino acid sequences [here](https:
 
 ## Logging
 
-Most information that is printed to the terminal is written to the log file (named `segul.log`). It is written to the current working directoy. Unlike the terminal output that we try to keep it clean and only show the most important information, the log file will also contain the dates, times, and the log level status. Each time you run the app, if the log file exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different directory if you would like to keep a different log file for each task.
+Most information that is printed to the terminal is written to the log file (named `segul.log`). It is written to the current working directoy. Unlike the terminal output, which we try to keep clean and show only the most important information, the log file will contain the date, time, and the log level status. Each time you run the app, if the log file exists in the same directory, the app will append the log output to the same log file. Rename this file or move it to a different directory if you would like to keep a different log file for each task.
 
 Learn more about using SEGUL [here](https://github.com/hhandika/segul/wiki/5.-Usages).
 
 ## Contribution
 
-We welcome any kind of contribution, from issue reporting, ideas to improve the app, to code contribution. For ideas and issue reporting please post in [the Github issues page](https://github.com/hhandika/segul/issues). For code contribution, please fork the repository and send pull requests to this repo
+We welcome any feedback, including issue reporting, ideas to improve the app, and code contributions. For ideas and issue reporting please post in [the Github issues page](https://github.com/hhandika/segul/issues). For code contributions, please fork the repository and send pull requests to this repo.
 
 <!-- ## Acknowledgment
 
-We thank Giovani for testing the earlier version of the app and provide some ideas to further develop it. Some `SEGUL` features are inspired by Phyluce pipelines.  -->
+We thank Giovani Hernández-Canchola for testing the earlier version of the app and provide some ideas for further development. Some `SEGUL` features are inspired by Phyluce pipelines.  -->
