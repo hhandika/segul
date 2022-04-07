@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
 use ansi_term::Colour::Yellow;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use rayon::prelude::*;
 
 use crate::core::concat::ConcatHandler;
@@ -12,12 +12,16 @@ use crate::helper::sequence::Sequence;
 use crate::helper::stats;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
+use crate::parser::fasta;
+use crate::parser::nexus::Nexus;
+use crate::parser::phylip::Phylip;
 
 pub enum Params {
     MinTax(usize),
     AlnLen(usize),
     ParsInf(usize),
     PercInf(f64),
+    TaxonId(Vec<String>),
 }
 
 pub struct SeqFilter<'a> {
@@ -133,6 +137,12 @@ impl<'a> SeqFilter<'a> {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
+                Params::TaxonId(taxon_id) => {
+                    let ids = self.parse_id(file);
+                    if taxon_id.iter().all(|id| ids.contains(id)) {
+                        s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
+                    }
+                }
                 _ => (),
             });
 
@@ -181,6 +191,15 @@ impl<'a> SeqFilter<'a> {
         stats::get_pars_inf(&matrix, self.datatype)
     }
 
+    fn parse_id(&self, file: &Path) -> IndexSet<String> {
+        match self.input_fmt {
+            InputFmt::Fasta => fasta::parse_only_id(file),
+            InputFmt::Nexus => Nexus::new(file, self.datatype).parse_only_id(),
+            InputFmt::Phylip => Phylip::new(file, self.datatype).parse_only_id(),
+            _ => unreachable!("Auto format is not supported. Please, specify input format"),
+        }
+    }
+
     fn get_header(&self, file: &Path) -> Header {
         let (_, header) = self.get_alignment(file);
         header
@@ -220,5 +239,14 @@ mod test {
         assert_eq!(3, ftr.count_min_pinf(&pinf, &percent));
         assert_eq!(1, ftr_aln.len());
         assert_eq!(4, ftr_aln_2.len());
+    }
+
+    #[test]
+    fn test_all_id() {
+        let ids = vec!["1", "2", "3", "4"];
+        let id_2 = vec!["1", "2", "3"];
+        let id_3 = vec!["1", "2", "3", "4"];
+        assert_eq!(false, ids.iter().all(|id| id_2.contains(id)));
+        assert_eq!(true, ids.iter().all(|id| id_3.contains(id)));
     }
 }

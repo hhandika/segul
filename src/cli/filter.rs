@@ -8,6 +8,7 @@ use crate::core::filter::{Params, SeqFilter};
 use crate::helper::finder::IDs;
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::{filenames, utils};
+use crate::parser::txt;
 
 impl InputCli for FilterParser<'_> {}
 impl InputPrint for FilterParser<'_> {}
@@ -120,8 +121,18 @@ impl<'a> FilterParser<'a> {
             m if m.is_present("aln-len") => Params::AlnLen(self.parse_aln_len()),
             m if m.is_present("pars-inf") => Params::ParsInf(self.parse_pars_inf()),
             m if m.is_present("percent-inf") => Params::PercInf(self.count_percent_inf()),
+            m if m.is_present("taxon-id") => Params::TaxonId(self.parse_taxon_id()),
             _ => unreachable!("Invalid parameters!"),
         }
+    }
+
+    fn parse_taxon_id(&self) -> Vec<String> {
+        let id_path = Path::new(
+            self.matches
+                .value_of("taxon-id")
+                .expect("Failed to parse taxon-id"),
+        );
+        txt::parse_text_file(id_path)
     }
 
     fn count_percent_inf(&self) -> f64 {
@@ -250,13 +261,14 @@ impl<'a> FilterParser<'a> {
             Params::AlnLen(len) => format!("{}_{}bp", last, len),
             Params::ParsInf(inf) => format!("{}_{}inf", last, inf),
             Params::PercInf(perc_inf) => format!("{}_{}percent_inf", last, perc_inf * 100.0),
+            Params::TaxonId(_) => format!("{}_taxon_id", last),
         };
         parent.join(output_dir)
     }
 
     fn print_params(&self) {
-        log::info!("{}", Yellow.paint("Parameters"));
-        match self.params {
+        log::info!("{}", Yellow.paint("Params"));
+        match &self.params {
             Params::MinTax(min_taxa) => {
                 log::info!("{:18}: {}", "Taxon count", self.ntax);
                 log::info!("{:18}: {}%", "Percent", self.percent * 100.0);
@@ -266,6 +278,9 @@ impl<'a> FilterParser<'a> {
             Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
             Params::PercInf(perc_inf) => {
                 log::info!("{:18}: {}%\n", "% pars. inf", perc_inf * 100.0)
+            }
+            Params::TaxonId(taxon_id) => {
+                log::info!("{:18}: {} taxa\n", "Taxon id", taxon_id.len())
             }
         }
     }
