@@ -254,6 +254,38 @@ impl Taxa {
     }
 }
 
+#[allow(dead_code)]
+struct TaxonChars {
+    char_counts: HashMap<char, usize>,
+    gc_count: usize,
+    at_count: usize,
+    missing_data: usize,
+    nucleotides: usize,
+}
+
+#[allow(dead_code)]
+impl TaxonChars {
+    pub fn new() -> Self {
+        Self {
+            char_counts: HashMap::new(),
+            gc_count: 0,
+            at_count: 0,
+            missing_data: 0,
+            nucleotides: 0,
+        }
+    }
+
+    pub fn get_taxon_chars(&mut self, seq: &str) {
+        self.count_chars(seq);
+    }
+
+    fn count_chars(&mut self, seq: &str) {
+        seq.chars().for_each(|c| {
+            *self.char_counts.entry(c.to_ascii_uppercase()).or_insert(0) += 1;
+        });
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Sites {
     pub path: PathBuf,
@@ -432,16 +464,20 @@ impl Chars {
     pub fn count_chars(&mut self, matrix: &SeqMatrix, header: &Header) {
         self.ntax = header.ntax;
         self.total_chars = header.nchar * self.ntax;
+        self.parse_chars(matrix);
+        self.count_gc();
+        self.count_at();
+        self.count_nucleotides();
+        self.count_missing_data();
+    }
+
+    fn parse_chars(&mut self, matrix: &SeqMatrix) {
         matrix
             .values()
             .flat_map(|seqs| seqs.chars())
             .for_each(|ch| {
                 *self.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += 1;
             });
-        self.count_gc();
-        self.count_at();
-        self.count_nucleotides();
-        self.count_missing_data();
     }
 
     fn count_gc(&mut self) {
