@@ -29,7 +29,7 @@ Features:
 
 Upcoming Features
 
-1. Filter based on matching a taxon list.
+1. Filter based on a matching taxon list.
 2. Add character counts to taxon summary.
 
 Supported sequence formats:
