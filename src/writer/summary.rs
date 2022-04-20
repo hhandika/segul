@@ -219,11 +219,6 @@ impl<'a> CsvWriter<'a> {
         // Characters
         alphabet.chars().for_each(|ch| {
             write!(writer, "{},", chars.chars.get(&ch).unwrap_or(&0)).unwrap();
-            // let count = chars.chars.get(&ch);
-            // match count {
-            //     Some(count) => write!(writer, "{},", count).unwrap(),
-            //     None => write!(writer, "0,").unwrap(),
-            // }
         });
         writeln!(writer)?;
         writer.flush()?;
