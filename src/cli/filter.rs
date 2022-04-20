@@ -121,7 +121,7 @@ impl<'a> FilterParser<'a> {
             m if m.is_present("aln-len") => Params::AlnLen(self.parse_aln_len()),
             m if m.is_present("pars-inf") => Params::ParsInf(self.parse_pars_inf()),
             m if m.is_present("percent-inf") => Params::PercInf(self.count_percent_inf()),
-            m if m.is_present("taxon-id") => Params::TaxonId(self.parse_taxon_id()),
+            m if m.is_present("taxon-all") => Params::TaxonAll(self.parse_taxon_id()),
             _ => unreachable!("Invalid parameters!"),
         }
     }
@@ -261,7 +261,7 @@ impl<'a> FilterParser<'a> {
             Params::AlnLen(len) => format!("{}_{}bp", last, len),
             Params::ParsInf(inf) => format!("{}_{}inf", last, inf),
             Params::PercInf(perc_inf) => format!("{}_{}percent_inf", last, perc_inf * 100.0),
-            Params::TaxonId(_) => format!("{}_taxon_id", last),
+            Params::TaxonAll(_) => format!("{}_taxon_id", last),
         };
         parent.join(output_dir)
     }
@@ -279,7 +279,7 @@ impl<'a> FilterParser<'a> {
             Params::PercInf(perc_inf) => {
                 log::info!("{:18}: {}%\n", "% pars. inf", perc_inf * 100.0)
             }
-            Params::TaxonId(taxon_id) => {
+            Params::TaxonAll(taxon_id) => {
                 log::info!("{:18}: {} taxa\n", "Taxon id", taxon_id.len())
             }
         }

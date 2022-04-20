@@ -21,7 +21,7 @@ pub enum Params {
     AlnLen(usize),
     ParsInf(usize),
     PercInf(f64),
-    TaxonId(Vec<String>),
+    TaxonAll(Vec<String>),
 }
 
 pub struct SeqFilter<'a> {
@@ -137,7 +137,7 @@ impl<'a> SeqFilter<'a> {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
-                Params::TaxonId(taxon_id) => {
+                Params::TaxonAll(taxon_id) => {
                     let ids = self.parse_id(file);
                     if taxon_id.iter().all(|id| ids.contains(id)) {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");

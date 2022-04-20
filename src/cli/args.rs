@@ -258,8 +258,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("percent")
                         .help("Filtered based on percentage of minimal taxa")
                         .takes_value(true)
-                        .required_unless_present_any(&["npercent", "aln-len", "pars-inf", "percent-inf", "taxon-id"])
-                        .conflicts_with_all(&["npercent", "aln-len", "pars-inf", "percent-inf", "taxon-id"])
+                        .required_unless_present_any(&["npercent", "aln-len", "pars-inf", "percent-inf", "taxon-all"])
+                        .conflicts_with_all(&["npercent", "aln-len", "pars-inf", "percent-inf", "taxon-all"])
                         .value_name("FLOAT"),
                 )
                 .arg(
@@ -267,7 +267,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("npercent")
                         .help("Filtered based on percentages of minimal taxa (allow multiple values)")
                         .takes_value(true)
-                        .conflicts_with_all(&["percent", "aln-len", "pars-inf", "taxon-id"])
+                        .conflicts_with_all(&["percent", "aln-len", "pars-inf", "taxon-all"])
                         .multiple_values(true)
                         .value_name("FLOAT"),
                 )
@@ -276,7 +276,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("ntax")
                         .help("Input the total number of taxa")
                         .takes_value(true)
-                        .conflicts_with_all(&["aln-len", "pars-inf"])
+                        .conflicts_with_all(&["aln-len", "pars-inf", "taxon-all"])
                         .value_name("INTEGER"),
                 )
                 .arg(
@@ -284,7 +284,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("len")
                         .help("Filter based on minimal alignment length")
                         .takes_value(true)
-                        .conflicts_with_all(&["percent", "npercent", "pars-inf", "taxon-id"])
+                        .conflicts_with_all(&["percent", "npercent", "pars-inf", "taxon-all"])
                         .value_name("INTEGER"),
                 )
                 .arg(
@@ -292,7 +292,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("pinf")
                         .help("Filter based on minimal parsimony informative sites")
                         .takes_value(true)
-                        .conflicts_with_all(&["percent", "npercent", "aln-len", "taxon-id"])
+                        .conflicts_with_all(&["percent", "npercent", "aln-len", "taxon-all"])
                         .value_name("INTEGER"),
                 )
                 .arg(
@@ -300,16 +300,16 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("percent-inf")
                         .help("Filter based on percent parsimony informative sites")
                         .takes_value(true)
-                        .conflicts_with_all(&["percent", "npercent", "aln-len", "pars-inf", "taxon-id"])
+                        .conflicts_with_all(&["percent", "npercent", "aln-len", "pars-inf", "taxon-all"])
                         .value_name("FLOAT"),
                 )
                 .arg(
-                    Arg::new("taxon-id")
-                        .long("taxon-id")
+                    Arg::new("taxon-all")
+                        .long("taxon-all")
                         .help("Filter based on taxon ID")
                         .takes_value(true)
                         .conflicts_with_all(&["percent", "npercent", "aln-len", "pars-inf"])
-                        .value_name("PATH-TO-TAXON-ID-FILE"),
+                        .value_name("PATH-TO-taxon-all-FILE"),
 
                 )
                 .arg(
