@@ -3,6 +3,7 @@ use std::ffi::OsStr;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use ahash::AHashMap as HashMap;
 use ansi_term::Colour::Yellow;
 use anyhow::{Context, Result};
 use indexmap::IndexSet;
@@ -58,13 +59,21 @@ impl<'a> CsvWriter<'a> {
             None => self.create_output_fnames(default_prefix),
         };
         let mut writer = self.create_output_file(&output)?;
-        writeln!(writer, "taxon,locus_counts,site_counts")?;
-        let taxon_summary = self.get_taxon_summary(ids);
-        taxon_summary.iter().for_each(|(taxa, counts)| {
-            let loci_counts = counts.len();
-            let site_counts = counts.iter().sum::<usize>();
-            writeln!(writer, "{},{},{}", taxa, loci_counts, site_counts)
+        write!(writer, "taxon,locus_counts")?;
+        let alphabet = self.get_alphabet(self.datatype);
+        alphabet
+            .chars()
+            .for_each(|ch| write!(writer, ",{}", ch).unwrap());
+        writeln!(writer)?;
+        let taxon_summary = self.summarize_taxa(ids);
+        taxon_summary.iter().for_each(|(taxon, counts)| {
+            write!(writer, "{},{}", taxon, counts.locus_counts)
                 .expect("Failed taxon summary stats");
+            alphabet.chars().for_each(|ch| {
+                write!(writer, ",{}", counts.char_counts.get(&ch).unwrap_or(&0))
+                    .expect("Failed taxon summary stats");
+            });
+            writeln!(writer).expect("Failed taxon summary stats");
         });
         Ok(())
     }
@@ -96,18 +105,29 @@ impl<'a> CsvWriter<'a> {
         self.output.join(prefix).with_extension("csv")
     }
 
-    fn get_taxon_summary(&self, ids: &IndexSet<String>) -> BTreeMap<String, Vec<usize>> {
-        let mut taxon_summary = BTreeMap::new();
+    fn summarize_taxa(&self, ids: &IndexSet<String>) -> BTreeMap<String, TaxonRecords> {
+        let mut taxon_summary: BTreeMap<String, TaxonRecords> = BTreeMap::new();
         self.stats.iter().for_each(|(_, _, taxa)| {
             ids.iter().for_each(|id| {
-                if let Some(site_counts) = taxa.records.get(id) {
-                    taxon_summary
-                        .entry(id.to_string())
-                        .or_insert_with(Vec::new)
-                        .push(*site_counts);
+                if let Some(char_counts) = taxa.records.get(id) {
+                    match taxon_summary.get_mut(id) {
+                        Some(taxon) => {
+                            char_counts.iter().for_each(|(c, count)| {
+                                *taxon.char_counts.entry(*c).or_insert(0) += count;
+                            });
+                            taxon.locus_counts += 1;
+                        }
+                        None => {
+                            let mut taxon = TaxonRecords::new();
+                            taxon.char_counts = char_counts.clone();
+                            taxon.locus_counts = 1;
+                            taxon_summary.insert(id.to_string(), taxon);
+                        }
+                    }
                 }
-            })
+            });
         });
+
         taxon_summary
     }
 
@@ -131,6 +151,11 @@ impl<'a> CsvWriter<'a> {
             at_content,\
         "
         )?;
+        self.write_alphabet_header(writer, alphabet)?;
+        Ok(())
+    }
+
+    fn write_alphabet_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {
         alphabet
             .chars()
             .for_each(|ch| write!(writer, "{},", ch).unwrap());
@@ -193,16 +218,30 @@ impl<'a> CsvWriter<'a> {
 
         // Characters
         alphabet.chars().for_each(|ch| {
-            let count = chars.chars.get(&ch);
-            match count {
-                Some(count) => write!(writer, "{},", count).unwrap(),
-                None => write!(writer, "0,").unwrap(),
-            }
+            write!(writer, "{},", chars.chars.get(&ch).unwrap_or(&0)).unwrap();
+            // let count = chars.chars.get(&ch);
+            // match count {
+            //     Some(count) => write!(writer, "{},", count).unwrap(),
+            //     None => write!(writer, "0,").unwrap(),
+            // }
         });
         writeln!(writer)?;
-
         writer.flush()?;
         Ok(())
+    }
+}
+
+struct TaxonRecords {
+    char_counts: HashMap<char, usize>,
+    locus_counts: usize,
+}
+
+impl TaxonRecords {
+    fn new() -> Self {
+        Self {
+            char_counts: HashMap::new(),
+            locus_counts: 0,
+        }
     }
 }
 

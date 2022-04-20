@@ -230,7 +230,7 @@ impl Completeness {
 }
 
 pub struct Taxa {
-    pub records: HashMap<String, usize>,
+    pub records: HashMap<String, HashMap<char, usize>>,
 }
 
 impl Taxa {
@@ -242,49 +242,58 @@ impl Taxa {
 
     pub fn summarize_taxa(&mut self, aln: &SeqMatrix) {
         aln.iter().for_each(|(id, seq)| {
-            let site_count = self.count_sites(seq);
-            self.records.insert(id.to_string(), site_count);
+            let chars_count = self.count_chars(seq);
+            self.records.insert(id.to_string(), chars_count);
         });
     }
 
-    fn count_sites(&self, seq: &str) -> usize {
-        let mut seq = seq.to_string();
-        seq.retain(|c| !"?-".contains(c));
-        seq.len()
-    }
-}
-
-#[allow(dead_code)]
-struct TaxonChars {
-    char_counts: HashMap<char, usize>,
-    gc_count: usize,
-    at_count: usize,
-    missing_data: usize,
-    nucleotides: usize,
-}
-
-#[allow(dead_code)]
-impl TaxonChars {
-    pub fn new() -> Self {
-        Self {
-            char_counts: HashMap::new(),
-            gc_count: 0,
-            at_count: 0,
-            missing_data: 0,
-            nucleotides: 0,
-        }
-    }
-
-    pub fn get_taxon_chars(&mut self, seq: &str) {
-        self.count_chars(seq);
-    }
-
-    fn count_chars(&mut self, seq: &str) {
+    fn count_chars(&self, seq: &str) -> HashMap<char, usize> {
+        let mut char_counts = HashMap::new();
         seq.chars().for_each(|c| {
-            *self.char_counts.entry(c.to_ascii_uppercase()).or_insert(0) += 1;
+            *char_counts.entry(c.to_ascii_uppercase()).or_insert(0) += 1;
         });
+
+        char_counts
     }
+
+    // fn count_sites(&self, seq: &str) -> usize {
+    //     let mut seq = seq.to_string();
+    //     seq.retain(|c| !"?-".contains(c));
+    //     seq.len()
+    // }
 }
+
+// #[allow(dead_code)]
+// struct TaxonChars {
+//     char_counts: HashMap<char, usize>,
+//     gc_count: usize,
+//     at_count: usize,
+//     missing_data: usize,
+//     nucleotides: usize,
+// }
+
+// #[allow(dead_code)]
+// impl TaxonChars {
+//     pub fn new() -> Self {
+//         Self {
+//             char_counts: HashMap::new(),
+//             gc_count: 0,
+//             at_count: 0,
+//             missing_data: 0,
+//             nucleotides: 0,
+//         }
+//     }
+
+//     pub fn get_taxon_chars(&mut self, seq: &str) {
+//         self.count_chars(seq);
+//     }
+
+//     fn count_chars(&mut self, seq: &str) {
+//         seq.chars().for_each(|c| {
+//             *self.char_counts.entry(c.to_ascii_uppercase()).or_insert(0) += 1;
+//         });
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct Sites {
@@ -615,11 +624,11 @@ mod test {
         assert_eq!(None, dna.chars.get(&'-'));
     }
 
-    #[test]
-    fn test_site_counts() {
-        let seq = "AGTCT-?";
-        let taxa = Taxa::new();
-        let count = taxa.count_sites(seq);
-        assert_eq!(count, 5);
-    }
+    // #[test]
+    // fn test_site_counts() {
+    //     let seq = "AGTCT-?";
+    //     let taxa = Taxa::new();
+    //     let count = taxa.count_sites(seq);
+    //     assert_eq!(count, 5);
+    // }
 }

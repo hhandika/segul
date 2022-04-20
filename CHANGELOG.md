@@ -2,9 +2,12 @@
 
 ## Upcoming
 
+- Add character counts in the taxon summary
+- Add option to filter based on the present of all user-define taxa
 - Fix error messages when finding empty matrix.
 - Fix missing character counts in amino acid alignment summary.
 - Fix input and output format character cases.
+- Fix conflict with percent when filtering alignments
 
 ## v0.16.3
 
