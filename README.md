@@ -27,6 +27,11 @@ Features:
 10. Splitting alignments by partitions.
 11. Translating DNA sequences to amino acid sequences
 
+Upcoming Features
+
+1. Filter based on matching a taxon list.
+2. Add character counts to taxon summary.
+
 Supported sequence formats:
 
 1. NEXUS
