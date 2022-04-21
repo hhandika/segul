@@ -164,7 +164,7 @@ Across the app functions, most generic arguments are also available in short for
 segul concat -d nexus-alignments -f nexus
 ```
 
-Learn more about SEGUL command structure and expected behaviors for each argument [here](https://github.com/hhandika/segul/wiki/4.-Command-Structure).
+Learn more about SEGUL command structure and expected behaviors for each argument [here](https://github.com/hhandika/segul/wiki/4.-Command-Options).
 
 ### Input Options
 
