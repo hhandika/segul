@@ -27,10 +27,10 @@ Features:
 10. Splitting alignments by partitions.
 11. Translating DNA sequences to amino acid sequences
 
-Upcoming Features
+Upcoming features ([try](https://github.com/hhandika/segul/wiki/2.-Installation#try-development-features)):
 
-1. Filter based on a matching taxon list.
-2. Add character counts to taxon summary.
+1. Filtering based on a matching taxon list.
+2. Summarizing character counts in the taxon summary.
 
 Supported sequence formats:
 
