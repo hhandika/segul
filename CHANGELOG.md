@@ -43,7 +43,7 @@
 - Replace dot with underscore in the partition locus name.
 - Print partition information when splitting alignments.
 
-## vO.13.1
+## v0.13.1
 
 - Fix issues including empty sequences in splitted alignments.
 - Fix unmatched nchar counts in nexus and phylip output when splitting alignments.
