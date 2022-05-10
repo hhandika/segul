@@ -51,8 +51,7 @@ Documentation: [GitHub Wiki](https://github.com/hhandika/segul/wiki)
 
 Citation:
 
-> Heru Handika, Jacob Esselstyn. SEGUL: An ultrafast, memory-efficient alignment manipulation and summary tool for phylogenomics. Authorea. May 04, 2022.
-> DOI: [10.22541/au.165167823.30911834/v1](https://doi.org/10.22541/au.165167823.30911834/v1)
+> Handika, H. and Esselstyn, J. A. In Review. SEGUL: An ultrafast, memory-efficient alignment manipulation and summary tool for phylogenomics. Authorea. [10.22541/au.165167823.30911834/v1](https://doi.org/10.22541/au.165167823.30911834/v1)
 
 ## Quick Links
 
