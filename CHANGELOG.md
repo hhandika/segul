@@ -2,8 +2,8 @@
 
 ## Upcoming
 
-- Remove site counts and add character counts in the taxon summary
-- Add option to filter based on the present of all user-define taxa
+- Replace site counts with character counts in the taxon summary
+- Add option to filter based on the present of all user-defined taxa
 - Fix error messages when finding empty matrix.
 - Fix missing character counts in amino acid alignment summary.
 - Fix input and output format character cases.
