@@ -688,7 +688,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("id")
                         .help("Input sequence IDs using terminal commands (STDIN)")
                         .conflicts_with_all(&["regex", "file"])
-                        .required_unless_present_all(&["regex", "file"])
+                        .required_unless_present_any(&["regex", "file"])
                         .takes_value(true)
                         .multiple_values(true)
                         .value_name("STRING")       
