@@ -11,13 +11,13 @@ fn test_bin() {
     segul().arg("-V").assert().success();
 }
 
-#[test]
-fn test_convert() {
-    segul()
-        .arg("-i")
-        .arg("test.txt")
-        .arg("-o")
-        .arg("test.csv")
-        .assert()
-        .success();
-}
+// #[test]
+// fn test_convert() {
+//     segul()
+//         .arg("-i")
+//         .arg("test.txt")
+//         .arg("-o")
+//         .arg("test.csv")
+//         .assert()
+//         .success();
+// }
