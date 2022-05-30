@@ -1,4 +1,5 @@
 pub mod alphabet;
+pub mod concat;
 pub mod filenames;
 pub mod finder;
 pub mod sequence;
