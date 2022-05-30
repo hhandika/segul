@@ -2,7 +2,7 @@ use assert_cmd::Command;
 
 fn segul() -> Command {
     let mut cmd = Command::cargo_bin("segul").unwrap();
-    cmd.current_dir("test/files");
+    cmd.current_dir("tests/files");
     cmd
 }
 
@@ -13,11 +13,5 @@ fn test_bin() {
 
 // #[test]
 // fn test_convert() {
-//     segul()
-//         .arg("-i")
-//         .arg("test.txt")
-//         .arg("-o")
-//         .arg("test.csv")
-//         .assert()
-//         .success();
+//     segul().arg("convert").arg("-h").assert().success();
 // }
