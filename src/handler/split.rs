@@ -151,10 +151,6 @@ mod test {
     #[test]
     fn test_parse_filename() {
         input_split!(split, "test_files/test.fasta");
-        // assert_eq!(
-        //     split.parse_filename(r#"'test!?'"#, &None),
-        //     PathBuf::from("test")
-        // );
         assert_eq!(
             split.parse_filename("test", &Some("test".to_string())),
             PathBuf::from("test_test")
