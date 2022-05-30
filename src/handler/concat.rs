@@ -38,12 +38,7 @@ impl<'a> ConcatHandler<'a> {
         concat.concat_alignment(&spin);
         let mut seq_writer = SeqWriter::new(self.output, &concat.alignment, &concat.header);
         let part_fname = self.construct_part_fpath();
-        let part_writer = PartWriter::new(
-            &part_fname,
-            &concat.partition,
-            self.part_fmt,
-            concat.datatype,
-        );
+        let part_writer = PartWriter::new(&part_fname, &concat.partition, self.part_fmt, datatype);
         spin.set_message("Writing output files...");
         seq_writer
             .write_sequence(self.output_fmt)

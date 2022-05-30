@@ -12,7 +12,7 @@ pub struct Concat<'a> {
     pub alignment: SeqMatrix,
     pub header: Header,
     pub partition: Vec<Partition>,
-    pub datatype: &'a DataType,
+    datatype: &'a DataType,
     input_fmt: &'a InputFmt,
     files: &'a mut [PathBuf],
 }
