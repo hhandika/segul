@@ -7,11 +7,12 @@ fn segul() -> Command {
 }
 
 #[test]
-fn test_bin() {
-    segul().arg("-V").assert().success();
+fn test_version() {
+    use clap::crate_version;
+    let version = crate_version!();
+    segul()
+        .arg("-V")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(version));
 }
-
-// #[test]
-// fn test_convert() {
-//     segul().arg("convert").arg("-h").assert().success();
-// }
