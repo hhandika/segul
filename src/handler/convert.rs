@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use ansi_term::Colour::Yellow;
 use rayon::prelude::*;
 
-use crate::core::OutputPrint;
+use crate::handler::OutputPrint;
 use crate::helper::sequence::Sequence;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{filenames, utils};

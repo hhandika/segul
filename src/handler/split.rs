@@ -5,7 +5,7 @@ use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::core::{OutputPrint, PartitionPrint};
+use crate::handler::{OutputPrint, PartitionPrint};
 use crate::helper::filenames;
 use crate::helper::sequence::Sequence;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};

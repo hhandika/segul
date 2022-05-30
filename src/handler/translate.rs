@@ -6,7 +6,7 @@ use ansi_term::Colour::Yellow;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::core::OutputPrint;
+use crate::handler::OutputPrint;
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::translation::NcbiTables;
 use crate::helper::types::{DataType, GeneticCodes, Header, InputFmt, OutputFmt, SeqMatrix};

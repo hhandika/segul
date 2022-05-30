@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::ArgMatches;
 
 use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
-use crate::core::concat::ConcatHandler;
+use crate::handler::concat::ConcatHandler;
 use crate::helper::filenames;
 
 impl ConcatCli for ConcatParser<'_> {}

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use clap::ArgMatches;
 
 use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
-use crate::core::partition::PartConverter;
+use crate::handler::partition::PartConverter;
 use crate::helper::types::{DataType, PartitionFmt};
 use crate::helper::utils;
 

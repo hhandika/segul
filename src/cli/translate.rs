@@ -4,7 +4,7 @@ use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
-use crate::core::translate::Translate;
+use crate::handler::translate::Translate;
 use crate::helper::types::GeneticCodes;
 
 impl InputCli for TranslateParser<'_> {}

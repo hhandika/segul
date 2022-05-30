@@ -4,7 +4,7 @@ use std::time::Instant;
 use clap::crate_version;
 
 mod cli;
-mod core;
+mod handler;
 mod helper;
 mod parser;
 mod writer;

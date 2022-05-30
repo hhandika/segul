@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::ArgMatches;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
-use crate::core::convert::Converter;
+use crate::handler::convert::Converter;
 use crate::helper::types::{DataType, InputFmt, OutputFmt};
 
 impl InputCli for ConvertParser<'_> {}

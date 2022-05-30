@@ -2,7 +2,7 @@ use std::path::Path;
 
 use ansi_term::Colour::Yellow;
 
-use crate::core::PartitionPrint;
+use crate::handler::PartitionPrint;
 use crate::helper::types::{DataType, PartitionFmt};
 use crate::helper::utils;
 use crate::parser::partition::PartitionParser;

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::ArgMatches;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
-use crate::core::summarize::SeqStats;
+use crate::handler::summarize::SeqStats;
 use crate::helper::types::{DataType, InputFmt};
 
 impl InputCli for SummaryParser<'_> {}

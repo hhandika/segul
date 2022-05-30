@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 use regex::Regex;
 
-use crate::core::OutputPrint;
+use crate::handler::OutputPrint;
 use crate::helper::sequence::{SeqCheck, Sequence};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{filenames, utils};

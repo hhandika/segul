@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use clap::ArgMatches;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
-use crate::core::id::Id;
+use crate::handler::id::Id;
 
 impl InputCli for IdParser<'_> {}
 impl OutputCli for IdParser<'_> {}

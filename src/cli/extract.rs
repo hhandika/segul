@@ -4,7 +4,7 @@ use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
-use crate::core::extract::{Extract, Params};
+use crate::handler::extract::{Extract, Params};
 use crate::parser::txt;
 
 impl InputCli for ExtractParser<'_> {}

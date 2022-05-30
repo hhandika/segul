@@ -4,7 +4,7 @@ use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
-use crate::core::filter::{Params, SeqFilter};
+use crate::handler::filter::{Params, SeqFilter};
 use crate::helper::finder::IDs;
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::{filenames, utils};

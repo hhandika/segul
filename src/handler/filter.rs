@@ -7,7 +7,7 @@ use ansi_term::Colour::Yellow;
 use indexmap::{IndexMap, IndexSet};
 use rayon::prelude::*;
 
-use crate::core::concat::ConcatHandler;
+use crate::handler::concat::ConcatHandler;
 use crate::helper::sequence::Sequence;
 use crate::helper::stats;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};

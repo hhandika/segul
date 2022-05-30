@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use clap::ArgMatches;
 
 use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
-use crate::core::split::Splitter;
+use crate::handler::split::Splitter;
 use crate::helper::types::PartitionFmt;
 
 impl InputPrint for SplitParser<'_> {}
