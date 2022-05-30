@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn test_get_matrix_re() {
         let re = Params::Regex(String::from("(?i)(celebensis)"));
-        let file = Path::new("test_files/complete.nex");
+        let file = Path::new("tests/files/complete.nex");
         let extract = Extract::new(&re, &InputFmt::Nexus, &DataType::Dna);
         let (seq, _) = Sequence::new(file, extract.datatype).get(extract.input_fmt);
         let matrix = extract.get_matrix(seq);
@@ -129,7 +129,7 @@ mod tests {
     #[test]
     fn test_get_matrix_id() {
         let re = Params::Id(vec![String::from("Taeromys_calitrichus_NMVZ27408")]);
-        let file = Path::new("test_files/complete.nex");
+        let file = Path::new("tests/files/complete.nex");
         let extract = Extract::new(&re, &InputFmt::Nexus, &DataType::Dna);
         let (seq, _) = Sequence::new(file, extract.datatype).get(extract.input_fmt);
         let matrix = extract.get_matrix(seq);

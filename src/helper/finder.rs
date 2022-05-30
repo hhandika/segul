@@ -151,7 +151,7 @@ mod test {
 
     #[test]
     fn get_files_test() {
-        let path = Path::new("test_files/concat/");
+        let path = Path::new("tests/files/concat/");
         let mut finder = Files::new(path, &InputFmt::Nexus);
         let files = finder.get_files();
         assert_eq!(4, files.len());
@@ -160,7 +160,7 @@ mod test {
     #[test]
     #[should_panic]
     fn check_empty_files_test() {
-        let path = Path::new("test_files/empty/");
+        let path = Path::new("tests/files/empty/");
         let mut finder = Files::new(path, &InputFmt::Nexus);
         let files = finder.get_files();
         finder.check_glob_results(&files);
@@ -168,7 +168,7 @@ mod test {
 
     #[test]
     fn id_test() {
-        let path = Path::new("test_files/concat");
+        let path = Path::new("tests/files/concat");
         let input_fmt = InputFmt::Nexus;
         let datatype = DataType::Dna;
         let files = Files::new(path, &input_fmt).get_files();

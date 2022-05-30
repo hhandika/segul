@@ -142,7 +142,7 @@ mod test {
                 &Path::new($input),
                 &DataType::Dna,
                 &InputFmt::Fasta,
-                &Path::new("test_files/"),
+                &Path::new("tests/files/"),
                 &OutputFmt::Fasta,
             );
         };
@@ -150,7 +150,7 @@ mod test {
 
     #[test]
     fn test_parse_filename() {
-        input_split!(split, "test_files/test.fasta");
+        input_split!(split, "tests/files/test.fasta");
         assert_eq!(
             split.parse_filename("test", &Some("test".to_string())),
             PathBuf::from("test_test")
@@ -159,7 +159,7 @@ mod test {
 
     #[test]
     fn test_sequence_slicing() {
-        input_split!(split, "test_files/test_aln.fasta");
+        input_split!(split, "tests/files/test_aln.fasta");
         let seq = "AAAAAAAAGGGGTTTTCCCC";
 
         let slice = split.slice_sequence(seq, 0, 10);
@@ -170,7 +170,7 @@ mod test {
 
     #[test]
     fn test_generate_new_matrix() {
-        input_split!(split, "test_files/partition/concat_part.fas");
+        input_split!(split, "tests/files/partition/concat_part.fas");
         let matrix = split.parse_sequence();
         let new_matrix = split.generate_new_matrix(&matrix, 0, 10);
         let new_matrix_2 = split.generate_new_matrix(&matrix, 10, 15);

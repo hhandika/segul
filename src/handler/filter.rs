@@ -216,7 +216,7 @@ mod test {
     use super::*;
     use crate::helper::finder::Files;
 
-    const PATH: &str = "test_files/pinf/";
+    const PATH: &str = "tests/files/pinf/";
     const INPUT_FMT: InputFmt = InputFmt::Fasta;
 
     #[test]

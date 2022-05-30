@@ -586,7 +586,7 @@ mod test {
 
     #[test]
     fn get_site_stats_test() {
-        let path = Path::new("test_files/concat.fasta");
+        let path = Path::new("tests/files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let aln = Sequence::new(path, &DNA);
         let (matrix, _) = aln.get_alignment(&input_format);
@@ -607,7 +607,7 @@ mod test {
 
     #[test]
     fn dna_count_test() {
-        let path = Path::new("test_files/concat.fasta");
+        let path = Path::new("tests/files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let aln = Sequence::new(path, &DNA);
         let (matrix, header) = aln.get_alignment(&input_format);

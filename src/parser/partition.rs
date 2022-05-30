@@ -237,56 +237,56 @@ mod test {
 
     #[test]
     fn test_parse_partition_raxml() {
-        test_partition_parser!("test_files/partition/partition.txt", Raxml);
+        test_partition_parser!("tests/files/partition/partition.txt", Raxml);
     }
 
     #[test]
     fn test_parse_partition_nexus() {
-        test_partition_parser!("test_files/partition/partition.nex", Nexus);
+        test_partition_parser!("tests/files/partition/partition.nex", Nexus);
     }
 
     #[test]
     fn test_parse_partition_raxml_with_whitespaces() {
-        let path = Path::new("test_files/partition/partition_whitespaces.txt");
+        let path = Path::new("tests/files/partition/partition_whitespaces.txt");
         test_partition_parser!(path, Raxml);
     }
 
     #[test]
     fn test_partition_nexus_with_whitespaces() {
-        let path = Path::new("test_files/partition/partition_whitespaces.nex");
+        let path = Path::new("tests/files/partition/partition_whitespaces.nex");
         test_partition_parser!(path, Nexus);
     }
 
     #[test]
     fn test_partition_raxml_no_datatype() {
-        let path = Path::new("test_files/partition/partition_no_datatype.txt");
+        let path = Path::new("tests/files/partition/partition_no_datatype.txt");
         test_partition_parser!(path, Raxml);
     }
 
     #[test]
     #[should_panic]
     fn test_parse_partition_raxml_with_invalid_format() {
-        let path = Path::new("test_files/partition/partition_invalid.txt");
+        let path = Path::new("tests/files/partition/partition_invalid.txt");
         test_partition_parser!(path, Raxml);
     }
 
     #[test]
     fn test_parse_partition_raxml_codon() {
-        let path = Path::new("test_files/partition/partition_codon.txt");
+        let path = Path::new("tests/files/partition/partition_codon.txt");
         test_partition_parser!(path, Raxml);
     }
 
     #[test]
     #[should_panic]
     fn test_parse_partition_raxml_inv() {
-        let path = Path::new("test_files/partition/partition_inv_pos.txt");
+        let path = Path::new("tests/files/partition/partition_inv_pos.txt");
         test_partition_parser!(path, Raxml);
     }
 
     #[test]
     #[should_panic]
     fn test_parse_partition_raxml_inv_start() {
-        let path = Path::new("test_files/partition/partition_inv_start.txt");
+        let path = Path::new("tests/files/partition/partition_inv_start.txt");
         test_partition_parser!(path, Raxml);
     }
 

@@ -96,7 +96,7 @@ mod test {
     fn test_rename_seq() {
         let input_fmt = InputFmt::Fasta;
         let datatype = DataType::Dna;
-        let file = Path::new("test_files/simple.fas");
+        let file = Path::new("tests/files/simple.fas");
         let names = [(String::from("ABCD"), String::from("WXYZ"))];
         let ids = Path::new("tests/delimited.tsv");
         let rename = Rename::new(&input_fmt, &datatype, &ids);
