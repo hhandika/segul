@@ -49,9 +49,7 @@ The NEXUS partition can be written as a charset block embedded in NEXUS formatte
 
 Documentation: [GitHub Wiki](https://github.com/hhandika/segul/wiki)
 
-Citation:
-
-> Handika, H. and Esselstyn, J. A. In prep. SEGUL: An ultrafast, memory efficient, and cross-platform alignment manipulation tool for phylogenomics.
+Citation: [pre-print](https://doi.org/10.22541/au.165167823.30911834/v1)
 
 ## Quick Links
 
