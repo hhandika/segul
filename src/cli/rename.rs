@@ -4,7 +4,9 @@ use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
-use crate::handler::rename::Rename;
+use crate::handler::rename::{Rename, RenameOpts};
+use crate::helper::utils;
+use crate::parser::delimited;
 
 impl InputCli for RenameParser<'_> {}
 impl InputPrint for RenameParser<'_> {}
@@ -37,12 +39,6 @@ impl<'a> RenameParser<'a> {
             self.parse_input(self.matches)
         };
 
-        let ids = Path::new(
-            self.matches
-                .value_of("names")
-                .expect("Failed parsing path to id names"),
-        );
-
         self.print_input(
             &self.input_dir,
             task_desc,
@@ -50,21 +46,47 @@ impl<'a> RenameParser<'a> {
             &input_fmt,
             &datatype,
         );
-
+        let params = self.parse_rename_opts();
         let is_overwrite = self.parse_overwrite_opts(self.matches);
         self.check_output_dir_exist(&outdir, is_overwrite);
-        log::info!("{}", Yellow.paint("Names"));
+        if self.matches.is_present("dry-run") {
+            Rename::new(&input_fmt, &datatype, &outdir, &output_fmt).dry_run(&params);
+        } else {
+            Rename::new(&input_fmt, &datatype, &outdir, &output_fmt).rename(&files, &params);
+        }
+    }
+
+    fn parse_rename_opts(&self) -> RenameOpts {
+        log::info!("{}", Yellow.paint("Params"));
+        match self.matches {
+            m if m.is_present("names") => {
+                let id_path = Path::new(
+                    self.matches
+                        .value_of("names")
+                        .expect("Failed parsing path to id names"),
+                );
+                let names = self.parse_names(id_path);
+                self.print_rename_id_info(id_path, &names.len());
+                RenameOpts::RnId(names)
+            }
+            _ => unimplemented!(),
+        }
+    }
+
+    fn parse_names(&self, id_path: &Path) -> Vec<(String, String)> {
+        delimited::parse_delimited_text(id_path)
+    }
+
+    fn print_rename_id_info(&self, id_path: &Path, id_count: &usize) {
+        log::info!("{:18}: --names", "Options");
         log::info!(
             "{:18}: {}",
             "File",
-            ids.file_name()
+            id_path
+                .file_name()
                 .expect("Failed parsing name path")
                 .to_string_lossy()
         );
-        if self.matches.is_present("dry-run") {
-            Rename::new(&input_fmt, &datatype, ids).dry_run();
-        } else {
-            Rename::new(&input_fmt, &datatype, ids).rename(&files, &outdir, &output_fmt);
-        }
+        log::info!("{:18}: {}\n", "New ID count", utils::fmt_num(id_count));
     }
 }
