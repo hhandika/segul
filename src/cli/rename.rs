@@ -70,11 +70,12 @@ impl<'a> RenameParser<'a> {
                 RenameOpts::RnId(names)
             }
             m if m.is_present("rm-string") => {
-                let str_input = self
+                let input_str = self
                     .matches
                     .value_of("rm-string")
                     .expect("Failed parsing input string");
-                RenameOpts::RmStr(str_input.to_string())
+                self.print_remove_str_info(input_str);
+                RenameOpts::RmStr(input_str.to_string())
             }
             _ => unreachable!("Unknown errors in parsing command line input!"),
         }
@@ -95,5 +96,10 @@ impl<'a> RenameParser<'a> {
                 .to_string_lossy()
         );
         log::info!("{:18}: {}\n", "New ID count", utils::fmt_num(id_count));
+    }
+
+    fn print_remove_str_info(&self, input_str: &str) {
+        log::info!("{:18}: --rm-string", "Options");
+        log::info!("{:18}: {}\n", "Input string", input_str);
     }
 }
