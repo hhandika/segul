@@ -170,7 +170,7 @@ impl<'a> FilterParser<'a> {
             let spin = utils::set_spinner();
             spin.set_message("Counting the number of taxa...");
             self.ntax = IDs::new(&self.files, &self.input_fmt, &self.datatype)
-                .get_id_unique()
+                .id_unique()
                 .len();
             spin.finish_with_message("Finished counting the number of taxa!\n");
         };

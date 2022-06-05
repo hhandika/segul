@@ -32,7 +32,7 @@ impl<'a> Concat<'a> {
     pub fn concat_alignment(&mut self, spin: &ProgressBar) {
         alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
-        let id = IDs::new(self.files, self.input_fmt, self.datatype).get_id_unique();
+        let id = IDs::new(self.files, self.input_fmt, self.datatype).id_unique();
         spin.set_message("Concatenating alignments...");
         self.concat(&id);
         self.header.ntax = self.alignment.len();
@@ -126,7 +126,7 @@ mod test {
     #[test]
     fn test_concat_nexus() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut files = Files::new(path, &InputFmt::Nexus).find();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
@@ -137,7 +137,7 @@ mod test {
     #[should_panic]
     fn test_get_alignment_panic() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut files = Files::new(path, &InputFmt::Nexus).find();
         let concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         concat.get_alignment(Path::new("."));
     }
@@ -145,7 +145,7 @@ mod test {
     #[test]
     fn test_concat_check_result() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut files = Files::new(path, &InputFmt::Nexus).find();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
@@ -157,7 +157,7 @@ mod test {
     #[test]
     fn test_concat_partition() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut files = Files::new(path, &InputFmt::Nexus).find();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
@@ -184,7 +184,7 @@ mod test {
     #[test]
     fn test_header_datatype() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path, &InputFmt::Nexus).get_files();
+        let mut files = Files::new(path, &InputFmt::Nexus).find();
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DataType::Aa);
         concat.match_header_datatype();
         assert_eq!(concat.header.datatype, String::from("protein"));

@@ -145,7 +145,7 @@ trait InputCli {
     }
 
     fn get_files(&self, dir: &Path, input_fmt: &InputFmt) -> Vec<PathBuf> {
-        Files::new(dir, input_fmt).get_files()
+        Files::new(dir, input_fmt).find()
     }
 
     fn parse_input_fmt(&self, matches: &ArgMatches) -> InputFmt {

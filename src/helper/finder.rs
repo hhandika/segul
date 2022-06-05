@@ -13,7 +13,7 @@ use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
 
-macro_rules! get_id_non_fasta {
+macro_rules! id_non_fasta {
     ($self:ident,  $type: ident, $datatype:ident) => {{
         let (sender, receiver) = channel();
         $self.files.par_iter().for_each_with(sender, |s, file| {
@@ -39,8 +39,8 @@ impl<'a> Files<'a> {
         }
     }
 
-    pub fn get_files(&mut self) -> Vec<PathBuf> {
-        self.get_pattern();
+    pub fn find(&mut self) -> Vec<PathBuf> {
+        self.pattern();
         let files = glob(&self.pattern)
             .expect("Failed globbing files")
             .filter_map(|ok| ok.ok())
@@ -61,7 +61,7 @@ impl<'a> Files<'a> {
         }
     }
 
-    fn get_pattern(&mut self) {
+    fn pattern(&mut self) {
         self.pattern = match self.input_fmt {
             InputFmt::Fasta => format!("{}/*.fa*", self.dir.display()),
             InputFmt::Nexus => format!("{}/*.nex*", self.dir.display()),
@@ -91,21 +91,21 @@ impl<'a> IDs<'a> {
         }
     }
 
-    pub fn get_id_unique(&self) -> IndexSet<String> {
+    pub fn id_unique(&self) -> IndexSet<String> {
         let all_ids = self.parse_id();
         self.filter_unique(&all_ids)
     }
 
     fn parse_id(&self) -> Vec<IndexSet<String>> {
         match self.input_fmt {
-            InputFmt::Nexus => get_id_non_fasta!(self, Nexus, datatype),
-            InputFmt::Phylip => get_id_non_fasta!(self, Phylip, datatype),
-            InputFmt::Fasta => self.get_id_from_fasta(),
-            InputFmt::Auto => self.get_id_auto(),
+            InputFmt::Nexus => id_non_fasta!(self, Nexus, datatype),
+            InputFmt::Phylip => id_non_fasta!(self, Phylip, datatype),
+            InputFmt::Fasta => self.id_from_fasta(),
+            InputFmt::Auto => self.id_auto(),
         }
     }
 
-    fn get_id_auto(&self) -> Vec<IndexSet<String>> {
+    fn id_auto(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
             let input_fmt = sequence::infer_input_auto(file);
@@ -123,7 +123,7 @@ impl<'a> IDs<'a> {
         receiver.iter().collect()
     }
 
-    fn get_id_from_fasta(&self) -> Vec<IndexSet<String>> {
+    fn id_from_fasta(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
             s.send(fasta::parse_only_id(file)).unwrap();
@@ -150,10 +150,10 @@ mod test {
     use super::*;
 
     #[test]
-    fn get_files_test() {
+    fn files_test() {
         let path = Path::new("tests/files/concat/");
         let mut finder = Files::new(path, &InputFmt::Nexus);
-        let files = finder.get_files();
+        let files = finder.find();
         assert_eq!(4, files.len());
     }
 
@@ -162,7 +162,7 @@ mod test {
     fn check_empty_files_test() {
         let path = Path::new("tests/files/empty/");
         let mut finder = Files::new(path, &InputFmt::Nexus);
-        let files = finder.get_files();
+        let files = finder.find();
         finder.check_glob_results(&files);
     }
 
@@ -171,9 +171,9 @@ mod test {
         let path = Path::new("tests/files/concat");
         let input_fmt = InputFmt::Nexus;
         let datatype = DataType::Dna;
-        let files = Files::new(path, &input_fmt).get_files();
+        let files = Files::new(path, &input_fmt).find();
         let id = IDs::new(&files, &input_fmt, &datatype);
-        let ids = id.get_id_unique();
+        let ids = id.id_unique();
         assert_eq!(3, ids.len());
     }
 }

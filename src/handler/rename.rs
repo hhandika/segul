@@ -5,6 +5,7 @@ use rayon::prelude::*;
 
 use crate::handler::OutputPrint;
 use crate::helper::filenames;
+use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
@@ -98,6 +99,11 @@ impl<'a> Rename<'a> {
         );
         (seq, header)
     }
+
+    // fn remove_str(&self, file: &Path, str_input: &str) -> (SeqMatrix, Header) {
+    //     let (mut seq, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+
+    // }
 
     fn print_output_info(&self, output: &Path, output_fmt: &OutputFmt) {
         log::info!("{}", Yellow.paint("Output"));

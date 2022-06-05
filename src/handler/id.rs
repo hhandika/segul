@@ -54,7 +54,7 @@ impl<'a> Id<'a> {
     }
 
     fn get_unique_id(&self, files: &[PathBuf]) -> IndexSet<String> {
-        let mut id = IDs::new(files, self.input_fmt, self.datatype).get_id_unique();
+        let mut id = IDs::new(files, self.input_fmt, self.datatype).id_unique();
         id.sort();
         id
     }

@@ -58,7 +58,7 @@ impl<'a> SeqStats<'a> {
     }
 
     fn get_id(&mut self, files: &[PathBuf]) -> IndexSet<String> {
-        IDs::new(files, self.input_fmt, self.datatype).get_id_unique()
+        IDs::new(files, self.input_fmt, self.datatype).id_unique()
     }
 
     fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, Chars, Taxa)> {
