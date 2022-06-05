@@ -5,7 +5,7 @@ use rayon::prelude::*;
 
 use crate::handler::OutputPrint;
 use crate::helper::filenames;
-use crate::helper::sequence::Sequence;
+use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
 use crate::writer::sequences::SeqWriter;
@@ -79,7 +79,7 @@ impl<'a> Rename<'a> {
     }
 
     fn rename_seq_id(&self, file: &Path, names: &[(String, String)]) -> (SeqMatrix, Header) {
-        let (mut seq, header) = Sequence::new(file, self.datatype).get(self.input_fmt);
+        let (mut seq, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
         let original_size = seq.len();
         names.iter().for_each(|(origin, destination)| {
             let values = seq.remove(origin);

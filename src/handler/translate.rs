@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::handler::OutputPrint;
-use crate::helper::sequence::{SeqCheck, Sequence};
+use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::translation::NcbiTables;
 use crate::helper::types::{DataType, GeneticCodes, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{filenames, utils};
@@ -42,7 +42,7 @@ impl<'a> Translate<'a> {
         spin.set_message("Translating dna sequences...");
         fs::create_dir_all(output).expect("Failed creating an output directory");
         files.par_iter().for_each(|file| {
-            let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+            let (mut seq, _) = SeqParser::new(file, self.datatype).get(self.input_fmt);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
             let outname = filenames::create_output_fname(output, file, self.output_fmt);
             let mut writer = SeqWriter::new(&outname, &trans_mat, &header);
@@ -59,7 +59,7 @@ impl<'a> Translate<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Translating dna sequences...");
         files.par_iter().for_each(|file| {
-            let (mut seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+            let (mut seq, _) = SeqParser::new(file, self.datatype).get(self.input_fmt);
             let mut frame = 1;
             self.get_reading_frame(file, &seq, &mut frame);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);

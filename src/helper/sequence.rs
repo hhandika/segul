@@ -30,12 +30,12 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
     }
 }
 
-pub struct Sequence<'a> {
+pub struct SeqParser<'a> {
     file: &'a Path,
     datatype: &'a DataType,
 }
 
-impl<'a> Sequence<'a> {
+impl<'a> SeqParser<'a> {
     pub fn new(file: &'a Path, datatype: &'a DataType) -> Self {
         Self { file, datatype }
     }
@@ -116,7 +116,7 @@ mod test {
         let file = Path::new("tests/files/simple.nex");
         let datatype = DataType::Dna;
         let input_fmt = InputFmt::Nexus;
-        let aln = Sequence::new(&file, &datatype);
+        let aln = SeqParser::new(&file, &datatype);
         let (matrix, header) = aln.get_alignment(&input_fmt);
         assert_eq!(1, header.ntax);
         assert_eq!(6, header.nchar);

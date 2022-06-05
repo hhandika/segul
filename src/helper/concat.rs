@@ -5,7 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
 
 use crate::helper::finder::IDs;
-use crate::helper::sequence::Sequence;
+use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, Partition, SeqMatrix};
 
 pub struct Concat<'a> {
@@ -68,7 +68,7 @@ impl<'a> Concat<'a> {
     }
 
     fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
-        let aln = Sequence::new(file, self.datatype);
+        let aln = SeqParser::new(file, self.datatype);
         let (matrix, header) = aln.get_alignment(self.input_fmt);
         assert!(
             header.ntax != 0,

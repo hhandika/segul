@@ -525,7 +525,7 @@ impl Chars {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::helper::sequence::Sequence;
+    use crate::helper::sequence::SeqParser;
     use crate::helper::types::{DataType, InputFmt};
     use indexmap::IndexMap;
 
@@ -588,7 +588,7 @@ mod test {
     fn get_site_stats_test() {
         let path = Path::new("tests/files/concat.fasta");
         let input_format = InputFmt::Fasta;
-        let aln = Sequence::new(path, &DNA);
+        let aln = SeqParser::new(path, &DNA);
         let (matrix, _) = aln.get_alignment(&input_format);
         let mut site = Sites::new();
         let smat = site.index_sites(&matrix, &DNA);
@@ -609,7 +609,7 @@ mod test {
     fn dna_count_test() {
         let path = Path::new("tests/files/concat.fasta");
         let input_format = InputFmt::Fasta;
-        let aln = Sequence::new(path, &DNA);
+        let aln = SeqParser::new(path, &DNA);
         let (matrix, header) = aln.get_alignment(&input_format);
         let mut dna = Chars::new();
         dna.count_chars(&matrix, &header);

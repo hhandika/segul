@@ -7,7 +7,7 @@ use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
-use crate::helper::sequence::Sequence;
+use crate::helper::sequence::SeqParser;
 use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites, Taxa};
 use crate::helper::types::{DataType, InputFmt};
 use crate::helper::utils;
@@ -76,7 +76,7 @@ impl<'a> SeqStats<'a> {
     }
 
     fn get_stats(&self, path: &Path) -> (Sites, Chars, Taxa) {
-        let aln = Sequence::new(path, self.datatype);
+        let aln = SeqParser::new(path, self.datatype);
         let (matrix, header) = aln.get_alignment(self.input_fmt);
         let mut dna = Chars::new();
         dna.count_chars(&matrix, &header);

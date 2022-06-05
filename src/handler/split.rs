@@ -7,7 +7,7 @@ use rayon::prelude::*;
 
 use crate::handler::{OutputPrint, PartitionPrint};
 use crate::helper::filenames;
-use crate::helper::sequence::Sequence;
+use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::utils;
 use crate::parser::partition::PartitionParser;
@@ -119,7 +119,7 @@ impl<'a> Splitter<'a> {
     }
 
     fn parse_sequence(&self) -> SeqMatrix {
-        let aln = Sequence::new(self.input, self.datatype);
+        let aln = SeqParser::new(self.input, self.datatype);
         let (matrix, _) = aln.get_alignment(self.input_fmt);
         matrix
     }

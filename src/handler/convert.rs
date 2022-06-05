@@ -4,7 +4,7 @@ use ansi_term::Colour::Yellow;
 use rayon::prelude::*;
 
 use crate::handler::OutputPrint;
-use crate::helper::sequence::Sequence;
+use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
@@ -64,7 +64,7 @@ impl<'a> Converter<'a> {
     }
 
     fn get_sequence(&self, input: &Path) -> (SeqMatrix, Header) {
-        let seq = Sequence::new(input, self.datatype);
+        let seq = SeqParser::new(input, self.datatype);
         seq.get(self.input_fmt)
     }
 

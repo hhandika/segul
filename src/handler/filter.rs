@@ -8,7 +8,7 @@ use indexmap::{IndexMap, IndexSet};
 use rayon::prelude::*;
 
 use crate::handler::concat::ConcatHandler;
-use crate::helper::sequence::Sequence;
+use crate::helper::sequence::SeqParser;
 use crate::helper::stats;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
@@ -206,7 +206,7 @@ impl<'a> SeqFilter<'a> {
     }
 
     fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
-        let aln = Sequence::new(file, self.datatype);
+        let aln = SeqParser::new(file, self.datatype);
         aln.get_alignment(self.input_fmt)
     }
 }

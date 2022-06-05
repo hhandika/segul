@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use regex::Regex;
 
 use crate::handler::OutputPrint;
-use crate::helper::sequence::{SeqCheck, Sequence};
+use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{filenames, utils};
 use crate::writer::sequences::SeqWriter;
@@ -42,7 +42,7 @@ impl<'a> Extract<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Extracting sequences with matching IDs...");
         files.par_iter().for_each(|file| {
-            let (seq, _) = Sequence::new(file, self.datatype).get(self.input_fmt);
+            let (seq, _) = SeqParser::new(file, self.datatype).get(self.input_fmt);
             let matrix = self.get_matrix(seq);
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
@@ -121,7 +121,7 @@ mod tests {
         let re = Params::Regex(String::from("(?i)(celebensis)"));
         let file = Path::new("tests/files/complete.nex");
         let extract = Extract::new(&re, &InputFmt::Nexus, &DataType::Dna);
-        let (seq, _) = Sequence::new(file, extract.datatype).get(extract.input_fmt);
+        let (seq, _) = SeqParser::new(file, extract.datatype).get(extract.input_fmt);
         let matrix = extract.get_matrix(seq);
         assert_eq!(2, matrix.len());
     }
@@ -131,7 +131,7 @@ mod tests {
         let re = Params::Id(vec![String::from("Taeromys_calitrichus_NMVZ27408")]);
         let file = Path::new("tests/files/complete.nex");
         let extract = Extract::new(&re, &InputFmt::Nexus, &DataType::Dna);
-        let (seq, _) = Sequence::new(file, extract.datatype).get(extract.input_fmt);
+        let (seq, _) = SeqParser::new(file, extract.datatype).get(extract.input_fmt);
         let matrix = extract.get_matrix(seq);
         assert_eq!(1, matrix.len());
     }
