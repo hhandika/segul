@@ -526,10 +526,20 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("names")
                         .short('n')
                         .long("names")
-                        .help("Input IDs to rename")
+                        .help("Rename using input IDs in a file")
                         .takes_value(true)
                         .required(true)
                         .value_name("PATH"),
+
+                )
+                .arg(
+                    Arg::new("rm-string")
+                        .long("rm-string")
+                        .help("Remove matching input string")
+                        .takes_value(true)
+                        .required(true)
+                        .require_equals(true)
+                        .value_name("STRING"),
 
                 )
                 .arg(

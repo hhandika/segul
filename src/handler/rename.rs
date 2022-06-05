@@ -5,11 +5,11 @@ use rayon::prelude::*;
 
 use crate::handler::OutputPrint;
 use crate::helper::filenames;
-use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
 use crate::writer::sequences::SeqWriter;
+use indexmap::IndexMap;
 
 impl OutputPrint for Rename<'_> {}
 
@@ -74,36 +74,46 @@ impl<'a> Rename<'a> {
     pub fn parse_opts(&self, file: &Path, opts: &RenameOpts) -> (SeqMatrix, Header) {
         match opts {
             RenameOpts::RnId(names) => self.rename_seq_id(file, names),
-            RenameOpts::RmStr(_) => unimplemented!(),
+            RenameOpts::RmStr(str_input) => self.remove_str(file, str_input),
             RenameOpts::RmRegex(_) => unimplemented!(),
         }
     }
 
     fn rename_seq_id(&self, file: &Path, names: &[(String, String)]) -> (SeqMatrix, Header) {
-        let (mut seq, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
-        let original_size = seq.len();
+        let (mut matrix, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+        let original_size = matrix.len();
         names.iter().for_each(|(origin, destination)| {
-            let values = seq.remove(origin);
+            let values = matrix.remove(origin);
             if let Some(value) = values {
-                seq.insert(destination.to_string(), value);
+                matrix.insert(destination.to_string(), value);
             }
         });
 
         assert_eq!(
             original_size,
-            seq.len(),
+            matrix.len(),
             "Failed renaming files. New ID counts does not match original ID counts. \
          Original ID counts: {}. New ID counts: {}",
             original_size,
-            seq.len()
+            matrix.len()
         );
-        (seq, header)
+        (matrix, header)
     }
 
-    // fn remove_str(&self, file: &Path, str_input: &str) -> (SeqMatrix, Header) {
-    //     let (mut seq, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+    fn remove_str(&self, file: &Path, str_input: &str) -> (SeqMatrix, Header) {
+        let (matrix, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+        let mut new_matrix = IndexMap::with_capacity(matrix.len());
+        matrix.iter().for_each(|(id, seq)| {
+            if id.contains(str_input) {
+                let new_id = id.replace(str_input, "");
+                new_matrix.insert(new_id, seq.to_string());
+            } else {
+                new_matrix.insert(id.to_string(), seq.to_string());
+            }
+        });
 
-    // }
+        (new_matrix, header)
+    }
 
     fn print_output_info(&self, output: &Path, output_fmt: &OutputFmt) {
         log::info!("{}", Yellow.paint("Output"));
@@ -116,16 +126,29 @@ impl<'a> Rename<'a> {
 mod test {
     use super::*;
 
+    macro_rules! input {
+        ($rename: ident, $file: ident) => {
+            let input_fmt = InputFmt::Fasta;
+            let datatype = DataType::Dna;
+            let $file = Path::new("tests/files/simple.fas");
+            let $rename = Rename::new(&input_fmt, &datatype, Path::new("."), &OutputFmt::Nexus);
+        };
+    }
+
     #[test]
-    fn test_rename_seq() {
-        let input_fmt = InputFmt::Fasta;
-        let datatype = DataType::Dna;
-        let file = Path::new("tests/files/simple.fas");
+    fn test_rename_id() {
+        input!(rename, file);
         let names = [(String::from("ABCD"), String::from("WXYZ"))];
-        let rename = Rename::new(&input_fmt, &datatype, Path::new("."), &OutputFmt::Nexus);
         let (seq, _) = rename.rename_seq_id(&file, &names);
         assert_eq!(seq.len(), 2);
         assert_eq!(seq.get("WXYZ"), Some(&String::from("AGTATG")));
         assert_eq!(seq.get("ABCD"), None);
+    }
+
+    #[test]
+    fn test_rename_rm_str() {
+        input!(rename, file);
+        let (seq, _) = rename.remove_str(&file, "BC");
+        assert_eq!(seq.get("AD"), Some(&String::from("AGTATG")));
     }
 }

@@ -69,7 +69,14 @@ impl<'a> RenameParser<'a> {
                 self.print_rename_id_info(id_path, &names.len());
                 RenameOpts::RnId(names)
             }
-            _ => unimplemented!(),
+            m if m.is_present("rm-string") => {
+                let str_input = self
+                    .matches
+                    .value_of("rm-string")
+                    .expect("Failed parsing input string");
+                RenameOpts::RmStr(str_input.to_string())
+            }
+            _ => unreachable!("Unknown errors in parsing command line input!"),
         }
     }
 
