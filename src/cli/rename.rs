@@ -46,23 +46,23 @@ impl<'a> RenameParser<'a> {
             &input_fmt,
             &datatype,
         );
-        let params = self.parse_rename_opts();
+        let opts = self.parse_rename_opts();
         let is_overwrite = self.parse_overwrite_opts(self.matches);
         self.check_output_dir_exist(&outdir, is_overwrite);
         if self.matches.is_present("dry-run") {
-            Rename::new(&input_fmt, &datatype, &outdir, &output_fmt).dry_run(&params);
+            Rename::new(&input_fmt, &datatype, &opts).dry_run();
         } else {
-            Rename::new(&input_fmt, &datatype, &outdir, &output_fmt).rename(&files, &params);
+            Rename::new(&input_fmt, &datatype, &opts).rename(&files, &outdir, &output_fmt);
         }
     }
 
     fn parse_rename_opts(&self) -> RenameOpts {
         log::info!("{}", Yellow.paint("Params"));
         match self.matches {
-            m if m.is_present("replace") => {
+            m if m.is_present("replace-id") => {
                 let id_path = Path::new(
                     self.matches
-                        .value_of("names")
+                        .value_of("replace-id")
                         .expect("Failed parsing path to id names"),
                 );
                 let names = self.parse_names(id_path);
@@ -76,6 +76,24 @@ impl<'a> RenameParser<'a> {
                     .expect("Failed parsing input string");
                 self.print_remove_str_info(input_str);
                 RenameOpts::RmStr(input_str.to_string())
+            }
+            m if m.is_present("remove-re") => {
+                let input_re = self
+                    .matches
+                    .value_of("remove-re")
+                    .expect("Failed parsing input regex");
+                let is_all = false;
+                self.print_remove_re_info(input_re, "--remove-re");
+                RenameOpts::RmRegex((input_re.to_string(), is_all))
+            }
+            m if m.is_present("remove-re-all") => {
+                let input_re = self
+                    .matches
+                    .value_of("remove-re-all")
+                    .expect("Failed parsing input regex");
+                let is_all = true;
+                self.print_remove_re_info(input_re, "--remove-re-all");
+                RenameOpts::RmRegex((input_re.to_string(), is_all))
             }
             _ => unreachable!("Unknown errors in parsing command line input!"),
         }
@@ -101,5 +119,10 @@ impl<'a> RenameParser<'a> {
     fn print_remove_str_info(&self, input_str: &str) {
         log::info!("{:18}: --remove", "Options");
         log::info!("{:18}: {}\n", "Input string", input_str);
+    }
+
+    fn print_remove_re_info(&self, input_re: &str, options: &str) {
+        log::info!("{:18}: {}", "Options", options);
+        log::info!("{:18}: {}\n", "Input regex", input_re);
     }
 }

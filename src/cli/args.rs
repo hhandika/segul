@@ -523,11 +523,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
-                    Arg::new("replace")
+                    Arg::new("replace-id")
                         .long("replace")
                         .help("Rename using input IDs in a file")
                         .takes_value(true)
-                        .required_unless_present_any(&["rm-string"])
+                        .required_unless_present_any(&["remove", "remove-re" ])
+                        .conflicts_with_all(&["remove", "remove-re", "remove-re-all"])
                         .value_name("PATH"),
 
                 )
@@ -536,7 +537,27 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("remove")
                         .help("Remove matching input string")
                         .takes_value(true)
-                        .conflicts_with_all(&["names"])
+                        .conflicts_with_all(&["remove-re", "remove-re-all"])
+                        .require_equals(true)
+                        .value_name("STRING"),
+
+                )
+                .arg(
+                    Arg::new("remove-re")
+                        .long("remove")
+                        .help("Remove first found matching regular expression")
+                        .takes_value(true)
+                        .conflicts_with_all(&["remove-re-all"])
+                        .require_equals(true)
+                        .value_name("STRING"),
+
+                )
+                .arg(
+                    Arg::new("remove-re-all")
+                        .long("remove")
+                        .help("Remove all matching regular expression")
+                        .takes_value(true)
+                        .conflicts_with_all(&["replace-id"])
                         .require_equals(true)
                         .value_name("STRING"),
 
