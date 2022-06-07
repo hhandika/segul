@@ -25,9 +25,11 @@ macro_rules! process_files {
 }
 
 pub enum RenameOpts {
-    RnId(Vec<(String, String)>), // Rename ID using tabulated file
-    RmStr(String),               // Remove characters in seq id using string input
-    RmRegex((String, bool)),     // Similar to RmStr but using regex as input
+    RnId(Vec<(String, String)>),   // Rename ID using tabulated file
+    RmStr(String),                 // Remove characters in seq id using string input
+    RmRegex(String, bool),         // Similar to RmStr but using regex as input
+    RpStr(String, String),         // Replace characters in seq id using string input
+    RpRegex(String, String, bool), // Similar to ReplaceStr but using regex as input
 }
 
 pub struct Rename<'a> {
@@ -69,8 +71,24 @@ impl<'a> Rename<'a> {
             RenameOpts::RmStr(input_str) => {
                 process_files!(self, files, replace_str, outdir, output_fmt, input_str, "");
             }
-            RenameOpts::RmRegex((input_re, is_all)) => {
+            RenameOpts::RmRegex(input_re, is_all) => {
                 process_files!(self, files, replace_re, outdir, output_fmt, input_re, "", is_all);
+            }
+            RenameOpts::RpStr(input_str, output_str) => {
+                process_files!(
+                    self,
+                    files,
+                    replace_str,
+                    outdir,
+                    output_fmt,
+                    input_str,
+                    output_str
+                );
+            }
+            RenameOpts::RpRegex(input_re, output_re, is_all) => {
+                process_files!(
+                    self, files, replace_re, outdir, output_fmt, input_re, output_re, is_all
+                );
             }
         }
         spin.finish_with_message("Finished batch renaming dna sequence IDs!\n");

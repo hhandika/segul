@@ -84,7 +84,7 @@ impl<'a> RenameParser<'a> {
                     .expect("Failed parsing input regex");
                 let is_all = false;
                 self.print_remove_re_info(input_re, "--remove-re");
-                RenameOpts::RmRegex((input_re.to_string(), is_all))
+                RenameOpts::RmRegex(input_re.to_string(), is_all)
             }
             m if m.is_present("remove-re-all") => {
                 let input_re = self
@@ -93,7 +93,32 @@ impl<'a> RenameParser<'a> {
                     .expect("Failed parsing input regex");
                 let is_all = true;
                 self.print_remove_re_info(input_re, "--remove-re-all");
-                RenameOpts::RmRegex((input_re.to_string(), is_all))
+                RenameOpts::RmRegex(input_re.to_string(), is_all)
+            }
+            m if m.is_present("replace-from") => {
+                let input_str = self
+                    .matches
+                    .value_of("replace-from")
+                    .expect("Failed parsing input string");
+                let output_str = self
+                    .matches
+                    .value_of("replace-to")
+                    .expect("Failed parsing output string");
+                self.print_replace_str_info(input_str, output_str);
+                RenameOpts::RpStr(input_str.to_string(), output_str.to_string())
+            }
+            m if m.is_present("replace-from-re") => {
+                let input_re = self
+                    .matches
+                    .value_of("replace-from-re")
+                    .expect("Failed parsing input regex");
+                let output_str = self
+                    .matches
+                    .value_of("replace-to")
+                    .expect("Failed parsing output string");
+                let is_all = false;
+                self.print_replace_re_info(input_re, output_str, "--replace-from-re");
+                RenameOpts::RpRegex(input_re.to_string(), output_str.to_string(), is_all)
             }
             _ => unreachable!("Unknown errors in parsing command line input!"),
         }
@@ -121,8 +146,20 @@ impl<'a> RenameParser<'a> {
         log::info!("{:18}: {}\n", "Input string", input_str);
     }
 
+    fn print_replace_str_info(&self, input_str: &str, output_str: &str) {
+        log::info!("{:18}: --replace", "Options");
+        log::info!("{:18}: {}", "Replace from", input_str);
+        log::info!("{:18}: {}\n", "Replace to", output_str);
+    }
+
     fn print_remove_re_info(&self, input_re: &str, options: &str) {
         log::info!("{:18}: {}", "Options", options);
         log::info!("{:18}: {}\n", "Input regex", input_re);
+    }
+
+    fn print_replace_re_info(&self, input_re: &str, output_str: &str, options: &str) {
+        log::info!("{:18}: {}", "Options", options);
+        log::info!("{:18}: {}", "Replace from", input_re);
+        log::info!("{:18}: {}\n", "Replace to", output_str);
     }
 }

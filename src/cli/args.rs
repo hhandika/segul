@@ -528,7 +528,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Rename using input IDs in a file")
                         .takes_value(true)
                         .required_unless_present_any(&["remove", "remove-re" ])
-                        .conflicts_with_all(&["remove", "remove-re", "remove-re-all"])
+                        .conflicts_with_all(&["remove", "remove-re", "remove-re-all", "replace-from", "replace-to"])
                         .value_name("PATH"),
 
                 )
@@ -560,6 +560,26 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .conflicts_with_all(&["replace-id"])
                         .require_equals(true)
                         .value_name("STRING"),
+
+                )
+                .arg(
+                    Arg::new("replace-from")
+                        .long("replace-from")
+                        .help("Replace matching input string with the output string")
+                        .takes_value(true)
+                        .conflicts_with_all(&["remove", "remove-re", "remove-re-all"])
+                        .require_equals(true)
+                        .value_name("INPUT-STRING"),
+
+                )
+                .arg(
+                    Arg::new("replace-to")
+                        .long("replace-to")
+                        .help("Replace matching input string with the output string")
+                        .takes_value(true)
+                        .conflicts_with_all(&["remove", "remove-re", "remove-re-all"])
+                        .require_equals(true)
+                        .value_name("OUTPUT-STRING"),
 
                 )
                 .arg(
