@@ -523,8 +523,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
-                    Arg::new("names")
-                        .long("names")
+                    Arg::new("replace")
+                        .long("replace")
                         .help("Rename using input IDs in a file")
                         .takes_value(true)
                         .required_unless_present_any(&["rm-string"])
@@ -532,8 +532,8 @@ pub fn get_args(version: &str) -> ArgMatches {
 
                 )
                 .arg(
-                    Arg::new("rm-string")
-                        .long("rm-string")
+                    Arg::new("remove")
+                        .long("remove")
                         .help("Remove matching input string")
                         .takes_value(true)
                         .conflicts_with_all(&["names"])

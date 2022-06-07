@@ -59,7 +59,7 @@ impl<'a> RenameParser<'a> {
     fn parse_rename_opts(&self) -> RenameOpts {
         log::info!("{}", Yellow.paint("Params"));
         match self.matches {
-            m if m.is_present("names") => {
+            m if m.is_present("replace") => {
                 let id_path = Path::new(
                     self.matches
                         .value_of("names")
@@ -69,7 +69,7 @@ impl<'a> RenameParser<'a> {
                 self.print_rename_id_info(id_path, &names.len());
                 RenameOpts::RnId(names)
             }
-            m if m.is_present("rm-string") => {
+            m if m.is_present("remove") => {
                 let input_str = self
                     .matches
                     .value_of("rm-string")
@@ -86,7 +86,7 @@ impl<'a> RenameParser<'a> {
     }
 
     fn print_rename_id_info(&self, id_path: &Path, id_count: &usize) {
-        log::info!("{:18}: --names", "Options");
+        log::info!("{:18}: --replace", "Options");
         log::info!(
             "{:18}: {}",
             "File",
@@ -99,7 +99,7 @@ impl<'a> RenameParser<'a> {
     }
 
     fn print_remove_str_info(&self, input_str: &str) {
-        log::info!("{:18}: --rm-string", "Options");
+        log::info!("{:18}: --remove", "Options");
         log::info!("{:18}: {}\n", "Input string", input_str);
     }
 }
