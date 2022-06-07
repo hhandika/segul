@@ -74,7 +74,7 @@ impl<'a> Rename<'a> {
     pub fn parse_opts(&self, file: &Path, opts: &RenameOpts) -> (SeqMatrix, Header) {
         match opts {
             RenameOpts::RnId(names) => self.rename_seq_id(file, names),
-            RenameOpts::RmStr(str_input) => self.remove_str(file, str_input),
+            RenameOpts::RmStr(str_input) => self.replace_str(file, str_input, ""),
             RenameOpts::RmRegex(_) => unimplemented!(),
         }
     }
@@ -100,12 +100,12 @@ impl<'a> Rename<'a> {
         (matrix, header)
     }
 
-    fn remove_str(&self, file: &Path, str_input: &str) -> (SeqMatrix, Header) {
+    fn replace_str(&self, file: &Path, str_from: &str, str_to: &str) -> (SeqMatrix, Header) {
         let (matrix, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
         let mut new_matrix = IndexMap::with_capacity(matrix.len());
         matrix.iter().for_each(|(id, seq)| {
-            if id.contains(str_input) {
-                let new_id = id.replace(str_input, "");
+            if id.contains(str_from) {
+                let new_id = id.replace(str_from, str_to);
                 new_matrix.insert(new_id, seq.to_string());
             } else {
                 new_matrix.insert(id.to_string(), seq.to_string());
@@ -148,7 +148,7 @@ mod test {
     #[test]
     fn test_rename_rm_str() {
         input!(rename, file);
-        let (seq, _) = rename.remove_str(&file, "BC");
+        let (seq, _) = rename.replace_str(&file, "BC", "");
         assert_eq!(seq.get("AD"), Some(&String::from("AGTATG")));
     }
 }
