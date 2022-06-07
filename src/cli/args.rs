@@ -544,12 +544,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("remove-re")
-                        .long("remove")
+                        .long("remove-re")
                         .help("Remove first found matching regular expression")
                         .takes_value(true)
                         .conflicts_with_all(&["remove-re-all"])
                         .require_equals(true)
-                        .value_name("STRING"),
+                        .value_name("REGEX"),
 
                 )
                 .arg(
@@ -559,7 +559,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .conflicts_with_all(&["replace-id"])
                         .require_equals(true)
-                        .value_name("STRING"),
+                        .value_name("REGEX"),
 
                 )
                 .arg(
@@ -569,7 +569,19 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .takes_value(true)
                         .conflicts_with_all(&["remove", "remove-re", "remove-re-all"])
                         .require_equals(true)
+                        .requires("replace-to")
                         .value_name("INPUT-STRING"),
+
+                )
+                .arg(
+                    Arg::new("replace-from-re")
+                        .long("replace-from-re")
+                        .help("Replace matching input regex with the output string/regex")
+                        .takes_value(true)
+                        .conflicts_with_all(&["remove", "remove-re", "remove-re-all"])
+                        .require_equals(true)
+                        .requires("replace-to")
+                        .value_name("INPUT-REGEX"),
 
                 )
                 .arg(
