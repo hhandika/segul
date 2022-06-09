@@ -47,11 +47,11 @@ impl<'a> RenameParser<'a> {
             &datatype,
         );
         let opts = self.parse_rename_opts();
-        let is_overwrite = self.parse_overwrite_opts(self.matches);
-        self.check_output_dir_exist(&outdir, is_overwrite);
         if self.matches.is_present("dry-run") {
-            Rename::new(&input_fmt, &datatype, &opts).dry_run();
+            Rename::new(&input_fmt, &datatype, &opts).dry_run(&files);
         } else {
+            let is_overwrite = self.parse_overwrite_opts(self.matches);
+            self.check_output_dir_exist(&outdir, is_overwrite);
             Rename::new(&input_fmt, &datatype, &opts).rename(&files, &outdir, &output_fmt);
         }
     }
@@ -138,7 +138,7 @@ impl<'a> RenameParser<'a> {
                 .expect("Failed parsing name path")
                 .to_string_lossy()
         );
-        log::info!("{:18}: {}\n", "New ID count", utils::fmt_num(id_count));
+        log::info!("{:18}: {}\n", "New ID counts", utils::fmt_num(id_count));
     }
 
     fn print_remove_str_info(&self, input_str: &str) {

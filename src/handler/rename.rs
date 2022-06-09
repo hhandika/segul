@@ -1,11 +1,12 @@
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::Yellow;
+use ansi_term::Colour::{Green, Yellow};
 use rayon::prelude::*;
 use regex::Regex;
 
 use crate::handler::OutputPrint;
 use crate::helper::filenames;
+use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
@@ -47,17 +48,37 @@ impl<'a> Rename<'a> {
         }
     }
 
-    pub fn dry_run(&self) {
-        let names = match self.opts {
-            RenameOpts::RnId(names) => names,
+    pub fn dry_run(&self, files: &[PathBuf]) {
+        let spin = utils::set_spinner();
+        spin.set_message("Processing dna sequence IDs (DRY-RUN)...");
+        let mut ids = IDs::new(files, self.input_fmt, self.datatype).id_unique();
+        let mut new_ids: Vec<(String, String)> = Vec::new();
+        match self.opts {
+            RenameOpts::RnId(names) => names.iter().for_each(|(old, new)| {
+                let is_id = ids.remove(old);
+                if is_id {
+                    new_ids.push((old.to_string(), new.to_string()));
+                }
+            }),
             _ => unimplemented!(),
-        };
-        log::info!("{:18}: {}", "New ID count", names.len());
-        log::info!("{:18}: Dry run\n", "Status");
+        }
+        spin.finish_with_message("Finished processing!\n");
+
+        // Print results
         log::info!("{}", Yellow.paint("Results"));
-        names
-            .iter()
-            .for_each(|(origin, destination)| log::info!("{} -> {}", origin, destination));
+        log::info!("{:18}: {}", "ID counts", new_ids.len());
+        new_ids.iter().for_each(|(old, new)| {
+            log::info!("{:18}: {} {} {}", "[Rename]", old, Green.paint("->"), new);
+        });
+
+        // Print remaining unchanged ids
+        log::info!("");
+        log::info!("{:18}: {}", "Unchanged counts", ids.len());
+        if !ids.is_empty() {
+            ids.iter().for_each(|id| {
+                log::info!("{:18}: {}", "[Unchanged]", id);
+            });
+        }
         println!();
     }
 
