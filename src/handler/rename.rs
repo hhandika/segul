@@ -62,7 +62,7 @@ impl<'a> Rename<'a> {
             }),
             _ => unimplemented!(),
         }
-        spin.finish_with_message("Finished processing!\n");
+        spin.finish_with_message("Finished processing (DRY-RUN)!\n");
 
         // Print results
         log::info!("{}", Yellow.paint("Results"));
