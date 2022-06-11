@@ -72,7 +72,7 @@ impl<'a> RenameParser<'a> {
             m if m.is_present("remove") => {
                 let input_str = self
                     .matches
-                    .value_of("rm-string")
+                    .value_of("remove")
                     .expect("Failed parsing input string");
                 self.print_remove_str_info(input_str);
                 RenameOpts::RmStr(input_str.to_string())

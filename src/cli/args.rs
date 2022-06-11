@@ -527,7 +527,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("replace")
                         .help("Rename using input IDs in a file")
                         .takes_value(true)
-                        .required_unless_present_any(&["remove", "remove-re" ])
+                        .required_unless_present_any(&["remove", "remove-re", "replace-from", "replace-from-re"])
                         .conflicts_with_all(&["remove", "remove-re", "remove-re-all", "replace-from", "replace-to"])
                         .value_name("PATH"),
 
