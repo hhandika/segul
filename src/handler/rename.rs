@@ -26,9 +26,9 @@ macro_rules! process_files {
 }
 
 macro_rules! rm_id {
-    ($changed_ids: ident, $ids: ident) => {
-        $changed_ids.iter().for_each(|id| {
-            $ids.remove(id);
+    ($new_ids: ident, $ids: ident) => {
+        $new_ids.iter().for_each(|(old, _)| {
+            $ids.remove(old);
         });
     };
 }
@@ -73,7 +73,7 @@ impl<'a> RenameDry<'a> {
 
         // Print results
         log::info!("{}", Yellow.paint("Results"));
-        log::info!("{:18}: {}", "ID counts", new_ids.len());
+        log::info!("{:18}: {}", "Renamed ID counts", new_ids.len());
         new_ids.iter().for_each(|(old, new)| {
             log::info!("{:18}: {} {} {}", "[Rename]", old, Green.paint("->"), new);
         });
@@ -111,16 +111,14 @@ impl<'a> RenameDry<'a> {
         to: &str,
     ) -> Vec<(String, String)> {
         let mut new_ids: Vec<(String, String)> = Vec::new();
-        let mut changed_ids = Vec::new();
         ids.iter().for_each(|id| {
             if id.contains(from) {
                 let new_id = id.replace(from, to);
                 new_ids.push((id.to_string(), new_id));
-                changed_ids.push(id.to_string());
             }
         });
 
-        rm_id!(changed_ids, ids);
+        rm_id!(new_ids, ids);
 
         new_ids
     }
@@ -133,7 +131,6 @@ impl<'a> RenameDry<'a> {
         all: &bool,
     ) -> Vec<(String, String)> {
         let mut new_ids: Vec<(String, String)> = Vec::new();
-        let mut changed_ids = Vec::new();
         ids.iter().for_each(|id| {
             let re = Regex::new(from).expect("Failed parsing regex");
             let new_id = if *all {
@@ -141,15 +138,13 @@ impl<'a> RenameDry<'a> {
             } else {
                 re.replace(id, to)
             };
-            let id = id.to_string();
-            if new_id != id {
-                new_ids.push((id, new_id.to_string()));
-            } else {
-                changed_ids.push(id)
+            let changed_id = id.to_string();
+            if new_id != changed_id {
+                new_ids.push((changed_id, new_id.to_string()));
             }
         });
 
-        rm_id!(changed_ids, ids);
+        rm_id!(new_ids, ids);
 
         new_ids
     }
