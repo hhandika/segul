@@ -25,6 +25,14 @@ macro_rules! process_files {
     };
 }
 
+macro_rules! rm_id {
+    ($changed_ids: ident, $ids: ident) => {
+        $changed_ids.iter().for_each(|id| {
+            $ids.remove(id);
+        });
+    };
+}
+
 pub enum RenameOpts {
     RnId(Vec<(String, String)>),   // Rename ID using tabulated file
     RmStr(String),                 // Remove characters in seq id using string input
@@ -55,7 +63,11 @@ impl<'a> RenameDry<'a> {
         let new_ids = match self.opts {
             RenameOpts::RnId(names) => self.replace_id(&mut ids, names),
             RenameOpts::RmStr(input_str) => self.replace_str(&mut ids, input_str, ""),
-            _ => unimplemented!(),
+            RenameOpts::RmRegex(input_re, is_all) => {
+                self.replace_re(&mut ids, input_re, "", is_all)
+            }
+            RenameOpts::RpStr(from, to) => self.replace_str(&mut ids, from, to),
+            RenameOpts::RpRegex(from, to, is_all) => self.replace_re(&mut ids, from, to, is_all),
         };
         spin.finish_with_message("Finished processing (DRY-RUN)!\n");
 
@@ -95,22 +107,49 @@ impl<'a> RenameDry<'a> {
     fn replace_str(
         &self,
         ids: &mut IndexSet<String>,
-        replace_from: &str,
-        replace_to: &str,
+        from: &str,
+        to: &str,
     ) -> Vec<(String, String)> {
         let mut new_ids: Vec<(String, String)> = Vec::new();
-        let mut old_ids = Vec::new();
+        let mut changed_ids = Vec::new();
         ids.iter().for_each(|id| {
-            if id.contains(replace_from) {
-                let new_id = id.replace(replace_from, replace_to);
+            if id.contains(from) {
+                let new_id = id.replace(from, to);
                 new_ids.push((id.to_string(), new_id));
-                old_ids.push(id.to_string());
+                changed_ids.push(id.to_string());
             }
         });
 
-        old_ids.iter().for_each(|id| {
-            ids.remove(id);
+        rm_id!(changed_ids, ids);
+
+        new_ids
+    }
+
+    fn replace_re(
+        &self,
+        ids: &mut IndexSet<String>,
+        from: &str,
+        to: &str,
+        all: &bool,
+    ) -> Vec<(String, String)> {
+        let mut new_ids: Vec<(String, String)> = Vec::new();
+        let mut changed_ids = Vec::new();
+        ids.iter().for_each(|id| {
+            let re = Regex::new(from).expect("Failed parsing regex");
+            let new_id = if *all {
+                re.replace_all(id, to)
+            } else {
+                re.replace(id, to)
+            };
+            let id = id.to_string();
+            if new_id != id {
+                new_ids.push((id, new_id.to_string()));
+            } else {
+                changed_ids.push(id)
+            }
         });
+
+        rm_id!(changed_ids, ids);
 
         new_ids
     }
@@ -154,11 +193,11 @@ impl<'a> Rename<'a> {
             RenameOpts::RmRegex(input_re, is_all) => {
                 process_files!(self, files, replace_re, input_re, "", is_all);
             }
-            RenameOpts::RpStr(input_str, output_str) => {
-                process_files!(self, files, replace_str, input_str, output_str);
+            RenameOpts::RpStr(from, to) => {
+                process_files!(self, files, replace_str, from, to);
             }
-            RenameOpts::RpRegex(input_re, output_re, is_all) => {
-                process_files!(self, files, replace_re, input_re, output_re, is_all);
+            RenameOpts::RpRegex(from, to, is_all) => {
+                process_files!(self, files, replace_re, from, to, is_all);
             }
         }
         spin.finish_with_message("Finished batch renaming dna sequence IDs!\n");
@@ -194,12 +233,12 @@ impl<'a> Rename<'a> {
         (matrix, header)
     }
 
-    fn replace_str(&self, file: &Path, str_from: &str, str_to: &str) -> (SeqMatrix, Header) {
+    fn replace_str(&self, file: &Path, from: &str, to: &str) -> (SeqMatrix, Header) {
         let (matrix, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
         let mut new_matrix = IndexMap::with_capacity(matrix.len());
         matrix.iter().for_each(|(id, seq)| {
-            if id.contains(str_from) {
-                let new_id = id.replace(str_from, str_to);
+            if id.contains(from) {
+                let new_id = id.replace(from, to);
                 new_matrix.insert(new_id, seq.to_string());
             } else {
                 new_matrix.insert(id.to_string(), seq.to_string());
@@ -209,21 +248,15 @@ impl<'a> Rename<'a> {
         (new_matrix, header)
     }
 
-    fn replace_re(
-        &self,
-        file: &Path,
-        re_from: &str,
-        str_to: &str,
-        all: &bool,
-    ) -> (SeqMatrix, Header) {
+    fn replace_re(&self, file: &Path, from: &str, to: &str, all: &bool) -> (SeqMatrix, Header) {
         let (matrix, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
         let mut new_matrix = IndexMap::with_capacity(matrix.len());
         matrix.iter().for_each(|(id, seq)| {
-            let re = Regex::new(re_from).expect("Failed parsing regex");
+            let re = Regex::new(from).expect("Failed parsing regex");
             let new_id = if *all {
-                re.replace_all(id, str_to)
+                re.replace_all(id, to)
             } else {
-                re.replace(id, str_to)
+                re.replace(id, to)
             };
             new_matrix.insert(new_id.to_string(), seq.to_string());
         });
