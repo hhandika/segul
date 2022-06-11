@@ -4,7 +4,7 @@ use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
-use crate::handler::rename::{Rename, RenameOpts};
+use crate::handler::rename::{Rename, RenameDry, RenameOpts};
 use crate::helper::utils;
 use crate::parser::delimited;
 
@@ -48,11 +48,11 @@ impl<'a> RenameParser<'a> {
         );
         let opts = self.parse_rename_opts();
         if self.matches.is_present("dry-run") {
-            Rename::new(&input_fmt, &datatype, &opts).dry_run(&files);
+            RenameDry::new(&input_fmt, &datatype, &opts).dry_run(&files);
         } else {
             let is_overwrite = self.parse_overwrite_opts(self.matches);
             self.check_output_dir_exist(&outdir, is_overwrite);
-            Rename::new(&input_fmt, &datatype, &opts).rename(&files, &outdir, &output_fmt);
+            Rename::new(&input_fmt, &datatype, &outdir, &output_fmt, &opts).rename(&files);
         }
     }
 

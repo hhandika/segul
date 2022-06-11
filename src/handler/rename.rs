@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use ansi_term::Colour::{Green, Yellow};
+use indexmap::IndexSet;
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -16,11 +17,10 @@ use indexmap::IndexMap;
 impl OutputPrint for Rename<'_> {}
 
 macro_rules! process_files {
-    ($self: ident, $files: ident, $func: ident, $outdir: ident, $output_fmt: ident, $($input: tt)*) => {
+    ($self: ident, $files: ident, $func: ident, $($input: tt)*) => {
         $files.par_iter().for_each(|file| {
             let (matrix, header) = $self.$func(file, $($input)*);
-            let outpath = filenames::create_output_fname($outdir, file, $output_fmt);
-            $self.write_output(&matrix, &header, &outpath, $output_fmt);
+            $self.write_output(&matrix, &header, file);
         });
     };
 }
@@ -33,13 +33,13 @@ pub enum RenameOpts {
     RpRegex(String, String, bool), // Similar to ReplaceStr but using regex as input
 }
 
-pub struct Rename<'a> {
+pub struct RenameDry<'a> {
     input_fmt: &'a InputFmt,
     datatype: &'a DataType,
     opts: &'a RenameOpts,
 }
 
-impl<'a> Rename<'a> {
+impl<'a> RenameDry<'a> {
     pub fn new(input_fmt: &'a InputFmt, datatype: &'a DataType, opts: &'a RenameOpts) -> Self {
         Self {
             input_fmt,
@@ -52,16 +52,11 @@ impl<'a> Rename<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Processing dna sequence IDs (DRY-RUN)...");
         let mut ids = IDs::new(files, self.input_fmt, self.datatype).id_unique();
-        let mut new_ids: Vec<(String, String)> = Vec::new();
-        match self.opts {
-            RenameOpts::RnId(names) => names.iter().for_each(|(old, new)| {
-                let is_id = ids.remove(old);
-                if is_id {
-                    new_ids.push((old.to_string(), new.to_string()));
-                }
-            }),
+        let new_ids = match self.opts {
+            RenameOpts::RnId(names) => self.replace_id(&mut ids, names),
+            RenameOpts::RmStr(input_str) => self.replace_str(&mut ids, input_str, ""),
             _ => unimplemented!(),
-        }
+        };
         spin.finish_with_message("Finished processing (DRY-RUN)!\n");
 
         // Print results
@@ -82,50 +77,99 @@ impl<'a> Rename<'a> {
         println!();
     }
 
-    pub fn rename(&self, files: &[PathBuf], outdir: &Path, output_fmt: &OutputFmt) {
+    fn replace_id(
+        &self,
+        ids: &mut IndexSet<String>,
+        names: &[(String, String)],
+    ) -> Vec<(String, String)> {
+        let mut new_ids: Vec<(String, String)> = Vec::new();
+        names.iter().for_each(|(old, new)| {
+            let is_id = ids.remove(old);
+            if is_id {
+                new_ids.push((old.to_string(), new.to_string()));
+            }
+        });
+        new_ids
+    }
+
+    fn replace_str(
+        &self,
+        ids: &mut IndexSet<String>,
+        replace_from: &str,
+        replace_to: &str,
+    ) -> Vec<(String, String)> {
+        let mut new_ids: Vec<(String, String)> = Vec::new();
+        let mut old_ids = Vec::new();
+        ids.iter().for_each(|id| {
+            if id.contains(replace_from) {
+                let new_id = id.replace(replace_from, replace_to);
+                new_ids.push((id.to_string(), new_id));
+                old_ids.push(id.to_string());
+            }
+        });
+
+        old_ids.iter().for_each(|id| {
+            ids.remove(id);
+        });
+
+        new_ids
+    }
+}
+
+pub struct Rename<'a> {
+    input_fmt: &'a InputFmt,
+    datatype: &'a DataType,
+    outdir: &'a Path,
+    output_fmt: &'a OutputFmt,
+    opts: &'a RenameOpts,
+}
+
+impl<'a> Rename<'a> {
+    pub fn new(
+        input_fmt: &'a InputFmt,
+        datatype: &'a DataType,
+        outdir: &'a Path,
+        output_fmt: &'a OutputFmt,
+        opts: &'a RenameOpts,
+    ) -> Self {
+        Self {
+            input_fmt,
+            datatype,
+            outdir,
+            output_fmt,
+            opts,
+        }
+    }
+
+    pub fn rename(&self, files: &[PathBuf]) {
         let spin = utils::set_spinner();
         spin.set_message("Batch renaming dna sequence IDs...");
         match self.opts {
             RenameOpts::RnId(names) => {
-                process_files!(self, files, replace_id, outdir, output_fmt, names);
+                process_files!(self, files, replace_id, names);
             }
             RenameOpts::RmStr(input_str) => {
-                process_files!(self, files, replace_str, outdir, output_fmt, input_str, "");
+                process_files!(self, files, replace_str, input_str, "");
             }
             RenameOpts::RmRegex(input_re, is_all) => {
-                process_files!(self, files, replace_re, outdir, output_fmt, input_re, "", is_all);
+                process_files!(self, files, replace_re, input_re, "", is_all);
             }
             RenameOpts::RpStr(input_str, output_str) => {
-                process_files!(
-                    self,
-                    files,
-                    replace_str,
-                    outdir,
-                    output_fmt,
-                    input_str,
-                    output_str
-                );
+                process_files!(self, files, replace_str, input_str, output_str);
             }
             RenameOpts::RpRegex(input_re, output_re, is_all) => {
-                process_files!(
-                    self, files, replace_re, outdir, output_fmt, input_re, output_re, is_all
-                );
+                process_files!(self, files, replace_re, input_re, output_re, is_all);
             }
         }
         spin.finish_with_message("Finished batch renaming dna sequence IDs!\n");
-        self.print_output_info(outdir, output_fmt);
+        self.print_output_info();
     }
 
-    fn write_output(
-        &self,
-        matrix: &SeqMatrix,
-        header: &Header,
-        outpath: &Path,
-        output_fmt: &OutputFmt,
-    ) {
+    fn write_output(&self, matrix: &SeqMatrix, header: &Header, file: &Path) {
+        let outpath = filenames::create_output_fname(self.outdir, file, self.output_fmt);
         let mut writer = SeqWriter::new(&outpath, &matrix, &header);
         writer
-            .write_sequence(output_fmt)
+            .write_sequence(self.output_fmt)
             .expect("Failed writing output sequence");
     }
 
@@ -187,10 +231,10 @@ impl<'a> Rename<'a> {
         (new_matrix, header)
     }
 
-    fn print_output_info(&self, output: &Path, output_fmt: &OutputFmt) {
+    fn print_output_info(&self) {
         log::info!("{}", Yellow.paint("Output"));
-        log::info!("{:18}: {}", "Output dir", output.display());
-        self.print_output_fmt(output_fmt);
+        log::info!("{:18}: {}", "Output dir", self.outdir.display());
+        self.print_output_fmt(self.output_fmt);
     }
 }
 
@@ -204,7 +248,9 @@ mod test {
             let datatype = DataType::Dna;
             let $file = Path::new("tests/files/simple.fas");
             let opts = RenameOpts::RmStr(String::from("test"));
-            let $rename = Rename::new(&input_fmt, &datatype, &opts);
+            let outdir = Path::new(".");
+            let output_fmt = OutputFmt::Fasta;
+            let $rename = Rename::new(&input_fmt, &datatype, outdir, &output_fmt, &opts);
         };
     }
 
