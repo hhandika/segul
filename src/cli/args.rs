@@ -554,7 +554,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                 )
                 .arg(
                     Arg::new("remove-re-all")
-                        .long("remove")
+                        .long("remove-re-all")
                         .help("Remove all matching regular expression")
                         .takes_value(true)
                         .conflicts_with_all(&["replace-id"])
