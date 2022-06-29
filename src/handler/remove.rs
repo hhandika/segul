@@ -57,7 +57,7 @@ impl<'a> Remove<'a> {
 
     fn write_output(&self, matrix: &SeqMatrix, header: &Header, file: &Path) {
         let outpath = filenames::create_output_fname(self.outdir, file, self.output_fmt);
-        let mut writer = SeqWriter::new(&outpath, &matrix, &header);
+        let mut writer = SeqWriter::new(&outpath, matrix, header);
         writer
             .write_sequence(self.output_fmt)
             .expect("Failed writing output sequence");

@@ -285,7 +285,7 @@ impl<'a> FilterParser<'a> {
         }
     }
 
-    fn is_npercent(&mut self) -> bool {
+    fn is_npercent(&self) -> bool {
         self.matches.is_present("npercent")
     }
 }

@@ -38,7 +38,7 @@ impl<'a> ConvertParser<'a> {
         self.output = self.parse_output(self.matches);
         self.output_fmt = self.parse_output_fmt(self.matches);
         self.datatype = self.parse_datatype(self.matches);
-        self.is_sort();
+        self.make_sort();
         let task_desc = "Sequence format conversion";
         let files = if self.matches.is_present("dir") {
             let dir = self.parse_dir_input(self.matches);
@@ -63,7 +63,7 @@ impl<'a> ConvertParser<'a> {
         convert.convert(&files, &self.output);
     }
 
-    fn is_sort(&mut self) {
+    fn make_sort(&mut self) {
         self.sort = self.matches.is_present("sort");
     }
 }
