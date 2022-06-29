@@ -37,7 +37,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Specify an output directory")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .default_value("SEGUL-Convert")
                         .value_name("STRING"),
                 )
@@ -47,7 +47,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -79,7 +79,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -126,7 +126,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -142,7 +142,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("part")
                         .help("Specify partition format")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .default_value("nexus")
                         .value_name("PART-FORMAT")
                         .possible_values(&["charset", "nexus", "raxml"]),
@@ -153,7 +153,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Use a custom output directory")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .default_value("SEGUL-Concat")
                         .value_name("STRING"),
                 )
@@ -186,7 +186,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -233,7 +233,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -248,7 +248,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -404,7 +404,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -419,7 +418,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -430,7 +428,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Use a custom output filename")
                         .takes_value(true)
-                        .required(true)
                         .default_value("id")
                         .value_name("STRING"),
                 )
@@ -475,7 +472,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -491,7 +488,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Use a custom output filename")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .default_value("SEGUL-Rename")
                         .value_name("STRING"),
                 )
@@ -517,7 +514,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -570,7 +567,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -586,7 +583,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Use a custom output filename")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .default_value("SEGUL-Rename")
                         .value_name("STRING"),
                 )
@@ -612,7 +609,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -731,7 +728,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -747,7 +744,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Use a custom output directory name")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .default_value("SEGUL-Stats")
                         .value_name("STRING"),
                 )
@@ -763,7 +760,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -813,7 +810,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -856,7 +853,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Specify an output directory name")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .default_value("SEGUL-Extract")
                         .value_name("STRING"),
                 )
@@ -882,7 +879,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -923,7 +920,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -939,7 +936,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Specify an output directory name")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .default_value("SEGUL-translation")
                         .value_name("STRING"),
                 )
@@ -965,7 +962,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -1057,7 +1054,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("input-format")
                         .help("Specify an input format")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("SEQ-FORMAT")
                         .default_value("auto")
                         .possible_values(&[
@@ -1089,7 +1086,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
@@ -1161,7 +1158,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Specify output partition format")
                         .takes_value(true)
                         .value_name("PART-FORMAT")
-                        .required(true)
+                        // .required(true)
                         .default_value("nexus")
                         .possible_values(&["nexus", "raxml"]),
                 )
@@ -1170,7 +1167,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("datatype")
                         .help("Specify data type")
                         .takes_value(true)
-                        .required(true)
+                        // .required(true)
                         .value_name("DATATYPE")
                         .default_value("dna")
                         .possible_values(&["dna", "aa", "ignore"]),
