@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use ansi_term::Colour::{Green, Yellow};
+use indexmap::IndexMap;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 use regex::Regex;
@@ -12,7 +13,6 @@ use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
 use crate::writer::sequences::SeqWriter;
-use indexmap::IndexMap;
 
 impl OutputPrint for Rename<'_> {}
 

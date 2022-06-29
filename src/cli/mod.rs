@@ -5,6 +5,7 @@ mod extract;
 mod filter;
 mod id;
 mod partition;
+mod remove;
 mod rename;
 mod split;
 mod summarize;
@@ -32,6 +33,7 @@ use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
 use crate::cli::partition::PartParser;
+use crate::cli::remove::RemoveParser;
 use crate::cli::rename::RenameParser;
 use crate::cli::split::SplitParser;
 use crate::cli::summarize::SummaryParser;
@@ -53,11 +55,13 @@ pub fn parse_cli(version: &str) {
         Some(("filter", pick_matches)) => FilterParser::new(pick_matches).filter(),
         Some(("id", id_matches)) => IdParser::new(id_matches).get_id(),
         Some(("extract", extract_matches)) => ExtractParser::new(extract_matches).extract(),
+        Some(("partition", part_matches)) => PartParser::new(part_matches).convert(),
+        Some(("remove", rm_matches)) => RemoveParser::new(rm_matches).remove(),
         Some(("rename", rename_matches)) => RenameParser::new(rename_matches).rename(),
+        Some(("split", split_matches)) => SplitParser::new(split_matches).split(),
         Some(("summary", stats_matches)) => SummaryParser::new(stats_matches).stats(),
         Some(("translate", trans_matches)) => TranslateParser::new(trans_matches).translate(),
-        Some(("split", split_matches)) => SplitParser::new(split_matches).split(),
-        Some(("partition", part_matches)) => PartParser::new(part_matches).convert(),
+
         _ => unreachable!("Invalid subcommands!"),
     }
 }
