@@ -37,7 +37,6 @@ impl<'a> Extract<'a> {
     }
 
     pub fn extract_sequences(&self, files: &[PathBuf], output: &Path, output_fmt: &OutputFmt) {
-        fs::create_dir_all(output).expect("Failed creating output directory");
         let file_counts = AtomicUsize::new(0);
         let spin = utils::set_spinner();
         spin.set_message("Extracting sequences with matching IDs...");
