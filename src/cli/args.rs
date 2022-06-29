@@ -394,7 +394,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Input path (include wildcard support)")
                         .takes_value(true)
                         .multiple_values(true)
-                        .required_unless_present("input")
+                        .required_unless_present("dir")
                         .conflicts_with("dir")
                         .value_name("INPUT-PATH"),
                 )
@@ -462,8 +462,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                             .help("Input path (include wildcard support)")
                             .takes_value(true)
                             .multiple_values(true)
-                            .required_unless_present("input")
-                            .conflicts_with_all(&["input", "dir"])
+                            .required_unless_present("dir")
+                            .conflicts_with("dir")
                             .value_name("INPUT-PATH"),
                 )
                 .arg(
@@ -523,7 +523,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("regex")
                         .long("re")
                         .help("Remove sequence that match regular expression")
-                        .conflicts_with_all(&["id", "file"])
+                        .conflicts_with("id")
                         .takes_value(true)
                         .require_equals(true)
                         .value_name("REGEX")       
@@ -532,8 +532,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("id")
                         .long("id")
                         .help("Input sequence IDs using terminal commands (STDIN)")
-                        .conflicts_with_all(&["regex", "file"])
-                        .required_unless_present_any(&["regex", "file"])
+                        .required_unless_present("regex")
                         .takes_value(true)
                         .multiple_values(true)
                         .value_name("STRING")       
@@ -557,8 +556,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                             .help("Input path (include wildcard support)")
                             .takes_value(true)
                             .multiple_values(true)
-                            .required_unless_present("input")
-                            .conflicts_with_all(&["input", "dir"])
+                            .required_unless_present("dir")
+                            .conflicts_with("dir")
                             .value_name("INPUT-PATH"),
                 )
                 .arg(
@@ -791,8 +790,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Input path")
                         .takes_value(true)
                         .multiple_values(true)
-                        .required_unless_present("dir")
-                        .conflicts_with("dir")
                         .value_name("INPUT-PATH"),
                 )
                 .arg(
@@ -1093,8 +1090,6 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Input partition path")
                         .takes_value(true)
                         .multiple_values(false)
-                        .required_unless_present("dir")
-                        .conflicts_with("dir")
                         .value_name("INPUT-PATH"),
                 )
                 .arg(
