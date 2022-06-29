@@ -4,7 +4,7 @@ use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
-use crate::handler::extract::{Extract, Params};
+use crate::handler::extract::{Extract, ExtractOpts};
 use crate::parser::txt;
 
 impl InputCli for ExtractParser<'_> {}
@@ -14,7 +14,7 @@ impl OutputCli for ExtractParser<'_> {}
 pub(in crate::cli) struct ExtractParser<'a> {
     matches: &'a ArgMatches,
     input_dir: Option<PathBuf>,
-    params: Params,
+    params: ExtractOpts,
 }
 
 impl<'a> ExtractParser<'a> {
@@ -22,7 +22,7 @@ impl<'a> ExtractParser<'a> {
         Self {
             matches,
             input_dir: None,
-            params: Params::None,
+            params: ExtractOpts::None,
         }
     }
 
@@ -49,7 +49,7 @@ impl<'a> ExtractParser<'a> {
 
         let is_overwrite = self.parse_overwrite_opts(self.matches);
         self.check_output_dir_exist(&outdir, is_overwrite);
-        log::info!("{}", Yellow.paint("Params"));
+        log::info!("{}", Yellow.paint("ExtractOpts"));
         self.parse_params();
         let extract = Extract::new(&self.params, &input_fmt, &datatype);
         extract.extract_sequences(&files, &outdir, &output_fmt);
@@ -60,12 +60,12 @@ impl<'a> ExtractParser<'a> {
             m if m.is_present("regex") => {
                 let re = self.parse_regex();
                 log::info!("{:18}: {}\n", "Regex", re);
-                self.params = Params::Regex(re);
+                self.params = ExtractOpts::Regex(re);
             }
             m if m.is_present("id") => {
                 let ids = self.parse_id();
                 log::info!("{:18}: {:?}\n", "IDs", ids);
-                self.params = Params::Id(ids);
+                self.params = ExtractOpts::Id(ids);
             }
             m if m.is_present("file") => {
                 let ids = self.parse_file();
@@ -76,7 +76,7 @@ impl<'a> ExtractParser<'a> {
                         .value_of("file")
                         .expect("Failed parsing file path")
                 );
-                self.params = Params::Id(ids);
+                self.params = ExtractOpts::Id(ids);
             }
             _ => unreachable!("Unknown parameters!"),
         }

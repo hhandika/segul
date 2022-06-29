@@ -15,7 +15,7 @@ use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for Extract<'_> {}
 
-pub enum Params {
+pub enum ExtractOpts {
     Regex(String),
     Id(Vec<String>),
     None,
@@ -23,14 +23,14 @@ pub enum Params {
 
 pub struct Extract<'a> {
     input_fmt: &'a InputFmt,
-    params: &'a Params,
+    opts: &'a ExtractOpts,
     datatype: &'a DataType,
 }
 
 impl<'a> Extract<'a> {
-    pub fn new(params: &'a Params, input_fmt: &'a InputFmt, datatype: &'a DataType) -> Self {
+    pub fn new(opts: &'a ExtractOpts, input_fmt: &'a InputFmt, datatype: &'a DataType) -> Self {
         Self {
-            params,
+            opts,
             input_fmt,
             datatype,
         }
@@ -62,21 +62,21 @@ impl<'a> Extract<'a> {
 
     fn get_matrix(&self, seqmat: SeqMatrix) -> SeqMatrix {
         let mut matrix: SeqMatrix = IndexMap::new();
-        match self.params {
-            Params::Regex(re) => seqmat.iter().for_each(|(id, seq)| {
+        match self.opts {
+            ExtractOpts::Regex(re) => seqmat.iter().for_each(|(id, seq)| {
                 let matched_id = self.match_id(id, re);
                 if matched_id {
                     matrix.insert(id.to_string(), seq.to_string());
                 }
             }),
-            Params::Id(ids) => seqmat.iter().for_each(|(id, seq)| {
+            ExtractOpts::Id(ids) => seqmat.iter().for_each(|(id, seq)| {
                 ids.iter().for_each(|match_id| {
                     if match_id == id {
                         matrix.insert(id.to_string(), seq.to_string());
                     }
                 })
             }),
-            Params::None => panic!("Please, specify a matching parameter!"),
+            ExtractOpts::None => panic!("Please, specify a matching parameter!"),
         };
         matrix
     }
@@ -112,13 +112,13 @@ mod tests {
     fn test_match_id() {
         let id = "Bunomys_penitus";
         let re = "(?i)(Penitus)$";
-        let extract = Extract::new(&Params::None, &InputFmt::Fasta, &DataType::Dna);
+        let extract = Extract::new(&ExtractOpts::None, &InputFmt::Fasta, &DataType::Dna);
         assert_eq!(true, extract.match_id(id, re));
     }
 
     #[test]
     fn test_get_matrix_re() {
-        let re = Params::Regex(String::from("(?i)(celebensis)"));
+        let re = ExtractOpts::Regex(String::from("(?i)(celebensis)"));
         let file = Path::new("tests/files/complete.nex");
         let extract = Extract::new(&re, &InputFmt::Nexus, &DataType::Dna);
         let (seq, _) = SeqParser::new(file, extract.datatype).get(extract.input_fmt);
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_get_matrix_id() {
-        let re = Params::Id(vec![String::from("Taeromys_calitrichus_NMVZ27408")]);
+        let re = ExtractOpts::Id(vec![String::from("Taeromys_calitrichus_NMVZ27408")]);
         let file = Path::new("tests/files/complete.nex");
         let extract = Extract::new(&re, &InputFmt::Nexus, &DataType::Dna);
         let (seq, _) = SeqParser::new(file, extract.datatype).get(extract.input_fmt);
