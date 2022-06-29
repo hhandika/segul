@@ -448,6 +448,101 @@ pub fn get_args(version: &str) -> ArgMatches {
                 ),
         )
         .subcommand(
+            Command::new("remove")
+            .about("Remove sequence based on user-defined IDs")
+                .arg(
+                    Arg::new("dir")
+                    .short('d')
+                    .long("dir")
+                    .help("Input a directory path")
+                    .takes_value(true)
+                    .value_name("PATH"),
+                )
+                .arg(
+                    Arg::new("input")
+                            .short('i')
+                            .long("input")
+                            .help("Input path (include wildcard support)")
+                            .takes_value(true)
+                            .multiple_values(true)
+                            .required_unless_present("input")
+                            .conflicts_with_all(&["input", "dir"])
+                            .value_name("INPUT-PATH"),
+                )
+                .arg(
+                    Arg::new("input-format")
+                        .short('f')
+                        .long("input-format")
+                        .help("Specify an input format")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("SEQ-FORMAT")
+                        .default_value("auto")
+                        .possible_values(&[
+                            "auto",
+                            "fasta",
+                            "nexus",
+                            "phylip",
+                        ]),
+                )
+                .arg(
+                    Arg::new("output")
+                        .short('o')
+                        .long("output")
+                        .help("Use a custom output filename")
+                        .takes_value(true)
+                        .required(true)
+                        .default_value("SEGUL-Rename")
+                        .value_name("STRING"),
+                )
+                .arg(
+                    Arg::new("output-format")
+                        .short('F')
+                        .long("output-format")
+                        .help("Specify an output sequence format")
+                        .takes_value(true)
+                        .default_value("nexus")
+                        .value_name("SEQ-FORMAT")
+                        .possible_values(&[
+                            "nexus",
+                            "phylip",
+                            "fasta",
+                            "fasta-int",
+                            "nexus-int",
+                            "phylip-int",
+                        ]),
+                )
+                .arg(
+                    Arg::new("datatype")
+                        .long("datatype")
+                        .help("Specify data type")
+                        .takes_value(true)
+                        .required(true)
+                        .value_name("DATATYPE")
+                        .default_value("dna")
+                        .possible_values(&["dna", "aa", "ignore"]),
+                )
+                .arg(
+                    Arg::new("regex")
+                        .long("re")
+                        .help("Remove sequence that match regular expression")
+                        .conflicts_with_all(&["id", "file"])
+                        .takes_value(true)
+                        .require_equals(true)
+                        .value_name("REGEX")       
+                )
+                .arg(
+                    Arg::new("id")
+                        .long("id")
+                        .help("Input sequence IDs using terminal commands (STDIN)")
+                        .conflicts_with_all(&["regex", "file"])
+                        .required_unless_present_any(&["regex", "file"])
+                        .takes_value(true)
+                        .multiple_values(true)
+                        .value_name("STRING")       
+                )
+    )
+        .subcommand(
             Command::new("rename")
             .about("Batch renaming sequence IDs in multiple_values alignments")
                 .arg(
