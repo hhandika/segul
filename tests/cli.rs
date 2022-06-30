@@ -17,6 +17,17 @@ macro_rules! test_subcommand {
     };
 }
 
+#[test]
+fn test_version() {
+    use clap::crate_version;
+    let version = crate_version!();
+    utils::segul(utils::create_tmp_dir().unwrap().path())
+        .arg("-V")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(version));
+}
+
 test_subcommand! {test_concat_subcommand, "concat"}
 test_subcommand! {test_convert_subcommand, "convert"}
 test_subcommand! {test_extract_subcommand, "extract"}

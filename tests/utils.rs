@@ -27,14 +27,3 @@ pub fn create_tmp_dir() -> Result<TempDir> {
     let tmp_dir = TempDir::new(DIR)?;
     Ok(tmp_dir)
 }
-
-#[test]
-fn test_version() {
-    use clap::crate_version;
-    let version = crate_version!();
-    segul(create_tmp_dir().unwrap().path())
-        .arg("-V")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains(version));
-}

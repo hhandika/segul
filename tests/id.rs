@@ -14,7 +14,7 @@ fn test_id_success() {
     let res_path = tmp_dir.path().join("id.txt");
     let ids = txt::parse_text_file(&res_path);
 
-    assert_eq!(true, pred.eval(&res_path));
+    assert!(pred.eval(&res_path));
     assert_eq!(3, ids.len());
 
     tmp_dir.close().unwrap();
