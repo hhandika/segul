@@ -37,8 +37,3 @@ test_subcommand! {test_rename_subcommand, "rename"}
 test_subcommand! {test_split_subcommand, "split"}
 test_subcommand! {test_summary_subcommand, "summary"}
 test_subcommand! {test_translate_subcommand, "translate"}
-
-// #[test]
-// fn test_part_subcommand() {
-//     segul().arg("remove").assert().success();
-// }
