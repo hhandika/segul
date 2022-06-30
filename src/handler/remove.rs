@@ -1,9 +1,12 @@
 use std::path::{Path, PathBuf};
 
 use ansi_term::Colour::Yellow;
+use rayon::prelude::*;
+use regex::Regex;
 
 use crate::handler::OutputPrint;
 use crate::helper::filenames;
+use crate::helper::finder::IDs;
 use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
@@ -45,14 +48,36 @@ impl<'a> Remove<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Removing sequences...");
         match self.opts {
-            RemoveOpts::Id(ids) => files.iter().for_each(|file| {
-                let (matrix, header) = self.remove_sequence(file, ids);
-                self.write_output(&matrix, &header, file);
-            }),
-            RemoveOpts::Regex(input_re) => println!("Regex {} is working!", input_re),
+            RemoveOpts::Id(ids) => self.par_remove(files, ids),
+            RemoveOpts::Regex(re) => {
+                let ids = self.find_matching_ids(files, re);
+                self.par_remove(files, &ids);
+            }
         }
         spin.finish_with_message("Finished removing sequences!\n");
         self.print_output_info();
+    }
+
+    fn find_matching_ids(&self, files: &[PathBuf], re: &str) -> Vec<String> {
+        let ids = IDs::new(files, self.input_fmt, self.datatype).id_unique();
+        let re = Regex::new(re).expect("Failed parsing regex");
+        let mut matching_ids = Vec::with_capacity(ids.len());
+        ids.iter().for_each(|id| {
+            if re.is_match(id) {
+                matching_ids.push(id.to_string());
+            }
+        });
+        matching_ids.shrink_to_fit();
+        matching_ids
+    }
+
+    fn par_remove(&self, files: &[PathBuf], ids: &[String]) {
+        files.par_iter().for_each(|file| {
+            let (matrix, header) = self.remove_sequence(file, ids);
+            if !matrix.is_empty() {
+                self.write_output(&matrix, &header, file);
+            }
+        })
     }
 
     fn write_output(&self, matrix: &SeqMatrix, header: &Header, file: &Path) {
@@ -64,14 +89,19 @@ impl<'a> Remove<'a> {
     }
 
     fn remove_sequence(&self, fpath: &Path, ids: &[String]) -> (SeqMatrix, Header) {
-        let (mut matrix, _) = SeqParser::new(fpath, self.datatype).get(self.input_fmt);
+        let (mut matrix, header) = SeqParser::new(fpath, self.datatype).get(self.input_fmt);
         ids.iter().for_each(|id| match matrix.remove(id) {
             Some(_) => (),
             None => (),
         });
 
-        let header = self.get_header(&matrix);
-        (matrix, header)
+        let fnl_header = if header.ntax != matrix.len() {
+            self.get_header(&matrix)
+        } else {
+            header
+        };
+
+        (matrix, fnl_header)
     }
 
     fn get_header(&self, matrix: &SeqMatrix) -> Header {
@@ -88,5 +118,42 @@ impl<'a> Remove<'a> {
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "Output dir", self.outdir.display());
         self.print_output_fmt(self.output_fmt);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    macro_rules! input {
+        ($remove: ident) => {
+            let input_fmt = InputFmt::Fasta;
+            let datatype = DataType::Dna;
+
+            let opts = RemoveOpts::Regex(String::from("^abc"));
+            let outdir = Path::new(".");
+            let output_fmt = OutputFmt::Fasta;
+            let $remove = Remove::new(&input_fmt, &datatype, outdir, &output_fmt, &opts);
+        };
+    }
+
+    #[test]
+    fn test_remove_seq() {
+        let ids = vec![String::from("ABCD")];
+        input!(remove);
+        let file = Path::new("tests/files/simple.fas");
+        let (_, header) = remove.remove_sequence(file, &ids);
+        assert_eq!(header.ntax, 1);
+    }
+
+    #[test]
+    fn test_remove_regex() {
+        let re = String::from("(?i)^abc");
+        input!(remove);
+        let file = PathBuf::from("tests/files/simple.fas");
+        let files = [file.clone()];
+        let ids = remove.find_matching_ids(&files, &re);
+        let (_, header) = remove.remove_sequence(&file, &ids);
+        assert_eq!(header.ntax, 1);
     }
 }
