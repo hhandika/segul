@@ -3,11 +3,8 @@ use std::time::Instant;
 
 use clap::crate_version;
 
-mod cli;
-mod handler;
-mod helper;
-mod parser;
-mod writer;
+use segul::cli;
+use segul::helper;
 
 fn main() {
     // We ignore backtrace for now. It does
