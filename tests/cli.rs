@@ -1,10 +1,18 @@
 mod utils;
 
+use tempdir::TempDir;
+
 macro_rules! test_subcommand {
     ($func: ident, $subcommand: expr) => {
         #[test]
         fn $func() {
-            utils::segul().arg($subcommand).arg("-h").assert().success();
+            let tmp_dir = TempDir::new(utils::DIR).unwrap();
+            utils::segul(tmp_dir.path())
+                .arg($subcommand)
+                .arg("-h")
+                .assert()
+                .success();
+            tmp_dir.close().unwrap();
         }
     };
 }

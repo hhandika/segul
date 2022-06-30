@@ -537,6 +537,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .multiple_values(true)
                         .value_name("STRING")       
                 )
+                .arg(
+                    Arg::new("overwrite")
+                        .long("overwrite")
+                        .help("Overwrite existing output file(s)/directory")
+                        .takes_value(false)
+                ),
     )
         .subcommand(
             Command::new("rename")

@@ -95,7 +95,7 @@ impl<'a> Remove<'a> {
             None => (),
         });
 
-        let fnl_header = if header.ntax != matrix.len() {
+        let fnl_header = if !matrix.is_empty() && header.ntax != matrix.len() {
             self.get_header(&matrix)
         } else {
             header
