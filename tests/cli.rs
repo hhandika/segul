@@ -1,29 +1,12 @@
-use assert_cmd::Command;
-
-fn segul() -> Command {
-    let mut cmd = Command::cargo_bin("segul").unwrap();
-    cmd.current_dir("tests/files");
-    cmd
-}
+mod utils;
 
 macro_rules! test_subcommand {
     ($func: ident, $subcommand: expr) => {
         #[test]
         fn $func() {
-            segul().arg($subcommand).arg("-h").assert().success();
+            utils::segul().arg($subcommand).arg("-h").assert().success();
         }
     };
-}
-
-#[test]
-fn test_version() {
-    use clap::crate_version;
-    let version = crate_version!();
-    segul()
-        .arg("-V")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains(version));
 }
 
 test_subcommand! {test_concat_subcommand, "concat"}
