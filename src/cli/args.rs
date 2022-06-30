@@ -489,7 +489,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Use a custom output filename")
                         .takes_value(true)
                         // .required(true)
-                        .default_value("SEGUL-Rename")
+                        .default_value("SEGUL-Remove")
                         .value_name("STRING"),
                 )
                 .arg(
