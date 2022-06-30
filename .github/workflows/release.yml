@@ -6,57 +6,224 @@ on:
       - "*"
 
 jobs:
-  publish:
-    name: Release for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        name: [linux, macos, windows]
-
-        include:
-          - name: linux
-            os: ubuntu-latest
-            executable: segul
-            artifact_name: target/release/segul
-            asset_name: segul-Linux-x86_64.zip
-
-          - name: windows
-            os: windows-latest
-            executable: segul.exe
-            artifact_name: target/release/segul.exe
-            asset_name: segul-Windows-x86_64.zip
-
-          - name: macos
-            os: macos-latest
-            executable: segul
-            artifact_name: target/release/segul
-            asset_name: segul-MacOS-x86_64.zip
-
+  linux:
+    name: Linux x86_64 GNU
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout sources
+        uses: actions/checkout@v3
 
-      - uses: actions-rs/toolchain@v1
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
-
-      - id: get_version
-        uses: battila7/get-version-action@v2
+          override: true
 
       - name: Build
-        run: |
-          cargo build --release
-          mv ${{ matrix.artifact_name }} .
-      
-      - name: Archive Release
-        uses: thedoctor0/zip-release@master
+        uses: actions-rs/cargo@v1
         with:
-          type: 'zip'
-          path: ${{ matrix.executable }}
-          filename: ${{ matrix.asset_name }}
+          command: build
+          args: --release
 
-      - name: Upload Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload --clobber ${{ steps.get_version.outputs.version }} ${{ matrix.asset_name }}
+      - name: Compress release
+        run: tar czvf segul.tar.gz -C target/release segul
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: segul.tar.gz
+          asset_name: segul-Linux-x86_64.tar.gz
+          tag: ${{ github.ref }}
+    
+  linux_musl:
+    name: Linux x86_64 Static
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: x86_64-unknown-linux-musl
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target x86_64-unknown-linux-musl
+
+      - name: Compress release
+        run: tar czvf segul.tar.gz -C target/x86_64-unknown-linux-musl/release segul
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: segul.tar.gz
+          asset_name: segul-Linux-musl-x86_64.tar.gz
+          tag: ${{ github.ref }}
+  
+
+  macos:
+    name: macOS x86_64
+    runs-on: macos-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Compress release
+        run: tar czvf segul.tar.gz -C target/release segul
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: segul.tar.gz
+          asset_name: segul-macOS-x86_64.tar.gz
+          tag: ${{ github.ref }}
+  
+
+  macos_arm:
+    name: macOS arm64
+    runs-on: macos-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: aarch64-apple-darwin
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target aarch64-apple-darwin
+
+      - name: Compress release
+        run: tar czvf segul.tar.gz -C target/aarch64-apple-darwin/release segul
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: segul.tar.gz
+          asset_name: segul-macOS-arm64.tar.gz
+          tag: ${{ github.ref }}
+  
+  windows:
+    name: Windows x86_64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Compress release
+        run: powershell Compress-Archive target/release/segul.exe segul.zip
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: segul.tar.gz
+          asset_name: segul-Windows-x86_64.tar.gz
+          tag: ${{ github.ref }}
+          
+# name: Release
+
+# on:
+#   push:
+#     tags:
+#       - "*"
+
+# jobs:
+#   publish:
+#     name: Release for ${{ matrix.os }}
+#     runs-on: ${{ matrix.os }}
+#     strategy:
+#       matrix:
+#         name: [linux, macos, windows]
+
+#         include:
+#           - name: linux
+#             os: ubuntu-latest
+#             executable: segul
+#             artifact_name: target/release/segul
+#             asset_name: segul-Linux-x86_64.zip
+
+#           - name: windows
+#             os: windows-latest
+#             executable: segul.exe
+#             artifact_name: target/release/segul.exe
+#             asset_name: segul-Windows-x86_64.zip
+
+#           - name: macos
+#             os: macos-latest
+#             executable: segul
+#             artifact_name: target/release/segul
+#             asset_name: segul-MacOS-x86_64.zip
+
+#     steps:
+#       - uses: actions/checkout@v1
+
+#       - uses: actions-rs/toolchain@v1
+#         with:
+#           profile: minimal
+#           toolchain: stable
+
+#       - id: get_version
+#         uses: battila7/get-version-action@v2
+
+#       - name: Build
+#         run: |
+#           cargo build --release
+#           mv ${{ matrix.artifact_name }} .
+      
+#       - name: Archive Release
+#         uses: thedoctor0/zip-release@master
+#         with:
+#           type: 'zip'
+#           path: ${{ matrix.executable }}
+#           filename: ${{ matrix.asset_name }}
+
+#       - name: Upload Release
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           gh release upload --clobber ${{ steps.get_version.outputs.version }} ${{ matrix.asset_name }}
