@@ -11,16 +11,7 @@ use segul::helper::types::InputFmt;
 fn test_concat() {
     initiate_cmd!(cmd, "concat", "tests/files/concat/", tmp_dir);
     cmd.arg("--part").arg("raxml").assert().success();
-
-    let pred = predicates::path::is_dir();
-    let res_path = tmp_dir.path().join("SEGUL-Concat");
-
-    let files = Files::new(&res_path, &InputFmt::Nexus).find();
-
-    assert!(pred.eval(&res_path));
-    assert_eq!(1, files.len());
-
-    tmp_dir.close().unwrap();
+    test_results!(1, tmp_dir, "SEGUL-Concat", Nexus);
 }
 
 #[test]

@@ -17,6 +17,21 @@ macro_rules! initiate_cmd {
     };
 }
 
+#[macro_export]
+macro_rules! test_results {
+    ($res: expr, $tmp_dir: ident, $path: expr, $fmt: ident) => {
+        let pred = predicates::path::is_dir();
+        let res_path = $tmp_dir.path().join($path);
+
+        let files = Files::new(&res_path, &InputFmt::$fmt).find();
+
+        assert!(pred.eval(&res_path));
+        assert_eq!($res, files.len());
+
+        $tmp_dir.close().unwrap();
+    };
+}
+
 pub fn segul(dir: &Path) -> Command {
     let mut cmd = Command::cargo_bin("segul").unwrap();
     cmd.current_dir(dir);

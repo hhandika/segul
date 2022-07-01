@@ -12,21 +12,15 @@ macro_rules! test_filter {
         #[test]
         fn $test() {
             initiate_cmd!(cmd, "filter", "tests/files/filter", tmp_dir);
-            let output = tmp_dir.path().join("concat_50p");
+            let path = "concat_50p";
+            let output = tmp_dir.path().join(path);
             cmd.arg($arg)
                 .arg($val)
                 .arg("-o")
                 .arg(&output)
                 .assert()
                 .success();
-
-            let pred = predicates::path::is_dir();
-            let files = Files::new(&output, &InputFmt::Nexus).find();
-
-            assert!(pred.eval(&output));
-            assert_eq!($res, files.len());
-
-            tmp_dir.close().unwrap();
+            test_results!($res, tmp_dir, path, Nexus);
         }
     };
 }
