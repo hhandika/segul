@@ -997,7 +997,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Specify an output directory name")
                         .takes_value(true)
                         // .required(true)
-                        .default_value("SEGUL-translation")
+                        .default_value("SEGUL-Translation")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -1104,6 +1104,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .long("output")
                         .help("Specify an output directory")
                         .takes_value(true)
+                        .default_value("SEGUL-Split")
                         .value_name("STRING"),
                 )
                 .arg(
@@ -1154,6 +1155,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .short('I')
                         .long("input-part")
                         .help("Input sequence partitions")
+                        .required(true)
                         .takes_value(true)
                         .value_name("PART-PATH"),
                 )
