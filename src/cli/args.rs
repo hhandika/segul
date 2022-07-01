@@ -829,6 +829,12 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
+                    Arg::new("codon")
+                        .long("codon")
+                        .help("Specify codon model partition format")
+                        .takes_value(false),
+                )
+                .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
                         .help("Overwrite existing output file(s)/directory")
