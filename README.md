@@ -23,14 +23,16 @@ Features:
 6. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
 7. Getting sample IDs from a collection of alignments.
 8. Mapping sample distribution in a collection of alignments.
-9. Batch renaming sequence IDs.
-10. Splitting alignments by partitions.
-11. Translating DNA sequences to amino acid sequences
+9. Batch removing sequence based user-defined IDs.
+10. Batch renaming sequence IDs (include regular expression support).
+11. Splitting alignments by partitions.
+12. Translating DNA sequences to amino acid sequences
+<!-- 
+Upcoming features and bug fixes ([try](https://github.com/hhandika/segul/wiki/2.-Installation#try-development-features)):
 
-Upcoming features ([try](https://github.com/hhandika/segul/wiki/2.-Installation#try-development-features)):
-
-1. Filtering based on a matching taxon list.
-2. Summarizing character counts in the taxon summary.
+1. A new feature to remove sequence based on user-defined IDs (include regular expression support). 
+2. Filtering based on a matching taxon list.
+3. Summarizing character counts in the taxon summary. -->
 
 Supported sequence formats:
 
@@ -74,6 +76,7 @@ Citation: [pre-print](https://doi.org/10.22541/au.165167823.30911834/v1)
       - [Getting sample IDs from a collection of alignments](#getting-sample-ids-from-a-collection-of-alignments)
       - [Map sample distribution in a collection of alignments](#map-sample-distribution-in-a-collection-of-alignments)
       - [Splitting concatenated alignments by partitions](#splitting-concatenated-alignments-by-partitions)
+      - [Batch removing sequence based on user-defined IDs](#batch-removing-sequence-based-on-user-defined-ids)
       - [Batch renaming sequence IDs](#batch-renaming-sequence-ids)
       - [Translating DNA sequences](#translating-dna-sequences)
   - [Logging](#logging)
@@ -448,6 +451,22 @@ For the resulting alignments, `segul` will use the locus name in the partition f
 
 Learn more about splitting concatenated alignments [here](https://github.com/hhandika/segul/wiki/5.-Usages#splitting-concatenated-alignments-by-partition).
 
+#### Batch removing sequence based on user-defined IDs
+
+Based on a list of IDs, you can remove sequences in a collection of alignments.
+
+```Bash
+segul remove --dir [alignment-dir] -f [sequence-format-keyword] --id [list-of-id]
+```
+
+Using regular expression:
+
+```Bash
+segul remove --dir [alignment-dir] -f [sequence-format-keyword] --re=["regex"]
+```
+
+If you remove more than a half of the sequence, `segul`'s extract feature is more efficient.
+
 #### Batch renaming sequence IDs
 
 To rename sequence IDs in multiple alignments, you need to input the sequence IDs in tsv or csv format with header. For example:
@@ -466,19 +485,59 @@ segul id --dir [alignment-dir] -f [sequence-format-keyword]
 Copy the IDs to a spreadsheet application, such as Microsoft Excel and then write new names and the header names as above. Save the file as csv or tsv. The program will infer the file format based on the file extension. Use it as an `--names` or `-n` input:
 
 ```Bash
-segul rename --dir [alignment-dir] -f [sequence-format-keyword] -n [file-path-to-IDs]
+segul rename --dir [alignment-dir] -f [sequence-format-keyword] --replace [file-path-to-IDs]
 ```
 
 Using `--input` (or `-i` in short version) option ([learn the difference](https://github.com/hhandika/segul/wiki/4.-Command-Options#input-options)):
 
 ```Bash
-segul rename --input [a-path/wilcard-to-files] -n [file-path-to-IDs]
+segul rename --input [a-path/wilcard-to-files] --replace [file-path-to-IDs]
 ```
 
 Example:
 
 ```Bash
-segul rename -d uce-loci/ -f nexus -n new_names.csv
+segul rename -d uce-loci/ -f nexus --replace new_names.csv
+```
+
+You can also remove a part of the sequence name using a string input. Command below will remove each occurrence of `LOCUS` in the sequence IDs.
+
+```Bash
+segul rename -d -d uce-loci/ -f nexus --remove="LOCUS"
+```
+
+Using regular expression:
+
+```Bash
+segul rename -d -d uce-loci/ -f nexus --remove-re="(?i)^LOCUS-\d{3}"
+```
+
+The regex above match the first occurence of `locus-` (case insensitive) followed by 3 digits. For multiple occurrences in a single sequence name, use the option `--remove-re-all`. If your sequence names as below:
+
+```Text
+species_epithet_locus-100
+species_epithet_locus-102
+species_epithet_locus-103
+```
+
+They will change to:
+
+```Text
+species_epithet
+species_epithet
+species_epithet
+```
+
+You can also replace a part of the sequence name with other string:
+
+```Bash
+segul rename -d -d uce-loci/ -f nexus --replace-from="GENE" --replace-to="LOCUS
+```
+
+Using regular expression:
+
+```Bash
+segul rename -d -d uce-loci/ -f nexus --replace-from-re="(?i)GENE" --replace-to="LOCUS
 ```
 
 You can also change the output format by using `--output-format` or `-F` option.

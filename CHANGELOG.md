@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.17.0
 
 ### New Features
 
