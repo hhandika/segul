@@ -1,0 +1,11 @@
+#NEXUS
+begin data;
+dimensions ntax=4 nchar=26;
+format datatype=dna missing=? gap=-;
+matrix
+ABCD gatatagatataaagatatagatata
+ABCE gaaaaa????????gatattagtata
+ABCF attaaagatataatgaaattagtata
+ABCG ataaaaaaaaaaaagaaattagtata
+;
+end;
