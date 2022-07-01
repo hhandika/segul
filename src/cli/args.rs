@@ -750,7 +750,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .help("Use a custom output directory name")
                         .takes_value(true)
                         // .required(true)
-                        .default_value("SEGUL-Stats")
+                        .default_value("SEGUL-Summary")
                         .value_name("STRING"),
                 )
                 .arg(

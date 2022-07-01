@@ -2,12 +2,23 @@
 
 ## Upcoming
 
-- Replace site counts with character counts in the taxon summary.
+### New Features
+
+- Add a feature to remove sequence based on user-defined IDs.
+- Add regular expression support to rename sequence IDs.
+- Add string replacement option to rename sequence IDs.
 - Add option to filter based on the present of all user-defined taxa.
+- Replace site counts with character counts in the taxon summary.
+- Add integration tests.
+
+### Bug Fixes
+
 - Fix error messages when finding empty matrix.
 - Fix missing character counts in amino acid alignment summary.
 - Fix input and output format character cases.
 - Fix conflict with percent when filtering alignments.
+- Fix command conflict errors.
+- Make output name consistent with subcommand name for statistics function.
 
 ## v0.16.3
 
