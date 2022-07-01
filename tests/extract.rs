@@ -8,14 +8,14 @@ use segul::helper::finder::Files;
 use segul::helper::types::InputFmt;
 
 #[test]
-fn test_convert() {
-    initiate_cmd!(cmd, "convert", tmp_dir);
-    cmd.arg("-F").arg("phylip").assert().success();
+fn test_extract() {
+    initiate_cmd!(cmd, "extract", tmp_dir);
+    cmd.arg("--id").arg("ABCD").assert().success();
 
     let pred = predicates::path::is_dir();
-    let res_path = tmp_dir.path().join("SEGUL-Convert");
+    let res_path = tmp_dir.path().join("SEGUL-Extract");
 
-    let files = Files::new(&res_path, &InputFmt::Phylip).find();
+    let files = Files::new(&res_path, &InputFmt::Nexus).find();
 
     assert!(pred.eval(&res_path));
     assert_eq!(4, files.len());
