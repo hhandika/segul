@@ -57,7 +57,7 @@ impl<'a> ExtractParser<'a> {
 
     fn parse_params(&mut self) {
         match self.matches {
-            m if m.is_present("regex") => {
+            m if m.is_present("re") => {
                 let re = self.parse_regex();
                 log::info!("{:18}: {}\n", "Regex", re);
                 self.params = ExtractOpts::Regex(re);
@@ -85,7 +85,7 @@ impl<'a> ExtractParser<'a> {
     fn parse_regex(&self) -> String {
         let re = self
             .matches
-            .value_of("regex")
+            .value_of("re")
             .expect("Failed parsing regex string");
         String::from(re)
     }

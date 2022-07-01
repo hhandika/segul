@@ -520,7 +520,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .possible_values(&["dna", "aa", "ignore"]),
                 )
                 .arg(
-                    Arg::new("regex")
+                    Arg::new("re")
                         .long("re")
                         .help("Remove sequence that match regular expression")
                         .conflicts_with("id")
@@ -532,7 +532,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("id")
                         .long("id")
                         .help("Input sequence IDs using terminal commands (STDIN)")
-                        .required_unless_present("regex")
+                        .required_unless_present("re")
                         .takes_value(true)
                         .multiple_values(true)
                         .value_name("STRING")       
@@ -881,7 +881,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                         ]),
                 )
                 .arg(
-                    Arg::new("regex")
+                    Arg::new("re")
                         .long("re")
                         .help("Extract sequence IDs that match regular expression")
                         .conflicts_with_all(&["id", "file"])
@@ -893,7 +893,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("file")
                         .long("file")
                         .help("Input sequence IDs in a file")
-                        .conflicts_with_all(&["id", "regex"])
+                        .conflicts_with_all(&["id", "re"])
                         .takes_value(true)
                         .value_name("A-TEXT-FILE-PATH")       
                 )
@@ -901,8 +901,8 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("id")
                         .long("id")
                         .help("Input sequence IDs using terminal commands (STDIN)")
-                        .conflicts_with_all(&["regex", "file"])
-                        .required_unless_present_any(&["regex", "file"])
+                        .conflicts_with_all(&["re", "file"])
+                        .required_unless_present_any(&["re", "file"])
                         .takes_value(true)
                         .multiple_values(true)
                         .value_name("STRING")       

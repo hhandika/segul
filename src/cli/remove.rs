@@ -69,7 +69,7 @@ impl<'a> RemoveParser<'a> {
                 RemoveOpts::Id(ids)
             }
 
-            m if m.is_present("regex") => {
+            m if m.is_present("re") => {
                 let input_re = self
                     .matches
                     .value_of("re")
