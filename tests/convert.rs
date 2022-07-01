@@ -9,7 +9,7 @@ use segul::helper::types::InputFmt;
 
 #[test]
 fn test_convert() {
-    initiate_cmd!(cmd, "convert", tmp_dir);
+    initiate_cmd!(cmd, "convert", "tests/files/concat/", tmp_dir);
     cmd.arg("-F").arg("phylip").assert().success();
 
     let pred = predicates::path::is_dir();

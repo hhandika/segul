@@ -9,7 +9,7 @@ use segul::helper::types::InputFmt;
 
 #[test]
 fn test_remove_id() {
-    initiate_cmd!(cmd, "remove", tmp_dir);
+    initiate_cmd!(cmd, "remove", "tests/files/concat/", tmp_dir);
     cmd.arg("--id").arg("ABCD").assert().success();
 
     let pred = predicates::path::is_dir();

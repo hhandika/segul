@@ -9,7 +9,7 @@ use segul::helper::types::InputFmt;
 
 #[test]
 fn test_concat() {
-    initiate_cmd!(cmd, "concat", tmp_dir);
+    initiate_cmd!(cmd, "concat", "tests/files/concat/", tmp_dir);
     cmd.arg("--part").arg("raxml").assert().success();
 
     let pred = predicates::path::is_dir();
@@ -25,7 +25,7 @@ fn test_concat() {
 
 #[test]
 fn test_concat_nexus_part() {
-    initiate_cmd!(cmd, "concat", tmp_dir);
+    initiate_cmd!(cmd, "concat", "tests/files/concat/", tmp_dir);
     cmd.arg("--part").arg("nexus").assert().success();
 
     tmp_dir.close().unwrap();
