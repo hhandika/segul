@@ -61,4 +61,11 @@ mod test {
         assert_eq!("00:01:05", time);
         assert_eq!("01:00:00", hours);
     }
+
+    #[test]
+    fn test_num_fmt() {
+        let num = 1300;
+        let fmt_num = fmt_num(&num);
+        assert_eq!("1,300", fmt_num);
+    }
 }

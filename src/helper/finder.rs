@@ -149,12 +149,27 @@ impl<'a> IDs<'a> {
 mod test {
     use super::*;
 
+    macro_rules! input {
+        ($files: ident, $fmt: ident) => {
+            let path = Path::new("tests/files/concat");
+            let $fmt = InputFmt::Nexus;
+
+            let mut $files = Files::new(path, &$fmt);
+        };
+    }
+
     #[test]
     fn files_test() {
-        let path = Path::new("tests/files/concat/");
-        let mut finder = Files::new(path, &InputFmt::Nexus);
+        input!(finder, fmt);
         let files = finder.find();
         assert_eq!(4, files.len());
+    }
+
+    #[test]
+    fn test_pattern() {
+        input!(files, fmt);
+        files.pattern();
+        assert_eq!("tests/files/concat/*.nex*", files.pattern);
     }
 
     #[test]
@@ -168,10 +183,9 @@ mod test {
 
     #[test]
     fn id_test() {
-        let path = Path::new("tests/files/concat");
-        let input_fmt = InputFmt::Nexus;
+        input!(finder, input_fmt);
         let datatype = DataType::Dna;
-        let files = Files::new(path, &input_fmt).find();
+        let files = finder.find();
         let id = IDs::new(&files, &input_fmt, &datatype);
         let ids = id.id_unique();
         assert_eq!(3, ids.len());
