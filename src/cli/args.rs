@@ -1196,3 +1196,44 @@ pub fn get_args(version: &str) -> ArgMatches {
         )
         .get_matches()
 }
+
+#[cfg(test)]
+mod test {
+    use std::path::Path;
+
+    use assert_cmd::Command;
+    use tempdir::TempDir;
+
+    pub fn segul(dir: &Path) -> Command {
+        let mut cmd = Command::cargo_bin("segul").unwrap();
+        cmd.current_dir(dir);
+        cmd
+    }
+
+    macro_rules! test_subcommand {
+        ($func: ident, $subcommand: expr) => {
+            #[test]
+            fn $func() {
+                let tmp_dir = TempDir::new("temp").unwrap();
+                segul(tmp_dir.path())
+                    .arg($subcommand)
+                    .arg("-h")
+                    .assert()
+                    .success();
+                tmp_dir.close().unwrap();
+            }
+        };
+    }
+
+    test_subcommand! {test_concat_subcommand, "concat"}
+    test_subcommand! {test_convert_subcommand, "convert"}
+    test_subcommand! {test_extract_subcommand, "extract"}
+    test_subcommand! {test_filter_subcommand, "filter"}
+    test_subcommand! {test_id_subcommand, "id"}
+    test_subcommand! {test_partition_subcommand, "partition"}
+    test_subcommand! {test_remove_subcommand, "remove"}
+    test_subcommand! {test_rename_subcommand, "rename"}
+    test_subcommand! {test_split_subcommand, "split"}
+    test_subcommand! {test_summary_subcommand, "summary"}
+    test_subcommand! {test_translate_subcommand, "translate"}
+}
