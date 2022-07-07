@@ -1,5 +1,6 @@
 use clap::{crate_description, crate_name, Arg, ArgMatches, Command};
 
+#[cfg(not(tarpaulin_include))]
 pub fn get_args(version: &str) -> ArgMatches {
     Command::new(crate_name!())
         .version(version)

@@ -6,6 +6,7 @@ use clap::crate_version;
 use segul::cli;
 use segul::helper;
 
+#[cfg(not(tarpaulin_include))]
 fn main() {
     // We ignore backtrace for now. It does
     // not seem useful for most cases.

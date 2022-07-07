@@ -19,6 +19,7 @@ pub fn parse_duration(duration: u64) -> String {
     time.format("%H:%M:%S").to_string()
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn set_spinner() -> ProgressBar {
     let spin = ProgressBar::new_spinner();
     spin.enable_steady_tick(150);
@@ -30,6 +31,7 @@ pub fn set_spinner() -> ProgressBar {
     spin
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn print_welcome_text(version: &str) {
     log::info!("{}", Yellow.paint(get_rep_str('=')));
     let text = format!("SEGUL v{}", version);
