@@ -37,6 +37,21 @@ impl<'a> SeqStats<'a> {
         }
     }
 
+    // pub fn summarize_locus(&mut self, files: &[PathBuf], prefix: &str) {
+    //     self.check_datatype();
+    //     let spin = utils::set_spinner();
+    //     spin.set_message("Computing per locus summary...");
+    //     files.iter().for_each(|file| {
+    //         let (matrix,_) = SeqParser::new(file, self.datatype).get_alignment(self.input_fmt);
+    //         let mut taxa = Taxa::new();
+    //         taxa.summarize_taxa(&matrix);
+    //         let csv = CsvWriter::new(self.output, prefix, self.datatype, &stats);
+    //         csv.write_taxon_summary(&ids)
+    //         .expect("Failed writing a taxon stats file");
+    //     })
+        
+    // }
+
     pub fn summarize_all(&mut self, files: &[PathBuf], prefix: &Option<String>) {
         self.check_datatype();
         let spin = utils::set_spinner();

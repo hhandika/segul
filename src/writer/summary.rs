@@ -49,15 +49,13 @@ impl<'a> CsvWriter<'a> {
         }
     }
 
+    // pub fn write_per_locus_summary(&self) {
+
+    // }
+
     pub fn write_taxon_summary(&self, ids: &IndexSet<String>) -> Result<()> {
         let default_prefix = "taxon_summary";
-        let output = match self.prefix {
-            Some(fname) => {
-                let out_name = format!("{}_{}", fname, default_prefix);
-                self.create_output_fnames(&out_name)
-            }
-            None => self.create_output_fnames(default_prefix),
-        };
+        let output = self.create_output_fnames(default_prefix);
         let mut writer = self.create_output_file(&output)?;
         write!(writer, "taxon,locus_counts")?;
         let alphabet = self.get_alphabet(self.datatype);
@@ -80,13 +78,7 @@ impl<'a> CsvWriter<'a> {
 
     pub fn write_locus_summary(&self) -> Result<()> {
         let default_prefix = "locus_summary";
-        let output = match self.prefix {
-            Some(fname) => {
-                let out_name = format!("{}_{}", fname, default_prefix);
-                self.create_output_fnames(&out_name)
-            }
-            None => self.create_output_fnames(default_prefix),
-        };
+        let output = self.create_output_fnames(default_prefix);
         let mut writer = self.create_output_file(&output)?;
         let alphabet = self.get_alphabet(self.datatype);
         self.write_locus_header(&mut writer, alphabet)?;
@@ -101,8 +93,16 @@ impl<'a> CsvWriter<'a> {
         Ok(())
     }
 
-    fn create_output_fnames(&self, prefix: &str) -> PathBuf {
-        self.output.join(prefix).with_extension("csv")
+    fn create_output_fnames(&self, default_prefix: &str) -> PathBuf {
+        match self.prefix {
+            Some(fname) => {
+                let out_name = format!("{}_{}", fname, default_prefix);
+                self.output.join(out_name).with_extension("csv")
+                // self.create_output_fnames(&out_name)
+            },
+            None => self.output.join(default_prefix).with_extension("csv"),
+        }
+        // self.output.join(prefix).with_extension("csv")
     }
 
     fn summarize_taxa(&self, ids: &IndexSet<String>) -> BTreeMap<String, TaxonRecords> {
