@@ -98,11 +98,9 @@ impl<'a> CsvWriter<'a> {
             Some(fname) => {
                 let out_name = format!("{}_{}", fname, default_prefix);
                 self.output.join(out_name).with_extension("csv")
-                // self.create_output_fnames(&out_name)
             },
             None => self.output.join(default_prefix).with_extension("csv"),
         }
-        // self.output.join(prefix).with_extension("csv")
     }
 
     fn summarize_taxa(&self, ids: &IndexSet<String>) -> BTreeMap<String, TaxonRecords> {
