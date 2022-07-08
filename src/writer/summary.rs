@@ -49,8 +49,8 @@ impl<'a> CsvWriter<'a> {
         }
     }
 
-    // pub fn write_per_locus_summary(&self) {
-
+    // pub fn write_per_locus_summary(&self) -> Result<()> {
+        // Ok(())
     // }
 
     pub fn write_taxon_summary(&self, ids: &IndexSet<String>) -> Result<()> {
