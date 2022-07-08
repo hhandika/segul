@@ -55,7 +55,7 @@ impl<'a> SummaryParser<'a> {
         let is_overwrite = self.parse_overwrite_opts(self.matches);
         self.check_output_dir_exist(&output, is_overwrite);
         SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
-            .get_stats_all(&files, &prefix);
+            .summarize_all(&files, &prefix);
     }
 
     fn parse_prefix(&self) -> Option<String> {

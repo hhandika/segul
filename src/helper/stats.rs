@@ -77,7 +77,7 @@ impl SiteSummary {
         }
     }
 
-    pub fn get_summary(&mut self, sites: &[Sites]) {
+    pub fn summarize(&mut self, sites: &[Sites]) {
         self.total_loci = sites.len();
         self.total_sites = sites.iter().map(|s| s.counts).sum();
         self.min_sites = sites.iter().map(|s| s.counts).min().unwrap();
@@ -148,7 +148,7 @@ impl CharSummary {
         }
     }
 
-    pub fn get_summary(&mut self, chars: &[Chars]) {
+    pub fn summarize(&mut self, chars: &[Chars]) {
         self.min_tax = chars.iter().map(|d| d.ntax).min().unwrap();
         self.max_tax = chars.iter().map(|d| d.ntax).max().unwrap();
         let sum_tax: usize = chars.iter().map(|d| d.ntax).sum();
