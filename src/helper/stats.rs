@@ -231,34 +231,6 @@ impl Completeness {
     }
 }
 
-pub struct Taxa {
-    pub records: HashMap<String, HashMap<char, usize>>,
-}
-
-impl Taxa {
-    pub fn new() -> Self {
-        Self {
-            records: HashMap::new(),
-        }
-    }
-
-    pub fn summarize_taxa(&mut self, aln: &SeqMatrix) {
-        aln.iter().for_each(|(id, seq)| {
-            let chars_count = self.count_chars(seq);
-            self.records.insert(id.to_string(), chars_count);
-        });
-    }
-
-    fn count_chars(&self, seq: &str) -> HashMap<char, usize> {
-        let mut char_counts = HashMap::new();
-        seq.chars().for_each(|c| {
-            *char_counts.entry(c.to_ascii_uppercase()).or_insert(0) += 1;
-        });
-
-        char_counts
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct Sites {
     pub path: PathBuf,
@@ -447,10 +419,49 @@ impl CharMatrix {
     }
 }
 
+pub struct Taxa {
+    pub records: HashMap<String, Chars>,
+}
+
+impl Taxa {
+    pub fn new() -> Self {
+        Self {
+            records: HashMap::new(),
+        }
+    }
+
+    pub fn summarize_taxa(&mut self, aln: &SeqMatrix, datatype: &DataType) {
+        aln.iter().for_each(|(id, seq)| {
+            let mut chars = Chars::new();
+            // insert character to matrix
+            seq.chars().for_each(|ch| {
+                *chars.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += 1;
+            });
+            if DataType::Dna == *datatype {
+                chars.count_gc();
+                chars.count_at();
+                chars.count_nucleotides();
+            }
+            chars.count_missing_data();
+            self.records.insert(id.to_string(), chars);
+        });
+    }
+
+    // fn parse_chars(&self, seq: &str) {
+    // }
+
+    // fn count_chars(&self, seq: &str) -> HashMap<char, usize> {
+    //     let mut char_counts = HashMap::new();
+    //     seq.chars().for_each(|c| {
+    //         *char_counts.entry(c.to_ascii_uppercase()).or_insert(0) += 1;
+    //     });
+
+    //     char_counts
+    // }
+}
+
 #[derive(Debug, Clone)]
 pub struct Chars {
-    // pub total_chars: usize,
-    // pub ntax: usize,
     pub chars: HashMap<char, usize>,
     pub gc_count: usize,
     pub at_count: usize,
@@ -462,8 +473,6 @@ pub struct Chars {
 impl Chars {
     fn new() -> Self {
         Self {
-            // total_chars: 0,
-            // ntax: 0,
             chars: HashMap::new(),
             gc_count: 0,
             at_count: 0,

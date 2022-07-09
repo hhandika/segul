@@ -53,7 +53,7 @@ impl<'a> CsvWriter<'a> {
         summary.records.iter().for_each(|(taxon, chars)| {
             write!(writer, "{}", taxon).expect("Failed to write taxon name");
             alphabet.chars().for_each(|ch| {
-                write!(writer, ",{}", chars.get(&ch).unwrap_or(&0))
+                write!(writer, ",{}", chars.chars.get(&ch).unwrap_or(&0))
                     .expect("Failed getting character summary stats");
             });
             writeln!(writer).expect("Failed writing per locus summary stats");

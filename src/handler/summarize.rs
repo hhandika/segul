@@ -66,7 +66,7 @@ impl<'a> SeqStats<'a> {
         files.iter().for_each(|file| {
             let (matrix, _) = SeqParser::new(file, self.datatype).get_alignment(self.input_fmt);
             let mut taxa = Taxa::new();
-            taxa.summarize_taxa(&matrix);
+            taxa.summarize_taxa(&matrix, self.datatype);
             let csv = CsvWriter::new(self.output, prefix, self.datatype);
             csv.write_per_locus_summary(file, &taxa)
                 .expect("Failed writing a taxon stats file");
@@ -87,14 +87,14 @@ impl<'a> SeqStats<'a> {
                 if let Some(char_counts) = taxa.records.get(id) {
                     match taxon_summary.get_mut(id) {
                         Some(taxon) => {
-                            char_counts.iter().for_each(|(c, count)| {
+                            char_counts.chars.iter().for_each(|(c, count)| {
                                 *taxon.char_counts.entry(*c).or_insert(0) += count;
                             });
                             taxon.locus_counts += 1;
                         }
                         None => {
                             let mut taxon = TaxonRecords::new();
-                            taxon.char_counts = char_counts.clone();
+                            taxon.char_counts = char_counts.chars.clone();
                             taxon.locus_counts = 1;
                             taxon_summary.insert(id.to_string(), taxon);
                         }
@@ -128,11 +128,11 @@ impl<'a> SeqStats<'a> {
         let aln = SeqParser::new(path, self.datatype);
         let (matrix, header) = aln.get_alignment(self.input_fmt);
         let mut dna = CharMatrix::new();
-        dna.count_chars(&matrix, &header, &self.datatype);
+        dna.count_chars(&matrix, &header, self.datatype);
         let mut sites = Sites::new();
         sites.get_stats(path, &matrix, self.datatype);
         let mut taxa = Taxa::new();
-        taxa.summarize_taxa(&matrix);
+        taxa.summarize_taxa(&matrix, self.datatype);
 
         (sites, dna, taxa)
     }
