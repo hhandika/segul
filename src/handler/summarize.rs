@@ -9,7 +9,7 @@ use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
-use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites, Taxa};
+use crate::helper::stats::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::helper::types::{DataType, InputFmt, TaxonRecords};
 use crate::helper::utils;
 use crate::writer::summary::{CsvWriter, SummaryWriter};
@@ -45,7 +45,7 @@ impl<'a> SeqStats<'a> {
         let ids = self.get_id(files);
         self.ntax = ids.len();
         spin.set_message("Computing alignment stats...");
-        let mut stats: Vec<(Sites, Chars, Taxa)> = self.par_get_stats(files);
+        let mut stats: Vec<(Sites, CharMatrix, Taxa)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.summarize_dna(&stats);
         let taxon_records = self.summarize_taxa(&ids, &stats);
@@ -79,7 +79,7 @@ impl<'a> SeqStats<'a> {
     fn summarize_taxa(
         &self,
         ids: &IndexSet<String>,
-        stats: &[(Sites, Chars, Taxa)],
+        stats: &[(Sites, CharMatrix, Taxa)],
     ) -> BTreeMap<String, TaxonRecords> {
         let mut taxon_summary: BTreeMap<String, TaxonRecords> = BTreeMap::new();
         stats.iter().for_each(|(_, _, taxa)| {
@@ -110,7 +110,7 @@ impl<'a> SeqStats<'a> {
         IDs::new(files, self.input_fmt, self.datatype).id_unique()
     }
 
-    fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, Chars, Taxa)> {
+    fn par_get_stats(&self, files: &[PathBuf]) -> Vec<(Sites, CharMatrix, Taxa)> {
         let (send, rec) = channel();
         files.par_iter().for_each_with(send, |s, file| {
             s.send(self.get_stats(file)).unwrap();
@@ -124,10 +124,10 @@ impl<'a> SeqStats<'a> {
         }
     }
 
-    fn get_stats(&self, path: &Path) -> (Sites, Chars, Taxa) {
+    fn get_stats(&self, path: &Path) -> (Sites, CharMatrix, Taxa) {
         let aln = SeqParser::new(path, self.datatype);
         let (matrix, header) = aln.get_alignment(self.input_fmt);
-        let mut dna = Chars::new();
+        let mut dna = CharMatrix::new();
         dna.count_chars(&matrix, &header);
         let mut sites = Sites::new();
         sites.get_stats(path, &matrix, self.datatype);
@@ -139,9 +139,9 @@ impl<'a> SeqStats<'a> {
 
     fn summarize_dna(
         &self,
-        stats: &[(Sites, Chars, Taxa)],
+        stats: &[(Sites, CharMatrix, Taxa)],
     ) -> (SiteSummary, CharSummary, Completeness) {
-        let (sites, dna): (Vec<Sites>, Vec<Chars>) =
+        let (sites, dna): (Vec<Sites>, Vec<CharMatrix>) =
             stats.par_iter().map(|p| (p.0.clone(), p.1.clone())).unzip();
         let mut sum_sites = SiteSummary::new();
         sum_sites.summarize(&sites);

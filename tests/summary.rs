@@ -80,3 +80,29 @@ fn test_locus_summary() {
     assert_eq!(cols, 19);
     tmp_dir.close().unwrap();
 }
+
+#[test]
+fn test_summary_aa() {
+    initiate_cmd!(cmd, "summary", "tests/files/concat-aa", tmp_dir);
+    cmd.arg("--datatype").arg("aa").assert().success();
+    let pred = predicates::path::is_dir();
+    let output_dir = tmp_dir.path().join("SEGUL-Summary");
+    let locus_path = output_dir.join("locus_summary.csv");
+    let taxon_path = output_dir.join("taxon_summary.csv");
+
+    // Check column counts
+    let locus_cols = count_header_cols(&locus_path);
+    let taxon_cols = count_header_cols(&taxon_path);
+
+    // Check taxon row counts
+    let loci = parse_csv(&locus_path);
+    let taxon = parse_csv(&taxon_path);
+
+    assert!(pred.eval(&output_dir));
+    assert_eq!(4, loci.len());
+    assert_eq!(3, taxon.len());
+    assert_eq!(locus_cols, 44);
+    assert_eq!(taxon_cols, 33);
+
+    tmp_dir.close().unwrap();
+}

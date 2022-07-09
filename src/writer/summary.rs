@@ -7,7 +7,7 @@ use ansi_term::Colour::Yellow;
 use anyhow::{Context, Result};
 
 use crate::helper::alphabet;
-use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites, Taxa};
+use crate::helper::stats::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::helper::types::{DataType, TaxonRecords};
 use crate::helper::utils;
 use crate::writer::FileWriter;
@@ -84,7 +84,7 @@ impl<'a> CsvWriter<'a> {
         Ok(())
     }
 
-    pub fn write_locus_summary(&self, stats: &[(Sites, Chars, Taxa)]) -> Result<()> {
+    pub fn write_locus_summary(&self, stats: &[(Sites, CharMatrix, Taxa)]) -> Result<()> {
         let default_prefix = "locus_summary";
         let output = self.create_output_fnames(default_prefix);
         let mut writer = self.create_output_file(&output)?;
@@ -126,11 +126,16 @@ impl<'a> CsvWriter<'a> {
             parsimony_informative_sites,\
             proportion_pars_inf_sites,\
             missing_data,\
-            proportion_missing_data,\
-            gc_content,\
-            at_content\
+            proportion_missing_data\
         "
         )?;
+        if DataType::Dna == *self.datatype {
+            write!(
+                writer,
+                ",gc_content\
+                ,at_content"
+            )?;
+        }
         self.write_alphabet_header(writer, alphabet)?;
         Ok(())
     }
@@ -147,7 +152,7 @@ impl<'a> CsvWriter<'a> {
         &self,
         writer: &mut W,
         site: &Sites,
-        chars: &Chars,
+        chars: &CharMatrix,
         alphabet: &str,
     ) -> Result<()> {
         write!(
@@ -179,26 +184,28 @@ impl<'a> CsvWriter<'a> {
         )?;
 
         // Missing data
-        write!(writer, "{},", chars.missing_data)?;
-        write!(writer, "{},", chars.prop_missing_data)?;
+        write!(writer, "{},", chars.chars.missing_data)?;
+        write!(writer, "{}", chars.chars.prop_missing_data)?;
 
-        // GC content
-        write!(
-            writer,
-            "{},",
-            chars.gc_count as f64 / chars.total_chars as f64
-        )?;
-
-        // AT content
-        write!(
-            writer,
-            "{}",
-            chars.at_count as f64 / chars.total_chars as f64
-        )?;
+        // We move comma position for accutrate printing
+        if DataType::Dna == *self.datatype {
+            // GC content
+            write!(
+                writer,
+                ",{}",
+                chars.chars.gc_count as f64 / chars.total_chars as f64
+            )?;
+            // AT content
+            write!(
+                writer,
+                ",{}",
+                chars.chars.at_count as f64 / chars.total_chars as f64
+            )?;
+        }
 
         // Characters
         alphabet.chars().for_each(|ch| {
-            write!(writer, ",{}", chars.chars.get(&ch).unwrap_or(&0)).unwrap();
+            write!(writer, ",{}", chars.chars.chars.get(&ch).unwrap_or(&0)).unwrap();
         });
         writeln!(writer)?;
         Ok(())

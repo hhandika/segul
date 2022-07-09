@@ -148,36 +148,36 @@ impl CharSummary {
         }
     }
 
-    pub fn summarize(&mut self, chars: &[Chars]) {
+    pub fn summarize(&mut self, chars: &[CharMatrix]) {
         self.min_tax = chars.iter().map(|d| d.ntax).min().unwrap();
         self.max_tax = chars.iter().map(|d| d.ntax).max().unwrap();
         let sum_tax: usize = chars.iter().map(|d| d.ntax).sum();
         self.mean_tax = sum_tax as f64 / chars.len() as f64;
         self.total_chars = chars.iter().map(|d| d.total_chars).sum();
-        self.missing_data = chars.iter().map(|d| d.missing_data).sum();
-        self.total_nucleotides = chars.iter().map(|d| d.nucleotides).sum();
+        self.missing_data = chars.iter().map(|d| d.chars.missing_data).sum();
+        self.total_nucleotides = chars.iter().map(|d| d.chars.nucleotides).sum();
         self.count_chars(chars);
         self.compute_gc_content(chars);
         self.compute_at_content(chars);
         self.count_prop_missing_data();
     }
 
-    fn count_chars(&mut self, chars: &[Chars]) {
+    fn count_chars(&mut self, chars: &[CharMatrix]) {
         chars
             .iter()
-            .flat_map(|ch| ch.chars.iter())
+            .flat_map(|ch| ch.chars.chars.iter())
             .for_each(|(ch, count)| {
                 *self.chars.entry(*ch).or_insert(0) += count;
             });
     }
 
-    fn compute_gc_content(&mut self, chars: &[Chars]) {
-        let gc_count: usize = chars.iter().map(|c| c.gc_count).sum();
+    fn compute_gc_content(&mut self, chars: &[CharMatrix]) {
+        let gc_count: usize = chars.iter().map(|c| c.chars.gc_count).sum();
         self.gc_content = gc_count as f64 / self.total_chars as f64;
     }
 
-    fn compute_at_content(&mut self, chars: &[Chars]) {
-        let at_count: usize = chars.iter().map(|c| c.at_count).sum();
+    fn compute_at_content(&mut self, chars: &[CharMatrix]) {
+        let at_count: usize = chars.iter().map(|c| c.chars.at_count).sum();
         self.at_content = at_count as f64 / self.total_chars as f64;
     }
 
@@ -202,7 +202,7 @@ impl Completeness {
         }
     }
 
-    pub fn matrix_completeness(&mut self, chars: &[Chars]) {
+    pub fn matrix_completeness(&mut self, chars: &[CharMatrix]) {
         let ntax: Vec<usize> = chars.iter().map(|d| d.ntax).collect();
         let mut values: usize = 100;
 
@@ -407,9 +407,46 @@ impl Sites {
 }
 
 #[derive(Debug, Clone)]
-pub struct Chars {
+pub struct CharMatrix {
     pub total_chars: usize,
     pub ntax: usize,
+    pub chars: Chars,
+}
+
+impl CharMatrix {
+    pub fn new() -> Self {
+        Self {
+            total_chars: 0,
+            ntax: 0,
+            chars: Chars::new(),
+        }
+    }
+
+    pub fn count_chars(&mut self, matrix: &SeqMatrix, header: &Header) {
+        self.ntax = header.ntax;
+        self.total_chars = header.nchar * self.ntax;
+        self.parse_chars(matrix);
+        self.chars.count_gc();
+        self.chars.count_at();
+        self.chars.count_nucleotides();
+        self.chars.count_missing_data();
+        self.chars.calculate_prop_missing_data(self.total_chars);
+    }
+
+    fn parse_chars(&mut self, matrix: &SeqMatrix) {
+        matrix
+            .values()
+            .flat_map(|seqs| seqs.chars())
+            .for_each(|ch| {
+                *self.chars.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += 1;
+            });
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Chars {
+    // pub total_chars: usize,
+    // pub ntax: usize,
     pub chars: HashMap<char, usize>,
     pub gc_count: usize,
     pub at_count: usize,
@@ -419,10 +456,10 @@ pub struct Chars {
 }
 
 impl Chars {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
-            total_chars: 0,
-            ntax: 0,
+            // total_chars: 0,
+            // ntax: 0,
             chars: HashMap::new(),
             gc_count: 0,
             at_count: 0,
@@ -430,25 +467,6 @@ impl Chars {
             missing_data: 0,
             prop_missing_data: 0.0,
         }
-    }
-
-    pub fn count_chars(&mut self, matrix: &SeqMatrix, header: &Header) {
-        self.ntax = header.ntax;
-        self.total_chars = header.nchar * self.ntax;
-        self.parse_chars(matrix);
-        self.count_gc();
-        self.count_at();
-        self.count_nucleotides();
-        self.count_missing_data();
-    }
-
-    fn parse_chars(&mut self, matrix: &SeqMatrix) {
-        matrix
-            .values()
-            .flat_map(|seqs| seqs.chars())
-            .for_each(|ch| {
-                *self.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += 1;
-            });
     }
 
     fn count_gc(&mut self) {
@@ -480,7 +498,10 @@ impl Chars {
             .filter(|&(ch, _)| *ch == '-' || *ch == '?')
             .map(|(_, count)| count)
             .sum();
-        self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
+    }
+
+    fn calculate_prop_missing_data(&mut self, total_chars: usize) {
+        self.prop_missing_data = self.missing_data as f64 / total_chars as f64;
     }
 }
 
@@ -573,16 +594,16 @@ mod test {
         let input_format = InputFmt::Fasta;
         let aln = SeqParser::new(path, &DNA);
         let (matrix, header) = aln.get_alignment(&input_format);
-        let mut dna = Chars::new();
+        let mut dna = CharMatrix::new();
         dna.count_chars(&matrix, &header);
         assert_eq!(4, dna.ntax);
         assert_eq!(104, dna.total_chars);
-        assert_eq!(Some(&48), dna.chars.get(&'A'));
-        assert_eq!(Some(&22), dna.chars.get(&'T'));
-        assert_eq!(Some(&10), dna.chars.get(&'G'));
-        assert_eq!(None, dna.chars.get(&'C'));
-        assert_eq!(Some(&24), dna.chars.get(&'?'));
-        assert_eq!(24, dna.missing_data);
-        assert_eq!(None, dna.chars.get(&'-'));
+        assert_eq!(Some(&48), dna.chars.chars.get(&'A'));
+        assert_eq!(Some(&22), dna.chars.chars.get(&'T'));
+        assert_eq!(Some(&10), dna.chars.chars.get(&'G'));
+        assert_eq!(None, dna.chars.chars.get(&'C'));
+        assert_eq!(Some(&24), dna.chars.chars.get(&'?'));
+        assert_eq!(24, dna.chars.missing_data);
+        assert_eq!(None, dna.chars.chars.get(&'-'));
     }
 }
