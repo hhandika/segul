@@ -148,17 +148,19 @@ impl CharSummary {
         }
     }
 
-    pub fn summarize(&mut self, chars: &[CharMatrix]) {
+    pub fn summarize(&mut self, chars: &[CharMatrix], datatype: &DataType) {
         self.min_tax = chars.iter().map(|d| d.ntax).min().unwrap();
         self.max_tax = chars.iter().map(|d| d.ntax).max().unwrap();
         let sum_tax: usize = chars.iter().map(|d| d.ntax).sum();
         self.mean_tax = sum_tax as f64 / chars.len() as f64;
         self.total_chars = chars.iter().map(|d| d.total_chars).sum();
         self.missing_data = chars.iter().map(|d| d.chars.missing_data).sum();
-        self.total_nucleotides = chars.iter().map(|d| d.chars.nucleotides).sum();
         self.count_chars(chars);
-        self.compute_gc_content(chars);
-        self.compute_at_content(chars);
+        if DataType::Dna == *datatype {
+            self.total_nucleotides = chars.iter().map(|d| d.chars.nucleotides).sum();
+            self.compute_gc_content(chars);
+            self.compute_at_content(chars);
+        }
         self.count_prop_missing_data();
     }
 
@@ -422,13 +424,15 @@ impl CharMatrix {
         }
     }
 
-    pub fn count_chars(&mut self, matrix: &SeqMatrix, header: &Header) {
+    pub fn count_chars(&mut self, matrix: &SeqMatrix, header: &Header, datatype: &DataType) {
         self.ntax = header.ntax;
         self.total_chars = header.nchar * self.ntax;
         self.parse_chars(matrix);
-        self.chars.count_gc();
-        self.chars.count_at();
-        self.chars.count_nucleotides();
+        if DataType::Dna == *datatype {
+            self.chars.count_gc();
+            self.chars.count_at();
+            self.chars.count_nucleotides();
+        }
         self.chars.count_missing_data();
         self.chars.calculate_prop_missing_data(self.total_chars);
     }
@@ -595,7 +599,7 @@ mod test {
         let aln = SeqParser::new(path, &DNA);
         let (matrix, header) = aln.get_alignment(&input_format);
         let mut dna = CharMatrix::new();
-        dna.count_chars(&matrix, &header);
+        dna.count_chars(&matrix, &header, &DataType::Dna);
         assert_eq!(4, dna.ntax);
         assert_eq!(104, dna.total_chars);
         assert_eq!(Some(&48), dna.chars.chars.get(&'A'));

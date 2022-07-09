@@ -47,7 +47,7 @@ impl<'a> SeqStats<'a> {
         spin.set_message("Computing alignment stats...");
         let mut stats: Vec<(Sites, CharMatrix, Taxa)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
-        let (sites, dna, complete) = self.summarize_dna(&stats);
+        let (sites, dna, complete) = self.summarize_char_matrix(&stats);
         let taxon_records = self.summarize_taxa(&ids, &stats);
         spin.finish_with_message("Finished computing summary stats!\n");
         let sum = SummaryWriter::new(&sites, &dna, &complete, self.datatype);
@@ -128,7 +128,7 @@ impl<'a> SeqStats<'a> {
         let aln = SeqParser::new(path, self.datatype);
         let (matrix, header) = aln.get_alignment(self.input_fmt);
         let mut dna = CharMatrix::new();
-        dna.count_chars(&matrix, &header);
+        dna.count_chars(&matrix, &header, &self.datatype);
         let mut sites = Sites::new();
         sites.get_stats(path, &matrix, self.datatype);
         let mut taxa = Taxa::new();
@@ -137,7 +137,7 @@ impl<'a> SeqStats<'a> {
         (sites, dna, taxa)
     }
 
-    fn summarize_dna(
+    fn summarize_char_matrix(
         &self,
         stats: &[(Sites, CharMatrix, Taxa)],
     ) -> (SiteSummary, CharSummary, Completeness) {
@@ -146,7 +146,7 @@ impl<'a> SeqStats<'a> {
         let mut sum_sites = SiteSummary::new();
         sum_sites.summarize(&sites);
         let mut sum_dna = CharSummary::new();
-        sum_dna.summarize(&dna);
+        sum_dna.summarize(&dna, &self.datatype);
         let mut mat_comp = Completeness::new(&self.ntax, self.interval);
         mat_comp.matrix_completeness(&dna);
         (sum_sites, sum_dna, mat_comp)
