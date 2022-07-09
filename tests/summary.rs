@@ -23,6 +23,21 @@ fn parse_csv(fpath: &Path) -> Vec<String> {
     result
 }
 
+fn count_header_cols(fpath: &Path) -> usize {
+    let file = File::open(fpath).expect("Unable to open file");
+    let buff = BufReader::new(file);
+    let mut result = 0;
+    buff.lines()
+        .filter_map(|ok| ok.ok())
+        .take(1)
+        .for_each(|line| {
+            let parts: Vec<&str> = line.split(',').map(|e| e.trim()).collect();
+            result = parts.len();
+        });
+
+    result
+}
+
 #[test]
 fn test_summary() {
     initiate_cmd!(cmd, "summary", "tests/files/long-aln", tmp_dir);
@@ -31,12 +46,20 @@ fn test_summary() {
     let output_dir = tmp_dir.path().join("SEGUL-Summary");
     let locus_path = output_dir.join("locus_summary.csv");
     let taxon_path = output_dir.join("taxon_summary.csv");
+
+    // Check column counts
+    let locus_cols = count_header_cols(&locus_path);
+    let taxon_cols = count_header_cols(&taxon_path);
+
+    // Check taxon row counts
     let loci = parse_csv(&locus_path);
     let taxon = parse_csv(&taxon_path);
 
     assert!(pred.eval(&output_dir));
     assert_eq!(4, loci.len());
     assert_eq!(4, taxon.len());
+    assert_eq!(locus_cols, 33);
+    assert_eq!(taxon_cols, 20);
 
     tmp_dir.close().unwrap();
 }
@@ -51,10 +74,9 @@ fn test_locus_summary() {
         .expect("Failed globbing files")
         .filter_map(|ok| ok.ok())
         .collect::<Vec<_>>();
+    let cols = count_header_cols(&files[0]);
     assert!(pred.eval(&output_dir));
     assert_eq!(4, files.len());
-    // assert_eq!(4, loci.len());
-    // assert_eq!(4, taxon.len());
-
+    assert_eq!(cols, 19);
     tmp_dir.close().unwrap();
 }

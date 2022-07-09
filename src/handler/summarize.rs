@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
+use ansi_term::Colour::Yellow;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
@@ -71,6 +72,8 @@ impl<'a> SeqStats<'a> {
                 .expect("Failed writing a taxon stats file");
         });
         spin.finish_with_message("Finished computing per locus summary!\n");
+        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{:18}: {}", "Output dir", self.output.display());
     }
 
     fn summarize_taxa(

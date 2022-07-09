@@ -51,7 +51,7 @@ impl<'a> CsvWriter<'a> {
         write!(writer, "taxon")?;
         self.write_alphabet_header(&mut writer, alphabet)?;
         summary.records.iter().for_each(|(taxon, chars)| {
-            write!(writer, "{},", taxon).expect("Failed to write taxon name");
+            write!(writer, "{}", taxon).expect("Failed to write taxon name");
             alphabet.chars().for_each(|ch| {
                 write!(writer, ",{}", chars.get(&ch).unwrap_or(&0))
                     .expect("Failed getting character summary stats");
@@ -128,7 +128,7 @@ impl<'a> CsvWriter<'a> {
             missing_data,\
             proportion_missing_data,\
             gc_content,\
-            at_content,\
+            at_content\
         "
         )?;
         self.write_alphabet_header(writer, alphabet)?;
@@ -138,7 +138,7 @@ impl<'a> CsvWriter<'a> {
     fn write_alphabet_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {
         alphabet
             .chars()
-            .for_each(|ch| write!(writer, "{},", ch).unwrap());
+            .for_each(|ch| write!(writer, ",{}", ch).unwrap());
         writeln!(writer)?;
         Ok(())
     }
@@ -192,13 +192,13 @@ impl<'a> CsvWriter<'a> {
         // AT content
         write!(
             writer,
-            "{},",
+            "{}",
             chars.at_count as f64 / chars.total_chars as f64
         )?;
 
         // Characters
         alphabet.chars().for_each(|ch| {
-            write!(writer, "{},", chars.chars.get(&ch).unwrap_or(&0)).unwrap();
+            write!(writer, ",{}", chars.chars.get(&ch).unwrap_or(&0)).unwrap();
         });
         writeln!(writer)?;
         Ok(())
