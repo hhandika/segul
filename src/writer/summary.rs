@@ -68,12 +68,48 @@ impl<'a> CsvWriter<'a> {
         let default_prefix = "taxon_summary";
         let output = self.create_output_fnames(default_prefix);
         let mut writer = self.create_output_file(&output)?;
-        write!(writer, "taxon,locus_counts")?;
+        write!(
+            writer,
+            "taxon,\
+        locus_counts, \
+        total_chars, \
+        missing_data,\
+        proportion_missing_data\
+    "
+        )?;
+        if DataType::Dna == *self.datatype {
+            write!(
+                writer,
+                ",gc_content\
+            ,at_content\
+            ,nucleotides"
+            )?;
+        }
         let alphabet = self.get_alphabet(self.datatype);
         self.write_alphabet_header(&mut writer, alphabet)?;
         taxon_summary.iter().for_each(|(taxon, counts)| {
-            write!(writer, "{},{}", taxon, counts.locus_counts)
-                .expect("Failed taxon summary stats");
+            write!(
+                writer,
+                "{},{},{},{}",
+                taxon, counts.locus_counts, counts.total_chars, counts.missing_data
+            )
+            .expect("Failed taxon summary stats");
+            write!(
+                writer,
+                ",{}",
+                counts.missing_data as f64 / counts.total_chars as f64
+            )
+            .expect("Failed to write taxon summary stats");
+            if DataType::Dna == *self.datatype {
+                write!(
+                    writer,
+                    ",{},{},{}",
+                    counts.gc_count as f64 / counts.total_chars as f64,
+                    counts.at_count as f64 / counts.total_chars as f64,
+                    counts.nucleotides as f64 / counts.total_chars as f64
+                )
+                .expect("Failed to write taxon summary stats");
+            }
             alphabet.chars().for_each(|ch| {
                 write!(writer, ",{}", counts.char_counts.get(&ch).unwrap_or(&0))
                     .expect("Failed taxon summary stats");
@@ -133,7 +169,8 @@ impl<'a> CsvWriter<'a> {
             write!(
                 writer,
                 ",gc_content\
-                ,at_content"
+                ,at_content\
+                ,nucleotides"
             )?;
         }
         self.write_alphabet_header(writer, alphabet)?;
@@ -167,7 +204,7 @@ impl<'a> CsvWriter<'a> {
                     site.path.display()
                 ))?,
             chars.ntax,
-            chars.total_chars
+            chars.chars.total_chars
         )?;
 
         // Site stats
@@ -193,14 +230,15 @@ impl<'a> CsvWriter<'a> {
             write!(
                 writer,
                 ",{}",
-                chars.chars.gc_count as f64 / chars.total_chars as f64
+                chars.chars.gc_count as f64 / chars.chars.total_chars as f64
             )?;
             // AT content
             write!(
                 writer,
                 ",{}",
-                chars.chars.at_count as f64 / chars.total_chars as f64
+                chars.chars.at_count as f64 / chars.chars.total_chars as f64
             )?;
+            write!(writer, ",{}", chars.chars.nucleotides)?;
         }
 
         // Characters

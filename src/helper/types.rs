@@ -78,6 +78,11 @@ impl Header {
 pub struct TaxonRecords {
     pub char_counts: HashMap<char, usize>,
     pub locus_counts: usize,
+    pub total_chars: usize,
+    pub gc_count: usize,
+    pub at_count: usize,
+    pub nucleotides: usize,
+    pub missing_data: usize,
 }
 
 impl TaxonRecords {
@@ -85,6 +90,11 @@ impl TaxonRecords {
         Self {
             char_counts: HashMap::new(),
             locus_counts: 0,
+            total_chars: 0,
+            gc_count: 0,
+            at_count: 0,
+            nucleotides: 0,
+            missing_data: 0,
         }
     }
 }

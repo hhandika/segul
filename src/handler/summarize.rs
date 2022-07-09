@@ -91,11 +91,25 @@ impl<'a> SeqStats<'a> {
                                 *taxon.char_counts.entry(*c).or_insert(0) += count;
                             });
                             taxon.locus_counts += 1;
+                            taxon.total_chars += char_counts.total_chars;
+                            taxon.missing_data += char_counts.missing_data;
+                            if DataType::Dna == *self.datatype {
+                                taxon.gc_count += char_counts.gc_count;
+                                taxon.at_count += char_counts.at_count;
+                                taxon.nucleotides += char_counts.nucleotides;
+                            }
                         }
                         None => {
                             let mut taxon = TaxonRecords::new();
                             taxon.char_counts = char_counts.chars.clone();
                             taxon.locus_counts = 1;
+                            taxon.total_chars = char_counts.total_chars;
+                            taxon.missing_data = char_counts.missing_data;
+                            if DataType::Dna == *self.datatype {
+                                taxon.gc_count = char_counts.gc_count;
+                                taxon.at_count = char_counts.at_count;
+                                taxon.nucleotides = char_counts.nucleotides;
+                            }
                             taxon_summary.insert(id.to_string(), taxon);
                         }
                     }

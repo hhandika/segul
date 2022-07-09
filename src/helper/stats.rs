@@ -153,7 +153,7 @@ impl CharSummary {
         self.max_tax = chars.iter().map(|d| d.ntax).max().unwrap();
         let sum_tax: usize = chars.iter().map(|d| d.ntax).sum();
         self.mean_tax = sum_tax as f64 / chars.len() as f64;
-        self.total_chars = chars.iter().map(|d| d.total_chars).sum();
+        self.total_chars = chars.iter().map(|d| d.chars.total_chars).sum();
         self.missing_data = chars.iter().map(|d| d.chars.missing_data).sum();
         self.count_chars(chars);
         if DataType::Dna == *datatype {
@@ -382,7 +382,6 @@ impl Sites {
 
 #[derive(Debug, Clone)]
 pub struct CharMatrix {
-    pub total_chars: usize,
     pub ntax: usize,
     pub chars: Chars,
 }
@@ -390,7 +389,6 @@ pub struct CharMatrix {
 impl CharMatrix {
     pub fn new() -> Self {
         Self {
-            total_chars: 0,
             ntax: 0,
             chars: Chars::new(),
         }
@@ -398,7 +396,7 @@ impl CharMatrix {
 
     pub fn count_chars(&mut self, matrix: &SeqMatrix, header: &Header, datatype: &DataType) {
         self.ntax = header.ntax;
-        self.total_chars = header.nchar * self.ntax;
+        self.chars.total_chars = header.nchar * self.ntax;
         self.parse_chars(matrix);
         if DataType::Dna == *datatype {
             self.chars.count_gc();
@@ -406,7 +404,7 @@ impl CharMatrix {
             self.chars.count_nucleotides();
         }
         self.chars.count_missing_data();
-        self.chars.calculate_prop_missing_data(self.total_chars);
+        self.chars.calculate_prop_missing_data();
     }
 
     fn parse_chars(&mut self, matrix: &SeqMatrix) {
@@ -437,6 +435,7 @@ impl Taxa {
             seq.chars().for_each(|ch| {
                 *chars.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += 1;
             });
+            chars.total_chars = seq.len();
             if DataType::Dna == *datatype {
                 chars.count_gc();
                 chars.count_at();
@@ -446,23 +445,12 @@ impl Taxa {
             self.records.insert(id.to_string(), chars);
         });
     }
-
-    // fn parse_chars(&self, seq: &str) {
-    // }
-
-    // fn count_chars(&self, seq: &str) -> HashMap<char, usize> {
-    //     let mut char_counts = HashMap::new();
-    //     seq.chars().for_each(|c| {
-    //         *char_counts.entry(c.to_ascii_uppercase()).or_insert(0) += 1;
-    //     });
-
-    //     char_counts
-    // }
 }
 
 #[derive(Debug, Clone)]
 pub struct Chars {
     pub chars: HashMap<char, usize>,
+    pub total_chars: usize,
     pub gc_count: usize,
     pub at_count: usize,
     pub nucleotides: usize,
@@ -474,6 +462,7 @@ impl Chars {
     fn new() -> Self {
         Self {
             chars: HashMap::new(),
+            total_chars: 0,
             gc_count: 0,
             at_count: 0,
             nucleotides: 0,
@@ -513,8 +502,8 @@ impl Chars {
             .sum();
     }
 
-    fn calculate_prop_missing_data(&mut self, total_chars: usize) {
-        self.prop_missing_data = self.missing_data as f64 / total_chars as f64;
+    fn calculate_prop_missing_data(&mut self) {
+        self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
     }
 }
 
@@ -610,7 +599,7 @@ mod test {
         let mut dna = CharMatrix::new();
         dna.count_chars(&matrix, &header, &DataType::Dna);
         assert_eq!(4, dna.ntax);
-        assert_eq!(104, dna.total_chars);
+        assert_eq!(104, dna.chars.total_chars);
         assert_eq!(Some(&48), dna.chars.chars.get(&'A'));
         assert_eq!(Some(&22), dna.chars.chars.get(&'T'));
         assert_eq!(Some(&10), dna.chars.chars.get(&'G'));

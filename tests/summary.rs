@@ -58,8 +58,8 @@ fn test_summary() {
     assert!(pred.eval(&output_dir));
     assert_eq!(4, loci.len());
     assert_eq!(4, taxon.len());
-    assert_eq!(locus_cols, 33);
-    assert_eq!(taxon_cols, 20);
+    assert_eq!(locus_cols, 34); // DNA chars = 18
+    assert_eq!(taxon_cols, 26); // Cols = 8
 
     tmp_dir.close().unwrap();
 }
@@ -101,8 +101,8 @@ fn test_summary_aa() {
     assert!(pred.eval(&output_dir));
     assert_eq!(4, loci.len());
     assert_eq!(3, taxon.len());
-    assert_eq!(locus_cols, 44);
-    assert_eq!(taxon_cols, 33);
+    assert_eq!(locus_cols, 44); // AA chars = 31
+    assert_eq!(taxon_cols, 36); // Cols = 5
 
     tmp_dir.close().unwrap();
 }
