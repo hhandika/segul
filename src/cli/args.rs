@@ -781,6 +781,13 @@ pub fn get_args(version: &str) -> ArgMatches {
                         .possible_values(&["1", "2", "5", "10"]),
                 )
                 .arg(
+                    Arg::new("per-locus")
+                        .long("per-locus")
+                        .help("Generate summary statistic for each locus")
+                        .conflicts_with("percent-interval")
+                        .takes_value(false),   
+                )
+                .arg(
                     Arg::new("overwrite")
                         .long("overwrite")
                         .help("Overwrite existing output file(s)/directory")

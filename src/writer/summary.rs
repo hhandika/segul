@@ -3,14 +3,12 @@ use std::ffi::OsStr;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use ahash::AHashMap as HashMap;
 use ansi_term::Colour::Yellow;
 use anyhow::{Context, Result};
-use indexmap::IndexSet;
 
 use crate::helper::alphabet;
 use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites, Taxa};
-use crate::helper::types::DataType;
+use crate::helper::types::{DataType, TaxonRecords};
 use crate::helper::utils;
 use crate::writer::FileWriter;
 
@@ -31,39 +29,48 @@ pub struct CsvWriter<'a> {
     output: &'a Path,
     prefix: &'a Option<String>,
     datatype: &'a DataType,
-    stats: &'a [(Sites, Chars, Taxa)],
 }
 
 impl<'a> CsvWriter<'a> {
-    pub fn new(
-        output: &'a Path,
-        prefix: &'a Option<String>,
-        datatype: &'a DataType,
-        stats: &'a [(Sites, Chars, Taxa)],
-    ) -> Self {
+    pub fn new(output: &'a Path, prefix: &'a Option<String>, datatype: &'a DataType) -> Self {
         Self {
             output,
             prefix,
             datatype,
-            stats,
         }
     }
 
-    // pub fn write_per_locus_summary(&self) -> Result<()> {
-        // Ok(())
-    // }
+    pub fn write_per_locus_summary(&self, file: &Path, summary: &Taxa) -> Result<()> {
+        let default_prefix = file
+            .file_stem()
+            .and_then(OsStr::to_str)
+            .expect("Failed to parse input file stem");
+        let output = self.create_output_fnames(default_prefix);
+        let alphabet = self.get_alphabet(self.datatype);
+        let mut writer = self.create_output_file(&output)?;
+        write!(writer, "taxon")?;
+        self.write_alphabet_header(&mut writer, alphabet)?;
+        summary.records.iter().for_each(|(taxon, chars)| {
+            write!(writer, "{},", taxon).expect("Failed to write taxon name");
+            alphabet.chars().for_each(|ch| {
+                write!(writer, ",{}", chars.get(&ch).unwrap_or(&0))
+                    .expect("Failed getting character summary stats");
+            });
+            writeln!(writer).expect("Failed writing per locus summary stats");
+        });
+        Ok(())
+    }
 
-    pub fn write_taxon_summary(&self, ids: &IndexSet<String>) -> Result<()> {
+    pub fn write_taxon_summary(
+        &self,
+        taxon_summary: &BTreeMap<String, TaxonRecords>,
+    ) -> Result<()> {
         let default_prefix = "taxon_summary";
         let output = self.create_output_fnames(default_prefix);
         let mut writer = self.create_output_file(&output)?;
         write!(writer, "taxon,locus_counts")?;
         let alphabet = self.get_alphabet(self.datatype);
-        alphabet
-            .chars()
-            .for_each(|ch| write!(writer, ",{}", ch).unwrap());
-        writeln!(writer)?;
-        let taxon_summary = self.summarize_taxa(ids);
+        self.write_alphabet_header(&mut writer, alphabet)?;
         taxon_summary.iter().for_each(|(taxon, counts)| {
             write!(writer, "{},{}", taxon, counts.locus_counts)
                 .expect("Failed taxon summary stats");
@@ -73,20 +80,21 @@ impl<'a> CsvWriter<'a> {
             });
             writeln!(writer).expect("Failed taxon summary stats");
         });
+        writer.flush()?;
         Ok(())
     }
 
-    pub fn write_locus_summary(&self) -> Result<()> {
+    pub fn write_locus_summary(&self, stats: &[(Sites, Chars, Taxa)]) -> Result<()> {
         let default_prefix = "locus_summary";
         let output = self.create_output_fnames(default_prefix);
         let mut writer = self.create_output_file(&output)?;
         let alphabet = self.get_alphabet(self.datatype);
         self.write_locus_header(&mut writer, alphabet)?;
-        self.stats.iter().for_each(|(site, chars, _)| {
+        stats.iter().for_each(|(site, chars, _)| {
             self.write_locus_content(&mut writer, site, chars, alphabet)
                 .unwrap();
         });
-
+        writer.flush()?;
         log::info!("{}", Yellow.paint("Output"));
         log::info!("{:18}: {}", "Output dir", self.output.display());
 
@@ -98,35 +106,9 @@ impl<'a> CsvWriter<'a> {
             Some(fname) => {
                 let out_name = format!("{}_{}", fname, default_prefix);
                 self.output.join(out_name).with_extension("csv")
-            },
+            }
             None => self.output.join(default_prefix).with_extension("csv"),
         }
-    }
-
-    fn summarize_taxa(&self, ids: &IndexSet<String>) -> BTreeMap<String, TaxonRecords> {
-        let mut taxon_summary: BTreeMap<String, TaxonRecords> = BTreeMap::new();
-        self.stats.iter().for_each(|(_, _, taxa)| {
-            ids.iter().for_each(|id| {
-                if let Some(char_counts) = taxa.records.get(id) {
-                    match taxon_summary.get_mut(id) {
-                        Some(taxon) => {
-                            char_counts.iter().for_each(|(c, count)| {
-                                *taxon.char_counts.entry(*c).or_insert(0) += count;
-                            });
-                            taxon.locus_counts += 1;
-                        }
-                        None => {
-                            let mut taxon = TaxonRecords::new();
-                            taxon.char_counts = char_counts.clone();
-                            taxon.locus_counts = 1;
-                            taxon_summary.insert(id.to_string(), taxon);
-                        }
-                    }
-                }
-            });
-        });
-
-        taxon_summary
     }
 
     fn write_locus_header<W: Write>(&self, writer: &mut W, alphabet: &str) -> Result<()> {
@@ -219,22 +201,7 @@ impl<'a> CsvWriter<'a> {
             write!(writer, "{},", chars.chars.get(&ch).unwrap_or(&0)).unwrap();
         });
         writeln!(writer)?;
-        writer.flush()?;
         Ok(())
-    }
-}
-
-struct TaxonRecords {
-    char_counts: HashMap<char, usize>,
-    locus_counts: usize,
-}
-
-impl TaxonRecords {
-    fn new() -> Self {
-        Self {
-            char_counts: HashMap::new(),
-            locus_counts: 0,
-        }
     }
 }
 

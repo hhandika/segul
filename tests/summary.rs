@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 
+use glob::glob;
 use predicates::Predicate;
 
 fn parse_csv(fpath: &Path) -> Vec<String> {
@@ -36,6 +37,24 @@ fn test_summary() {
     assert!(pred.eval(&output_dir));
     assert_eq!(4, loci.len());
     assert_eq!(4, taxon.len());
+
+    tmp_dir.close().unwrap();
+}
+
+#[test]
+fn test_locus_summary() {
+    initiate_cmd!(cmd, "summary", "tests/files/long-aln", tmp_dir);
+    cmd.arg("--per-locus").assert().success();
+    let pred = predicates::path::is_dir();
+    let output_dir = tmp_dir.path().join("SEGUL-Summary");
+    let files = glob(&format!("{}/*.csv", output_dir.display()))
+        .expect("Failed globbing files")
+        .filter_map(|ok| ok.ok())
+        .collect::<Vec<_>>();
+    assert!(pred.eval(&output_dir));
+    assert_eq!(4, files.len());
+    // assert_eq!(4, loci.len());
+    // assert_eq!(4, taxon.len());
 
     tmp_dir.close().unwrap();
 }

@@ -1,3 +1,4 @@
+use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
 
 #[derive(Debug, PartialEq)]
@@ -70,6 +71,20 @@ impl Header {
             missing: '?',
             gap: '-',
             aligned: false,
+        }
+    }
+}
+
+pub struct TaxonRecords {
+    pub char_counts: HashMap<char, usize>,
+    pub locus_counts: usize,
+}
+
+impl TaxonRecords {
+    pub fn new() -> Self {
+        Self {
+            char_counts: HashMap::new(),
+            locus_counts: 0,
         }
     }
 }

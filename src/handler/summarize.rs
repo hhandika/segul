@@ -1,5 +1,5 @@
 // A module for sequence statistics.
-
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
@@ -9,7 +9,7 @@ use rayon::prelude::*;
 use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::stats::{CharSummary, Chars, Completeness, SiteSummary, Sites, Taxa};
-use crate::helper::types::{DataType, InputFmt};
+use crate::helper::types::{DataType, InputFmt, TaxonRecords};
 use crate::helper::utils;
 use crate::writer::summary::{CsvWriter, SummaryWriter};
 
@@ -37,21 +37,6 @@ impl<'a> SeqStats<'a> {
         }
     }
 
-    // pub fn summarize_locus(&mut self, files: &[PathBuf], prefix: &str) {
-    //     self.check_datatype();
-    //     let spin = utils::set_spinner();
-    //     spin.set_message("Computing per locus summary...");
-    //     files.iter().for_each(|file| {
-    //         let (matrix,_) = SeqParser::new(file, self.datatype).get_alignment(self.input_fmt);
-    //         let mut taxa = Taxa::new();
-    //         taxa.summarize_taxa(&matrix);
-    //         let csv = CsvWriter::new(self.output, prefix, self.datatype, &stats);
-    //         csv.write_taxon_summary(&ids)
-    //         .expect("Failed writing a taxon stats file");
-    //     })
-        
-    // }
-
     pub fn summarize_all(&mut self, files: &[PathBuf], prefix: &Option<String>) {
         self.check_datatype();
         let spin = utils::set_spinner();
@@ -62,14 +47,60 @@ impl<'a> SeqStats<'a> {
         let mut stats: Vec<(Sites, Chars, Taxa)> = self.par_get_stats(files);
         stats.sort_by(|a, b| alphanumeric_sort::compare_path(&a.0.path, &b.0.path));
         let (sites, dna, complete) = self.summarize_dna(&stats);
+        let taxon_records = self.summarize_taxa(&ids, &stats);
         spin.finish_with_message("Finished computing summary stats!\n");
         let sum = SummaryWriter::new(&sites, &dna, &complete, self.datatype);
         sum.print_summary().expect("Failed writing to stdout");
-        let csv = CsvWriter::new(self.output, prefix, self.datatype, &stats);
-        csv.write_taxon_summary(&ids)
-            .expect("Failed writing a taxon stats file");
-        csv.write_locus_summary()
+        let csv = CsvWriter::new(self.output, prefix, self.datatype);
+        csv.write_taxon_summary(&taxon_records)
+            .expect("Failed writing to csv");
+        csv.write_locus_summary(&stats)
             .expect("Failed writing a per locus csv file");
+    }
+
+    pub fn summarize_locus(&mut self, files: &[PathBuf], prefix: &Option<String>) {
+        self.check_datatype();
+        let spin = utils::set_spinner();
+        spin.set_message("Computing per locus summary...");
+        files.iter().for_each(|file| {
+            let (matrix, _) = SeqParser::new(file, self.datatype).get_alignment(self.input_fmt);
+            let mut taxa = Taxa::new();
+            taxa.summarize_taxa(&matrix);
+            let csv = CsvWriter::new(self.output, prefix, self.datatype);
+            csv.write_per_locus_summary(file, &taxa)
+                .expect("Failed writing a taxon stats file");
+        });
+        spin.finish_with_message("Finished computing per locus summary!\n");
+    }
+
+    fn summarize_taxa(
+        &self,
+        ids: &IndexSet<String>,
+        stats: &[(Sites, Chars, Taxa)],
+    ) -> BTreeMap<String, TaxonRecords> {
+        let mut taxon_summary: BTreeMap<String, TaxonRecords> = BTreeMap::new();
+        stats.iter().for_each(|(_, _, taxa)| {
+            ids.iter().for_each(|id| {
+                if let Some(char_counts) = taxa.records.get(id) {
+                    match taxon_summary.get_mut(id) {
+                        Some(taxon) => {
+                            char_counts.iter().for_each(|(c, count)| {
+                                *taxon.char_counts.entry(*c).or_insert(0) += count;
+                            });
+                            taxon.locus_counts += 1;
+                        }
+                        None => {
+                            let mut taxon = TaxonRecords::new();
+                            taxon.char_counts = char_counts.clone();
+                            taxon.locus_counts = 1;
+                            taxon_summary.insert(id.to_string(), taxon);
+                        }
+                    }
+                }
+            });
+        });
+
+        taxon_summary
     }
 
     fn get_id(&mut self, files: &[PathBuf]) -> IndexSet<String> {

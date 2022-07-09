@@ -54,8 +54,12 @@ impl<'a> SummaryParser<'a> {
         let output = self.parse_output(self.matches);
         let is_overwrite = self.parse_overwrite_opts(self.matches);
         self.check_output_dir_exist(&output, is_overwrite);
-        SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype)
-            .summarize_all(&files, &prefix);
+        let mut summary = SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype);
+        if self.matches.is_present("per-locus") {
+            summary.summarize_locus(&files, &prefix);
+        } else {
+            summary.summarize_all(&files, &prefix);
+        };
     }
 
     fn parse_prefix(&self) -> Option<String> {
