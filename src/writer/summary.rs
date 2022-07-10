@@ -13,7 +13,7 @@ use crate::helper::utils;
 use crate::writer::FileWriter;
 
 trait Alphabet {
-    fn get_alphabet(&self, datatype: &DataType) -> &str {
+    fn match_alphabet(&self, datatype: &DataType) -> &str {
         match datatype {
             DataType::Dna => alphabet::DNA_STR_UPPERCASE,
             DataType::Aa => alphabet::AA_STR_UPPERCASE,
@@ -46,11 +46,48 @@ impl<'a> CsvWriter<'a> {
             .and_then(OsStr::to_str)
             .expect("Failed to parse input file stem");
         let output = self.create_output_fnames(default_prefix);
-        let alphabet = self.get_alphabet(self.datatype);
         let mut writer = self.create_output_file(&output)?;
-        write!(writer, "taxon")?;
+        write!(
+            writer,
+            "taxon,\
+        total_chars, \
+        missing_data,\
+        proportion_missing_data\
+    "
+        )?;
+        if DataType::Dna == *self.datatype {
+            write!(
+                writer,
+                ",gc_content\
+                ,at_content\
+                ,nucleotides"
+            )?;
+        }
+        let alphabet = self.match_alphabet(self.datatype);
         self.write_alphabet_header(&mut writer, alphabet)?;
         summary.records.iter().for_each(|(taxon, chars)| {
+            write!(
+                writer,
+                "{},{},{}",
+                taxon, chars.total_chars, chars.missing_data
+            )
+            .expect("Failed taxon summary stats");
+            write!(
+                writer,
+                ",{}",
+                chars.missing_data as f64 / chars.total_chars as f64
+            )
+            .expect("Failed to write taxon summary stats");
+            if DataType::Dna == *self.datatype {
+                write!(
+                    writer,
+                    ",{},{},{}",
+                    chars.gc_count as f64 / chars.total_chars as f64,
+                    chars.at_count as f64 / chars.total_chars as f64,
+                    chars.nucleotides as f64 / chars.total_chars as f64
+                )
+                .expect("Failed to write taxon summary stats");
+            }
             write!(writer, "{}", taxon).expect("Failed to write taxon name");
             alphabet.chars().for_each(|ch| {
                 write!(writer, ",{}", chars.chars.get(&ch).unwrap_or(&0))
@@ -85,7 +122,7 @@ impl<'a> CsvWriter<'a> {
             ,nucleotides"
             )?;
         }
-        let alphabet = self.get_alphabet(self.datatype);
+        let alphabet = self.match_alphabet(self.datatype);
         self.write_alphabet_header(&mut writer, alphabet)?;
         taxon_summary.iter().for_each(|(taxon, counts)| {
             write!(
@@ -124,7 +161,7 @@ impl<'a> CsvWriter<'a> {
         let default_prefix = "locus_summary";
         let output = self.create_output_fnames(default_prefix);
         let mut writer = self.create_output_file(&output)?;
-        let alphabet = self.get_alphabet(self.datatype);
+        let alphabet = self.match_alphabet(self.datatype);
         self.write_locus_header(&mut writer, alphabet)?;
         stats.iter().for_each(|(site, chars, _)| {
             self.write_locus_content(&mut writer, site, chars, alphabet)
@@ -224,7 +261,7 @@ impl<'a> CsvWriter<'a> {
         write!(writer, "{},", chars.chars.missing_data)?;
         write!(writer, "{}", chars.chars.prop_missing_data)?;
 
-        // We move comma position for accutrate printing
+        // We move comma position for accurate printing
         if DataType::Dna == *self.datatype {
             // GC content
             write!(
@@ -373,7 +410,7 @@ impl<'s> SummaryWriter<'s> {
     }
 
     fn write_char_count(&self) {
-        let alphabet = self.get_alphabet(self.datatype);
+        let alphabet = self.match_alphabet(self.datatype);
         alphabet.chars().for_each(|ch| {
             if let Some(count) = self.chars.chars.get(&ch) {
                 log::info!("{:18}: {}", ch, utils::fmt_num(count));
