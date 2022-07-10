@@ -591,7 +591,7 @@ mod test {
     }
 
     #[test]
-    fn dna_count_test() {
+    fn char_count_test() {
         let path = Path::new("tests/files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let aln = SeqParser::new(path, &DNA);
