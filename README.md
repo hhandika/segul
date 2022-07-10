@@ -27,12 +27,11 @@ Features:
 10. Batch renaming sequence IDs (include regular expression support).
 11. Splitting alignments by partitions.
 12. Translating DNA sequences to amino acid sequences
-<!-- 
+
 Upcoming features and bug fixes ([try](https://github.com/hhandika/segul/wiki/2.-Installation#try-development-features)):
 
-1. A new feature to remove sequence based on user-defined IDs (include regular expression support). 
-2. Filtering based on a matching taxon list.
-3. Summarizing character counts in the taxon summary. -->
+1. A feature to generate summary sequence statistics for each locus.
+2. Taxon summary statistics now include proportion of missing data, nucleotide counts, GC content and AT content.
 
 Supported sequence formats:
 
