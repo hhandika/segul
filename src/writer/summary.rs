@@ -88,7 +88,6 @@ impl<'a> CsvWriter<'a> {
                 )
                 .expect("Failed to write taxon summary stats");
             }
-            write!(writer, "{}", taxon).expect("Failed to write taxon name");
             alphabet.chars().for_each(|ch| {
                 write!(writer, ",{}", chars.chars.get(&ch).unwrap_or(&0))
                     .expect("Failed getting character summary stats");
