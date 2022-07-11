@@ -107,7 +107,8 @@ macro_rules! check_output_path {
                         fs::$execution($path).expect($err_msg);
                         println!();
                     } else {
-                        std::process::abort();
+                        println!("{}", Red.paint("Aborted!"));
+                        std::process::exit(0);
                     }
                 }
                 Err(err) => panic!("Failed parsing user input: {}", err),
