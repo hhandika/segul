@@ -1,8 +1,21 @@
 # Release Notes
 
+## v0.18.0
+
+New features:
+
+- Add an option to generate sequence statistics for each locus.
+- More taxon statistics.
+- Add message when choosing "no" folder exists.
+
+Bug Fixes:
+
+- Fix compiling issues.
+- Fix command conflicts when using the option `remove-re-all`.
+
 ## v0.17.0
 
-### New Features
+New Features:
 
 - Add a feature to remove sequence based on user-defined IDs.
 - Add regular expression support to rename sequence IDs.
@@ -11,7 +24,7 @@
 - Replace site counts with character counts in the taxon summary.
 - Add integration tests.
 
-### Bug Fixes
+Bug Fixes:
 
 - Fix error messages when finding empty matrix.
 - Fix missing character counts in amino acid alignment summary.
