@@ -5,7 +5,7 @@
 New features:
 
 - Add an option to generate sequence statistics for each locus.
-- More taxon statistics.
+- More taxon statistics: proportion of missing data, nucleotide counts, GC content and AT content.
 - Add message when choosing "no" folder exists.
 
 Bug Fixes:
