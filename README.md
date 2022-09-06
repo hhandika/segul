@@ -240,6 +240,12 @@ Using `--input` (or `-i` in short version) option ([learn the difference](https:
 segul summary --input [a-path/wilcard-to-files]
 ```
 
+`segul` can also generate summary statistics for each alignment by passing `--per-locus` flag:
+
+```Bash
+segul summary --dir [a-path-to-a-directory] --input-format [sequence-format-keyword] --per-locus
+```
+
 Learn more about computing sequence summary statistics [here](https://github.com/hhandika/segul/wiki/5.-Usages#computing-sequence-summary-statistics).
 
 #### Concatenating alignments
