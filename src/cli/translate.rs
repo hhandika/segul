@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
+use colored::Colorize;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::handler::translate::Translate;
@@ -66,7 +66,7 @@ impl<'a> TranslateParser<'a> {
 
         let overwrite = self.parse_overwrite_opts(self.matches);
         self.check_output_dir_exist(&outdir, overwrite);
-        log::info!("{}", Yellow.paint("Params"));
+        log::info!("{}", "Params".yellow());
         self.parse_trans_table();
         let translate = Translate::new(&self.trans_table, &input_fmt, &datatype, &output_fmt);
         match frame {
@@ -129,7 +129,7 @@ impl<'a> TranslateParser<'a> {
     }
 
     fn show_ncbi_tables(&self) {
-        println!("{}", Yellow.paint("Supported NCBI Genetic Code Tables"));
+        println!("{}", "Supported NCBI Genetic Code Tables".yellow());
         println!(
             "1. The Standard Code\n\
             2. The Vertebrate Mitochondrial Code\n\

@@ -14,9 +14,9 @@ categories = ["command-line-utilities", "science"]
 [dependencies]
 ahash = "0.*"
 alphanumeric-sort = "1.*"
-ansi_term = "0.*"
 anyhow = "1.*"
 bytecount = "0.*"
+colored = "2.0.0"
 chrono = "0.*"
 clap = { version = "3.*", features = ["cargo"] }
 dialoguer = "0.*"

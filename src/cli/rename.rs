@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
+use colored::Colorize;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::handler::rename::{Rename, RenameDry, RenameOpts};
@@ -57,7 +57,7 @@ impl<'a> RenameParser<'a> {
     }
 
     fn parse_rename_opts(&self) -> RenameOpts {
-        log::info!("{}", Yellow.paint("Params"));
+        log::info!("{}", "Params".yellow());
         match self.matches {
             m if m.is_present("replace-id") => {
                 let id_path = Path::new(

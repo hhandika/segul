@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, Read};
 use std::path::Path;
 
-use ansi_term::Colour::Red;
+use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
 use lazy_static::lazy_static;
 use nom::{bytes::complete, character, sequence, IResult};

@@ -4,7 +4,7 @@ use std::io::{BufReader, Result};
 use std::path::Path;
 
 use ahash::AHashMap as HashMap;
-use ansi_term::Colour::Red;
+use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
 use nom::{character::complete, sequence, IResult};
 

@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
+use colored::Colorize;
 
 use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
 use crate::handler::filter::{Params, SeqFilter};
@@ -267,7 +267,7 @@ impl<'a> FilterParser<'a> {
     }
 
     fn print_params(&self) {
-        log::info!("{}", Yellow.paint("Params"));
+        log::info!("{}", "Params".yellow());
         match &self.params {
             Params::MinTax(min_taxa) => {
                 log::info!("{:18}: {}", "Taxon count", self.ntax);

@@ -12,7 +12,7 @@ pub mod translate;
 
 use std::path::Path;
 
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 
 use crate::helper::types::OutputFmt;
 use crate::helper::utils;
@@ -38,7 +38,7 @@ trait OutputPrint {
 
 trait PartitionPrint {
     fn print_partition_info(&self, part_path: &Path, part_counts: &usize) {
-        log::info!("{}", Yellow.paint("Partitions"));
+        log::info!("{}", "Partitions".yellow());
         log::info!("{:18}: {}", "Partition counts", utils::fmt_num(part_counts));
         log::info!("{:18}: {}\n", "File path", part_path.display());
     }

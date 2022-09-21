@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 
 use crate::handler::PartitionPrint;
 use crate::helper::types::{DataType, PartitionFmt};
@@ -44,8 +44,7 @@ impl<'a> PartConverter<'a> {
     }
 
     fn print_output_info(&self) {
-        log::info!("{}", Yellow.paint("Output"));
-
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Output path", self.output.display());
     }
 }

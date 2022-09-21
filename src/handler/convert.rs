@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 use rayon::prelude::*;
 
 use crate::handler::OutputPrint;
@@ -76,7 +76,7 @@ impl<'a> Converter<'a> {
     }
 
     fn print_output_info(&self, output: &Path) {
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Output dir", output.display());
         self.print_output_fmt(self.output_fmt);
     }
