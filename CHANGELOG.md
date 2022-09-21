@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.18.1
+
+- Fix colored terminal dependency deprecation issues.
+- Fix inconsistent header alignment when printing summary statistics to the terminal.
+
 ## v0.18.0
 
 New features:
