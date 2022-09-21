@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 use regex::Regex;
@@ -95,7 +95,7 @@ impl<'a> Extract<'a> {
     }
 
     fn print_output_info(&self, file_counts: &usize, output: &Path, output_fmt: &OutputFmt) {
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "File counts", utils::fmt_num(file_counts));
         log::info!("{:18}: {}", "Output dir", output.display());
         self.print_output_fmt(output_fmt);

@@ -3,7 +3,7 @@ use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
 use rayon::prelude::*;
 
@@ -181,7 +181,7 @@ impl<'a> SeqFilter<'a> {
     }
 
     fn print_output(&self, fcounts: usize) {
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
         log::info!("{:18}: {}", "Dir", self.output.display());
     }

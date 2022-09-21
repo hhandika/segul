@@ -3,8 +3,8 @@ use std::ffi::OsStr;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::Yellow;
 use anyhow::{Context, Result};
+use colored::Colorize;
 
 use crate::helper::alphabet;
 use crate::helper::stats::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
@@ -167,7 +167,7 @@ impl<'a> CsvWriter<'a> {
                 .unwrap();
         });
         writer.flush()?;
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Output dir", self.output.display());
 
         Ok(())
@@ -311,26 +311,26 @@ impl<'s> SummaryWriter<'s> {
     }
 
     pub fn print_summary(&self) -> Result<()> {
-        log::info!("{}", Yellow.paint("General Summmary"));
+        log::info!("\n{}", "General Summmary".yellow());
         self.write_gen_sum();
-        log::info!("{}", Yellow.paint("Alignment Summmary"));
+        log::info!("{}", "Alignment Summmary".yellow());
         self.write_aln_sum();
-        log::info!("{}", Yellow.paint("Taxon Summmary"));
+        log::info!("{}", "Taxon Summmary".yellow());
         self.write_tax_sum();
 
-        log::info!("{}", Yellow.paint("Character Count"));
+        log::info!("{}", "Character Count".yellow());
         self.write_char_count();
 
-        log::info!("{}", Yellow.paint("Data Matrix Completeness"));
+        log::info!("{}", "Data Matrix Completeness".yellow());
         self.write_matrix_comp();
 
-        log::info!("{}", Yellow.paint("Conserved Sequences"));
+        log::info!("{}", "Conserved Sequences".yellow());
         self.write_cons_seq();
 
-        log::info!("{}", Yellow.paint("Variable Sequences"));
+        log::info!("{}", "Variable Sequences".yellow());
         self.write_var_seq();
 
-        log::info!("{}", Yellow.paint("Parsimony Informative"));
+        log::info!("{}", "Parsimony Informative".yellow());
         self.write_pars_inf();
         Ok(())
     }

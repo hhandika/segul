@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use ahash::AHashMap as HashMap;
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
@@ -166,7 +166,7 @@ impl<'a> Translate<'a> {
     }
 
     fn print_output_info(&self, output: &Path) {
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Output dir", output.display());
         self.print_output_fmt(self.output_fmt);
     }

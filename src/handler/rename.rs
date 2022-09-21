@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::{Green, Yellow};
+use colored::Colorize;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 use rayon::prelude::*;
@@ -72,10 +72,10 @@ impl<'a> RenameDry<'a> {
         spin.finish_with_message("Finished processing (DRY-RUN)!\n");
 
         // Print results
-        log::info!("{}", Yellow.paint("Results"));
+        log::info!("{}", "Results".yellow());
         log::info!("{:18}: {}", "Renamed ID counts", new_ids.len());
         new_ids.iter().for_each(|(old, new)| {
-            log::info!("{:18}: {} {} {}", "[Rename]", old, Green.paint("->"), new);
+            log::info!("{:18}: {} {} {}", "[Rename]", old, "->".green(), new);
         });
 
         // Print remaining unchanged ids
@@ -260,7 +260,7 @@ impl<'a> Rename<'a> {
     }
 
     fn print_output_info(&self) {
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Output dir", self.outdir.display());
         self.print_output_fmt(self.output_fmt);
     }

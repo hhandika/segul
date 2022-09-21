@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -115,7 +115,7 @@ impl<'a> Remove<'a> {
     }
 
     fn print_output_info(&self) {
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Output dir", self.outdir.display());
         self.print_output_fmt(self.output_fmt);
     }

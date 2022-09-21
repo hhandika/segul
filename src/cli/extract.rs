@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
+use colored::Colorize;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::handler::extract::{Extract, ExtractOpts};
@@ -49,7 +49,7 @@ impl<'a> ExtractParser<'a> {
 
         let is_overwrite = self.parse_overwrite_opts(self.matches);
         self.check_output_dir_exist(&outdir, is_overwrite);
-        log::info!("{}", Yellow.paint("ExtractOpts"));
+        log::info!("{}", "ExtractOpts".yellow());
         self.parse_params();
         let extract = Extract::new(&self.params, &input_fmt, &datatype);
         extract.extract_sequences(&files, &outdir, &output_fmt);

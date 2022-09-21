@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 // use std::sync::{Arc, Mutex};
 
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 
@@ -130,7 +130,7 @@ impl<'a> Id<'a> {
     }
 
     fn print_output(&self, ids: usize) {
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Total unique IDs", ids);
         log::info!("{:18}: {}", "ID file", self.output.display());
     }

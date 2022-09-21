@@ -1,7 +1,7 @@
 use std::iter;
 
-use ansi_term::Colour::Yellow;
 use chrono::NaiveTime;
+use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use num_format::{Locale, ToFormattedString};
 
@@ -29,23 +29,24 @@ pub fn set_spinner() -> ProgressBar {
     spin.set_style(
         ProgressStyle::default_spinner()
             .tick_chars("🌑🌒🌓🌔🌕🌖🌗🌘")
-            .template("{spinner} {msg}").expect("Failed getting progress bar."),
+            .template("{spinner} {msg}")
+            .expect("Failed getting progress bar."),
     );
     spin
 }
 
 #[cfg(not(tarpaulin_include))]
 pub fn print_welcome_text(version: &str) {
-    log::info!("{}", Yellow.paint(get_rep_str('=')));
+    log::info!("{}", get_rep_str('=').yellow());
     let text = format!("SEGUL v{}", version);
-    log::info!("{}", Yellow.paint(text));
-    log::info!("{}", Yellow.paint("An alignment tool for phylogenomics"));
-    log::info!("{}", Yellow.paint(get_rep_str('-')));
+    log::info!("{}", text.yellow());
+    log::info!("{}", "An alignment tool for phylogenomics".yellow());
+    log::info!("{}", get_rep_str('-').yellow());
 }
 
 pub fn print_divider() {
     let divider = get_rep_str('-');
-    log::info!("{}", Yellow.paint(divider));
+    log::info!("{}", divider.yellow());
 }
 
 fn get_rep_str(sym: char) -> String {

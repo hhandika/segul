@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::Yellow;
+use colored::Colorize;
 
 use crate::helper::concat::Concat;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
@@ -73,7 +73,7 @@ impl<'a> ConcatHandler<'a> {
     }
 
     fn print_output_info(&self, count: usize, header: &Header, part_file: &Path) {
-        log::info!("{}", Yellow.paint("Output"));
+        log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Taxa", utils::fmt_num(&header.ntax));
         log::info!("{:18}: {}", "Loci", utils::fmt_num(&count));
         log::info!(

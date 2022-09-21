@@ -17,8 +17,8 @@ use std::io::Result;
 
 use std::path::{Path, PathBuf};
 
-use ansi_term::Colour::Red;
 use clap::ArgMatches;
+use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use glob::glob;
 use log::LevelFilter;
@@ -107,7 +107,7 @@ macro_rules! check_output_path {
                         fs::$execution($path).expect($err_msg);
                         println!();
                     } else {
-                        println!("{}", Red.paint("Aborted!"));
+                        println!("{}", "Aborted!".red());
                         std::process::exit(0);
                     }
                 }
@@ -250,7 +250,7 @@ trait OutputCli {
             if path.is_dir() {
                 log::warn!(
                     "{} Removing existing directory: {}\n",
-                    Red.paint("WARNING!"),
+                    "WARNING!".red(),
                     path.display()
                 );
                 fs::remove_dir_all(path).expect(rm_err_msg);
@@ -267,7 +267,7 @@ trait OutputCli {
             if path.is_file() {
                 log::warn!(
                     "{} Overwriting existing files: {}\n",
-                    Red.paint("WARNING!"),
+                    "WARNING!".red(),
                     path.display()
                 );
                 fs::remove_file(path).expect(rm_err_msg);

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use ansi_term::Colour::Yellow;
 use clap::ArgMatches;
+use colored::Colorize;
 
 // use crate::helper::utils;
 use crate::{
@@ -55,7 +55,7 @@ impl<'a> RemoveParser<'a> {
     }
 
     fn parse_remove_opts(&self) -> RemoveOpts {
-        log::info!("{}", Yellow.paint("Params"));
+        log::info!("{}", "Params".yellow());
         match self.matches {
             m if m.is_present("id") => {
                 let ids = self
