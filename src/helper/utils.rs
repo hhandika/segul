@@ -21,16 +21,12 @@ pub fn parse_duration(duration: u64) -> String {
 
 #[cfg(not(tarpaulin_include))]
 pub fn set_spinner() -> ProgressBar {
-    use std::time::Duration;
-
     let spin = ProgressBar::new_spinner();
-    let duration: Duration = Duration::from_millis(150);
-    spin.enable_steady_tick(duration);
+    spin.enable_steady_tick(150);
     spin.set_style(
         ProgressStyle::default_spinner()
             .tick_chars("🌑🌒🌓🌔🌕🌖🌗🌘")
-            .template("{spinner} {msg}")
-            .expect("Failed getting progress bar."),
+            .template("{spinner} {msg}"),
     );
     spin
 }
