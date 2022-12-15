@@ -15,18 +15,25 @@ pub fn parse_duration(duration: u64) -> String {
     let sec = (duration % 60) as u32;
     let min = ((duration / 60) % 60) as u32;
     let hours = ((duration / 60) / 60) as u32;
-    let time = NaiveTime::from_hms(hours, min, sec);
-    time.format("%H:%M:%S").to_string()
+    let time = NaiveTime::from_hms_opt(hours, min, sec);
+    match time {
+        Some(t) => t.format("%H:%M:%S").to_string(),
+        None => "00:00:00".to_string(),
+    }
 }
 
 #[cfg(not(tarpaulin_include))]
 pub fn set_spinner() -> ProgressBar {
+    use std::time::Duration;
+
     let spin = ProgressBar::new_spinner();
-    spin.enable_steady_tick(150);
+    let duration: Duration = Duration::from_millis(150);
+    spin.enable_steady_tick(duration);
     spin.set_style(
         ProgressStyle::default_spinner()
             .tick_chars("🌑🌒🌓🌔🌕🌖🌗🌘")
-            .template("{spinner} {msg}"),
+            .template("{spinner} {msg}")
+            .expect("Failed getting progress bar."),
     );
     spin
 }

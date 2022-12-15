@@ -12,17 +12,17 @@ keywords = ["cli", "utility", "alignment", "genomics", "phylogenomics"]
 categories = ["command-line-utilities", "science"]
 
 [dependencies]
-ahash = "0.*"
-alphanumeric-sort = "1.*"
-anyhow = "1.*"
-bytecount = "0.*"
+ahash = "0.8.*"
+alphanumeric-sort = "1.4.*"
+anyhow = "1.0.*"
+bytecount = "0.6.*"
 colored = "2.0.0"
 chrono = "0.4.*"
 clap = { version = "3.*", features = ["cargo"] }
 dialoguer = "0.*"
 glob = "0.3.*"
 indexmap = "1.*"
-indicatif = "0.*"
+indicatif = "0.17.*"
 lazy_static = "1.*"
 log = "0.*"
 log4rs = "1.2.*"
