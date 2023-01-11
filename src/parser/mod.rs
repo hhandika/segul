@@ -1,3 +1,12 @@
+//! All the parsers for the supported formats.
+//!
+//! Includes the following parsers:
+//! 1. `delimited`: Delimited text format parser: csv and tsv.
+//! 2. `fasta`: Fasta format parser.
+//! 3. `nexus`: Nexus format parser.
+//! 4. `partition`: Partition format parser.
+//! 5. `phylip`: Phylip format parser.
+//! 6. `txt`: Plain text format parser.
 pub mod delimited;
 pub mod fasta;
 pub mod nexus;

@@ -1,6 +1,7 @@
 //! # Utilities for alignment summary statistic and manipulation
-//! SEGUL provide fast and memory efficient utilities for alignment summary statistic and manipulation
-//! Features:
+//! SEGUL provide fast and memory efficient utilities for alignment summary statistic and manipulation.
+//!
+//! ## Features:
 //! 1. Computing alignment summary statistics.
 //! 2. Concatenating alignments with partition settings.
 //! 3. Converting alignments to different formats.
@@ -32,7 +33,7 @@
 //! let (sequence_matrix, header) = SeqParser::new(input, &datatype).parse(&input_fmt);
 //! let writer = SeqWriter::new(output, &sequence_matrix, &header);
 //! writer.write_sequence(&output_fmt).unwrap()
-//!```
+//! ```
 pub mod cli;
 pub mod handler;
 pub mod helper;

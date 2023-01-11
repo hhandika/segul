@@ -1,3 +1,10 @@
+//! Writer trait and its implementations.
+//!
+//! The writer trait is used to write the output of the program to a file.
+//! The trait is implemented for the following types:
+//! 1. `SeqWriter`: write sequence data to a file.
+//! 2. `PartitionWriter`: write partition data to a file.
+//! 3. `SummaryWriter`: write summary data to a file.
 pub mod partition;
 pub mod sequences;
 pub mod summary;

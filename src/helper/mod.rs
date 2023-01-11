@@ -1,4 +1,4 @@
-//! Helper functions for the main features of SEGUL
+//! Helper functions for the SEGUL features.
 pub mod alphabet;
 pub mod concat;
 pub mod filenames;

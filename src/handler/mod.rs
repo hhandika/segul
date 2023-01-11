@@ -1,4 +1,4 @@
-//! Modules to handle segul functions
+//! Handle segul main functions. Mostly used by the Cli app.
 pub mod concat;
 pub mod convert;
 pub mod extract;

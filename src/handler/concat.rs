@@ -1,5 +1,6 @@
 //! Multi-Sequence Alignment Module.
-//! Contains methods for working with multi-sequence alignments.
+//! Parse user input and call the appropriate functions
+//! to concatenate sequence alignements.
 
 use std::path::{Path, PathBuf};
 
