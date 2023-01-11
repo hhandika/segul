@@ -65,7 +65,7 @@ impl<'a> Converter<'a> {
 
     fn get_sequence(&self, input: &Path) -> (SeqMatrix, Header) {
         let seq = SeqParser::new(input, self.datatype);
-        seq.get(self.input_fmt)
+        seq.parse(self.input_fmt)
     }
 
     fn write_results(&self, matrix: &SeqMatrix, header: Header, output: &Path) {

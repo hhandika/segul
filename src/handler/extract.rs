@@ -40,7 +40,7 @@ impl<'a> Extract<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Extracting sequences with matching IDs...");
         files.par_iter().for_each(|file| {
-            let (seq, _) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+            let (seq, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
             let matrix = self.get_matrix(seq);
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
@@ -119,7 +119,7 @@ mod tests {
         let re = ExtractOpts::Regex(String::from("(?i)(celebensis)"));
         let file = Path::new("tests/files/complete.nex");
         let extract = Extract::new(&re, &InputFmt::Nexus, &DataType::Dna);
-        let (seq, _) = SeqParser::new(file, extract.datatype).get(extract.input_fmt);
+        let (seq, _) = SeqParser::new(file, extract.datatype).parse(extract.input_fmt);
         let matrix = extract.get_matrix(seq);
         assert_eq!(2, matrix.len());
     }
@@ -129,7 +129,7 @@ mod tests {
         let re = ExtractOpts::Id(vec![String::from("Taeromys_calitrichus_NMVZ27408")]);
         let file = Path::new("tests/files/complete.nex");
         let extract = Extract::new(&re, &InputFmt::Nexus, &DataType::Dna);
-        let (seq, _) = SeqParser::new(file, extract.datatype).get(extract.input_fmt);
+        let (seq, _) = SeqParser::new(file, extract.datatype).parse(extract.input_fmt);
         let matrix = extract.get_matrix(seq);
         assert_eq!(1, matrix.len());
     }

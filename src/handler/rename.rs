@@ -208,7 +208,7 @@ impl<'a> Rename<'a> {
     }
 
     fn replace_id(&self, file: &Path, names: &[(String, String)]) -> (SeqMatrix, Header) {
-        let (mut matrix, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+        let (mut matrix, header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
         let original_size = matrix.len();
         names.iter().for_each(|(origin, destination)| {
             let values = matrix.remove(origin);
@@ -229,7 +229,7 @@ impl<'a> Rename<'a> {
     }
 
     fn replace_str(&self, file: &Path, from: &str, to: &str) -> (SeqMatrix, Header) {
-        let (matrix, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+        let (matrix, header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
         let mut new_matrix = IndexMap::with_capacity(matrix.len());
         matrix.iter().for_each(|(id, seq)| {
             if id.contains(from) {
@@ -244,7 +244,7 @@ impl<'a> Rename<'a> {
     }
 
     fn replace_re(&self, file: &Path, from: &str, to: &str, all: &bool) -> (SeqMatrix, Header) {
-        let (matrix, header) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+        let (matrix, header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
         let mut new_matrix = IndexMap::with_capacity(matrix.len());
         matrix.iter().for_each(|(id, seq)| {
             let re = Regex::new(from).expect("Failed parsing regex");

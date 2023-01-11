@@ -73,7 +73,7 @@ impl<'a> Id<'a> {
     fn map_id_to_aln(&self, file: &Path, ids: &IndexSet<String>) -> IdRecords {
         let fstem = self.get_aln_name(file);
         let mut rec = IdRecords::new(fstem, ids.len());
-        let (seq, _) = SeqParser::new(file, self.datatype).get(self.input_fmt);
+        let (seq, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
         ids.iter().for_each(|id| {
             let is_id_present = seq.contains_key(id);
             rec.records.push(is_id_present);

@@ -41,7 +41,7 @@ impl<'a> SeqParser<'a> {
     }
 
     pub fn get_alignment(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
-        let (matrix, header) = self.get(input_fmt);
+        let (matrix, header) = self.parse(input_fmt);
         assert!(
             header.aligned,
             "Found an invalid alignment file. \
@@ -52,14 +52,14 @@ impl<'a> SeqParser<'a> {
         (matrix, header)
     }
 
-    pub fn get(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
+    pub fn parse(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
         match input_fmt {
             InputFmt::Fasta => parse_sequence!(self, Fasta),
             InputFmt::Nexus => parse_sequence!(self, Nexus),
             InputFmt::Phylip => parse_sequence!(self, Phylip),
             InputFmt::Auto => {
                 let input_fmt = infer_input_auto(self.file);
-                self.get(&input_fmt)
+                self.parse(&input_fmt)
             }
         }
     }

@@ -89,7 +89,7 @@ impl<'a> Remove<'a> {
     }
 
     fn remove_sequence(&self, fpath: &Path, ids: &[String]) -> (SeqMatrix, Header) {
-        let (mut matrix, header) = SeqParser::new(fpath, self.datatype).get(self.input_fmt);
+        let (mut matrix, header) = SeqParser::new(fpath, self.datatype).parse(self.input_fmt);
         ids.iter().for_each(|id| match matrix.remove(id) {
             Some(_) => (),
             None => (),
