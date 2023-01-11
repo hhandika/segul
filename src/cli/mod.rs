@@ -1,3 +1,4 @@
+//! Command line interface for parsing and executing commands.
 mod args;
 mod concat;
 mod convert;

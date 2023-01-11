@@ -1,3 +1,4 @@
+//! Modules to handle segul functions
 pub mod concat;
 pub mod convert;
 pub mod extract;
