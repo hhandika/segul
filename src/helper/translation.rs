@@ -44,16 +44,16 @@ use lazy_static::lazy_static;
 lazy_static! {
     /// A version of lazyly initialized of standard translation code.
     /// It may provide better performance than the `NcbiTables::standard_code()` method.
-    pub static ref STANDARD_CODE: HashMap<&'static str, &'static str> = {
+    pub static ref STD_CODE_MAP: HashMap<&'static str, &'static str> = {
         let mut m = HashMap::new();
-        for (codon, amino_acid) in TRANSLATION {
+        for (codon, amino_acid) in STD_CODE {
             m.insert(codon.as_ref(), amino_acid.as_ref());
         }
         m
     };
 }
 
-const TRANSLATION: &[(&str, &str)] = &[
+const STD_CODE: &[(&str, &str)] = &[
     ("TTT", "F"),
     ("TTC", "F"),
     ("TTA", "L"),
@@ -132,7 +132,7 @@ impl<'a> NcbiTables<'a> {
     /// The constructor initializes the translation tables.
     pub fn new() -> Self {
         Self {
-            translation: TRANSLATION,
+            translation: STD_CODE,
         }
     }
 
