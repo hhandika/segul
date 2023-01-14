@@ -48,8 +48,7 @@ Supported partition formats:
 
 The NEXUS partition can be written as a charset block embedded in NEXUS formatted sequences or a separate file.
 
-Documentation: [GitHub Wiki](https://github.com/hhandika/segul/wiki)
-
+Documentation: [Link](https://docs.page/hhandika/segul-docs/)
 Citation: [pre-print](https://doi.org/10.22541/au.165167823.30911834/v1)
 
 ## Quick Links
