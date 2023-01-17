@@ -1,8 +1,6 @@
 use std::panic;
 use std::time::Instant;
 
-use clap::crate_version;
-
 use segul::cli;
 use segul::helper;
 
@@ -15,10 +13,12 @@ fn main() {
         log::error!("{}", panic_info);
     }));
 
-    let version = crate_version!();
-    cli::parse_cli(version);
+    // let version = crate_version!();
+    // cli::parse_cli(version);
+    cli::parse_cli();
+
     let duration = time.elapsed();
-    log::info!("{:18}: {}", "Log file", cli::LOG_FILE);
+    // log::info!("{:18}: {}", "Log file", cli::LOG_FILE);
     println!();
     if duration.as_secs() < 60 {
         log::info!("{:18}: {:?}", "Execution time", duration);
