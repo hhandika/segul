@@ -9,7 +9,7 @@ use segul::helper::types::InputFmt;
 
 #[test]
 fn test_extract() {
-    initiate_cmd!(cmd, "rename", "tests/files/concat/", tmp_dir);
+    initiate_cmd!(cmd, "sequence", "rename", "tests/files/concat/", tmp_dir);
     cmd.arg("--remove=D").assert().success();
     test_results!(4, tmp_dir, "SEGUL-Rename", Nexus);
 }

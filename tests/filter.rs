@@ -11,7 +11,7 @@ macro_rules! test_filter {
     ($test: ident, $arg: expr, $val: expr, $res: expr) => {
         #[test]
         fn $test() {
-            initiate_cmd!(cmd, "filter", "tests/files/long-aln/", tmp_dir);
+            initiate_cmd!(cmd, "align", "filter", "tests/files/long-aln/", tmp_dir);
             let path = "concat_50p";
             let output = tmp_dir.path().join(path);
             cmd.arg($arg)
@@ -33,7 +33,7 @@ test_filter! {test_percent_len, "--len", "25", 4}
 #[test]
 #[should_panic]
 fn test_filter_panic() {
-    initiate_cmd!(cmd, "filter", "tests/files/long-aln/", tmp_dir);
+    initiate_cmd!(cmd, "align", "filter", "tests/files/long-aln/", tmp_dir);
     let output = tmp_dir.path().join("concat_50p");
     cmd.arg("--len")
         .arg("27")

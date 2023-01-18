@@ -8,12 +8,17 @@ pub const DIR: &str = "temp";
 
 #[macro_export]
 macro_rules! initiate_cmd {
-    ($cmd: ident, $sub_cmd: expr, $dir: expr, $tmp_dir: ident) => {
+    ($cmd: ident, $sub_cmd1: expr, $sub_cmd2: expr, $dir: expr, $tmp_dir: ident) => {
         let $tmp_dir = utils::create_tmp_dir().unwrap();
         let dir = env::current_dir().unwrap().join($dir);
         let path = std::path::PathBuf::from($tmp_dir.path());
         let mut $cmd = utils::segul(&path);
-        $cmd.arg($sub_cmd).arg("-d").arg(dir).arg("-f").arg("nexus");
+        $cmd.arg($sub_cmd1)
+            .arg($sub_cmd2)
+            .arg("-d")
+            .arg(dir)
+            .arg("-f")
+            .arg("nexus");
     };
 }
 
