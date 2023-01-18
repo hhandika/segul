@@ -1,4 +1,4 @@
-use std::panic;
+// use std::panic;
 use std::time::Instant;
 
 use segul::cli;
@@ -9,9 +9,9 @@ fn main() {
     // We ignore backtrace for now. It does
     // not seem useful for most cases.
     let time = Instant::now();
-    panic::set_hook(Box::new(move |panic_info| {
-        log::error!("{}", panic_info);
-    }));
+    // panic::set_hook(Box::new(move |panic_info| {
+    //     log::error!("{}", panic_info);
+    // }));
 
     // let version = crate_version!();
     // cli::parse_cli(version);
