@@ -169,13 +169,6 @@ impl<'a> FilterParser<'a> {
         (self.ntax as f64 * self.percent).floor() as usize
     }
 
-    // fn parse_npercent(&self) -> Vec<f64> {
-    //     match &self.args.npercent {
-    //         Some(npercent) => npercent,
-    //         None => unreachable!("Invalid parameters!"),
-    //     }
-    // }
-
     fn check_concat(&self) -> Option<PartitionFmt> {
         if self.args.concat {
             Some(self.parse_partition_fmt(&self.args.partition.part_fmt, self.args.partition.codon))
@@ -256,7 +249,8 @@ mod test {
             npercent: None,
         };
         let mut min_taxa = FilterParser::new(&args);
-        let res = PathBuf::from("./test_taxa_75p");
+        let res = PathBuf::from("SEGUL-Filter_75p");
+        min_taxa.parse_params();
         min_taxa.fmt_output_path();
         assert_eq!(res, min_taxa.output_dir);
     }

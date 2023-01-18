@@ -254,7 +254,7 @@ pub(crate) struct CommonSeqArgs {
     )]
     pub(crate) input_fmt: String,
     #[arg(
-        short = 'o',
+        short = 'F',
         long = "output-format",
         help = "Specify output format",
         default_value = "nexus",
