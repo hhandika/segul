@@ -111,7 +111,7 @@ mod tests {
         let id = "Bunomys_penitus";
         let re = "(?i)(Penitus)$";
         let extract = Extract::new(&ExtractOpts::None, &InputFmt::Fasta, &DataType::Dna);
-        assert_eq!(true, extract.match_id(id, re));
+        assert!(extract.match_id(id, re));
     }
 
     #[test]

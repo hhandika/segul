@@ -18,7 +18,7 @@ use anyhow::{Context, Result};
 trait FileWriter {
     fn create_output_file(&self, path: &Path) -> Result<BufWriter<File>> {
         let dir_name = path.parent().expect("Failed creating parent directory");
-        fs::create_dir_all(&dir_name).with_context(|| {
+        fs::create_dir_all(dir_name).with_context(|| {
             format!("Failed creating an output directory for {}", path.display())
         })?;
         let file = OpenOptions::new().write(true).create_new(true).open(path);

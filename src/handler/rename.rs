@@ -286,7 +286,7 @@ mod test {
     fn test_rename_id() {
         input!(rename, file);
         let names = [(String::from("ABCD"), String::from("WXYZ"))];
-        let (seq, _) = rename.replace_id(&file, &names);
+        let (seq, _) = rename.replace_id(file, &names);
         assert_eq!(seq.len(), 2);
         assert_eq!(seq.get("WXYZ"), Some(&String::from("AGTATG")));
         assert_eq!(seq.get("ABCD"), None);
@@ -295,15 +295,15 @@ mod test {
     #[test]
     fn test_rename_rm_str() {
         input!(rename, file);
-        let (seq, _) = rename.replace_str(&file, "BC", "");
+        let (seq, _) = rename.replace_str(file, "BC", "");
         assert_eq!(seq.get("AD"), Some(&String::from("AGTATG")));
     }
 
     #[test]
     fn test_rename_rm_re() {
         input!(rename, file);
-        let (seq, _) = rename.replace_re(&file, "^A", "", &false);
-        let (seq2, _) = rename.replace_re(&file, "[^ABC]", "", &false);
+        let (seq, _) = rename.replace_re(file, "^A", "", &false);
+        let (seq2, _) = rename.replace_re(file, "[^ABC]", "", &false);
         assert_eq!(seq.get("BCD"), Some(&String::from("AGTATG")));
         assert_eq!(seq2.get("ABC"), Some(&String::from("AGTATG")));
     }

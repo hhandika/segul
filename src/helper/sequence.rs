@@ -122,7 +122,7 @@ mod test {
         let file = Path::new("tests/files/simple.nex");
         let datatype = DataType::Dna;
         let input_fmt = InputFmt::Nexus;
-        let aln = SeqParser::new(&file, &datatype);
+        let aln = SeqParser::new(file, &datatype);
         let (matrix, header) = aln.get_alignment(&input_fmt);
         assert_eq!(1, header.ntax);
         assert_eq!(6, header.nchar);
@@ -132,7 +132,7 @@ mod test {
     #[test]
     fn test_parsing_input_fmt() {
         let file = Path::new("tests/files/simple.nex");
-        let input_fmt = infer_input_auto(&file);
+        let input_fmt = infer_input_auto(file);
         assert_eq!(InputFmt::Nexus, input_fmt);
     }
 }

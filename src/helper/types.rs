@@ -42,6 +42,12 @@ pub struct Partition {
     pub end: usize,
 }
 
+impl Default for Partition {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Partition {
     pub fn new() -> Self {
         Self {
@@ -60,6 +66,12 @@ pub struct Header {
     pub missing: char,
     pub gap: char,
     pub aligned: bool,
+}
+
+impl Default for Header {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Header {
@@ -83,6 +95,12 @@ pub struct TaxonRecords {
     pub at_count: usize,
     pub nucleotides: usize,
     pub missing_data: usize,
+}
+
+impl Default for TaxonRecords {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TaxonRecords {

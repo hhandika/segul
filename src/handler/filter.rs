@@ -246,7 +246,7 @@ mod test {
         let ids = vec!["1", "2", "3", "4"];
         let id_2 = vec!["1", "2", "3"];
         let id_3 = vec!["1", "2", "3", "4"];
-        assert_eq!(false, ids.iter().all(|id| id_2.contains(id)));
-        assert_eq!(true, ids.iter().all(|id| id_3.contains(id)));
+        assert!(!ids.iter().all(|id| id_2.contains(id)));
+        assert!(ids.iter().all(|id| id_3.contains(id)));
     }
 }
