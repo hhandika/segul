@@ -8,6 +8,7 @@ use crate::helper::utils;
 use crate::parser::delimited;
 
 use super::args::SequenceRenameArgs;
+use super::collect_paths;
 
 impl InputCli for RenameParser<'_> {}
 impl InputPrint for RenameParser<'_> {}
@@ -27,19 +28,12 @@ impl<'a> RenameParser<'a> {
     }
 
     pub(in crate::cli) fn rename(&mut self) {
-        let input_fmt = self.parse_input_fmt(self.args);
-        let datatype = self.parse_datatype(self.args);
-        let output_fmt = self.parse_output_fmt(self.args);
-        let outdir = self.parse_output(self.args);
+        let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
+        let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
+        let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
         let task_desc = "Sequence Renaming";
-        let files = if self.args.is_present("dir") {
-            let dir = self.parse_dir_input(self.args);
-            self.input_dir = Some(PathBuf::from(dir));
-            self.get_files(dir, &input_fmt)
-        } else {
-            self.parse_input(self.args)
-        };
-
+        let dir = &self.args.io.dir;
+        let files = collect_paths!(self, dir, input_fmt);
         self.print_input(
             &self.input_dir,
             task_desc,
@@ -48,80 +42,59 @@ impl<'a> RenameParser<'a> {
             &datatype,
         );
         let opts = self.parse_rename_opts();
-        if self.args.is_present("dry-run") {
+        if self.args.dry_run {
             RenameDry::new(&input_fmt, &datatype, &opts).dry_run(&files);
         } else {
-            let is_overwrite = self.parse_overwrite_opts(self.args);
-            self.check_output_dir_exist(&outdir, is_overwrite);
-            Rename::new(&input_fmt, &datatype, &outdir, &output_fmt, &opts).rename(&files);
+            self.check_output_dir_exist(&self.args.output, self.args.io.force);
+            Rename::new(&input_fmt, &datatype, &self.args.output, &output_fmt, &opts)
+                .rename(&files);
         }
     }
 
     fn parse_rename_opts(&self) -> RenameOpts {
         log::info!("{}", "Params".yellow());
-        match self.args {
-            m if m.is_present("replace-id") => {
-                let id_path = Path::new(
-                    self.args
-                        .value_of("replace-id")
-                        .expect("Failed parsing path to id names"),
-                );
-                let names = self.parse_names(id_path);
-                self.print_rename_id_info(id_path, &names.len());
-                RenameOpts::RnId(names)
+
+        if let Some(path) = &self.args.replace_id {
+            let id_path = Path::new(&path);
+            let names = self.parse_names(id_path);
+            self.print_rename_id_info(id_path, &names.len());
+            RenameOpts::RnId(names)
+        } else if let Some(input_str) = &self.args.remove {
+            self.print_remove_str_info(&input_str);
+            RenameOpts::RmStr(input_str.to_string())
+        } else if let Some(input_re) = &self.args.remove_re {
+            self.print_remove_re_info(&input_re, "--remove-re");
+            RenameOpts::RmRegex(input_re.to_string(), false)
+        } else if let Some(re) = &self.args.remove_re_all {
+            let is_all = true;
+            self.print_remove_re_info(&re, "--remove-re-all");
+            RenameOpts::RmRegex(re.to_string(), is_all)
+        } else if let Some(id) = &self.args.replace_from {
+            match &self.args.replace_to {
+                Some(to) => {
+                    self.print_replace_str_info(&id, &to);
+                    RenameOpts::RpStr(id.to_string(), to.to_string())
+                }
+                None => unreachable!("Missing replace-to"),
             }
-            m if m.is_present("remove") => {
-                let input_str = self
-                    .args
-                    .value_of("remove")
-                    .expect("Failed parsing input string");
-                self.print_remove_str_info(input_str);
-                RenameOpts::RmStr(input_str.to_string())
+        } else if let Some(re) = &self.args.replace_from_re {
+            match &self.args.replace_to {
+                Some(to) => {
+                    self.print_replace_re_info(&re, &to, "--replace-from-re");
+                    RenameOpts::RpRegex(re.to_string(), to.to_string(), false)
+                }
+                None => unreachable!("Missing replace-to"),
             }
-            m if m.is_present("remove-re") => {
-                let input_re = self
-                    .args
-                    .value_of("remove-re")
-                    .expect("Failed parsing input regex");
-                let is_all = false;
-                self.print_remove_re_info(input_re, "--remove-re");
-                RenameOpts::RmRegex(input_re.to_string(), is_all)
+        } else if let Some(re) = &self.args.replace_from_re_all {
+            match &self.args.replace_to {
+                Some(to) => {
+                    self.print_replace_re_info(&re, &to, "--replace-from-re-all");
+                    RenameOpts::RpRegex(re.to_string(), to.to_string(), true)
+                }
+                None => unreachable!("Missing replace-to"),
             }
-            m if m.is_present("remove-re-all") => {
-                let input_re = self
-                    .args
-                    .value_of("remove-re-all")
-                    .expect("Failed parsing input regex");
-                let is_all = true;
-                self.print_remove_re_info(input_re, "--remove-re-all");
-                RenameOpts::RmRegex(input_re.to_string(), is_all)
-            }
-            m if m.is_present("replace-from") => {
-                let input_str = self
-                    .args
-                    .value_of("replace-from")
-                    .expect("Failed parsing input string");
-                let output_str = self
-                    .args
-                    .value_of("replace-to")
-                    .expect("Failed parsing output string");
-                self.print_replace_str_info(input_str, output_str);
-                RenameOpts::RpStr(input_str.to_string(), output_str.to_string())
-            }
-            m if m.is_present("replace-from-re") => {
-                let input_re = self
-                    .args
-                    .value_of("replace-from-re")
-                    .expect("Failed parsing input regex");
-                let output_str = self
-                    .args
-                    .value_of("replace-to")
-                    .expect("Failed parsing output string");
-                let is_all = false;
-                self.print_replace_re_info(input_re, output_str, "--replace-from-re");
-                RenameOpts::RpRegex(input_re.to_string(), output_str.to_string(), is_all)
-            }
-            _ => unreachable!("Unknown errors in parsing command line input!"),
+        } else {
+            unreachable!("Missing rename options")
         }
     }
 

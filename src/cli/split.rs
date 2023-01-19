@@ -27,7 +27,7 @@ impl<'a> SplitParser<'a> {
 
         // If users do not specify input partition.
         // Assume partition is in the sequence file.
-        let partitions = match &self.args.input_partition {
+        let partitions = match &&self.args.input_partition {
             Some(path) => path,
             None => &self.args.input,
         };
@@ -35,7 +35,6 @@ impl<'a> SplitParser<'a> {
         let part_fmt = self.parse_part_fmt(&partitions);
         let task_desc = "Alignment splitting";
         self.print_input(&None::<PathBuf>, task_desc, 1, &input_fmt, &datatype);
-
         self.check_output_dir_exist(&self.args.output, self.args.force);
         let split = Splitter::new(
             &self.args.input,

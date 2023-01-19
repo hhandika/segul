@@ -93,7 +93,7 @@ pub fn parse_cli() {
                 RenameParser::new(&rename_args).rename();
             }
             args::SequenceSubcommand::Translate(translate_args) => {
-                println!("Translate");
+                TranslateParser::new(&translate_args).translate();
             }
         },
     }

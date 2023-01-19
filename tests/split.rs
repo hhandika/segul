@@ -21,7 +21,8 @@ macro_rules! initiate_split_cmd {
         let partition = dir.join($part);
         let path = std::path::PathBuf::from($tmp_dir.path());
         let mut $cmd = utils::segul(&path);
-        $cmd.arg("split")
+        $cmd.arg("align")
+            .arg("split")
             .arg("-i")
             .arg(input)
             .arg("-I")

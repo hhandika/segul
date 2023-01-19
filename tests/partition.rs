@@ -17,6 +17,7 @@ macro_rules! initiate_part_cmd {
         std::fs::copy(&input, &tmp_input).unwrap();
         let mut $cmd = utils::segul(&path);
         $cmd.arg("partition")
+            .arg("convert")
             .arg("-i")
             .arg(tmp_input)
             .arg("-P")

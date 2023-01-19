@@ -11,5 +11,5 @@ use segul::helper::types::InputFmt;
 fn test_dna_translation() {
     initiate_cmd!(cmd, "sequence", "translate", "tests/files/concat/", tmp_dir);
     cmd.assert().success();
-    test_results!(4, tmp_dir, "SEGUL-Translation", Nexus);
+    test_results!(4, tmp_dir, "SEGUL-Translate", Nexus);
 }

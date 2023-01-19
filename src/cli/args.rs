@@ -1,9 +1,10 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use clap::{builder, Args, Parser, Subcommand};
+use clap::builder::TypedValueParser as _;
 
 #[derive(Parser)]
-#[command(author, about, version, long_about = None)]
+#[clap(author, about, version, long_about = None)]
 #[command(propagate_version = true)]
 pub(crate) struct Cli {
     #[command(subcommand)]
@@ -30,13 +31,13 @@ pub(crate) enum MainSubcommand {
 
 #[derive(Subcommand)]
 pub(crate) enum RawReadSubcommand {
-    #[command(about = "Compute raw read statistics", name = "stats")]
+    #[command(about = "Compute raw read statistics", name = "summary")]
     RawStats(RawStatArgs),
 }
 
 #[derive(Subcommand)]
 pub(crate) enum ContigSubcommand {
-    #[command(about = "Compute contig statistics", name = "stats")]
+    #[command(about = "Compute contig statistics", name = "summary")]
     ContigStats(ContigStatArgs),
 }
 
@@ -50,7 +51,7 @@ pub(crate) enum AlignmentSubcommand {
     Filter(AlignFilterArgs),
     #[command(about = "Split alignment by partitions", name = "split")]
     Split(AlignSplitArgs),
-    #[command(about = "Compute Alignment Statistics", name = "stats")]
+    #[command(about = "Compute Alignment Statistics", name = "summary")]
     AlignStats(AlignSummaryArgs),
 }
 
@@ -70,7 +71,7 @@ pub(crate) enum SequenceSubcommand {
     Remove(SequenceRemoveArgs),
     #[command(
         about = "Batch renaming sequence IDs across multiple alignments",
-        name = "stats"
+        name = "rename"
     )]
     Rename(SequenceRenameArgs),
     #[command(about = "Translate DNA to amino acid sequences", name = "translate")]
@@ -157,17 +158,15 @@ pub(crate) struct AlignFilterArgs {
 
 #[derive(Args)]
 pub(crate) struct AlignSplitArgs {
-    #[arg(short, long, help = "Input path", default_value = "SEGUL-Split")]
+    #[arg(short, long, help = "Input partition path", default_value = "SEGUL-Split")]
     pub(crate) input: PathBuf,
     #[command(flatten)]
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[command(flatten)]
-    pub(crate) partition: CommonConcatArgs,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Split")]
     pub(crate) output: PathBuf,
-    #[arg(short = 'I', long = "input-partition", help = "Input partition file")]
+    #[arg(short = 'I', long = "input-partition", help = "Input partition format")]
     pub(crate) input_partition: Option<PathBuf>,
     #[arg(long = "skip-checking", help = "Skip checking partition format")]
     pub(crate) skip_checking: bool,
@@ -179,7 +178,6 @@ pub(crate) struct AlignSplitArgs {
         short = 'p',
         long = "partition-format",
         help = "Specify partition format",
-        default_value = "nexus",
         value_parser = builder::PossibleValuesParser::new(["nexus", "raxml"]),
     )]
     pub(crate) part_fmt: Option<String>,
@@ -198,8 +196,9 @@ pub(crate) struct AlignSummaryArgs {
     #[arg(
         long = "interval",
         help = "Specify interval value for counting data matrix completeness",
-        default_value = "5",
-        value_parser = builder::PossibleValuesParser::new(["1", "2", "5", "10"]),
+        default_value_t = 5,
+        value_parser = builder::PossibleValuesParser::new(["1", "2", "5", "10"])
+            .map(|x| x.parse::<usize>().unwrap_or(5)),
     )]
     pub(crate) interval: usize,
     #[arg(long = "per-locus", help = "Generate summary statistic for each locus")]
@@ -208,6 +207,8 @@ pub(crate) struct AlignSummaryArgs {
 
 #[derive(Args)]
 pub(crate) struct PartitionArgs {
+    #[arg(short, long, help = "Input a path (allow wildcard)")]
+    #[cfg(target_os = "windows")]
     pub(crate) input: Option<String>,
     #[arg(short, long, help = "Input a path (allow wildcard)")]
     #[cfg(not(target_os = "windows"))]
@@ -314,9 +315,66 @@ pub(crate) struct SequenceRenameArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Rename")]
     pub(crate) output: PathBuf,
+    #[arg(long = "dry-run", help = "Dry run")]
+    pub(crate) dry_run: bool,
+    #[arg(
+        long = "replace-id", 
+        help = "Rename using input IDs in a file", 
+        // required_unless_present_any([
+        //     "remove",
+        //     "remove-re", 
+        //     "replace-from", 
+        //     "replace-from-re", 
+        //     "remove-re-all", 
+        //     "replace_from_re_all",
+        //     "replace-to",
+        // ])
+        
+    )]
+    pub(crate) replace_id: Option<PathBuf>,
+    #[arg(long = "remove", help = "Remove matching input string")]
+    pub(crate) remove: Option<String>,
+    #[arg(
+        long = "remove-re",
+        help = "Remove first found matching input regular expression",
+        require_equals = true
+    )]
+    pub(crate) remove_re: Option<String>,
+    #[arg(
+        long = "replace-from",
+        help = "Replace matching input string with the output string",
+        require_equals = true
+    )]
+    pub(crate) replace_from: Option<String>,
+    #[arg(
+        long = "remove-re-all",
+        help = "Remove all found matching input regular expression",
+        require_equals = true
+    )]
+    pub(crate) remove_re_all: Option<String>,
+    #[arg(
+        long = "replace-from-re",
+        help = "Replace first found matching input regular expression with the output string",
+        require_equals = true
+    )]
+    pub(crate) replace_from_re: Option<String>,
+    #[arg(
+        long = "replace-from-re-all",
+        help = "Replace all found matching input regular expression with the output string",
+        require_equals = true
+    )]
+    pub(crate) replace_from_re_all: Option<String>,
+    #[arg(
+        long = "replace-to",
+        help = "Replace matching input string with the output string",
+        require_equals = true
+    )]
+    pub(crate) replace_to: Option<String>,
 }
 
 #[derive(Args)]
@@ -334,16 +392,20 @@ pub(crate) struct SequenceTranslateArgs {
     #[arg(
         long = "reading-frame", 
         help = "Specify reading frame", 
-        default_value = "1",
-        value_parser = builder::PossibleValuesParser::new(["1", "2", "3", "6", "9", "12"]),
+        default_value_t = 1,
+        value_parser = builder::PossibleValuesParser::new(["1", "2", "3"])
+            .map(|x| x.parse::<usize>().unwrap_or(1)),
     )]
     pub(crate) reading_frame: usize,
-    #[arg(long = "auto-read", help = "Automatically detect reading frame")]
+    #[arg(
+        long = "auto-read",
+        help = "Automatically detect reading frame",
+    )]
     pub(crate) auto_read: bool,
     #[arg(
         long = "table",
         help = "Specify NCBI translation table",
-        default_value = "1",
+        default_value_t = 1,
         value_name = "INT",
         value_parser = builder::PossibleValuesParser::new(
             [
@@ -370,6 +432,7 @@ pub(crate) struct SequenceTranslateArgs {
                 "30",
                 "33",
             ])
+             .map(|s| s.parse::<usize>().unwrap_or(1))
     )]
     pub(crate) table: usize,
 }
