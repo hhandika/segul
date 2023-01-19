@@ -1,12 +1,12 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use clap::ArgMatches;
-
 use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
 use crate::handler::partition::PartConverter;
 use crate::helper::types::{DataType, PartitionFmt};
 use crate::helper::utils;
+
+use super::args::PartitionArgs;
 
 impl InputPrint for PartParser<'_> {}
 impl InputCli for PartParser<'_> {}
@@ -14,33 +14,32 @@ impl ConcatCli for PartParser<'_> {}
 impl OutputCli for PartParser<'_> {}
 
 pub(in crate::cli) struct PartParser<'a> {
-    matches: &'a ArgMatches,
+    args: &'a PartitionArgs,
 }
 
 impl<'a> PartParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
-        Self { matches }
+    pub(in crate::cli) fn new(args: &'a PartitionArgs) -> Self {
+        Self { args }
     }
 
     pub(in crate::cli) fn convert(&self) {
-        let inputs = self.parse_input(self.matches);
+        let inputs = self.collect_paths(&self.args.input);
         let input_counts = inputs.len();
-        let in_part_fmt = if self.matches.is_present("partition") {
-            self.parse_partition_fmt(self.matches)
+        let in_part_fmt = if let Some(part_fmt) = &self.args.part_fmt {
+            self.parse_partition_fmt_std(&part_fmt)
         } else {
             PartitionFmt::Charset
         };
-        let datatype = self.parse_datatype(self.matches);
-        let out_part_fmt = self.parse_out_part_fmt();
-        let is_overwrite = self.parse_overwrite_opts(self.matches);
-        let is_uncheck = self.parse_uncheck_part_flag(self.matches);
+        let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
+        let out_part_fmt = self.parse_partition_fmt(&self.args.out_part, self.args.codon);
+
         let task_desc = "Converting partitions";
         inputs.iter().for_each(|input| {
             self.print_input_info(input, task_desc, input_counts, &datatype);
             let output = self.construct_output_path(input, &out_part_fmt);
-            self.check_output_file_exist(&output, is_overwrite);
+            self.check_output_file_exist(&output, self.args.force);
             let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
-            converter.convert(&datatype, is_uncheck);
+            converter.convert(&datatype, self.args.skip_checking);
             if input_counts > 1 {
                 utils::print_divider();
             }
@@ -64,18 +63,6 @@ impl<'a> PartParser<'a> {
         }
         let parent_path = input.parent().expect("Failed to parse input parent path");
         parent_path.join(fname)
-    }
-
-    fn parse_out_part_fmt(&self) -> PartitionFmt {
-        let part_fmt = self
-            .matches
-            .value_of("output-partition")
-            .expect("Failed parsing partition format");
-        if self.matches.is_present("codon") {
-            self.parse_partition_fmt_codon(part_fmt)
-        } else {
-            self.parse_partition_fmt_std(part_fmt)
-        }
     }
 
     fn print_input_info(&self, input: &Path, task_desc: &str, fcounts: usize, datatype: &DataType) {

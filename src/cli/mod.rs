@@ -5,7 +5,7 @@ mod convert;
 // mod extract;
 mod filter;
 // mod id;
-// mod partition;
+mod partition;
 // mod remove;
 // mod rename;
 mod split;
@@ -35,7 +35,7 @@ use crate::cli::convert::ConvertParser;
 // use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 // use crate::cli::id::IdParser;
-// use crate::cli::partition::PartParser;
+use crate::cli::partition::PartParser;
 // use crate::cli::remove::RemoveParser;
 // use crate::cli::rename::RenameParser;
 use crate::cli::split::SplitParser;
@@ -73,9 +73,11 @@ pub fn parse_cli() {
                 SummaryParser::new(&summary_args).summarize();
             }
         },
-        MainSubcommand::Partition(_) => {
-            println!("Partition");
-        }
+        MainSubcommand::Partition(part_args) => match part_args {
+            args::PartitionSubcommand::Convert(part_args) => {
+                PartParser::new(&part_args).convert();
+            }
+        },
         MainSubcommand::Sequence(_) => {
             println!("Sequence");
         }
@@ -170,7 +172,7 @@ trait InputCli {
     #[cfg(not(target_os = "windows"))]
     fn collect_paths(&self, input: &Option<Vec<PathBuf>>) -> Vec<PathBuf> {
         match input {
-            Some(paths) => paths.clone(),
+            Some(paths) => paths,
             None => panic!("No input files!"),
         }
     }

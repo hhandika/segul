@@ -44,7 +44,7 @@ pub(crate) enum ContigSubcommand {
 pub(crate) enum AlignmentSubcommand {
     #[command(about = "Concatenate alignments", name = "concat")]
     Concat(AlignConcatArgs),
-    #[command(about = "Convert sequence out_fmts", name = "convert")]
+    #[command(about = "Convert sequence formats", name = "convert")]
     Convert(AlignConvertArgs),
     #[command(about = "Filter alignments", name = "filter")]
     Filter(AlignFilterArgs),
@@ -56,8 +56,8 @@ pub(crate) enum AlignmentSubcommand {
 
 #[derive(Subcommand)]
 pub(crate) enum PartitionSubcommand {
-    #[command(about = "Convert partition out_fmts", name = "convert")]
-    Convert(PartitionConvertArgs),
+    #[command(about = "Convert partition formats", name = "convert")]
+    Convert(PartitionArgs),
 }
 
 #[derive(Subcommand)]
@@ -133,7 +133,7 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) concat: bool,
     #[arg(
         long = "codon",
-        help = "Set codon model partition out_fmt when concatenating alignments"
+        help = "Set codon model partition format when concatenating alignments"
     )]
     pub(crate) codon: bool,
     #[arg(long = "len", help = "Filter by sequence length")]
@@ -149,10 +149,10 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) percent: Option<f64>,
     #[arg(
         long = "percent-inf",
-        help = "Filter by minimal parsimony inout_fmtive percentage"
+        help = "Filter by minimal parsimony informative percentage"
     )]
     pub(crate) percent_inf: Option<f64>,
-    #[arg(long = "pinf", help = "Filter by minimal parsimony inout_fmtive sites")]
+    #[arg(long = "pinf", help = "Filter by minimal parsimony informative sites")]
     pub(crate) pinf: Option<usize>,
     #[arg(long = "taxon-id", help = "Filter by taxon ID")]
     pub(crate) ids: Option<PathBuf>,
@@ -172,7 +172,7 @@ pub(crate) struct AlignSplitArgs {
     pub(crate) output: PathBuf,
     #[arg(short = 'I', long = "input-partition", help = "Input partition file")]
     pub(crate) input_partition: Option<PathBuf>,
-    #[arg(long = "skip-checking", help = "Skip checking partition out_fmt")]
+    #[arg(long = "skip-checking", help = "Skip checking partition format")]
     pub(crate) skip_checking: bool,
     #[arg(long, help = "Force overwriting existing output files/directory")]
     pub(crate) force: bool,
@@ -180,8 +180,8 @@ pub(crate) struct AlignSplitArgs {
     pub(crate) prefix: Option<String>,
     #[arg(
         short = 'p',
-        long = "part-out_fmt",
-        help = "Specify partition out_fmt",
+        long = "partition-format",
+        help = "Specify partition format",
         default_value = "nexus",
         value_parser = builder::PossibleValuesParser::new(["nexus", "raxml"]),
     )]
@@ -210,13 +210,38 @@ pub(crate) struct AlignSummaryArgs {
 }
 
 #[derive(Args)]
-pub(crate) struct PartitionConvertArgs {
+pub(crate) struct PartitionArgs {
+    pub(crate) input: Option<String>,
+    #[arg(short, long, help = "Input a path (allow wildcard)")]
+    #[cfg(not(target_os = "windows"))]
+    pub(crate) input: Option<Vec<PathBuf>>,
     #[command(flatten)]
-    pub(crate) io: IOArgs,
+    pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Partition")]
     pub(crate) output: String,
+    #[arg(
+        short = 'p',
+        long = "input-partition",
+        help = "Specify partition format",
+        value_parser = builder::PossibleValuesParser::new(["charset", "nexus", "raxml"]),
+    )]
+    pub(crate) part_fmt: Option<String>,
+    #[arg(long = "codon", help = "Set codon model partition format")]
+    pub(crate) codon: bool,
+    #[arg(
+        short = 'P',
+        long = "output-partition",
+        help = "Specify partition format",
+        default_value = "nexus",
+        value_parser = builder::PossibleValuesParser::new(["charset", "nexus", "raxml"]),
+    )]
+    pub(crate) out_part: String,
+    #[arg(long, help = "Force overwriting existing output files/directory")]
+    pub(crate) force: bool,
+    #[arg(long = "skip-checking", help = "Skip checking partition formats")]
+    pub(crate) skip_checking: bool,
 }
 
 #[derive(Args)]
@@ -283,8 +308,8 @@ pub(crate) struct IOArgs {
 pub(crate) struct CommonSeqOutput {
     #[arg(
         short = 'F',
-        long = "output-out_fmt",
-        help = "Specify output out_fmt",
+        long = "output-format",
+        help = "Specify output format",
         default_value = "nexus",
         value_parser = builder::PossibleValuesParser::new(
             ["fasta","nexus","phylip","fasta-int", "nexus-int", "phylip-int"]),
@@ -296,9 +321,9 @@ pub(crate) struct CommonSeqOutput {
 pub(crate) struct CommonSeqInput {
     #[arg(
         short = 'f',
-        long = "input-out_fmt",
-        value_name = "SEQUENCE out_fmt",
-        help = "Specify input out_fmt",
+        long = "input-format",
+        value_name = "SEQUENCE INPUT FORMAT",
+        help = "Specify input format",
         default_value = "auto",
         value_parser = builder::PossibleValuesParser::new(["auto","fasta","nexus","phylip"]),
     )]
@@ -316,13 +341,13 @@ pub(crate) struct CommonSeqInput {
 pub(crate) struct CommonConcatArgs {
     #[arg(
         short = 'p',
-        long = "part-out_fmt",
-        help = "Specify partition out_fmt",
+        long = "partition-format",
+        help = "Specify partition output format",
         default_value = "nexus",
         value_parser = builder::PossibleValuesParser::new(["charset", "nexus", "raxml"]),
     )]
     pub(crate) part_fmt: String,
-    #[arg(long = "codon", help = "Set as a codon model partition out_fmt")]
+    #[arg(long = "codon", help = "Set as a codon model partition format")]
     pub(crate) codon: bool,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<PathBuf>,
