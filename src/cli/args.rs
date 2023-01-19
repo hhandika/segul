@@ -1,10 +1,13 @@
 use std::path::PathBuf;
 
-use clap::{builder, Args, Parser, Subcommand, };
+use clap::{builder, Args, Parser, Subcommand, crate_name, crate_authors, crate_version, crate_description};
 use clap::builder::TypedValueParser as _;
 
 #[derive(Parser)]
-#[clap(author, about, version)]
+#[command(name = crate_name!())]
+#[command(version = crate_version!())]
+#[command(author = crate_authors!())]
+#[command(about = crate_description!(), long_about = None)]
 pub(crate) struct Cli {
     #[command(subcommand)]
     pub(crate) subcommand: MainSubcommand,
