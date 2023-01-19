@@ -34,7 +34,7 @@ pub(crate) enum MainSubcommand {
 #[derive(Subcommand)]
 pub(crate) enum RawReadSubcommand {
     #[command(about = "Compute raw read statistics", name = "summary")]
-    RawStats(RawStatArgs),
+    RawSummary(RawSummaryArgs),
 }
 
 #[derive(Subcommand)]
@@ -54,7 +54,7 @@ pub(crate) enum AlignmentSubcommand {
     #[command(about = "Split alignment by partitions", name = "split")]
     Split(AlignSplitArgs),
     #[command(about = "Compute Alignment Statistics", name = "summary")]
-    AlignStats(AlignSummaryArgs),
+    AlignSummary(AlignSummaryArgs),
 }
 
 #[derive(Subcommand)]
@@ -81,7 +81,7 @@ pub(crate) enum SequenceSubcommand {
 }
 
 #[derive(Args)]
-pub(crate) struct RawStatArgs {
+pub(crate) struct RawSummaryArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
 }

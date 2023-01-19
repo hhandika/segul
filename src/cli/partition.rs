@@ -1,17 +1,18 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
 use crate::handler::partition::PartConverter;
-use crate::helper::types::{DataType, PartitionFmt};
+use crate::helper::types::PartitionFmt;
 use crate::helper::utils;
 
 use super::args::PartitionArgs;
+use super::{AlignSeqInput, ConcatCli, InputCli, InputPrint, OutputCli};
 
 impl InputPrint for PartParser<'_> {}
 impl InputCli for PartParser<'_> {}
 impl ConcatCli for PartParser<'_> {}
 impl OutputCli for PartParser<'_> {}
+impl AlignSeqInput for PartParser<'_> {}
 
 pub(in crate::cli) struct PartParser<'a> {
     args: &'a PartitionArgs,
@@ -33,9 +34,8 @@ impl<'a> PartParser<'a> {
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let out_part_fmt = self.parse_partition_fmt(&self.args.out_part, self.args.codon);
 
-        let task_desc = "Converting partitions";
         inputs.iter().for_each(|input| {
-            self.print_input_info(input, task_desc, input_counts, &datatype);
+            self.print_input_info(input, input_counts);
             let output = self.construct_output_path(input, &out_part_fmt);
             self.check_output_file_exist(&output, self.args.force);
             let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
@@ -65,10 +65,9 @@ impl<'a> PartParser<'a> {
         parent_path.join(fname)
     }
 
-    fn print_input_info(&self, input: &Path, task_desc: &str, fcounts: usize, datatype: &DataType) {
-        log::info!("{:18}: {}", "Input path", input.display());
-        log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
-        self.print_datatype(datatype);
-        log::info!("{:18}: {}\n", "Task", task_desc);
+    fn print_input_info(&self, input: &Path, input_counts: usize) {
+        log::info!("{:18}: {}", "Input dir", &input.display());
+        log::info!("{:18}: {}", "File counts", utils::fmt_num(&input_counts));
+        log::info!("{:18}: {}\n", "Task", "Converting partitions");
     }
 }

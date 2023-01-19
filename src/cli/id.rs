@@ -1,15 +1,14 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::handler::id::Id;
 
 use super::args::SequenceIdArgs;
-use super::collect_paths;
+use super::{collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, OutputCli};
 
 impl InputCli for IdParser<'_> {}
 impl OutputCli for IdParser<'_> {}
-impl InputPrint for IdParser<'_> {}
+impl AlignSeqInput for IdParser<'_> {}
 
 pub(in crate::cli) struct IdParser<'a> {
     args: &'a SequenceIdArgs,
@@ -31,13 +30,14 @@ impl<'a> IdParser<'a> {
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
 
-        self.print_input(
+        AlignSeqPrint::new(
             &self.input_dir,
-            task_desc,
-            files.len(),
             &input_fmt,
             &datatype,
-        );
+            task_desc,
+            files.len(),
+        )
+        .print();
 
         let output = self.args.output.with_extension("txt");
         self.check_output_file_exist(&output, self.args.io.force);

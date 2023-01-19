@@ -40,10 +40,12 @@ pub fn set_spinner() -> ProgressBar {
 
 #[cfg(not(tarpaulin_include))]
 pub fn print_welcome_text(version: &str) {
+    use clap::crate_description;
+
     log::info!("{}", get_rep_str('=').yellow());
     let text = format!("SEGUL v{}", version);
     log::info!("{}", text.yellow());
-    log::info!("{}", "An alignment tool for phylogenomics".yellow());
+    log::info!("{}", crate_description!().yellow());
     log::info!("{}", get_rep_str('-').yellow());
 }
 

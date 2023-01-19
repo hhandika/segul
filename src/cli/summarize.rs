@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 
-use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::handler::summarize::SeqStats;
 
 use super::args::AlignSummaryArgs;
-use super::collect_paths;
+use super::{collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, InputPrint, OutputCli};
 
 impl InputCli for SummaryParser<'_> {}
 impl InputPrint for SummaryParser<'_> {}
 impl OutputCli for SummaryParser<'_> {}
+impl AlignSeqInput for SummaryParser<'_> {}
 
 pub(in crate::cli) struct SummaryParser<'a> {
     args: &'a AlignSummaryArgs,
@@ -29,13 +29,14 @@ impl<'a> SummaryParser<'a> {
         let task_desc = "Sequence summary statistics";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        self.print_input::<PathBuf>(
+        AlignSeqPrint::new(
             &self.input_dir,
-            task_desc,
-            files.len(),
             &input_fmt,
             &datatype,
-        );
+            task_desc,
+            files.len(),
+        )
+        .print();
 
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut summary =

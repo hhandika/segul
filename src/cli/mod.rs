@@ -6,6 +6,7 @@ mod extract;
 mod filter;
 mod id;
 mod partition;
+mod raw;
 mod remove;
 mod rename;
 mod split;
@@ -37,6 +38,7 @@ use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
 use crate::cli::partition::PartParser;
+use crate::cli::raw::RawSummaryParser;
 use crate::cli::remove::RemoveParser;
 use crate::cli::rename::RenameParser;
 use crate::cli::split::SplitParser;
@@ -53,9 +55,11 @@ pub fn parse_cli() {
     setup_logger().expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
     match args.subcommand {
-        MainSubcommand::RawRead(_) => {
-            println!("RawRead");
-        }
+        MainSubcommand::RawRead(subcommand) => match subcommand {
+            args::RawReadSubcommand::RawSummary(raw_args) => {
+                RawSummaryParser::new(&raw_args).summarize();
+            }
+        },
         MainSubcommand::Contig(_) => {
             println!("Contig");
         }
@@ -70,7 +74,7 @@ pub fn parse_cli() {
                 FilterParser::new(&filter_args).filter();
             }
             args::AlignmentSubcommand::Split(split_args) => SplitParser::new(&split_args).split(),
-            args::AlignmentSubcommand::AlignStats(summary_args) => {
+            args::AlignmentSubcommand::AlignSummary(summary_args) => {
                 SummaryParser::new(&summary_args).summarize();
             }
         },
@@ -191,11 +195,9 @@ trait InputCli {
             None => panic!("No input files!"),
         }
     }
+}
 
-    fn glob_paths(&self, dir: &str, input_fmt: &InputFmt) -> Vec<PathBuf> {
-        Files::new(Path::new(dir), input_fmt).find()
-    }
-
+trait AlignSeqInput {
     fn parse_input_fmt(&self, input_fmt: &str) -> InputFmt {
         match input_fmt {
             "auto" => InputFmt::Auto,
@@ -214,38 +216,69 @@ trait InputCli {
             _ => unreachable!(),
         }
     }
+
+    fn glob_paths(&self, dir: &str, input_fmt: &InputFmt) -> Vec<PathBuf> {
+        Files::new(Path::new(dir), input_fmt).find()
+    }
 }
 
 trait InputPrint {
-    fn print_input<P: AsRef<Path>>(
-        &self,
-        input: &Option<P>,
-        task_desc: &str,
-        fcounts: usize,
-        input_fmt: &InputFmt,
-        datatype: &DataType,
-    ) {
-        if let Some(input) = input {
-            log::info!("{:18}: {}", "Input dir", &input.as_ref().display());
+    fn print_input_info(&self) {}
+}
+
+impl InputPrint for AlignSeqPrint<'_> {
+    fn print_input_info(&self) {
+        if let Some(input) = self.input {
+            log::info!("{:18}: {}", "Input dir", &input.display());
         } else {
             log::info!("{:18}: {}", "Input path", "STDIN");
         }
-        log::info!("{:18}: {}", "File counts", utils::fmt_num(&fcounts));
-        self.print_input_fmt(input_fmt);
-        self.print_datatype(datatype);
-        log::info!("{:18}: {}\n", "Task", task_desc);
+        log::info!("{:18}: {}", "File counts", utils::fmt_num(&self.fcounts));
+    }
+}
+
+struct AlignSeqPrint<'a> {
+    input: &'a Option<PathBuf>,
+    input_fmt: &'a InputFmt,
+    datatype: &'a DataType,
+    task_desc: &'a str,
+    fcounts: usize,
+}
+
+impl<'a> AlignSeqPrint<'a> {
+    fn new(
+        input: &'a Option<PathBuf>,
+        input_fmt: &'a InputFmt,
+        datatype: &'a DataType,
+        task_desc: &'a str,
+        fcounts: usize,
+    ) -> Self {
+        Self {
+            input,
+            input_fmt,
+            datatype,
+            task_desc,
+            fcounts,
+        }
     }
 
-    fn print_datatype(&self, datatype: &DataType) {
-        match datatype {
+    fn print(&self) {
+        self.print_input_info();
+        self.print_seq_input_fmt();
+        self.print_seq_datatype();
+        log::info!("{:18}: {}\n", "Task", self.task_desc);
+    }
+
+    fn print_seq_datatype(&self) {
+        match self.datatype {
             DataType::Aa => log::info!("{:18}: {}", "Data type", "Amino Acid"),
             DataType::Dna => log::info!("{:18}: {}", "Data type", "DNA"),
             DataType::Ignore => log::info!("{:18}: {}", "Data type", "Ignore"),
         }
     }
 
-    fn print_input_fmt(&self, input_fmt: &InputFmt) {
-        match input_fmt {
+    fn print_seq_input_fmt(&self) {
+        match self.input_fmt {
             InputFmt::Auto => log::info!("{:18}: {}", "Input format", "Auto"),
             InputFmt::Fasta => log::info!("{:18}: {}", "Input format", "FASTA"),
             InputFmt::Nexus => log::info!("{:18}: {}", "Input format", "NEXUS"),

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 
-use crate::cli::{ConcatCli, InputCli, InputPrint, OutputCli};
+use crate::cli::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
 use crate::handler::filter::{Params, SeqFilter};
 use crate::helper::finder::IDs;
 use crate::helper::types::{DataType, InputFmt, PartitionFmt};
@@ -10,12 +10,12 @@ use crate::helper::{filenames, utils};
 use crate::parser::txt;
 
 use super::args::AlignFilterArgs;
-use super::collect_paths;
+use super::{collect_paths, AlignSeqPrint};
 
 impl InputCli for FilterParser<'_> {}
-impl InputPrint for FilterParser<'_> {}
 impl OutputCli for FilterParser<'_> {}
 impl ConcatCli for FilterParser<'_> {}
+impl AlignSeqInput for FilterParser<'_> {}
 
 pub(in crate::cli) struct FilterParser<'a> {
     args: &'a AlignFilterArgs,
@@ -51,13 +51,14 @@ impl<'a> FilterParser<'a> {
         let dir = &self.args.io.dir;
         let input_fmt = &self.input_fmt; // Binding to satisfy the macro
         self.files = collect_paths!(self, dir, input_fmt);
-        self.print_input(
+        AlignSeqPrint::new(
             &self.input_dir,
+            &input_fmt,
+            &self.datatype,
             task_desc,
             self.files.len(),
-            &self.input_fmt,
-            &self.datatype,
-        );
+        )
+        .print();
 
         if let Some(npercent) = &self.args.npercent {
             self.filter_min_taxa_npercent(npercent);

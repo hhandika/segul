@@ -2,15 +2,17 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 
-use crate::cli::{collect_paths, InputCli, InputPrint, OutputCli};
+use crate::cli::AlignSeqPrint;
 use crate::handler::translate::Translate;
 use crate::helper::types::GeneticCodes;
 
 use super::args::SequenceTranslateArgs;
+use super::{collect_paths, AlignSeqInput, InputCli, InputPrint, OutputCli};
 
 impl InputCli for TranslateParser<'_> {}
 impl InputPrint for TranslateParser<'_> {}
 impl OutputCli for TranslateParser<'_> {}
+impl AlignSeqInput for TranslateParser<'_> {}
 
 macro_rules! parse_table_args {
     ($self:ident, $code:ident, $table:ident) => {{
@@ -50,14 +52,14 @@ impl<'a> TranslateParser<'a> {
         let task_desc = "Sequence Translation";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        self.print_input(
+        AlignSeqPrint::new(
             &self.input_dir,
-            task_desc,
-            files.len(),
             &input_fmt,
             &datatype,
-        );
-
+            task_desc,
+            files.len(),
+        )
+        .print();
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "Params".yellow());
         self.parse_trans_table();

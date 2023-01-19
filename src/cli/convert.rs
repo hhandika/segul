@@ -1,13 +1,14 @@
 use std::path::PathBuf;
 
-use crate::cli::{collect_paths, InputCli, InputPrint, OutputCli};
 use crate::handler::convert::Converter;
 
 use crate::cli::args::AlignConvertArgs;
 
+use super::{collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, OutputCli};
+
 impl InputCli for ConvertParser<'_> {}
-impl InputPrint for ConvertParser<'_> {}
 impl OutputCli for ConvertParser<'_> {}
+impl AlignSeqInput for ConvertParser<'_> {}
 
 pub(in crate::cli) struct ConvertParser<'a> {
     args: &'a AlignConvertArgs,
@@ -29,14 +30,14 @@ impl<'a> ConvertParser<'a> {
         let task_desc = "Sequence format conversion";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-
-        self.print_input::<PathBuf>(
+        AlignSeqPrint::new(
             &self.input_dir,
-            task_desc,
-            files.len(),
             &input_fmt,
             &datatype,
-        );
+            task_desc,
+            files.len(),
+        )
+        .print();
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut convert = Converter::new(&input_fmt, &output_fmt, &datatype, self.args.sort);
         convert.convert(&files, &self.args.output);
