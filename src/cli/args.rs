@@ -62,7 +62,9 @@ pub(crate) enum PartitionSubcommand {
 
 #[derive(Subcommand)]
 pub(crate) enum SequenceSubcommand {
-    #[command(about = "Parse sample ID across multiple alignments", name = "stats")]
+    #[command(about = "Extract sequence from alignments", name = "extract")]
+    Extract(SequenceExtractArgs),
+    #[command(about = "Parse sample ID across multiple alignments", name = "id")]
     Id(SequenceIdArgs),
     #[command(about = "Remove sequence based on IDs", name = "remove")]
     Remove(SequenceRemoveArgs),
@@ -131,11 +133,6 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) output: String,
     #[arg(long = "concat", help = "Concat filtered alignments")]
     pub(crate) concat: bool,
-    #[arg(
-        long = "codon",
-        help = "Set codon model partition format when concatenating alignments"
-    )]
-    pub(crate) codon: bool,
     #[arg(long = "len", help = "Filter by sequence length")]
     pub(crate) len: Option<usize>,
     #[arg(
@@ -242,6 +239,36 @@ pub(crate) struct PartitionArgs {
     pub(crate) force: bool,
     #[arg(long = "skip-checking", help = "Skip checking partition formats")]
     pub(crate) skip_checking: bool,
+}
+
+#[derive(Args)]
+pub(crate) struct SequenceExtractArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
+    pub(crate) out_fmt: CommonSeqOutput,
+    #[arg(short, long, help = "Output path", default_value = "SEGUL-Extract")]
+    pub(crate) output: PathBuf,
+    #[arg(
+        long = "re",
+        help = "Specify regular expression for extracting sequences",
+        require_equals = true
+    )]
+    pub(crate) re: Option<String>,
+    #[arg(
+        long = "id", 
+        help = "Specify sequence ID for extracting sequences",
+        required_unless_present_any(["re", "file"]),
+    )]
+    pub(crate) id: Option<Vec<String>>,
+    #[arg(
+        long = "file", 
+        help = "Specify file for extracting sequences", 
+        conflicts_with_all(["re", "id"]),
+    )]
+    pub(crate) file: Option<PathBuf>,
 }
 
 #[derive(Args)]

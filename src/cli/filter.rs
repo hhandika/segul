@@ -63,6 +63,7 @@ impl<'a> FilterParser<'a> {
             self.filter_min_taxa_npercent(&npercent);
         } else {
             self.parse_params();
+            self.fmt_output_path();
             self.filter_aln();
         }
     }
@@ -248,7 +249,6 @@ mod test {
                     output_fmt: "phylip".to_string(),
                 },
                 output: "SEGUL-Filter".to_string(),
-                codon: false,
                 npercent: None,
             };
         };

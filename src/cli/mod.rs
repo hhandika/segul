@@ -2,7 +2,7 @@
 mod args;
 mod concat;
 mod convert;
-// mod extract;
+mod extract;
 mod filter;
 // mod id;
 mod partition;
@@ -32,7 +32,7 @@ use log4rs::encode::pattern::PatternEncoder;
 use crate::cli::args::{Cli, MainSubcommand};
 use crate::cli::concat::ConcatParser;
 use crate::cli::convert::ConvertParser;
-// use crate::cli::extract::ExtractParser;
+use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 // use crate::cli::id::IdParser;
 use crate::cli::partition::PartParser;
@@ -58,7 +58,7 @@ pub fn parse_cli() {
         MainSubcommand::Contig(_) => {
             println!("Contig");
         }
-        MainSubcommand::Alignment(arg) => match arg {
+        MainSubcommand::Alignment(subcommand) => match subcommand {
             args::AlignmentSubcommand::Concat(concat_args) => {
                 ConcatParser::new(&concat_args).concat();
             }
@@ -73,14 +73,28 @@ pub fn parse_cli() {
                 SummaryParser::new(&summary_args).summarize();
             }
         },
-        MainSubcommand::Partition(part_args) => match part_args {
+        MainSubcommand::Partition(subcommand) => match subcommand {
             args::PartitionSubcommand::Convert(part_args) => {
                 PartParser::new(&part_args).convert();
             }
         },
-        MainSubcommand::Sequence(_) => {
-            println!("Sequence");
-        }
+        MainSubcommand::Sequence(subcommand) => match subcommand {
+            args::SequenceSubcommand::Extract(extract_args) => {
+                ExtractParser::new(&extract_args).extract();
+            }
+            args::SequenceSubcommand::Id(filter_args) => {
+                println!("Id");
+            }
+            args::SequenceSubcommand::Remove(remove_args) => {
+                println!("Remove");
+            }
+            args::SequenceSubcommand::Rename(rename_args) => {
+                println!("Rename");
+            }
+            args::SequenceSubcommand::Translate(translate_args) => {
+                println!("Translate");
+            }
+        },
     }
 }
 

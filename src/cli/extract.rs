@@ -1,44 +1,39 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use clap::ArgMatches;
 use colored::Colorize;
 
-use crate::cli::{InputCli, InputPrint, OutputCli};
+use crate::cli::{collect_paths, InputCli, InputPrint, OutputCli};
 use crate::handler::extract::{Extract, ExtractOpts};
 use crate::parser::txt;
+
+use super::args::SequenceExtractArgs;
 
 impl InputCli for ExtractParser<'_> {}
 impl InputPrint for ExtractParser<'_> {}
 impl OutputCli for ExtractParser<'_> {}
 
 pub(in crate::cli) struct ExtractParser<'a> {
-    matches: &'a ArgMatches,
+    args: &'a SequenceExtractArgs,
     input_dir: Option<PathBuf>,
     params: ExtractOpts,
 }
 
 impl<'a> ExtractParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
+    pub(in crate::cli) fn new(args: &'a SequenceExtractArgs) -> Self {
         Self {
-            matches,
+            args,
             input_dir: None,
             params: ExtractOpts::None,
         }
     }
 
     pub(in crate::cli) fn extract(&mut self) {
-        let input_fmt = self.parse_input_fmt(self.matches);
-        let datatype = self.parse_datatype(self.matches);
-        let output_fmt = self.parse_output_fmt(self.matches);
-        let outdir = self.parse_output(self.matches);
+        let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
+        let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
+        let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
         let task_desc = "Sequence extraction";
-        let files = if self.matches.is_present("dir") {
-            let dir = self.parse_dir_input(self.matches);
-            self.input_dir = Some(PathBuf::from(dir));
-            self.get_files(dir, &input_fmt)
-        } else {
-            self.parse_input(self.matches)
-        };
+        let dir = &self.args.io.dir;
+        let files = collect_paths!(self, dir, input_fmt);
         self.print_input(
             &self.input_dir,
             task_desc,
@@ -46,65 +41,41 @@ impl<'a> ExtractParser<'a> {
             &input_fmt,
             &datatype,
         );
-
-        let is_overwrite = self.parse_overwrite_opts(self.matches);
-        self.check_output_dir_exist(&outdir, is_overwrite);
+        self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "ExtractOpts".yellow());
         self.parse_params();
         let extract = Extract::new(&self.params, &input_fmt, &datatype);
-        extract.extract_sequences(&files, &outdir, &output_fmt);
+        extract.extract_sequences(&files, &self.args.output, &output_fmt);
     }
 
     fn parse_params(&mut self) {
-        match self.matches {
-            m if m.is_present("re") => {
-                let re = self.parse_regex();
-                log::info!("{:18}: {}\n", "Regex", re);
-                self.params = ExtractOpts::Regex(re);
-            }
-            m if m.is_present("id") => {
-                let ids = self.parse_id();
-                log::info!("{:18}: {:?}\n", "IDs", ids);
-                self.params = ExtractOpts::Id(ids);
-            }
-            m if m.is_present("file") => {
-                let ids = self.parse_file();
-                log::info!(
-                    "{:18}: {}\n",
-                    "File",
-                    self.matches
-                        .value_of("file")
-                        .expect("Failed parsing file path")
-                );
-                self.params = ExtractOpts::Id(ids);
-            }
-            _ => unreachable!("Unknown parameters!"),
+        if let Some(re) = &self.args.re {
+            log::info!("{:18}: {}\n", "Regex", re);
+            self.params = ExtractOpts::Regex(re.clone());
+        }
+
+        if let Some(id) = &self.args.id {
+            log::info!("{:18}: {:?}\n", "IDs", id);
+            self.params = ExtractOpts::Id(id.clone());
+        }
+
+        if let Some(file) = &self.args.file {
+            let ids = self.parse_file(&file);
+            log::info!(
+                "{:18}: {}\n",
+                "File",
+                self.args
+                    .file
+                    .as_ref()
+                    .expect("Failed parsing file path")
+                    .display()
+            );
+            self.params = ExtractOpts::Id(ids);
         }
     }
 
-    fn parse_regex(&self) -> String {
-        let re = self
-            .matches
-            .value_of("re")
-            .expect("Failed parsing regex string");
-        String::from(re)
-    }
-
-    fn parse_file(&self) -> Vec<String> {
-        let file = PathBuf::from(
-            self.matches
-                .value_of("file")
-                .expect("Failed parsing file path"),
-        );
+    fn parse_file(&self, file: &Path) -> Vec<String> {
         assert!(file.is_file(), "File does not exist: {}", file.display());
         txt::parse_text_file(&file)
-    }
-
-    fn parse_id(&self) -> Vec<String> {
-        self.matches
-            .values_of("id")
-            .expect("Failed parsing IDs input")
-            .map(String::from)
-            .collect()
     }
 }
