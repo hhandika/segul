@@ -71,6 +71,12 @@ pub struct SeqCheck {
     pub is_alignment: bool,
 }
 
+impl Default for SeqCheck {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SeqCheck {
     pub fn new() -> Self {
         Self {

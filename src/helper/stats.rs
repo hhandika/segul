@@ -45,6 +45,12 @@ pub struct SiteSummary {
     pub mean_inf_site: f64,
 }
 
+impl Default for SiteSummary {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SiteSummary {
     pub fn new() -> Self {
         Self {
@@ -130,6 +136,12 @@ pub struct CharSummary {
     pub total_chars: usize,
     pub total_nucleotides: usize,
     pub chars: HashMap<char, usize>,
+}
+
+impl Default for CharSummary {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CharSummary {
@@ -241,6 +253,12 @@ pub struct Sites {
     pub prop_var: f64,
     pub prop_cons: f64,
     pub prop_pinf: f64,
+}
+
+impl Default for Sites {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Sites {
@@ -386,6 +404,12 @@ pub struct CharMatrix {
     pub chars: Chars,
 }
 
+impl Default for CharMatrix {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CharMatrix {
     pub fn new() -> Self {
         Self {
@@ -419,6 +443,12 @@ impl CharMatrix {
 
 pub struct Taxa {
     pub records: HashMap<String, Chars>,
+}
+
+impl Default for Taxa {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Taxa {

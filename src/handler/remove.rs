@@ -90,10 +90,8 @@ impl<'a> Remove<'a> {
 
     fn remove_sequence(&self, fpath: &Path, ids: &[String]) -> (SeqMatrix, Header) {
         let (mut matrix, header) = SeqParser::new(fpath, self.datatype).parse(self.input_fmt);
-        ids.iter().for_each(|id| match matrix.remove(id) {
-            Some(_) => (),
-            None => (),
-        });
+        ids.iter()
+            .for_each(|id| if let Some(_) = matrix.remove(id) {});
 
         let fnl_header = if !matrix.is_empty() && header.ntax != matrix.len() {
             self.get_header(&matrix)

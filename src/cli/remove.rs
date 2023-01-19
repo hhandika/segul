@@ -52,12 +52,11 @@ impl<'a> RemoveParser<'a> {
         if let Some(re) = &self.args.re {
             log::info!("{:18}: {}\n", "Regex", "Options");
             log::info!("{:18}, {}\n", "Values", re);
-            return RemoveOpts::Regex(re.clone());
-        }
-        if let Some(ids) = &self.args.id {
+            RemoveOpts::Regex(re.clone())
+        } else if let Some(ids) = &self.args.id {
             log::info!("{:18}: id", "Options");
             log::info!("{:18}, {:?}", "Values", ids);
-            return RemoveOpts::Id(ids.clone());
+            RemoveOpts::Id(ids.clone())
         } else {
             unimplemented!("RemoveOpts::None is not implemented yet")
         }

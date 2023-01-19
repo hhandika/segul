@@ -26,7 +26,7 @@ impl<'a> PartParser<'a> {
         let inputs = self.collect_paths(&self.args.input);
         let input_counts = inputs.len();
         let in_part_fmt = if let Some(part_fmt) = &self.args.part_fmt {
-            self.parse_partition_fmt_std(&part_fmt)
+            self.parse_partition_fmt_std(part_fmt)
         } else {
             PartitionFmt::Charset
         };

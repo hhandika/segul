@@ -32,7 +32,7 @@ impl<'a> SplitParser<'a> {
             None => &self.args.input,
         };
 
-        let part_fmt = self.parse_part_fmt(&partitions);
+        let part_fmt = self.parse_part_fmt(partitions);
         let task_desc = "Alignment splitting";
         self.print_input(&None::<PathBuf>, task_desc, 1, &input_fmt, &datatype);
         self.check_output_dir_exist(&self.args.output, self.args.force);
@@ -44,7 +44,7 @@ impl<'a> SplitParser<'a> {
             &output_fmt,
         );
         split.split_alignment(
-            &partitions,
+            partitions,
             &part_fmt,
             &self.args.prefix,
             self.args.skip_checking,
@@ -53,7 +53,7 @@ impl<'a> SplitParser<'a> {
 
     fn parse_part_fmt(&self, part_path: &Path) -> PartitionFmt {
         match &self.args.part_fmt {
-            Some(fmt) => self.parse_partition_fmt(&fmt),
+            Some(fmt) => self.parse_partition_fmt(fmt),
             None => self.infer_part_fmt(part_path),
         }
     }

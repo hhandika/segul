@@ -47,7 +47,7 @@ lazy_static! {
     pub static ref STD_CODE_MAP: HashMap<&'static str, &'static str> = {
         let mut m = HashMap::new();
         for (codon, amino_acid) in STD_CODE {
-            m.insert(codon.as_ref(), amino_acid.as_ref());
+            m.insert(*codon, amino_acid.as_ref());
         }
         m
     };
@@ -127,6 +127,12 @@ pub struct NcbiTables<'a> {
     translation: &'a [(&'a str, &'a str)],
 }
 
+impl Default for NcbiTables<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> NcbiTables<'a> {
     /// The constructor for the NCBI Table struct.
     /// The constructor initializes the translation tables.
@@ -151,7 +157,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "AGA" => code.insert(codon.to_string(), String::from("*")),
                 "AGG" => code.insert(codon.to_string(), String::from("*")),
                 "ATA" => code.insert(codon.to_string(), String::from("M")),
@@ -167,7 +173,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "ATA" => code.insert(codon.to_string(), String::from("M")),
                 "CTT" => code.insert(codon.to_string(), String::from("T")),
                 "CTC" => code.insert(codon.to_string(), String::from("T")),
@@ -185,7 +191,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TGA" => code.insert(codon.to_string(), String::from("W")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
             };
@@ -198,7 +204,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "AGA" => code.insert(codon.to_string(), String::from("S")),
                 "AGG" => code.insert(codon.to_string(), String::from("S")),
                 "ATA" => code.insert(codon.to_string(), String::from("M")),
@@ -214,7 +220,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TAA" => code.insert(codon.to_string(), String::from("Q")),
                 "TAG" => code.insert(codon.to_string(), String::from("Q")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
@@ -228,7 +234,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "AAA" => code.insert(codon.to_string(), String::from("N")),
                 "AGA" => code.insert(codon.to_string(), String::from("S")),
                 "AGG" => code.insert(codon.to_string(), String::from("S")),
@@ -244,7 +250,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TGA" => code.insert(codon.to_string(), String::from("C")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
             };
@@ -261,7 +267,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "CTG" => code.insert(codon.to_string(), String::from("S")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
             };
@@ -274,7 +280,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "AGA" => code.insert(codon.to_string(), String::from("G")),
                 "AGG" => code.insert(codon.to_string(), String::from("G")),
                 "ATA" => code.insert(codon.to_string(), String::from("M")),
@@ -290,7 +296,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "AAA" => code.insert(codon.to_string(), String::from("N")),
                 "AGA" => code.insert(codon.to_string(), String::from("S")),
                 "AGG" => code.insert(codon.to_string(), String::from("S")),
@@ -307,7 +313,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TAG" => code.insert(codon.to_string(), String::from("L")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
             };
@@ -320,7 +326,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TGA" => code.insert(codon.to_string(), String::from("W")),
                 "ATA" => code.insert(codon.to_string(), String::from("M")),
                 "AGA" => code.insert(codon.to_string(), String::from("S")),
@@ -337,7 +343,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TCA" => code.insert(codon.to_string(), String::from("*")),
                 "TAG" => code.insert(codon.to_string(), String::from("L")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
@@ -351,7 +357,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TTA" => code.insert(codon.to_string(), String::from("*")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
             };
@@ -364,7 +370,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "AGA" => code.insert(codon.to_string(), String::from("S")),
                 "AGG" => code.insert(codon.to_string(), String::from("K")),
                 "TGA" => code.insert(codon.to_string(), String::from("W")),
@@ -379,7 +385,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TGA" => code.insert(codon.to_string(), String::from("G")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
             };
@@ -392,7 +398,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "CTG" => code.insert(codon.to_string(), String::from("A")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
             };
@@ -405,7 +411,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TAA" => code.insert(codon.to_string(), String::from("Y")),
                 "TAG" => code.insert(codon.to_string(), String::from("Y")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
@@ -419,7 +425,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TAA" => code.insert(codon.to_string(), String::from("E")),
                 "TAG" => code.insert(codon.to_string(), String::from("E")),
                 _ => code.insert(codon.to_string(), protein.to_string()),
@@ -433,7 +439,7 @@ impl<'a> NcbiTables<'a> {
         let mut code = HashMap::new();
 
         self.translation.iter().for_each(|(codon, protein)| {
-            match codon.as_ref() {
+            match *codon {
                 "TAA" => code.insert(codon.to_string(), String::from("Y")),
                 "TGA" => code.insert(codon.to_string(), String::from("W")),
                 "AGA" => code.insert(codon.to_string(), String::from("S")),

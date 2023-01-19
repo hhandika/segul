@@ -160,7 +160,7 @@ impl<'a> SeqStats<'a> {
         let mut sum_sites = SiteSummary::new();
         sum_sites.summarize(&sites);
         let mut sum_dna = CharSummary::new();
-        sum_dna.summarize(&dna, &self.datatype);
+        sum_dna.summarize(&dna, self.datatype);
         let mut mat_comp = Completeness::new(&self.ntax, self.interval);
         mat_comp.matrix_completeness(&dna);
         (sum_sites, sum_dna, mat_comp)

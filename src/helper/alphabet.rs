@@ -124,13 +124,13 @@ mod test {
     #[test]
     fn test_check_valid_dna() {
         let dna = String::from("agtc?-");
-        assert_eq!(true, is_valid_dna(&dna));
+        assert!(is_valid_dna(&dna));
     }
 
     #[test]
     fn test_check_invalid_dna() {
         let dna = String::from("agtc?-z");
-        assert_eq!(false, is_valid_dna(&dna));
+        assert!(!is_valid_dna(&dna));
     }
 
     #[test]

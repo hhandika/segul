@@ -60,7 +60,7 @@ impl<'a> FilterParser<'a> {
         );
 
         if let Some(npercent) = &self.args.npercent {
-            self.filter_min_taxa_npercent(&npercent);
+            self.filter_min_taxa_npercent(npercent);
         } else {
             self.parse_params();
             self.fmt_output_path();
@@ -127,7 +127,7 @@ impl<'a> FilterParser<'a> {
 
     fn parse_taxon_id(&self) -> Vec<String> {
         match &self.args.ids {
-            Some(path) => txt::parse_text_file(&path),
+            Some(path) => txt::parse_text_file(path),
             None => unreachable!("Invalid parameters!"),
         }
     }

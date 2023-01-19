@@ -60,19 +60,19 @@ impl<'a> RenameParser<'a> {
             self.print_rename_id_info(id_path, &names.len());
             RenameOpts::RnId(names)
         } else if let Some(input_str) = &self.args.remove {
-            self.print_remove_str_info(&input_str);
+            self.print_remove_str_info(input_str);
             RenameOpts::RmStr(input_str.to_string())
-        } else if let Some(input_re) = &self.args.remove_re {
-            self.print_remove_re_info(&input_re, "--remove-re");
-            RenameOpts::RmRegex(input_re.to_string(), false)
+        } else if let Some(re) = &self.args.remove_re {
+            self.print_remove_re_info(re, "--remove-re");
+            RenameOpts::RmRegex(re.to_string(), false)
         } else if let Some(re) = &self.args.remove_re_all {
             let is_all = true;
-            self.print_remove_re_info(&re, "--remove-re-all");
+            self.print_remove_re_info(re, "--remove-re-all");
             RenameOpts::RmRegex(re.to_string(), is_all)
         } else if let Some(id) = &self.args.replace_from {
             match &self.args.replace_to {
                 Some(to) => {
-                    self.print_replace_str_info(&id, &to);
+                    self.print_replace_str_info(id, to);
                     RenameOpts::RpStr(id.to_string(), to.to_string())
                 }
                 None => unreachable!("Missing replace-to"),
@@ -80,7 +80,7 @@ impl<'a> RenameParser<'a> {
         } else if let Some(re) = &self.args.replace_from_re {
             match &self.args.replace_to {
                 Some(to) => {
-                    self.print_replace_re_info(&re, &to, "--replace-from-re");
+                    self.print_replace_re_info(re, to, "--replace-from-re");
                     RenameOpts::RpRegex(re.to_string(), to.to_string(), false)
                 }
                 None => unreachable!("Missing replace-to"),
@@ -88,7 +88,7 @@ impl<'a> RenameParser<'a> {
         } else if let Some(re) = &self.args.replace_from_re_all {
             match &self.args.replace_to {
                 Some(to) => {
-                    self.print_replace_re_info(&re, &to, "--replace-from-re-all");
+                    self.print_replace_re_info(re, to, "--replace-from-re-all");
                     RenameOpts::RpRegex(re.to_string(), to.to_string(), true)
                 }
                 None => unreachable!("Missing replace-to"),

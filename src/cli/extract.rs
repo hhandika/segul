@@ -60,7 +60,7 @@ impl<'a> ExtractParser<'a> {
         }
 
         if let Some(file) = &self.args.file {
-            let ids = self.parse_file(&file);
+            let ids = self.parse_file(file);
             log::info!(
                 "{:18}: {}\n",
                 "File",
@@ -76,6 +76,6 @@ impl<'a> ExtractParser<'a> {
 
     fn parse_file(&self, file: &Path) -> Vec<String> {
         assert!(file.is_file(), "File does not exist: {}", file.display());
-        txt::parse_text_file(&file)
+        txt::parse_text_file(file)
     }
 }
