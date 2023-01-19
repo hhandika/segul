@@ -3,7 +3,7 @@ use crate::{
     helper::types::{RawReadFmt, SummaryMode},
 };
 
-use super::{args::RawSummaryArgs, InputCli, OutputCli};
+use super::{args::RawSummaryArgs, InputCli, OutputCli, RawReadPrint};
 
 impl InputCli for RawSummaryParser<'_> {}
 impl OutputCli for RawSummaryParser<'_> {}
