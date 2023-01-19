@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::{builder, Args, Parser, Subcommand};
 
@@ -276,9 +276,13 @@ pub(crate) struct SequenceIdArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "id")]
-    pub(crate) output: String,
+    pub(crate) output: PathBuf,
+    #[arg(long = "map", help = "Map ID across all alignments")]
+    pub(crate) map: bool,
 }
 
 #[derive(Args)]
@@ -286,9 +290,23 @@ pub(crate) struct SequenceRemoveArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Remove")]
-    pub(crate) output: String,
+    pub(crate) output: PathBuf,
+    #[arg(
+        long = "re",
+        help = "Specify regular expression for removing sequences",
+        require_equals = true
+    )]
+    pub(crate) re: Option<String>,
+    #[arg(
+        long = "id",
+        help = "Specify sequence ID for removing sequences",
+        required_unless_present("re")
+    )]
+    pub(crate) id: Option<Vec<String>>,
 }
 
 #[derive(Args)]
@@ -298,7 +316,7 @@ pub(crate) struct SequenceRenameArgs {
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Rename")]
-    pub(crate) output: String,
+    pub(crate) output: PathBuf,
 }
 
 #[derive(Args)]
@@ -306,9 +324,54 @@ pub(crate) struct SequenceTranslateArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Translate")]
-    pub(crate) output: String,
+    pub(crate) output: PathBuf,
+    #[arg(long = "show-tables", help = "Show supported NCBI translation tables")]
+    pub(crate) show_tables: bool,
+    #[arg(
+        long = "reading-frame", 
+        help = "Specify reading frame", 
+        default_value = "1",
+        value_parser = builder::PossibleValuesParser::new(["1", "2", "3", "6", "9", "12"]),
+    )]
+    pub(crate) reading_frame: usize,
+    #[arg(long = "auto-read", help = "Automatically detect reading frame")]
+    pub(crate) auto_read: bool,
+    #[arg(
+        long = "table",
+        help = "Specify NCBI translation table",
+        default_value = "1",
+        value_name = "INT",
+        value_parser = builder::PossibleValuesParser::new(
+            [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "16",
+                "21",
+                "22",
+                "23",
+                "24",
+                "25",
+                "26",
+                "29",
+                "30",
+                "33",
+            ])
+    )]
+    pub(crate) table: usize,
 }
 
 #[derive(Args)]

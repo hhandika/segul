@@ -1,39 +1,35 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use clap::ArgMatches;
-
 use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::handler::id::Id;
+
+use super::args::SequenceIdArgs;
+use super::collect_paths;
 
 impl InputCli for IdParser<'_> {}
 impl OutputCli for IdParser<'_> {}
 impl InputPrint for IdParser<'_> {}
 
 pub(in crate::cli) struct IdParser<'a> {
-    matches: &'a ArgMatches,
+    args: &'a SequenceIdArgs,
     input_dir: Option<PathBuf>,
 }
 
 impl<'a> IdParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
+    pub(in crate::cli) fn new(args: &'a SequenceIdArgs) -> Self {
         Self {
-            matches,
+            args,
             input_dir: None,
         }
     }
 
-    pub(in crate::cli) fn get_id(&mut self) {
-        let input_fmt = self.parse_input_fmt(self.matches);
-        let datatype = self.parse_datatype(self.matches);
+    pub(in crate::cli) fn find(&mut self) {
+        let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
+        let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let task_desc = "IDs finding";
-        let files = if self.matches.is_present("dir") {
-            let dir = self.parse_dir_input(self.matches);
-            self.input_dir = Some(PathBuf::from(dir));
-            self.get_files(dir, &input_fmt)
-        } else {
-            self.parse_input(self.matches)
-        };
+        let dir = &self.args.io.dir;
+        let files = collect_paths!(self, dir, input_fmt);
 
         self.print_input(
             &self.input_dir,
@@ -43,14 +39,12 @@ impl<'a> IdParser<'a> {
             &datatype,
         );
 
-        let output = self.parse_output(self.matches);
-        let output = output.with_extension("txt");
-        let is_overwrite = self.parse_overwrite_opts(self.matches);
-        self.check_output_file_exist(&output, is_overwrite);
+        let output = self.args.output.with_extension("txt");
+        self.check_output_file_exist(&output, self.args.io.force);
         let id = Id::new(&output, &input_fmt, &datatype);
-        if self.matches.is_present("map") {
+        if self.args.map {
             let map_fname = self.create_map_fname(&output);
-            self.check_output_file_exist(&map_fname, is_overwrite);
+            self.check_output_file_exist(&map_fname, self.args.io.force);
             id.map_id(&files, &map_fname);
         } else {
             id.generate_id(&files);

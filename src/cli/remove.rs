@@ -1,44 +1,38 @@
 use std::path::PathBuf;
 
-use clap::ArgMatches;
 use colored::Colorize;
 
-// use crate::helper::utils;
 use crate::{
     cli::{InputCli, InputPrint, OutputCli},
     handler::remove::{Remove, RemoveOpts},
 };
+
+use super::{args::SequenceRemoveArgs, collect_paths};
 
 impl InputCli for RemoveParser<'_> {}
 impl InputPrint for RemoveParser<'_> {}
 impl OutputCli for RemoveParser<'_> {}
 
 pub(in crate::cli) struct RemoveParser<'a> {
-    matches: &'a ArgMatches,
+    args: &'a SequenceRemoveArgs,
     input_dir: Option<PathBuf>,
 }
 
 impl<'a> RemoveParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
+    pub(in crate::cli) fn new(args: &'a SequenceRemoveArgs) -> Self {
         Self {
-            matches,
+            args,
             input_dir: None,
         }
     }
 
     pub(in crate::cli) fn remove(&mut self) {
-        let input_fmt = self.parse_input_fmt(self.matches);
-        let datatype = self.parse_datatype(self.matches);
-        let output_fmt = self.parse_output_fmt(self.matches);
-        let outdir = self.parse_output(self.matches);
+        let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
+        let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
+        let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
         let task_desc = "Sequence Renaming";
-        let files = if self.matches.is_present("dir") {
-            let dir = self.parse_dir_input(self.matches);
-            self.input_dir = Some(PathBuf::from(dir));
-            self.get_files(dir, &input_fmt)
-        } else {
-            self.parse_input(self.matches)
-        };
+        let dir = &self.args.io.dir;
+        let files = collect_paths!(self, dir, input_fmt);
 
         self.print_input(
             &self.input_dir,
@@ -49,35 +43,23 @@ impl<'a> RemoveParser<'a> {
         );
         let opts = self.parse_remove_opts();
 
-        let is_overwrite = self.parse_overwrite_opts(self.matches);
-        self.check_output_dir_exist(&outdir, is_overwrite);
-        Remove::new(&input_fmt, &datatype, &outdir, &output_fmt, &opts).remove(&files);
+        self.check_output_dir_exist(&self.args.output, self.args.io.force);
+        Remove::new(&input_fmt, &datatype, &self.args.output, &output_fmt, &opts).remove(&files);
     }
 
     fn parse_remove_opts(&self) -> RemoveOpts {
         log::info!("{}", "Params".yellow());
-        match self.matches {
-            m if m.is_present("id") => {
-                let ids = self
-                    .matches
-                    .values_of("id")
-                    .expect("Failed parsing ids")
-                    .map(String::from)
-                    .collect();
-                log::info!("{:18}: id", "Options");
-                log::info!("{:18}, {:?}", "Values", ids);
-                RemoveOpts::Id(ids)
-            }
-
-            m if m.is_present("re") => {
-                let input_re = self
-                    .matches
-                    .value_of("re")
-                    .expect("Failed parsing regex values")
-                    .to_string();
-                RemoveOpts::Regex(input_re)
-            }
-            _ => unimplemented!("Unknown errors in parsing command line input!"),
+        if let Some(re) = &self.args.re {
+            log::info!("{:18}: {}\n", "Regex", "Options");
+            log::info!("{:18}, {}\n", "Values", re);
+            return RemoveOpts::Regex(re.clone());
+        }
+        if let Some(ids) = &self.args.id {
+            log::info!("{:18}: id", "Options");
+            log::info!("{:18}, {:?}", "Values", ids);
+            return RemoveOpts::Id(ids.clone());
+        } else {
+            unimplemented!("RemoveOpts::None is not implemented yet")
         }
     }
 }

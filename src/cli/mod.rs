@@ -4,13 +4,14 @@ mod concat;
 mod convert;
 mod extract;
 mod filter;
-// mod id;
+mod id;
 mod partition;
-// mod remove;
-// mod rename;
+mod remove;
+mod rename;
 mod split;
 mod summarize;
-// mod translate;
+mod translate;
+
 #[cfg(target_os = "windows")]
 use glob::glob;
 #[cfg(target_os = "windows")]
@@ -34,13 +35,13 @@ use crate::cli::concat::ConcatParser;
 use crate::cli::convert::ConvertParser;
 use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
-// use crate::cli::id::IdParser;
+use crate::cli::id::IdParser;
 use crate::cli::partition::PartParser;
-// use crate::cli::remove::RemoveParser;
-// use crate::cli::rename::RenameParser;
+use crate::cli::remove::RemoveParser;
+use crate::cli::rename::RenameParser;
 use crate::cli::split::SplitParser;
 use crate::cli::summarize::SummaryParser;
-// use crate::cli::translate::TranslateParser;
+use crate::cli::translate::TranslateParser;
 use crate::helper::finder::Files;
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
@@ -82,14 +83,14 @@ pub fn parse_cli() {
             args::SequenceSubcommand::Extract(extract_args) => {
                 ExtractParser::new(&extract_args).extract();
             }
-            args::SequenceSubcommand::Id(filter_args) => {
-                println!("Id");
+            args::SequenceSubcommand::Id(id_args) => {
+                IdParser::new(&id_args).find();
             }
             args::SequenceSubcommand::Remove(remove_args) => {
-                println!("Remove");
+                RemoveParser::new(&remove_args).remove();
             }
             args::SequenceSubcommand::Rename(rename_args) => {
-                println!("Rename");
+                RenameParser::new(&rename_args).rename();
             }
             args::SequenceSubcommand::Translate(translate_args) => {
                 println!("Translate");

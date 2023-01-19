@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
-use clap::ArgMatches;
 use colored::Colorize;
 
-use crate::cli::{InputCli, InputPrint, OutputCli};
+use crate::cli::{collect_paths, InputCli, InputPrint, OutputCli};
 use crate::handler::translate::Translate;
 use crate::helper::types::GeneticCodes;
+
+use super::args::SequenceTranslateArgs;
 
 impl InputCli for TranslateParser<'_> {}
 impl InputPrint for TranslateParser<'_> {}
@@ -19,22 +20,22 @@ macro_rules! parse_table_args {
 }
 
 pub(in crate::cli) struct TranslateParser<'a> {
-    matches: &'a ArgMatches,
+    args: &'a SequenceTranslateArgs,
     input_dir: Option<PathBuf>,
     trans_table: GeneticCodes,
 }
 
 impl<'a> TranslateParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
+    pub(in crate::cli) fn new(args: &'a SequenceTranslateArgs) -> Self {
         Self {
-            matches,
+            args,
             input_dir: None,
             trans_table: GeneticCodes::StandardCode,
         }
     }
 
     pub(in crate::cli) fn translate(&mut self) {
-        if self.matches.is_present("show-tables") {
+        if self.args.show_tables {
             self.show_ncbi_tables();
         } else {
             self.translate_all();
@@ -42,20 +43,13 @@ impl<'a> TranslateParser<'a> {
     }
 
     fn translate_all(&mut self) {
-        let input_fmt = self.parse_input_fmt(self.matches);
-        let datatype = self.parse_datatype(self.matches);
-        let output_fmt = self.parse_output_fmt(self.matches);
-        let outdir = self.parse_output(self.matches);
+        let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
+        let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
+        let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
         let frame = self.get_reading_frame();
         let task_desc = "Sequence Translation";
-        let files = if self.matches.is_present("dir") {
-            let dir = self.parse_dir_input(self.matches);
-            self.input_dir = Some(PathBuf::from(dir));
-            self.get_files(dir, &input_fmt)
-        } else {
-            self.parse_input(self.matches)
-        };
-
+        let dir = &self.args.io.dir;
+        let files = collect_paths!(self, dir, input_fmt);
         self.print_input(
             &self.input_dir,
             task_desc,
@@ -64,7 +58,7 @@ impl<'a> TranslateParser<'a> {
             &datatype,
         );
 
-        let overwrite = self.parse_overwrite_opts(self.matches);
+        let overwrite = self.parse_overwrite_opts(self.args);
         self.check_output_dir_exist(&outdir, overwrite);
         log::info!("{}", "Params".yellow());
         self.parse_trans_table();
@@ -83,7 +77,7 @@ impl<'a> TranslateParser<'a> {
 
     fn parse_trans_table(&mut self) {
         let table = self
-            .matches
+            .args
             .value_of("table")
             .expect("Failed parsing table input");
         match table {
@@ -115,7 +109,7 @@ impl<'a> TranslateParser<'a> {
 
     fn get_reading_frame(&self) -> Option<usize> {
         let frame = self
-            .matches
+            .args
             .value_of("reading-frame")
             .expect("Failed getting reading frame values");
         match frame {

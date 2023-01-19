@@ -1,6 +1,5 @@
 use std::path::{Path, PathBuf};
 
-use clap::ArgMatches;
 use colored::Colorize;
 
 use crate::cli::{InputCli, InputPrint, OutputCli};
@@ -8,35 +7,37 @@ use crate::handler::rename::{Rename, RenameDry, RenameOpts};
 use crate::helper::utils;
 use crate::parser::delimited;
 
+use super::args::SequenceRenameArgs;
+
 impl InputCli for RenameParser<'_> {}
 impl InputPrint for RenameParser<'_> {}
 impl OutputCli for RenameParser<'_> {}
 
 pub(in crate::cli) struct RenameParser<'a> {
-    matches: &'a ArgMatches,
+    args: &'a SequenceRenameArgs,
     input_dir: Option<PathBuf>,
 }
 
 impl<'a> RenameParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
+    pub(in crate::cli) fn new(args: &'a SequenceRenameArgs) -> Self {
         Self {
-            matches,
+            args,
             input_dir: None,
         }
     }
 
     pub(in crate::cli) fn rename(&mut self) {
-        let input_fmt = self.parse_input_fmt(self.matches);
-        let datatype = self.parse_datatype(self.matches);
-        let output_fmt = self.parse_output_fmt(self.matches);
-        let outdir = self.parse_output(self.matches);
+        let input_fmt = self.parse_input_fmt(self.args);
+        let datatype = self.parse_datatype(self.args);
+        let output_fmt = self.parse_output_fmt(self.args);
+        let outdir = self.parse_output(self.args);
         let task_desc = "Sequence Renaming";
-        let files = if self.matches.is_present("dir") {
-            let dir = self.parse_dir_input(self.matches);
+        let files = if self.args.is_present("dir") {
+            let dir = self.parse_dir_input(self.args);
             self.input_dir = Some(PathBuf::from(dir));
             self.get_files(dir, &input_fmt)
         } else {
-            self.parse_input(self.matches)
+            self.parse_input(self.args)
         };
 
         self.print_input(
@@ -47,10 +48,10 @@ impl<'a> RenameParser<'a> {
             &datatype,
         );
         let opts = self.parse_rename_opts();
-        if self.matches.is_present("dry-run") {
+        if self.args.is_present("dry-run") {
             RenameDry::new(&input_fmt, &datatype, &opts).dry_run(&files);
         } else {
-            let is_overwrite = self.parse_overwrite_opts(self.matches);
+            let is_overwrite = self.parse_overwrite_opts(self.args);
             self.check_output_dir_exist(&outdir, is_overwrite);
             Rename::new(&input_fmt, &datatype, &outdir, &output_fmt, &opts).rename(&files);
         }
@@ -58,10 +59,10 @@ impl<'a> RenameParser<'a> {
 
     fn parse_rename_opts(&self) -> RenameOpts {
         log::info!("{}", "Params".yellow());
-        match self.matches {
+        match self.args {
             m if m.is_present("replace-id") => {
                 let id_path = Path::new(
-                    self.matches
+                    self.args
                         .value_of("replace-id")
                         .expect("Failed parsing path to id names"),
                 );
@@ -71,7 +72,7 @@ impl<'a> RenameParser<'a> {
             }
             m if m.is_present("remove") => {
                 let input_str = self
-                    .matches
+                    .args
                     .value_of("remove")
                     .expect("Failed parsing input string");
                 self.print_remove_str_info(input_str);
@@ -79,7 +80,7 @@ impl<'a> RenameParser<'a> {
             }
             m if m.is_present("remove-re") => {
                 let input_re = self
-                    .matches
+                    .args
                     .value_of("remove-re")
                     .expect("Failed parsing input regex");
                 let is_all = false;
@@ -88,7 +89,7 @@ impl<'a> RenameParser<'a> {
             }
             m if m.is_present("remove-re-all") => {
                 let input_re = self
-                    .matches
+                    .args
                     .value_of("remove-re-all")
                     .expect("Failed parsing input regex");
                 let is_all = true;
@@ -97,11 +98,11 @@ impl<'a> RenameParser<'a> {
             }
             m if m.is_present("replace-from") => {
                 let input_str = self
-                    .matches
+                    .args
                     .value_of("replace-from")
                     .expect("Failed parsing input string");
                 let output_str = self
-                    .matches
+                    .args
                     .value_of("replace-to")
                     .expect("Failed parsing output string");
                 self.print_replace_str_info(input_str, output_str);
@@ -109,11 +110,11 @@ impl<'a> RenameParser<'a> {
             }
             m if m.is_present("replace-from-re") => {
                 let input_re = self
-                    .matches
+                    .args
                     .value_of("replace-from-re")
                     .expect("Failed parsing input regex");
                 let output_str = self
-                    .matches
+                    .args
                     .value_of("replace-to")
                     .expect("Failed parsing output string");
                 let is_all = false;
