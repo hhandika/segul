@@ -8,27 +8,20 @@ use segul::helper::finder::Files;
 use segul::helper::types::InputFmt;
 
 macro_rules! test_filter {
-    ($test: ident, $arg: expr, $val: expr, $res: expr) => {
+    ($test: ident, $arg: expr, $val: expr, $output: expr, $res: expr) => {
         #[test]
         fn $test() {
             initiate_cmd!(cmd, "align", "filter", "tests/files/long-aln/", tmp_dir);
-            let path = "concat_50p";
-            let output = tmp_dir.path().join(path);
-            cmd.arg($arg)
-                .arg($val)
-                .arg("-o")
-                .arg(&output)
-                .assert()
-                .success();
-            test_results!($res, tmp_dir, path, Nexus);
+            cmd.arg($arg).arg($val).assert().success();
+            test_results!($res, tmp_dir, $output, Nexus);
         }
     };
 }
 
-test_filter! {test_filter_percent, "--percent", "0.5", 4}
-test_filter! {test_percent_pinf, "--pinf", "3", 1}
-test_filter! {test_percent_percent_inf, "--percent-inf", ".5", 4}
-test_filter! {test_percent_len, "--len", "25", 4}
+test_filter! {test_filter_percent, "--percent", "0.5", "SEGUL-Filter_50p",4}
+test_filter! {test_percent_pinf, "--pinf", "3","SEGUL-Filter_3inf", 1}
+test_filter! {test_percent_percent_inf, "--percent-inf", ".5","SEGUL-Filter_50percent_inf", 4}
+test_filter! {test_percent_len, "--len", "25", "SEGUL-Filter_25bp", 4}
 
 #[test]
 #[should_panic]
