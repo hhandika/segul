@@ -1,15 +1,7 @@
 //! Handle segul main functions. Mostly used by the Cli app.
-pub mod concat;
-pub mod convert;
-pub mod extract;
-pub mod filter;
-pub mod id;
-pub mod partition;
-pub mod remove;
-pub mod rename;
-pub mod split;
-pub mod summarize;
-pub mod translate;
+pub mod align;
+pub mod raw;
+pub mod sequence;
 
 use std::path::Path;
 

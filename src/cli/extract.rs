@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use colored::Colorize;
 
 use crate::cli::AlignSeqPrint;
-use crate::handler::extract::{Extract, ExtractOpts};
+use crate::handler::sequence::extract::{Extract, ExtractOpts};
 use crate::parser::txt;
 
 use super::args::SequenceExtractArgs;

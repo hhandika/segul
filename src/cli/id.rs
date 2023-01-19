@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use crate::handler::id::Id;
+use crate::handler::sequence::id::Id;
 
 use super::args::SequenceIdArgs;
 use super::{collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, OutputCli};

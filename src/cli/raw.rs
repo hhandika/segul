@@ -1,3 +1,8 @@
+use crate::{
+    handler::raw::summarize::RawSummaryHandler,
+    helper::types::{RawReadFmt, SummaryMode},
+};
+
 use super::{args::RawSummaryArgs, InputCli, OutputCli};
 
 impl InputCli for RawSummaryParser<'_> {}
@@ -14,6 +19,6 @@ impl<'a> RawSummaryParser<'a> {
 
     pub(in crate::cli) fn summarize(&self) {
         let inputs = self.collect_paths(&self.args.io.input);
-        inputs.iter().for_each(|input| println!("{:?}", input));
+        RawSummaryHandler::new(&inputs, &RawReadFmt::Auto, &SummaryMode::Default).summarize();
     }
 }

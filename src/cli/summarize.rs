@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::handler::summarize::SeqStats;
+use crate::handler::align::summarize::SeqStats;
 
 use super::args::AlignSummaryArgs;
 use super::{collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, InputPrint, OutputCli};

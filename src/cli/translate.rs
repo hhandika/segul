@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use colored::Colorize;
 
 use crate::cli::AlignSeqPrint;
-use crate::handler::translate::Translate;
+use crate::handler::sequence::translate::Translate;
 use crate::helper::types::GeneticCodes;
 
 use super::args::SequenceTranslateArgs;

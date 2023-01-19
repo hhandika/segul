@@ -226,6 +226,16 @@ trait InputPrint {
     fn print_input_info(&self) {}
 }
 
+impl InputPrint for RawReadPrint<'_> {}
+
+struct RawReadPrint<'a> {
+    input: &'a Option<PathBuf>,
+    input_fmt: &'a InputFmt,
+    datatype: &'a DataType,
+    task_desc: &'a str,
+    fcounts: usize,
+}
+
 impl InputPrint for AlignSeqPrint<'_> {
     fn print_input_info(&self) {
         if let Some(input) = self.input {

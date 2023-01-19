@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use crate::handler::partition::PartConverter;
+use crate::handler::sequence::partition::PartConverter;
 use crate::helper::types::PartitionFmt;
 use crate::helper::utils;
 

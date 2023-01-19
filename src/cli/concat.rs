@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use super::{collect_paths, AlignSeqInput, AlignSeqPrint, ConcatCli, InputCli, OutputCli};
 use crate::cli::args::AlignConcatArgs;
-use crate::handler::concat::ConcatHandler;
+use crate::handler::align::concat::ConcatHandler;
 use crate::helper::filenames;
 
 impl ConcatCli for ConcatParser<'_> {}

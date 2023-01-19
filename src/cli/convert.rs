@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::handler::convert::Converter;
+use crate::handler::align::convert::Converter;
 
 use crate::cli::args::AlignConvertArgs;
 

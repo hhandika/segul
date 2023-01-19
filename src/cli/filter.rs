@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use colored::Colorize;
 
 use crate::cli::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
-use crate::handler::filter::{Params, SeqFilter};
+use crate::handler::align::filter::{Params, SeqFilter};
 use crate::helper::finder::IDs;
 use crate::helper::types::{DataType, InputFmt, PartitionFmt};
 use crate::helper::{filenames, utils};

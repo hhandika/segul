@@ -30,6 +30,8 @@ num-format = "0.*"
 rayon = "1.*"
 regex = "1.*"
 clap = { version = "4.1.1", features = ["cargo", "derive"] }
+noodles = { version = "0.31.1", features = ["fastq", "vcf"] }
+flate2 = "1.0.25"
 
 [dev-dependencies]
 assert_cmd = "2.*"

@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use colored::Colorize;
 
-use crate::handler::rename::{Rename, RenameDry, RenameOpts};
+use crate::handler::sequence::rename::{Rename, RenameDry, RenameOpts};
 use crate::helper::utils;
 use crate::parser::delimited;
 

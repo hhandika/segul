@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 
-use crate::handler::remove::{Remove, RemoveOpts};
+use crate::handler::sequence::remove::{Remove, RemoveOpts};
 
 use super::{
     args::SequenceRemoveArgs, collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, InputPrint,

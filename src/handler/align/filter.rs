@@ -7,7 +7,7 @@ use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
 use rayon::prelude::*;
 
-use crate::handler::concat::ConcatHandler;
+use super::concat::ConcatHandler;
 use crate::helper::sequence::SeqParser;
 use crate::helper::stats;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};

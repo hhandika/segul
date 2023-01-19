@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::handler::split::Splitter;
+use crate::handler::align::split::Splitter;
 use crate::helper::types::PartitionFmt;
 
 use super::args::AlignSplitArgs;
