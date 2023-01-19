@@ -45,8 +45,8 @@ impl<'a> FilterParser<'a> {
     }
 
     pub(in crate::cli) fn filter(&mut self) {
-        self.input_fmt = self.parse_input_fmt(&self.args.format.input_fmt);
-        self.datatype = self.parse_datatype(&self.args.format.datatype);
+        self.input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
+        self.datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let task_desc = "Alignment filtering";
         let dir = &self.args.io.dir;
         let input_fmt = &self.input_fmt; // Binding to satisfy the macro
@@ -91,7 +91,7 @@ impl<'a> FilterParser<'a> {
         );
         match self.check_concat() {
             Some(part_fmt) => {
-                let output_fmt = self.parse_output_fmt(&self.args.format.output_fmt);
+                let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
                 let prefix = self.parse_prefix(&self.args.partition.prefix, &self.output_dir);
                 let output = filenames::create_output_fname(&self.output_dir, &prefix, &output_fmt);
                 filter.set_concat(&output, &output_fmt, &part_fmt);
@@ -215,39 +215,48 @@ impl<'a> FilterParser<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::cli::args::{CommonConcatArgs, CommonSeqArgs, IOArgs};
+    use crate::cli::args::{CommonConcatArgs, CommonSeqInput, CommonSeqOutput, IOArgs};
 
     use super::*;
 
+    macro_rules! args {
+        ($args: ident) => {
+            let $args = AlignFilterArgs {
+                io: IOArgs {
+                    input: None,
+                    dir: Some("./test_taxa/".to_string()),
+                    force: false,
+                },
+                percent: Some(0.75),
+                ntax: None,
+                len: None,
+                pinf: None,
+                percent_inf: None,
+                ids: None,
+                concat: false,
+                partition: CommonConcatArgs {
+                    part_fmt: "raxml".to_string(),
+                    codon: false,
+                    prefix: None,
+                },
+                in_fmt: CommonSeqInput {
+                    input_fmt: "phylip".to_string(),
+
+                    datatype: "dna".to_string(),
+                },
+                out_fmt: CommonSeqOutput {
+                    output_fmt: "phylip".to_string(),
+                },
+                output: "SEGUL-Filter".to_string(),
+                codon: false,
+                npercent: None,
+            };
+        };
+    }
+
     #[test]
     fn test_min_taxa_output_dir() {
-        let args = AlignFilterArgs {
-            io: IOArgs {
-                input: None,
-                dir: Some("./test_taxa/".to_string()),
-                force: false,
-            },
-            percent: Some(0.75),
-            ntax: None,
-            len: None,
-            pinf: None,
-            percent_inf: None,
-            ids: None,
-            concat: false,
-            partition: CommonConcatArgs {
-                part_fmt: "raxml".to_string(),
-                codon: false,
-                prefix: None,
-            },
-            format: CommonSeqArgs {
-                input_fmt: "phylip".to_string(),
-                output_fmt: "phylip".to_string(),
-                datatype: "dna".to_string(),
-            },
-            output: "SEGUL-Filter".to_string(),
-            codon: false,
-            npercent: None,
-        };
+        args!(args);
         let mut min_taxa = FilterParser::new(&args);
         let res = PathBuf::from("SEGUL-Filter_75p");
         min_taxa.parse_params();
@@ -255,11 +264,12 @@ mod test {
         assert_eq!(res, min_taxa.output_dir);
     }
 
-    // #[test]
-    // fn test_min_taxa() {
-    //     let mut filter = FilterParser::new(&args!());
-    //     filter.percent = 0.65;
-    //     filter.ntax = 10;
-    //     assert_eq!(6, filter.count_min_tax());
-    // }
+    #[test]
+    fn test_min_taxa() {
+        args!(args);
+        let mut filter = FilterParser::new(&args);
+        filter.percent = 0.65;
+        filter.ntax = 10;
+        assert_eq!(6, filter.count_min_tax());
+    }
 }

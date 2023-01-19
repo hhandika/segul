@@ -8,8 +8,8 @@ mod filter;
 // mod partition;
 // mod remove;
 // mod rename;
-// mod split;
-// mod summarize;
+mod split;
+mod summarize;
 // mod translate;
 #[cfg(target_os = "windows")]
 use glob::glob;
@@ -38,8 +38,8 @@ use crate::cli::filter::FilterParser;
 // use crate::cli::partition::PartParser;
 // use crate::cli::remove::RemoveParser;
 // use crate::cli::rename::RenameParser;
-// use crate::cli::split::SplitParser;
-// use crate::cli::summarize::SummaryParser;
+use crate::cli::split::SplitParser;
+use crate::cli::summarize::SummaryParser;
 // use crate::cli::translate::TranslateParser;
 use crate::helper::finder::Files;
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
@@ -68,11 +68,9 @@ pub fn parse_cli() {
             args::AlignmentSubcommand::Filter(filter_args) => {
                 FilterParser::new(&filter_args).filter();
             }
-            args::AlignmentSubcommand::Split(_) => {
-                println!("Split");
-            }
-            args::AlignmentSubcommand::AlignStats(_) => {
-                println!("AlignStats");
+            args::AlignmentSubcommand::Split(split_args) => SplitParser::new(&split_args).split(),
+            args::AlignmentSubcommand::AlignStats(summary_args) => {
+                SummaryParser::new(&summary_args).summarize();
             }
         },
         MainSubcommand::Partition(_) => {

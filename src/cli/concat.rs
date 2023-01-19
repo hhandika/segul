@@ -24,9 +24,9 @@ impl<'a> ConcatParser<'a> {
     }
 
     pub(in crate::cli) fn concat(&mut self) {
-        let input_fmt = self.parse_input_fmt(&self.args.format.input_fmt);
-        let datatype = self.parse_datatype(&self.args.format.datatype);
-        let output_fmt = self.parse_output_fmt(&self.args.format.output_fmt);
+        let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
+        let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
+        let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
         let prefix = self.parse_prefix(&self.args.concat.prefix, &self.args.output);
         let output = filenames::create_output_fname(&self.args.output, &prefix, &output_fmt);
         let part_fmt = self.parse_partition_fmt(&self.args.concat.part_fmt, self.args.concat.codon);

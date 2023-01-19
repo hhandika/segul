@@ -1,87 +1,50 @@
 use std::path::PathBuf;
 
-use clap::ArgMatches;
-
 use crate::cli::{InputCli, InputPrint, OutputCli};
 use crate::handler::summarize::SeqStats;
-use crate::helper::types::{DataType, InputFmt};
+
+use super::args::AlignSummaryArgs;
+use super::collect_paths;
 
 impl InputCli for SummaryParser<'_> {}
 impl InputPrint for SummaryParser<'_> {}
 impl OutputCli for SummaryParser<'_> {}
 
 pub(in crate::cli) struct SummaryParser<'a> {
-    matches: &'a ArgMatches,
-    interval: usize,
-    input_fmt: InputFmt,
-    datatype: DataType,
+    args: &'a AlignSummaryArgs,
     input_dir: Option<PathBuf>,
 }
 
 impl<'a> SummaryParser<'a> {
-    pub(in crate::cli) fn new(matches: &'a ArgMatches) -> Self {
+    pub(in crate::cli) fn new(args: &'a AlignSummaryArgs) -> Self {
         Self {
-            matches,
-            interval: 0,
-            input_fmt: InputFmt::Fasta,
-            datatype: DataType::Dna,
+            args,
             input_dir: None,
         }
     }
 
-    pub(in crate::cli) fn stats(&mut self) {
-        self.input_fmt = self.parse_input_fmt(self.matches);
-        self.interval = self.parse_interval();
-        self.datatype = self.parse_datatype(self.matches);
-        let prefix = self.parse_prefix();
+    pub(in crate::cli) fn summarize(&mut self) {
+        let input_fmt = self.parse_input_fmt(&self.args.fmt.input_fmt);
+        let datatype = self.parse_datatype(&self.args.fmt.datatype);
         let task_desc = "Sequence summary statistics";
-        let files = if self.matches.is_present("dir") {
-            let dir = self.parse_dir_input(self.matches);
-            self.input_dir = Some(PathBuf::from(dir));
-            self.get_files(dir, &self.input_fmt)
-        } else {
-            self.parse_input(self.matches)
-        };
-
+        let dir = &self.args.io.dir;
+        let files = collect_paths!(self, dir, input_fmt);
         self.print_input::<PathBuf>(
             &self.input_dir,
             task_desc,
             files.len(),
-            &self.input_fmt,
-            &self.datatype,
+            &input_fmt,
+            &datatype,
         );
 
-        let output = self.parse_output(self.matches);
-        let is_overwrite = self.parse_overwrite_opts(self.matches);
-        self.check_output_dir_exist(&output, is_overwrite);
-        let mut summary = SeqStats::new(&self.input_fmt, &output, self.interval, &self.datatype);
-        if self.matches.is_present("per-locus") {
-            summary.summarize_locus(&files, &prefix);
-        } else {
-            summary.summarize_all(&files, &prefix);
-        };
-    }
+        self.check_output_dir_exist(&self.args.output, self.args.io.force);
+        let mut summary =
+            SeqStats::new(&input_fmt, &self.args.output, self.args.interval, &datatype);
 
-    fn parse_prefix(&self) -> Option<String> {
-        if self.matches.is_present("prefix") {
-            Some(
-                self.matches
-                    .value_of("prefix")
-                    .expect("Failed parsing prefix input")
-                    .to_string(),
-            )
+        if self.args.per_locus {
+            summary.summarize_locus(&files, &self.args.prefix);
         } else {
-            None
+            summary.summarize_all(&files, &self.args.prefix);
         }
-    }
-
-    fn parse_interval(&self) -> usize {
-        let interval = self
-            .matches
-            .value_of("percent-interval")
-            .expect("Failed parsing the interval command");
-        interval
-            .parse::<usize>()
-            .expect("Failed parsing interval values to integer")
     }
 }

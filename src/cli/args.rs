@@ -44,19 +44,19 @@ pub(crate) enum ContigSubcommand {
 pub(crate) enum AlignmentSubcommand {
     #[command(about = "Concatenate alignments", name = "concat")]
     Concat(AlignConcatArgs),
-    #[command(about = "Convert sequence formats", name = "convert")]
+    #[command(about = "Convert sequence out_fmts", name = "convert")]
     Convert(AlignConvertArgs),
     #[command(about = "Filter alignments", name = "filter")]
     Filter(AlignFilterArgs),
     #[command(about = "Split alignment by partitions", name = "split")]
     Split(AlignSplitArgs),
     #[command(about = "Compute Alignment Statistics", name = "stats")]
-    AlignStats(AlignStatArgs),
+    AlignStats(AlignSummaryArgs),
 }
 
 #[derive(Subcommand)]
 pub(crate) enum PartitionSubcommand {
-    #[command(about = "Convert partition formats", name = "convert")]
+    #[command(about = "Convert partition out_fmts", name = "convert")]
     Convert(PartitionConvertArgs),
 }
 
@@ -92,7 +92,9 @@ pub(crate) struct AlignConcatArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
+    pub(crate) out_fmt: CommonSeqOutput,
     #[command(flatten)]
     pub(crate) concat: CommonConcatArgs,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Concat")]
@@ -106,7 +108,9 @@ pub(crate) struct AlignConvertArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
+    pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Convert")]
     pub(crate) output: PathBuf,
     #[arg(long = "sort", help = "Sort sequences by IDs alphabetically")]
@@ -118,7 +122,9 @@ pub(crate) struct AlignFilterArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
+    pub(crate) out_fmt: CommonSeqOutput,
     #[command(flatten)]
     pub(crate) partition: CommonConcatArgs,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Filter")]
@@ -127,7 +133,7 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) concat: bool,
     #[arg(
         long = "codon",
-        help = "Set codon model partition format when concatenating alignments"
+        help = "Set codon model partition out_fmt when concatenating alignments"
     )]
     pub(crate) codon: bool,
     #[arg(long = "len", help = "Filter by sequence length")]
@@ -143,10 +149,10 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) percent: Option<f64>,
     #[arg(
         long = "percent-inf",
-        help = "Filter by minimal parsimony informative percentage"
+        help = "Filter by minimal parsimony inout_fmtive percentage"
     )]
     pub(crate) percent_inf: Option<f64>,
-    #[arg(long = "pinf", help = "Filter by minimal parsimony informative sites")]
+    #[arg(long = "pinf", help = "Filter by minimal parsimony inout_fmtive sites")]
     pub(crate) pinf: Option<usize>,
     #[arg(long = "taxon-id", help = "Filter by taxon ID")]
     pub(crate) ids: Option<PathBuf>,
@@ -154,22 +160,53 @@ pub(crate) struct AlignFilterArgs {
 
 #[derive(Args)]
 pub(crate) struct AlignSplitArgs {
+    #[arg(short, long, help = "Input path", default_value = "SEGUL-Split")]
+    pub(crate) input: PathBuf,
     #[command(flatten)]
-    pub(crate) io: IOArgs,
+    pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) out_fmt: CommonSeqOutput,
+    #[command(flatten)]
+    pub(crate) partition: CommonConcatArgs,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Split")]
     pub(crate) output: PathBuf,
+    #[arg(short = 'I', long = "input-partition", help = "Input partition file")]
+    pub(crate) input_partition: Option<PathBuf>,
+    #[arg(long = "skip-checking", help = "Skip checking partition out_fmt")]
+    pub(crate) skip_checking: bool,
+    #[arg(long, help = "Force overwriting existing output files/directory")]
+    pub(crate) force: bool,
+    #[arg(long = "prefix", help = "Specify prefix for output files")]
+    pub(crate) prefix: Option<String>,
+    #[arg(
+        short = 'p',
+        long = "part-out_fmt",
+        help = "Specify partition out_fmt",
+        default_value = "nexus",
+        value_parser = builder::PossibleValuesParser::new(["nexus", "raxml"]),
+    )]
+    pub(crate) part_fmt: Option<String>,
 }
 
 #[derive(Args)]
-pub(crate) struct AlignStatArgs {
+pub(crate) struct AlignSummaryArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Stats")]
-    pub(crate) output: String,
+    pub(crate) fmt: CommonSeqInput,
+    #[arg(short, long, help = "Output path", default_value = "SEGUL-Summary")]
+    pub(crate) output: PathBuf,
+    #[arg(long = "prefix", help = "Specify prefix for output files")]
+    pub(crate) prefix: Option<String>,
+    #[arg(
+        long = "interval",
+        help = "Specify interval value for counting data matrix completeness",
+        default_value = "5",
+        value_parser = builder::PossibleValuesParser::new(["1", "2", "5", "10"]),
+    )]
+    pub(crate) interval: usize,
+    #[arg(long = "per-locus", help = "Generate summary statistic for each locus")]
+    pub(crate) per_locus: bool,
 }
 
 #[derive(Args)]
@@ -177,7 +214,7 @@ pub(crate) struct PartitionConvertArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Partition")]
     pub(crate) output: String,
 }
@@ -187,7 +224,7 @@ pub(crate) struct SequenceIdArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "id")]
     pub(crate) output: String,
 }
@@ -197,7 +234,7 @@ pub(crate) struct SequenceRemoveArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Remove")]
     pub(crate) output: String,
 }
@@ -207,7 +244,7 @@ pub(crate) struct SequenceRenameArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Rename")]
     pub(crate) output: String,
 }
@@ -217,7 +254,7 @@ pub(crate) struct SequenceTranslateArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[command(flatten)]
-    pub(crate) format: CommonSeqArgs,
+    pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "SEGUL-Translate")]
     pub(crate) output: String,
 }
@@ -243,25 +280,29 @@ pub(crate) struct IOArgs {
 }
 
 #[derive(Args)]
-pub(crate) struct CommonSeqArgs {
-    #[arg(
-        short = 'f',
-        long = "input-format",
-        value_name = "SEQUENCE FORMAT",
-        help = "Specify input format",
-        default_value = "auto",
-        value_parser = builder::PossibleValuesParser::new(["auto","fasta","nexus","phylip"]),
-    )]
-    pub(crate) input_fmt: String,
+pub(crate) struct CommonSeqOutput {
     #[arg(
         short = 'F',
-        long = "output-format",
-        help = "Specify output format",
+        long = "output-out_fmt",
+        help = "Specify output out_fmt",
         default_value = "nexus",
         value_parser = builder::PossibleValuesParser::new(
             ["fasta","nexus","phylip","fasta-int", "nexus-int", "phylip-int"]),
     )]
     pub(crate) output_fmt: String,
+}
+
+#[derive(Args)]
+pub(crate) struct CommonSeqInput {
+    #[arg(
+        short = 'f',
+        long = "input-out_fmt",
+        value_name = "SEQUENCE out_fmt",
+        help = "Specify input out_fmt",
+        default_value = "auto",
+        value_parser = builder::PossibleValuesParser::new(["auto","fasta","nexus","phylip"]),
+    )]
+    pub(crate) input_fmt: String,
     #[arg(
         long = "datatype",
         help = "Specify sequence datatype",
@@ -275,13 +316,13 @@ pub(crate) struct CommonSeqArgs {
 pub(crate) struct CommonConcatArgs {
     #[arg(
         short = 'p',
-        long = "part-format",
-        help = "Specify partition format",
+        long = "part-out_fmt",
+        help = "Specify partition out_fmt",
         default_value = "nexus",
         value_parser = builder::PossibleValuesParser::new(["charset", "nexus", "raxml"]),
     )]
     pub(crate) part_fmt: String,
-    #[arg(long = "codon", help = "Set as a codon model partition format")]
+    #[arg(long = "codon", help = "Set as a codon model partition out_fmt")]
     pub(crate) codon: bool,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<PathBuf>,

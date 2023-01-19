@@ -776,8 +776,7 @@ pub fn get_args(version: &str) -> ArgMatches {
                     Arg::new("per-locus")
                         .long("per-locus")
                         .help("Generate summary statistic for each locus")
-                        .conflicts_with("percent-interval")
-                        ,   
+                        .conflicts_with("percent-interval")  
                 )
                 .arg(
                     Arg::new("overwrite")
