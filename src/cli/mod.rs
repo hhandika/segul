@@ -187,7 +187,7 @@ trait InputCli {
     #[cfg(not(target_os = "windows"))]
     fn collect_paths(&self, input: &Option<Vec<PathBuf>>) -> Vec<PathBuf> {
         match input {
-            Some(paths) => paths,
+            Some(paths) => paths.to_vec(),
             None => panic!("No input files!"),
         }
     }
