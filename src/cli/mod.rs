@@ -45,7 +45,7 @@ use crate::cli::split::SplitParser;
 use crate::cli::summarize::SummaryParser;
 use crate::cli::translate::TranslateParser;
 use crate::helper::finder::Files;
-use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt, RawReadFmt};
 use crate::helper::utils;
 
 pub const LOG_FILE: &str = "segul.log";
@@ -226,14 +226,42 @@ trait InputPrint {
     fn print_input_info(&self) {}
 }
 
-impl InputPrint for RawReadPrint<'_> {}
+impl InputPrint for RawReadPrint<'_> {
+    fn print_input_info(&self) {
+        if let Some(input) = self.input {
+            log::info!("{:18}: {}", "Input dir", &input.display());
+        } else {
+            log::info!("{:18}: {}", "Input path", "STDIN");
+        }
+        log::info!("{:18}: {}", "File counts", utils::fmt_num(&self.fcounts));
+    }
+}
 
 struct RawReadPrint<'a> {
     input: &'a Option<PathBuf>,
-    input_fmt: &'a InputFmt,
-    datatype: &'a DataType,
+    input_fmt: &'a RawReadFmt,
     task_desc: &'a str,
     fcounts: usize,
+}
+
+impl<'a> RawReadPrint<'a> {
+    fn new(
+        input: &'a Option<PathBuf>,
+        input_fmt: &'a RawReadFmt,
+        task_desc: &'a str,
+        fcounts: usize,
+    ) -> Self {
+        Self {
+            input,
+            input_fmt,
+            task_desc,
+            fcounts,
+        }
+    }
+
+    fn print(&self) {
+        self.print_input_info();
+    }
 }
 
 impl InputPrint for AlignSeqPrint<'_> {
