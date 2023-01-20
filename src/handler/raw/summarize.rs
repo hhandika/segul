@@ -10,11 +10,11 @@ use rayon::prelude::*;
 
 use crate::{
     helper::{
-        qscores::QScoreParser,
+        fastq::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
         types::{RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    parser::gzip::decode_gzip,
+    parser::{fastq::QScoreParser, gzip::decode_gzip},
 };
 
 /// Include support for any compressed or uncompressed fastq files.
@@ -38,34 +38,128 @@ impl<'a> RawSummaryHandler<'a> {
         spin.set_message("Calculating summary of fastq files");
         let records = self.par_summarize();
         spin.finish_with_message("Finished processing fastq files\n");
-        let q = b"IIKW";
-        let qrecs = QScoreParser::new(q);
-        qrecs.into_iter().for_each(|q| {
-            println!("{:?}", q);
-        });
-        records.iter().for_each(|(p, c)| {
-            println!("{}: {}", p.display(), c);
-        });
+        self.print_records(&records);
     }
 
-    fn par_summarize(&self) -> Vec<(PathBuf, usize)> {
+    fn par_summarize(&self) -> Vec<(FastqRecords, QScoreRecords)> {
         let (sender, receiver) = channel();
 
         self.inputs.par_iter().for_each_with(sender, |s, p| {
             let record = self.parse_record(p);
 
-            s.send((p.to_path_buf(), record))
+            s.send(record)
                 .expect("Failed parallel processing fastq files");
         });
 
         receiver.iter().collect()
     }
 
-    fn parse_record(&self, path: &Path) -> usize {
+    fn parse_record(&self, path: &Path) -> (FastqRecords, QScoreRecords) {
         let gzip_buff = decode_gzip(path);
         let mut reader = fastq::Reader::new(gzip_buff);
-        let mut count = 0;
-        reader.records().for_each(|_| count += 1);
-        count
+        let mut reads = Vec::new();
+        let mut q_records = Vec::new();
+
+        reader.records().for_each(|r| match r {
+            Ok(record) => {
+                let mut read_records = ReadRecord::new();
+                read_records.summarize(record.sequence());
+                reads.push(read_records);
+                let mut read_qscores = ReadQScore::new();
+                let qrecord = record.quality_scores();
+                let qscores = self.parse_qscores(qrecord);
+                read_qscores.summarize(&qscores);
+                q_records.push(read_qscores);
+            }
+            Err(e) => {
+                log::error!("Error parsing fastq record: {}", e);
+            }
+        });
+
+        self.summarize_records(path, &reads, &q_records)
+    }
+
+    fn parse_qscores(&self, qscore: &[u8]) -> Vec<u8> {
+        let mut qscores = Vec::with_capacity(qscore.len());
+        let parser = QScoreParser::new(qscore);
+        parser.into_iter().for_each(|q| {
+            if let Some(q) = q {
+                qscores.push(q);
+            }
+        });
+
+        qscores
+    }
+
+    fn summarize_records(
+        &self,
+        path: &Path,
+        reads: &[ReadRecord],
+        qscores: &[ReadQScore],
+    ) -> (FastqRecords, QScoreRecords) {
+        let mut seq_records = FastqRecords::new(path);
+        let mut q_records = QScoreRecords::new();
+
+        seq_records.summarize(reads);
+        q_records.summarize(qscores);
+
+        (seq_records, q_records)
+    }
+
+    fn print_records(&self, records: &[(FastqRecords, QScoreRecords)]) {
+        match self.mode {
+            SummaryMode::Minimal => {
+                println!("File\tNumReads\tNumBases\tMinReadLen\tMeanReadLen\tMaxReadLen");
+                for (seq, _) in records {
+                    println!(
+                        "{}\t{}\t{}\t{}\t{}\t{}",
+                        seq.path.display(),
+                        seq.num_reads,
+                        seq.num_bases,
+                        seq.min_read_len,
+                        seq.mean_read_len,
+                        seq.max_read_len
+                    );
+                }
+            }
+            SummaryMode::Complete => {
+                println!("File\tNumReads\tNumBases\tMinReadLen\tMeanReadLen\tMaxReadLen\tLowQ\tSum\tMean\tMin\tMax");
+                for (seq, q) in records {
+                    println!(
+                        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                        seq.path.display(),
+                        seq.num_reads,
+                        seq.num_bases,
+                        seq.min_read_len,
+                        seq.mean_read_len,
+                        seq.max_read_len,
+                        q.low_q,
+                        q.sum,
+                        q.mean,
+                        q.min,
+                        q.max
+                    );
+                }
+            }
+            SummaryMode::Default => {
+                println!("File\tNumReads\tNumBases\tMinReadLen\tMeanReadLen\tMaxReadLen\tLowQ\tSum\tMean\tMin\tMax");
+                for (seq, q) in records {
+                    println!(
+                        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                        seq.path.display(),
+                        seq.num_reads,
+                        seq.num_bases,
+                        seq.min_read_len,
+                        seq.mean_read_len,
+                        seq.max_read_len,
+                        q.low_q,
+                        q.sum,
+                        q.mean,
+                        q.min,
+                        q.max
+                    );
+                }
+            }
+        }
     }
 }

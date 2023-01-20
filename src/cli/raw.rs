@@ -22,7 +22,7 @@ impl<'a> RawSummaryParser<'a> {
         let fcounts = inputs.len();
         let input_fmt = &self.args.input_format;
         let task = "Summarize raw read sequences";
-        RawReadPrint::new(&None, &input_fmt, task, fcounts).print();
+        RawReadPrint::new(&None, input_fmt, task, fcounts).print();
         RawSummaryHandler::new(&inputs, &RawReadFmt::Auto, &SummaryMode::Default).summarize();
     }
 }

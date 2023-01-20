@@ -53,7 +53,7 @@ impl<'a> FilterParser<'a> {
         self.files = collect_paths!(self, dir, input_fmt);
         AlignSeqPrint::new(
             &self.input_dir,
-            &input_fmt,
+            input_fmt,
             &self.datatype,
             task_desc,
             self.files.len(),
