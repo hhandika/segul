@@ -10,6 +10,7 @@ use rayon::prelude::*;
 
 use crate::{
     helper::{
+        qscores::QScoreParser,
         types::{RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
@@ -37,6 +38,11 @@ impl<'a> RawSummaryHandler<'a> {
         spin.set_message("Calculating summary of fastq files");
         let records = self.par_summarize();
         spin.finish_with_message("Finished processing fastq files\n");
+        let q = b"IIKW";
+        let qrecs = QScoreParser::new(q);
+        qrecs.into_iter().for_each(|q| {
+            println!("{:?}", q);
+        });
         records.iter().for_each(|(p, c)| {
             println!("{}: {}", p.display(), c);
         });
