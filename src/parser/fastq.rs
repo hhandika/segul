@@ -23,7 +23,7 @@ impl<'a> Iterator for QScoreParser<'a> {
         let q = self.scores.get(self.index);
         match q {
             Some(q) => {
-                if q > &73 {
+                if q > &74 {
                     panic!("Invalid quality score: {}", q);
                 }
                 self.index += 1;
