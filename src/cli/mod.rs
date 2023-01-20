@@ -261,6 +261,8 @@ impl<'a> RawReadPrint<'a> {
 
     fn print(&self) {
         self.print_input_info();
+        log::info!("{:18}: {}\n", "Input format:", self.input_fmt);
+        log::info!("{:18}: {}\n", "Task", self.task_desc);
     }
 }
 

@@ -23,6 +23,10 @@ impl<'a> RawSummaryHandler<'a> {
     }
 
     pub fn summarize(&self) {
-        self.inputs.iter().for_each(|p| println!("{}", p.display()))
+        self.inputs.iter().for_each(|p| {
+            println!("Processing: {}", p.display());
+            println!("Input format: {:?}", self.input_fmt);
+            println!("Summary mode: {:?}", self.mode);
+        });
     }
 }

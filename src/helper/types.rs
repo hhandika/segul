@@ -3,7 +3,7 @@ use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
 
 /// Data types for raw read sequences
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum RawReadFmt {
     /// Infer format from file extension
     Auto,
@@ -11,6 +11,29 @@ pub enum RawReadFmt {
     Fastq,
     /// Gzip compressed fastq format
     Gzip,
+}
+
+impl std::fmt::Display for RawReadFmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Auto => write!(f, "auto"),
+            Self::Fastq => write!(f, "fastq"),
+            Self::Gzip => write!(f, "gzip"),
+        }
+    }
+}
+
+impl std::str::FromStr for RawReadFmt {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auto" => Ok(Self::Auto),
+            "fastq" => Ok(Self::Fastq),
+            "gzip" => Ok(Self::Gzip),
+            _ => Err(format!("{} is not a valid format", s)),
+        }
+    }
 }
 
 /// Data types for input sequences
@@ -178,6 +201,7 @@ impl TaxonRecords {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum SummaryMode {
     /// Only write/print minimal summary information
     Minimal,
@@ -185,6 +209,29 @@ pub enum SummaryMode {
     Default,
     /// Print all summary information
     Complete,
+}
+
+impl std::fmt::Display for SummaryMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Minimal => write!(f, "minimal"),
+            Self::Default => write!(f, "default"),
+            Self::Complete => write!(f, "complete"),
+        }
+    }
+}
+
+impl std::str::FromStr for SummaryMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "minimal" => Ok(Self::Minimal),
+            "default" => Ok(Self::Default),
+            "complete" => Ok(Self::Complete),
+            _ => Err(format!("{} is not a valid summary mode", s)),
+        }
+    }
 }
 
 pub enum SummaryOutput {

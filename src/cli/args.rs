@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use clap::{builder, Args, Parser, Subcommand, crate_name, crate_authors, crate_version, crate_description};
 use clap::builder::TypedValueParser as _;
+use crate::helper::types::RawReadFmt;
 
 #[derive(Parser)]
 #[command(name = crate_name!())]
@@ -84,6 +85,18 @@ pub(crate) enum SequenceSubcommand {
 pub(crate) struct RawSummaryArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
+    #[arg(
+        short = 'f', 
+        long ="input-format", 
+        help = "Specify input format", 
+        default_value_t = RawReadFmt::Auto,
+        value_parser = 
+            builder::PossibleValuesParser::new(["auto","fasta","nexus","phylip"])
+            .map(|x| x.parse::<RawReadFmt>().unwrap()),
+    )]
+    pub(crate) input_format: RawReadFmt,
+    #[arg(long = "mode", help = "Summary mode", default_value = "default")]
+    pub(crate) mode: String,
 }
 
 #[derive(Args)]
