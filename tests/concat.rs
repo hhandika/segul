@@ -14,7 +14,7 @@ fn test_concat() {
         .arg("raxml")
         .assert()
         .success();
-    test_results!(1, tmp_dir, "SEGUL-Concat", Nexus);
+    test_results!(1, tmp_dir, "Align-Concat", Nexus);
 }
 
 #[test]

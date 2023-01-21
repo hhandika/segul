@@ -11,5 +11,5 @@ use segul::helper::types::InputFmt;
 fn test_rename() {
     initiate_cmd!(cmd, "sequence", "rename", "tests/files/concat/", tmp_dir);
     cmd.arg("--remove=D").assert().success();
-    test_results!(4, tmp_dir, "SEGUL-Rename", Nexus);
+    test_results!(4, tmp_dir, "Sequence-Rename", Nexus);
 }

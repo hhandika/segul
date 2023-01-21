@@ -18,10 +18,10 @@ macro_rules! test_filter {
     };
 }
 
-test_filter! {test_filter_percent, "--percent", "0.5", "SEGUL-Filter_50p",4}
-test_filter! {test_percent_pinf, "--pinf", "3","SEGUL-Filter_3inf", 1}
-test_filter! {test_percent_percent_inf, "--percent-inf", ".5","SEGUL-Filter_50percent_inf", 4}
-test_filter! {test_percent_len, "--len", "25", "SEGUL-Filter_25bp", 4}
+test_filter! {test_filter_percent, "--percent", "0.5", "Align-Filter_50p",4}
+test_filter! {test_percent_pinf, "--pinf", "3","Align-Filter_3inf", 1}
+test_filter! {test_percent_percent_inf, "--percent-inf", ".5","Align-Filter_50percent_inf", 4}
+test_filter! {test_percent_len, "--len", "25", "Align-Filter_25bp", 4}
 
 #[test]
 #[should_panic]

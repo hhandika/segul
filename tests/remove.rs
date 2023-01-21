@@ -11,12 +11,12 @@ use segul::helper::types::InputFmt;
 fn test_remove_id() {
     initiate_cmd!(cmd, "sequence", "remove", "tests/files/concat/", tmp_dir);
     cmd.arg("--id").arg("ABCD").assert().success();
-    test_results!(3, tmp_dir, "SEGUL-Remove", Nexus);
+    test_results!(3, tmp_dir, "Sequence-Remove", Nexus);
 }
 
 #[test]
 fn test_remove_re() {
     initiate_cmd!(cmd, "sequence", "remove", "tests/files/concat/", tmp_dir);
     cmd.arg("--re=E$").assert().success();
-    test_results!(4, tmp_dir, "SEGUL-Remove", Nexus);
+    test_results!(4, tmp_dir, "Sequence-Remove", Nexus);
 }

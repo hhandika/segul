@@ -11,7 +11,7 @@ use predicates::Predicate;
 macro_rules! generate_test {
     ($tmp_dir: ident, $loc_count: expr, $taxon_count: expr, $loc_cols: expr, $taxon_cols: expr) => {
         let pred = predicates::path::is_dir();
-        let output_dir = $tmp_dir.path().join("SEGUL-Summary");
+        let output_dir = $tmp_dir.path().join("Align-Summary");
         let locus_path = output_dir.join("locus_summary.csv");
         let taxon_path = output_dir.join("taxon_summary.csv");
 
@@ -36,7 +36,7 @@ macro_rules! generate_test {
 macro_rules! generate_locus_test {
     ($tmp_dir:ident, $fcount: expr, $cols: expr) => {
         let pred = predicates::path::is_dir();
-        let output_dir = $tmp_dir.path().join("SEGUL-Summary");
+        let output_dir = $tmp_dir.path().join("Align-Summary");
         let files = glob(&format!("{}/*.csv", output_dir.display()))
             .expect("Failed globbing files")
             .filter_map(|ok| ok.ok())

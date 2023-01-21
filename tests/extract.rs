@@ -11,12 +11,12 @@ use segul::helper::types::InputFmt;
 fn test_extract() {
     initiate_cmd!(cmd, "sequence", "extract", "tests/files/concat/", tmp_dir);
     cmd.arg("--id").arg("ABCD").assert().success();
-    test_results!(4, tmp_dir, "SEGUL-Extract", Nexus);
+    test_results!(4, tmp_dir, "Sequence-Extract", Nexus);
 }
 
 #[test]
 fn test_extract_re() {
     initiate_cmd!(cmd, "sequence", "extract", "tests/files/concat/", tmp_dir);
     cmd.arg("--re=^AB").assert().success();
-    test_results!(4, tmp_dir, "SEGUL-Extract", Nexus);
+    test_results!(4, tmp_dir, "Sequence-Extract", Nexus);
 }

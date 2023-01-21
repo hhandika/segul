@@ -34,5 +34,5 @@ macro_rules! initiate_split_cmd {
 fn test_splitting_aln() {
     initiate_split_cmd!(cmd, tmp_dir, "partition.txt");
     cmd.assert().success();
-    test_results!(3, tmp_dir, "SEGUL-Split", Nexus);
+    test_results!(3, tmp_dir, "Align-Split", Nexus);
 }
