@@ -19,14 +19,14 @@ impl<'a> RawSummaryParser<'a> {
         let fcounts = inputs.len();
         let input_fmt = &self.args.input_format;
         let task = "Summarize raw read sequences";
-        self.check_output_dir_exist(&self.args.output, self.args.io.force);
         RawReadPrint::new(&None, input_fmt, task, fcounts).print();
+        self.check_output_dir_exist(&self.args.output, self.args.io.force);
         RawSummaryHandler::new(
             &inputs,
             &self.args.input_format,
             &self.args.mode,
             &self.args.output,
         )
-        .summarize();
+        .summarize(self.args.low_mem);
     }
 }

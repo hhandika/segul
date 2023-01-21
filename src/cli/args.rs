@@ -105,6 +105,8 @@ pub(crate) struct RawSummaryArgs {
     pub(crate) mode: SummaryMode,
     #[arg(short = 'o', long = "output", help = "Output path", default_value = "Raw-Summary")]
     pub(crate) output: PathBuf,
+    #[arg(long = "low-mem", help = "Use low memory mode")]
+    pub(crate) low_mem: bool,
 }
 
 #[derive(Args)]

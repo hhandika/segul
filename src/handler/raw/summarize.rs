@@ -1,14 +1,14 @@
 //! A handler for summarizing raw sequence data.
 
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{BufWriter, Result, Write},
     path::{Path, PathBuf},
     sync::mpsc::channel,
 };
 
 use colored::Colorize;
-use noodles::fastq;
+use noodles::fastq::Reader;
 use rayon::prelude::*;
 
 use crate::{
@@ -19,6 +19,8 @@ use crate::{
     },
     parser::{fastq::QScoreParser, gzip::decode_gzip},
 };
+
+const DEFAULT_OUTPUT: &str = "summary.tsv";
 
 /// Include support for any compressed or uncompressed fastq files.
 pub struct RawSummaryHandler<'a> {
@@ -43,16 +45,42 @@ impl<'a> RawSummaryHandler<'a> {
         }
     }
 
-    pub fn summarize(&self) {
+    pub fn summarize(&self, low_mem: bool) {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
-        let mut records = self.par_summarize();
+
+        if low_mem {
+            self.summarize_lowmem();
+        } else {
+            let mut records = self.par_summarize();
+
+            spin.set_message("Writing records\n");
+            let mut writer = self.create_output_file(self.output, DEFAULT_OUTPUT);
+            self.write_records(&mut writer, &records)
+                .expect("Failed writing to file");
+            // Sort records by file name
+            records.sort_by(|a, b| a.0.path.cmp(&b.0.path));
+        }
         spin.finish_with_message("Finished processing fastq files\n");
-        self.print_records(&records)
-            .expect("Failed writing to file");
-        // Sort records by file name
-        records.sort_by(|a, b| a.0.path.cmp(&b.0.path));
         self.print_output_info();
+    }
+
+    fn summarize_lowmem(&self) {
+        self.inputs.iter().for_each(|path| {
+            let records = self.parse_record(path);
+            let output_dir = self.output.join("tsv");
+            let fname = format!(
+                "{}_{}",
+                path.file_name()
+                    .expect("Failed getting file name")
+                    .to_str()
+                    .expect("Failed converting file name to string"),
+                DEFAULT_OUTPUT
+            );
+            let mut writer = self.create_output_file(&output_dir, &fname);
+            self.write_records(&mut writer, &[records])
+                .expect("Failed writing to file");
+        })
     }
 
     fn par_summarize(&self) -> Vec<(FastqRecords, QScoreRecords)> {
@@ -70,7 +98,7 @@ impl<'a> RawSummaryHandler<'a> {
 
     fn parse_record(&self, path: &Path) -> (FastqRecords, QScoreRecords) {
         let gzip_buff = decode_gzip(path);
-        let mut reader = fastq::Reader::new(gzip_buff);
+        let mut reader = Reader::new(gzip_buff);
         let mut reads = Vec::new();
         let mut q_records = Vec::new();
 
@@ -105,6 +133,13 @@ impl<'a> RawSummaryHandler<'a> {
         qscores
     }
 
+    fn create_output_file(&self, output_dir: &Path, fname: &str) -> BufWriter<File> {
+        fs::create_dir_all(output_dir).expect("Failed to create output directory");
+        let fpath = output_dir.join(fname);
+        let file = File::create(fpath).expect("Failed to create summary file");
+        BufWriter::new(file)
+    }
+
     fn summarize_records(
         &self,
         path: &Path,
@@ -125,10 +160,11 @@ impl<'a> RawSummaryHandler<'a> {
         log::info!("{:18}: {}", "Summary file", "summary.tsv")
     }
 
-    fn print_records(&self, records: &[(FastqRecords, QScoreRecords)]) -> Result<()> {
-        let file = File::create("summary.tsv").expect("Failed to create summary file");
-        let mut writer = BufWriter::new(file);
-
+    fn write_records<W: Write>(
+        &self,
+        writer: &mut W,
+        records: &[(FastqRecords, QScoreRecords)],
+    ) -> Result<()> {
         match self.mode {
             SummaryMode::Minimal => {
                 writeln!(
