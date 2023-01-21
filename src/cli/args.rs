@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{builder, Args, Parser, Subcommand, crate_name, crate_authors, crate_version, crate_description};
 use clap::builder::TypedValueParser as _;
-use crate::helper::types::RawReadFmt;
+use crate::helper::types::{RawReadFmt, SummaryMode};
 
 #[derive(Parser)]
 #[command(name = crate_name!())]
@@ -95,8 +95,16 @@ pub(crate) struct RawSummaryArgs {
             .map(|x| x.parse::<RawReadFmt>().unwrap()),
     )]
     pub(crate) input_format: RawReadFmt,
-    #[arg(long = "mode", help = "Summary mode", default_value = "default")]
-    pub(crate) mode: String,
+    #[arg(
+        long = "mode", 
+        help = "Summary mode", 
+        default_value_t = SummaryMode::Default,
+        value_parser = 
+            builder::PossibleValuesParser::new(["minimal", "default", "full"])
+            .map(|x| x.parse::<SummaryMode>().unwrap()))]
+    pub(crate) mode: SummaryMode,
+    #[arg(short = 'o', long = "output", help = "Output path", default_value = "Raw-Summary")]
+    pub(crate) output: PathBuf,
 }
 
 #[derive(Args)]
@@ -115,7 +123,7 @@ pub(crate) struct AlignConcatArgs {
     pub(crate) out_fmt: CommonSeqOutput,
     #[command(flatten)]
     pub(crate) concat: CommonConcatArgs,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Concat")]
+    #[arg(short, long, help = "Output path", default_value = "Align-Concat")]
     pub(crate) output: PathBuf,
     #[arg(long = "sort", help = "Sort sequences by IDs alphabetically")]
     pub(crate) sort: bool,
@@ -129,7 +137,7 @@ pub(crate) struct AlignConvertArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Convert")]
+    #[arg(short, long, help = "Output path", default_value = "Align-Convert")]
     pub(crate) output: PathBuf,
     #[arg(long = "sort", help = "Sort sequences by IDs alphabetically")]
     pub(crate) sort: bool,
@@ -145,7 +153,7 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) out_fmt: CommonSeqOutput,
     #[command(flatten)]
     pub(crate) partition: CommonConcatArgs,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Filter")]
+    #[arg(short, long, help = "Output path", default_value = "Align-Filter")]
     pub(crate) output: String,
     #[arg(long = "concat", help = "Concat filtered alignments")]
     pub(crate) concat: bool,
@@ -173,13 +181,13 @@ pub(crate) struct AlignFilterArgs {
 
 #[derive(Args)]
 pub(crate) struct AlignSplitArgs {
-    #[arg(short, long, help = "Input partition path", default_value = "SEGUL-Split")]
+    #[arg(short ='i', long = "input", help = "Input partition path")]
     pub(crate) input: PathBuf,
     #[command(flatten)]
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Split")]
+    #[arg(short, long, help = "Output path", default_value = "Align-Split")]
     pub(crate) output: PathBuf,
     #[arg(short = 'I', long = "input-partition", help = "Input partition format")]
     pub(crate) input_partition: Option<PathBuf>,
@@ -204,7 +212,7 @@ pub(crate) struct AlignSummaryArgs {
     pub(crate) io: IOArgs,
     #[command(flatten)]
     pub(crate) fmt: CommonSeqInput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Summary")]
+    #[arg(short, long, help = "Output path", default_value = "Align-Summary")]
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,
@@ -232,7 +240,7 @@ pub(crate) struct PartitionArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Partition")]
+    #[arg(short, long, help = "Output path", default_value = "Partition-Convert")]
     pub(crate) output: String,
     #[arg(
         short = 'p',
@@ -265,7 +273,7 @@ pub(crate) struct SequenceExtractArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Extract")]
+    #[arg(short, long, help = "Output path", default_value = "Sequence-Extract")]
     pub(crate) output: PathBuf,
     #[arg(
         long = "re",
@@ -309,7 +317,7 @@ pub(crate) struct SequenceRemoveArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Remove")]
+    #[arg(short, long, help = "Output path", default_value = "Sequence-Remove")]
     pub(crate) output: PathBuf,
     #[arg(
         long = "re",
@@ -333,7 +341,7 @@ pub(crate) struct SequenceRenameArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Rename")]
+    #[arg(short, long, help = "Output path", default_value = "Sequence-Rename")]
     pub(crate) output: PathBuf,
     #[arg(long = "dry-run", help = "Dry run")]
     pub(crate) dry_run: bool,
@@ -400,7 +408,7 @@ pub(crate) struct SequenceTranslateArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-Translate")]
+    #[arg(short, long, help = "Output path", default_value = "Sequence-Translate")]
     pub(crate) output: PathBuf,
     #[arg(long = "show-tables", help = "Show supported NCBI translation tables")]
     pub(crate) show_tables: bool,

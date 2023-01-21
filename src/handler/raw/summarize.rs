@@ -25,14 +25,21 @@ pub struct RawSummaryHandler<'a> {
     pub inputs: &'a [PathBuf],
     pub input_fmt: &'a RawReadFmt,
     pub mode: &'a SummaryMode,
+    pub output: &'a Path,
 }
 
 impl<'a> RawSummaryHandler<'a> {
-    pub fn new(inputs: &'a [PathBuf], input_fmt: &'a RawReadFmt, mode: &'a SummaryMode) -> Self {
+    pub fn new(
+        inputs: &'a [PathBuf],
+        input_fmt: &'a RawReadFmt,
+        mode: &'a SummaryMode,
+        output: &'a Path,
+    ) -> Self {
         Self {
             inputs,
             input_fmt,
             mode,
+            output,
         }
     }
 
