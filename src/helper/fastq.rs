@@ -244,23 +244,23 @@ mod test {
             ReadQScore {
                 len: 100,
                 low_q: 0,
-                sum: 100,
+                sum: 3000,
                 min: 30,
                 max: 40,
             },
             ReadQScore {
                 len: 100,
                 low_q: 1,
-                sum: 100,
+                sum: 1000,
                 min: 10,
                 max: 33,
             },
         ];
         qscore.summarize(&qscore_records);
-        assert_eq!(qscore.len, 2);
+        assert_eq!(qscore.len, 200);
         assert_eq!(qscore.low_q, 1);
-        assert_eq!(qscore.sum, 200);
-        assert_eq!(qscore.mean, 100.0);
+        assert_eq!(qscore.sum, 4000);
+        assert_eq!(qscore.mean, 20.0);
         assert_eq!(qscore.min, 10);
         assert_eq!(qscore.max, 40);
     }
