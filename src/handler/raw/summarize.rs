@@ -39,10 +39,12 @@ impl<'a> RawSummaryHandler<'a> {
     pub fn summarize(&self) {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
-        let records = self.par_summarize();
+        let mut records = self.par_summarize();
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_records(&records)
             .expect("Failed writing to file");
+        // Sort records by file name
+        records.sort_by(|a, b| a.0.path.cmp(&b.0.path));
         self.print_output_info();
     }
 
@@ -113,11 +115,11 @@ impl<'a> RawSummaryHandler<'a> {
 
     fn print_output_info(&self) {
         log::info!("{}", "Output".yellow());
-        log::info!("{:18}: {}", "Summary file", "summary.txt")
+        log::info!("{:18}: {}", "Summary file", "summary.tsv")
     }
 
     fn print_records(&self, records: &[(FastqRecords, QScoreRecords)]) -> Result<()> {
-        let file = File::create("summary.txt").expect("Failed to create summary file");
+        let file = File::create("summary.tsv").expect("Failed to create summary file");
         let mut writer = BufWriter::new(file);
 
         match self.mode {
@@ -140,11 +142,11 @@ impl<'a> RawSummaryHandler<'a> {
                 }
             }
             SummaryMode::Complete => {
-                writeln!(writer,"File\tNumReads\tNumBases\tMinReadLen\tMeanReadLen\tMaxReadLen\tLowQ\tSum\tMean\tMin\tMax")?;
+                writeln!(writer,"File\tNumReads\tNumBases\tMinReadLen\tMeanReadLen\tMaxReadLen\tLowQ\tMean\tMin\tMax")?;
                 for (seq, q) in records {
                     writeln!(
                         writer,
-                        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
                         seq.path.display(),
                         seq.num_reads,
                         seq.num_bases,
@@ -152,7 +154,6 @@ impl<'a> RawSummaryHandler<'a> {
                         seq.mean_read_len,
                         seq.max_read_len,
                         q.low_q,
-                        q.sum,
                         q.mean,
                         q.min,
                         q.max
@@ -160,22 +161,35 @@ impl<'a> RawSummaryHandler<'a> {
                 }
             }
             SummaryMode::Default => {
-                writeln!(writer,"File\tNumReads\tNumBases\tMinReadLen\tMeanReadLen\tMaxReadLen\tLowQ\tSum\tMean\tMin\tMax")?;
+                writeln!(
+                    writer,
+                    "File\tNumReads\tNumBases\t\
+                    MinReadLen\tMeanReadLen\tMaxReadLen\t\
+                    GCcount\tGCcontent\tATcount\tATContent\t\
+                    Ncount\tNcontent\t\
+                    LowQ\tMean\tMin\tMax\
+                    "
+                )?;
                 for (seq, q) in records {
                     writeln!(
                         writer,
-                        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
                         seq.path.display(),
                         seq.num_reads,
                         seq.num_bases,
                         seq.min_read_len,
                         seq.mean_read_len,
                         seq.max_read_len,
+                        seq.gc_count,
+                        seq.gc_content,
+                        seq.at_count,
+                        seq.at_content,
+                        seq.n_count,
+                        seq.n_content,
                         q.low_q,
-                        q.sum,
                         q.mean,
                         q.min,
-                        q.max
+                        q.max,
                     )?;
                 }
             }

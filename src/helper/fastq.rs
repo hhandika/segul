@@ -18,6 +18,18 @@ pub struct FastqRecords {
     pub mean_read_len: usize,
     /// Maximum read length
     pub max_read_len: usize,
+    /// GC count in read
+    pub gc_count: usize,
+    /// GC percentage in read
+    pub gc_content: f64,
+    /// AT count in read
+    pub at_count: usize,
+    /// AT percentage in read
+    pub at_content: f64,
+    /// N count in read
+    pub n_count: usize,
+    /// N percentage in read
+    pub n_content: f64,
 }
 
 impl FastqRecords {
@@ -29,6 +41,12 @@ impl FastqRecords {
             min_read_len: 0,
             mean_read_len: 0,
             max_read_len: 0,
+            gc_count: 0,
+            gc_content: 0.0,
+            at_count: 0,
+            at_content: 0.0,
+            n_count: 0,
+            n_content: 0.0,
         }
     }
 
@@ -38,6 +56,12 @@ impl FastqRecords {
         self.min_read_len = read_records.iter().map(|x| x.len).min().unwrap();
         self.mean_read_len = self.num_bases / self.num_reads;
         self.max_read_len = read_records.iter().map(|x| x.len).max().unwrap();
+        self.gc_count = read_records.iter().map(|x| x.gc_count).sum();
+        self.gc_content = self.gc_count as f64 / self.num_bases as f64;
+        self.at_count = read_records.iter().map(|x| x.at_count).sum();
+        self.at_content = self.at_count as f64 / self.num_bases as f64;
+        self.n_count = read_records.iter().map(|x| x.n_count).sum();
+        self.n_content = self.n_count as f64 / self.num_bases as f64;
     }
 }
 
@@ -77,7 +101,7 @@ impl QScoreRecords {
     }
 
     pub fn summarize(&mut self, qread: &[ReadQScore]) {
-        self.len = qread.len();
+        self.len = qread.iter().map(|x| x.len).sum();
         self.low_q = qread.iter().map(|x| x.low_q).sum();
         self.sum = qread.iter().map(|x| x.sum).sum();
         self.mean = self.sum as f64 / self.len as f64;
