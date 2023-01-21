@@ -57,9 +57,9 @@ impl FastqRecords {
         self.min_read_len = read_records.iter().map(|x| x.len).min().unwrap();
         self.mean_read_len = self.num_bases / self.num_reads;
         self.max_read_len = read_records.iter().map(|x| x.len).max().unwrap();
-        self.gc_count = read_records.iter().map(|x| x.gc_count).sum();
+        self.gc_count = read_records.iter().map(|x| x.g_count + x.c_count).sum();
         self.gc_content = self.gc_count as f64 / self.num_bases as f64;
-        self.at_count = read_records.iter().map(|x| x.at_count).sum();
+        self.at_count = read_records.iter().map(|x| x.a_count + x.t_count).sum();
         self.at_content = self.at_count as f64 / self.num_bases as f64;
         self.n_count = read_records.iter().map(|x| x.n_count).sum();
         self.n_content = self.n_count as f64 / self.num_bases as f64;
@@ -115,10 +115,14 @@ impl QScoreRecords {
 pub struct ReadRecord {
     /// Read length
     pub len: usize,
-    /// GC count in read
-    pub gc_count: usize,
-    /// AT count in read
-    pub at_count: usize,
+    /// G count in read
+    pub g_count: usize,
+    /// C count in read
+    pub c_count: usize,
+    /// A count in read
+    pub a_count: usize,
+    /// T count in read
+    pub t_count: usize,
     /// N count in read
     pub n_count: usize,
 }
@@ -133,8 +137,10 @@ impl ReadRecord {
     pub fn new() -> Self {
         Self {
             len: 0,
-            gc_count: 0,
-            at_count: 0,
+            g_count: 0,
+            c_count: 0,
+            a_count: 0,
+            t_count: 0,
             n_count: 0,
         }
     }
@@ -142,8 +148,10 @@ impl ReadRecord {
     pub fn summarize(&mut self, read: &[u8]) {
         self.len = read.len();
         read.iter().for_each(|r| match r {
-            b'G' | b'g' | b'C' | b'c' => self.gc_count += 1,
-            b'A' | b'T' | b'a' | b't' => self.at_count += 1,
+            b'G' | b'g' => self.g_count += 1,
+            b'C' | b'c' => self.c_count += 1,
+            b'A' | b'a' => self.a_count += 1,
+            b'T' | b't' => self.t_count += 1,
             b'N' | b'n' => self.n_count += 1,
             _ => (),
         });
@@ -196,8 +204,10 @@ mod test {
         let mut read = ReadRecord::new();
         read.summarize(b"ATGC");
         assert_eq!(read.len, 4);
-        assert_eq!(read.gc_count, 2);
-        assert_eq!(read.at_count, 2);
+        assert_eq!(read.g_count, 1);
+        assert_eq!(read.c_count, 1);
+        assert_eq!(read.a_count, 1);
+        assert_eq!(read.t_count, 1);
         assert_eq!(read.n_count, 0);
     }
 
@@ -218,14 +228,18 @@ mod test {
         let read_records = vec![
             ReadRecord {
                 len: 100,
-                gc_count: 50,
-                at_count: 50,
+                g_count: 25,
+                c_count: 25,
+                a_count: 25,
+                t_count: 25,
                 n_count: 0,
             },
             ReadRecord {
                 len: 100,
-                gc_count: 50,
-                at_count: 50,
+                g_count: 25,
+                c_count: 25,
+                a_count: 25,
+                t_count: 25,
                 n_count: 0,
             },
         ];
