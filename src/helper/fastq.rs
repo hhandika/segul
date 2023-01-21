@@ -33,6 +33,7 @@ pub struct FastqRecords {
 }
 
 impl FastqRecords {
+    /// Create a new FastqRecords struct
     pub fn new(path: &Path) -> Self {
         Self {
             path: PathBuf::from(path),
