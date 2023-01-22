@@ -10,6 +10,7 @@ use std::{
 use colored::Colorize;
 use noodles::fastq::Reader;
 use rayon::prelude::*;
+use std::collections::BTreeMap;
 
 use crate::{
     helper::{
@@ -28,6 +29,7 @@ pub struct RawSummaryHandler<'a> {
     pub input_fmt: &'a RawReadFmt,
     pub mode: &'a SummaryMode,
     pub output: &'a Path,
+    pub map: bool,
 }
 
 impl<'a> RawSummaryHandler<'a> {
@@ -42,6 +44,7 @@ impl<'a> RawSummaryHandler<'a> {
             input_fmt,
             mode,
             output,
+            map: true,
         }
     }
 
@@ -87,6 +90,9 @@ impl<'a> RawSummaryHandler<'a> {
         let (sender, receiver) = channel();
 
         self.inputs.par_iter().for_each_with(sender, |s, p| {
+            if self.map {
+                self.map_record(p);
+            }
             let record = self.parse_record(p);
 
             s.send(record)
@@ -119,6 +125,70 @@ impl<'a> RawSummaryHandler<'a> {
         });
 
         self.summarize_records(path, &reads, &q_records)
+    }
+
+    fn map_record(&self, path: &Path) -> (FastqRecords, QScoreRecords) {
+        let gzip_buff = decode_gzip(path);
+        let mut reader = Reader::new(gzip_buff);
+        let mut reads = Vec::new();
+        let mut q_records = Vec::new();
+        let mut read_map: BTreeMap<i32, ReadRecord> = BTreeMap::new();
+
+        reader.records().for_each(|r| match r {
+            Ok(record) => {
+                let mut read_records = ReadRecord::new();
+                let sequence = record.sequence();
+                let qrecord = record.quality_scores();
+                read_records.summarize(sequence);
+                reads.push(read_records);
+                let mut read_qscores = ReadQScore::new();
+                let qscores = self.parse_qscores(qrecord);
+                read_qscores.summarize(&qscores);
+                q_records.push(read_qscores);
+
+                // Map reads to their index
+                let mut index = 1;
+                sequence.iter().for_each(|s| {
+                    if let Some(read) = read_map.get_mut(&index) {
+                        read.add(s);
+                    } else {
+                        let mut read = ReadRecord::new();
+                        read.add(s);
+                        read_map.insert(index, read);
+                    }
+                    index += 1;
+                });
+            }
+            Err(e) => {
+                log::error!("Error parsing fastq record: {}", e);
+            }
+        });
+        self.summarize_reads(path, &read_map);
+        self.summarize_records(path, &reads, &q_records)
+    }
+
+    fn summarize_reads(&self, fpath: &Path, reads: &BTreeMap<i32, ReadRecord>) {
+        let output_dir = self.output.join("reads");
+        let fname = format!(
+            "{}_{}",
+            fpath
+                .file_name()
+                .expect("Failed getting file name")
+                .to_str()
+                .expect("Failed converting file name to string"),
+            "reads.tsv"
+        );
+        let mut writer = self.create_output_file(&output_dir, &fname);
+        writeln!(writer, "{}\t{}\t{}\t{}\t{}", "index", "G", "C", "A", "T")
+            .expect("Failed writing to file");
+        reads.iter().for_each(|(i, r)| {
+            writeln!(
+                writer,
+                "{}\t{}\t{}\t{}\t{}",
+                i, r.g_count, r.c_count, r.a_count, r.t_count
+            )
+            .expect("Failed writing to file");
+        });
     }
 
     fn parse_qscores(&self, qscore: &[u8]) -> Vec<u8> {

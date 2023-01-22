@@ -156,6 +156,17 @@ impl ReadRecord {
             _ => (),
         });
     }
+
+    pub fn add(&mut self, base: &u8) {
+        match base {
+            b'G' | b'g' => self.g_count += 1,
+            b'C' | b'c' => self.c_count += 1,
+            b'A' | b'a' => self.a_count += 1,
+            b'T' | b't' => self.t_count += 1,
+            b'N' | b'n' => self.n_count += 1,
+            _ => (),
+        }
+    }
 }
 
 /// Q-Score per read
