@@ -232,8 +232,8 @@ impl<'a> RawSummaryHandler<'a> {
                 r.a_count as f64 / sum as f64,
                 r.t_count as f64 / sum as f64,
                 scores.mean,
-                scores.min.unwrap(),
-                scores.max.unwrap()
+                scores.min.unwrap_or(0),
+                scores.max.unwrap_or(0)
             )
             .expect("Failed writing to file");
         });
