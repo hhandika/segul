@@ -205,21 +205,32 @@ impl<'a> RawSummaryHandler<'a> {
             "read_summary.tsv"
         );
         let mut writer = self.create_output_file(&output_dir, &fname);
-        writeln!(writer, "index\tG\tC\tA\tT\tMeanQ\tMinQ\tMaxQ",).expect("Failed writing to file");
+        writeln!(
+            writer,
+            "index\tG\tC\tA\tT\
+        \tProportionG\tProportionC\tProportionA\tProportionT
+        \tMeanQ\tMinQ\tMaxQ",
+        )
+        .expect("Failed writing to file");
         reads.iter().for_each(|(i, r)| {
             let scores = if let Some(q) = qscores.get(i) {
                 q
             } else {
                 panic!("Failed getting quality scores for index {}", i);
             };
+            let sum = r.g_count + r.c_count + r.a_count + r.t_count;
             writeln!(
                 writer,
-                "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
                 i,
                 r.g_count,
                 r.c_count,
                 r.a_count,
                 r.t_count,
+                r.g_count as f64 / sum as f64,
+                r.c_count as f64 / sum as f64,
+                r.a_count as f64 / sum as f64,
+                r.t_count as f64 / sum as f64,
                 scores.mean,
                 scores.min.unwrap(),
                 scores.max.unwrap()
