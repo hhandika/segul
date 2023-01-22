@@ -208,7 +208,7 @@ impl<'a> RawSummaryHandler<'a> {
         writeln!(
             writer,
             "index\tG\tC\tA\tT\
-        \tProportionG\tProportionC\tProportionA\tProportionT
+        \tProportionG\tProportionC\tProportionA\tProportionT\
         \tMeanQ\tMinQ\tMaxQ",
         )
         .expect("Failed writing to file");
