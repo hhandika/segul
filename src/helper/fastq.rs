@@ -206,6 +206,58 @@ impl ReadQScore {
     }
 }
 
+pub struct QScoreStream {
+    pub mean: f64,
+    pub min: Option<u8>,
+    pub max: Option<u8>,
+    sum: usize,
+    count: usize,
+}
+
+impl QScoreStream {
+    pub fn new() -> Self {
+        Self {
+            mean: 0.0,
+            min: None,
+            max: None,
+            sum: 0,
+            count: 0,
+        }
+    }
+
+    pub fn update(&mut self, score: &u8) {
+        self.get_mean(score);
+        self.get_min(score);
+        self.get_max(score);
+    }
+
+    fn get_mean(&mut self, score: &u8) {
+        self.sum += *score as usize;
+        self.count += 1;
+        self.mean = self.sum as f64 / self.count as f64;
+    }
+
+    fn get_min(&mut self, score: &u8) {
+        if let Some(min) = self.min {
+            if min > *score {
+                self.min = Some(*score);
+            }
+        } else {
+            self.min = Some(*score);
+        }
+    }
+
+    fn get_max(&mut self, score: &u8) {
+        if let Some(max) = self.max {
+            if max < *score {
+                self.max = Some(*score);
+            }
+        } else {
+            self.max = Some(*score);
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -288,5 +340,17 @@ mod test {
         assert_eq!(qscore.mean, 20.0);
         assert_eq!(qscore.min, 10);
         assert_eq!(qscore.max, 40);
+    }
+
+    #[test]
+    fn test_streaming_qscore() {
+        let qscore = vec![40, 40, 10, 30, 30];
+        let mut score = QScoreStream::new();
+        for s in qscore {
+            score.update(&s);
+        }
+        assert_eq!(score.mean, 30.0);
+        assert_eq!(score.min, Some(10));
+        assert_eq!(score.max, Some(40));
     }
 }

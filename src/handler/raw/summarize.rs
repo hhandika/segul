@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 
 use crate::{
     helper::{
-        fastq::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
+        fastq::{FastqRecords, QScoreRecords, QScoreStream, ReadQScore, ReadRecord},
         types::{RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
@@ -64,6 +64,8 @@ impl<'a> RawSummaryHandler<'a> {
             // Sort records by file name
             records.sort_by(|a, b| a.0.path.cmp(&b.0.path));
         }
+        // spin.set_message("Parsing QScore\n");
+        // self.summarize_qscore_json();
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_output_info();
     }
@@ -135,7 +137,7 @@ impl<'a> RawSummaryHandler<'a> {
 
         // We use BTreeMap to keep the order of the reads
         let mut read_map: BTreeMap<i32, ReadRecord> = BTreeMap::new();
-        let mut qscore_map: BTreeMap<i32, Vec<u8>> = BTreeMap::new();
+        let mut qscore_map: BTreeMap<i32, QScoreStream> = BTreeMap::new();
 
         reader.records().for_each(|r| match r {
             Ok(record) => {
@@ -163,13 +165,14 @@ impl<'a> RawSummaryHandler<'a> {
                 });
 
                 // Map quality scores to their index
+                // We write to json file here to save memory
                 let mut index = 1;
                 qscores.iter().for_each(|s| {
                     if let Some(qscore) = qscore_map.get_mut(&index) {
-                        qscore.push(*s);
+                        qscore.update(s);
                     } else {
-                        let mut qscore = Vec::new();
-                        qscore.push(*s);
+                        let mut qscore = QScoreStream::new();
+                        qscore.update(s);
                         qscore_map.insert(index, qscore);
                     }
                     index += 1;
@@ -179,15 +182,17 @@ impl<'a> RawSummaryHandler<'a> {
                 log::error!("Error parsing fastq record: {}", e);
             }
         });
-        self.summarize_reads(path, &read_map, &qscore_map);
+        self.write_per_read_records(path, &read_map, &qscore_map);
+        read_map.clear();
+        qscore_map.clear();
         self.summarize_records(path, &reads, &q_records)
     }
 
-    fn summarize_reads(
+    fn write_per_read_records(
         &self,
         fpath: &Path,
         reads: &BTreeMap<i32, ReadRecord>,
-        qscores: &BTreeMap<i32, Vec<u8>>,
+        qscores: &BTreeMap<i32, QScoreStream>,
     ) {
         let output_dir = self.output.join("reads");
         let fname = format!(
@@ -200,23 +205,24 @@ impl<'a> RawSummaryHandler<'a> {
             "read_summary.tsv"
         );
         let mut writer = self.create_output_file(&output_dir, &fname);
-        writeln!(
-            writer,
-            "{}\t{}\t{}\t{}\t{}\t{}",
-            "index", "G", "C", "A", "T", "mean_qscore"
-        )
-        .expect("Failed writing to file");
+        writeln!(writer, "index\tG\tC\tA\tT\tMeanQ\tMinQ\tMaxQ",).expect("Failed writing to file");
         reads.iter().for_each(|(i, r)| {
-            let mean_q = if let Some(q) = qscores.get(i) {
-                let sum: usize = q.iter().map(|s| *s as usize).sum();
-                sum as f64 / q.len() as f64
+            let scores = if let Some(q) = qscores.get(i) {
+                q
             } else {
-                panic!("Failed getting quality scores for index {}", i)
+                panic!("Failed getting quality scores for index {}", i);
             };
             writeln!(
                 writer,
-                "{}\t{}\t{}\t{}\t{}\t{}",
-                i, r.g_count, r.c_count, r.a_count, r.t_count, mean_q
+                "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                i,
+                r.g_count,
+                r.c_count,
+                r.a_count,
+                r.t_count,
+                scores.mean,
+                scores.min.unwrap(),
+                scores.max.unwrap()
             )
             .expect("Failed writing to file");
         });
