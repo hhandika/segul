@@ -132,7 +132,10 @@ impl<'a> RawSummaryHandler<'a> {
         let mut reader = Reader::new(gzip_buff);
         let mut reads = Vec::new();
         let mut q_records = Vec::new();
+
+        // We use BTreeMap to keep the order of the reads
         let mut read_map: BTreeMap<i32, ReadRecord> = BTreeMap::new();
+        let mut qscore_map: BTreeMap<i32, Vec<u8>> = BTreeMap::new();
 
         reader.records().for_each(|r| match r {
             Ok(record) => {
@@ -158,34 +161,62 @@ impl<'a> RawSummaryHandler<'a> {
                     }
                     index += 1;
                 });
+
+                // Map quality scores to their index
+                let mut index = 1;
+                qscores.iter().for_each(|s| {
+                    if let Some(qscore) = qscore_map.get_mut(&index) {
+                        qscore.push(*s);
+                    } else {
+                        let mut qscore = Vec::new();
+                        qscore.push(*s);
+                        qscore_map.insert(index, qscore);
+                    }
+                    index += 1;
+                });
             }
             Err(e) => {
                 log::error!("Error parsing fastq record: {}", e);
             }
         });
-        self.summarize_reads(path, &read_map);
+        self.summarize_reads(path, &read_map, &qscore_map);
         self.summarize_records(path, &reads, &q_records)
     }
 
-    fn summarize_reads(&self, fpath: &Path, reads: &BTreeMap<i32, ReadRecord>) {
+    fn summarize_reads(
+        &self,
+        fpath: &Path,
+        reads: &BTreeMap<i32, ReadRecord>,
+        qscores: &BTreeMap<i32, Vec<u8>>,
+    ) {
         let output_dir = self.output.join("reads");
         let fname = format!(
             "{}_{}",
             fpath
-                .file_name()
+                .file_stem()
                 .expect("Failed getting file name")
                 .to_str()
                 .expect("Failed converting file name to string"),
-            "reads.tsv"
+            "read_summary.tsv"
         );
         let mut writer = self.create_output_file(&output_dir, &fname);
-        writeln!(writer, "{}\t{}\t{}\t{}\t{}", "index", "G", "C", "A", "T")
-            .expect("Failed writing to file");
+        writeln!(
+            writer,
+            "{}\t{}\t{}\t{}\t{}\t{}",
+            "index", "G", "C", "A", "T", "mean_qscore"
+        )
+        .expect("Failed writing to file");
         reads.iter().for_each(|(i, r)| {
+            let mean_q = if let Some(q) = qscores.get(i) {
+                let sum: usize = q.iter().map(|s| *s as usize).sum();
+                sum as f64 / q.len() as f64
+            } else {
+                panic!("Failed getting quality scores for index {}", i)
+            };
             writeln!(
                 writer,
-                "{}\t{}\t{}\t{}\t{}",
-                i, r.g_count, r.c_count, r.a_count, r.t_count
+                "{}\t{}\t{}\t{}\t{}\t{}",
+                i, r.g_count, r.c_count, r.a_count, r.t_count, mean_q
             )
             .expect("Failed writing to file");
         });
