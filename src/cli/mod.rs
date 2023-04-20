@@ -103,7 +103,7 @@ pub fn parse_cli() {
     }
 }
 
-fn setup_logger() -> Result<()> {
+pub fn setup_logger() -> Result<()> {
     let log_dir = std::env::current_dir()?;
     let target = log_dir.join(LOG_FILE);
     let tofile = FileAppender::builder()
