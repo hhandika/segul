@@ -79,7 +79,7 @@ impl<'a> TranslateParser<'a> {
     fn parse_trans_table(&mut self) {
         let table = &self.args.table;
         match table {
-            1 => log::info!("{:18}: {}", "Translation Table", table),
+            1 => parse_table_args!(self, StandardCode, table),
             2 => parse_table_args!(self, VertMtDna, table),
             3 => parse_table_args!(self, YeastMtDna, table),
             4 => parse_table_args!(self, MoldProtCoelMtDna, table),
