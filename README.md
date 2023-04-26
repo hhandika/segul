@@ -28,10 +28,12 @@ Features:
 11. Splitting alignments by partitions.
 12. Translating DNA sequences to amino acid sequences
 
-<!-- Upcoming features and bug fixes ([try](https://github.com/hhandika/segul/wiki/2.-Installation#try-development-features)):
+Upcoming features and bug fixes ([try](https://github.com/hhandika/segul/wiki/2.-Installation#try-development-features)):
 
-1. A feature to generate summary sequence statistics for each locus.
-2. Taxon summary statistics now include proportion of missing data, nucleotide counts, GC content and AT content. -->
+1. GUI version is coming soon (see [SEGUL-GUI](https://github.com/hhandika/segui))
+2. New command line structure.
+3. New feature to generate summary statistics for raw-read genomic sequences.
+4. Bug fixes and update on deprecated dependencies.
 
 Supported sequence formats:
 
