@@ -1,5 +1,18 @@
 # Release Notes
 
+## v0.19.0
+
+New features:
+
+- New command line structure.
+- New summary statistics for raw read sequences.
+
+Bug fixes:
+
+- Fix translation table errors.
+- Update deprecated dependencies.
+- Fix extract output issues.
+
 ## v0.18.1
 
 - Fix colored terminal dependency deprecation issues.
