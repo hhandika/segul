@@ -5,7 +5,7 @@
 New features:
 
 - New command line structure.
-- New summary statistics for raw read sequences.
+- New summary statistics for raw reads and contigs.
 
 Bug fixes:
 
