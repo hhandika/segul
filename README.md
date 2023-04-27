@@ -9,7 +9,7 @@
 ![last-commit](https://img.shields.io/github/last-commit/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
 
-SEGUL is an ultra-fast, memory-efficient command-line (cli) application for working with sequence alignments. It is a cross-platform, single executable app, with zero runtime dependency. In simple words, you need not worry about dependencies. It is designed to handle operations on large genomic datasets, while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a variety of sequence alignment manipulations ([see benchmark](https://github.com/hhandika/segul-bench)).
+SEGUL is an ultra-fast, memory-efficient application for working with sequence alignments. It is a cross-platform, single executable app, with zero runtime dependency. In simple words, you need not worry about dependencies. It is designed to handle operations on large genomic datasets, while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a variety of sequence alignment manipulations ([see benchmark](https://github.com/hhandika/segul-bench)).
 
 The app is designed with data security and repeatability in mind. By default, it prevents overwriting files and checks whether input sequences contain only valid IUPAC characters. When concatenating alignment, the app checks if all the sequences in each input file are aligned. It will abort processing if the input sequences are not aligned. It also carries the memory and multi-threading safety features provided by [the Rust programming language](https://www.rust-lang.org/). The program also logs its terminal output for record keeping.
 
@@ -30,7 +30,7 @@ Features:
 
 Upcoming features and bug fixes ([try](https://github.com/hhandika/segul/wiki/2.-Installation#try-development-features)):
 
-1. GUI version is coming soon (see [SEGUL-GUI](https://github.com/hhandika/segui))
+1. GUI version is coming soon (see [SEGUL-GUI](https://github.com/hhandika/segui)).
 2. New command line structure.
 3. New feature to generate summary statistics for raw-read genomic sequences.
 4. Bug fixes and update on deprecated dependencies.
