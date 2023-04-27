@@ -53,10 +53,8 @@ impl<'a> Files<'a> {
     fn check_glob_results(&self, files: &[PathBuf]) {
         if files.is_empty() {
             panic!(
-                "Failed finding files that match {}. \
-            Maybe try construct the path using wildcard \
-            and input it using option -i or --input",
-                self.pattern
+                "Failed finding input files. \
+                Check the input directory and the input format.",
             );
         }
     }
@@ -69,8 +67,7 @@ impl<'a> Files<'a> {
             InputFmt::Auto => panic!(
                 "The input format is the default auto. \
             The program cannot use auto for dir input. \
-            Try to specify input format using the option -f or --format \
-            or use wildcard and input it using option -i or --input."
+            Try to specify input format."
             ),
         };
     }
