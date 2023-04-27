@@ -64,12 +64,11 @@ impl<'a> RawSummaryHandler<'a> {
             // Sort records by file name
             records.sort_by(|a, b| a.0.path.cmp(&b.0.path));
         }
-        // spin.set_message("Parsing QScore\n");
-        // self.summarize_qscore_json();
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_output_info();
     }
 
+    // Use single tread to reduce memory usage
     fn summarize_lowmem(&self) {
         self.inputs.iter().for_each(|path| {
             let records = self.parse_record(path);
@@ -165,7 +164,6 @@ impl<'a> RawSummaryHandler<'a> {
                 });
 
                 // Map quality scores to their index
-                // We write to json file here to save memory
                 let mut index = 1;
                 qscores.iter().for_each(|s| {
                     if let Some(qscore) = qscore_map.get_mut(&index) {
