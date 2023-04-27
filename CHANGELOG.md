@@ -87,8 +87,8 @@ Bug Fixes:
 
 ## v0.13.1
 
-- Fix issues including empty sequences in splitted alignments.
-- Fix unmatched nchar counts in nexus and phylip output when splitting alignments.
+- Fix issues including empty sequences in split alignments.
+- Fix unmatched number of character counts in nexus and phylip output when splitting alignments.
 
 ## v0.13.0
 
@@ -98,7 +98,7 @@ Bug Fixes:
 ## v0.12.0
 
 - Add taxon summary to the summary stats feature.
-- Summary stats now write the csv ouput files to a directory.
+- Summary stats now write the csv output files to a directory.
 - Allow to add prefix for summary stats csv output files.
 - Fix spaces issue in showing filtering parameters in the log output.
 
@@ -135,7 +135,7 @@ Bug Fixes:
 
 ## v0.9.0
 
-- Add a DNA to Amino Acic translation feature.
+- Add a DNA to Amino Acid translation feature.
 
 ## v0.8.6
 
@@ -174,7 +174,7 @@ Bug Fixes:
 ## v0.7.0
 
 - Add spinner for converting a single file.
-- Output names for concatenating filtered sequences is now default to the directory name with parameters as sufixes.
+- Output names for concatenating filtered sequences is now default to the directory name with parameters as suffixes.
 - Allow "ignore" in the summary data types.
 - Fix issues on specifying a directory for summary stats.
 - Help info now shows the type of values required for the arguments.
