@@ -103,9 +103,32 @@ impl<'a> SeqParser<'a> {
     }
 }
 
+/// Get a sequence shortest and longest length and check if it is aligned.
+/// # Example
+/// ```
+/// use std::path::Path;
+/// use segul::helper::types::{DataType, InputFmt};
+/// use segul::helper::sequence::{SeqParser, SeqCheck};
+///
+/// let file = Path::new("tests/files/simple.fas");
+/// let datatype = &DataType::Dna;
+/// let input_fmt = &InputFmt::Fasta;
+///
+/// let seq = SeqParser::new(&file, datatype);
+/// let (matrix, _) = seq.parse(input_fmt);
+///
+/// let mut seq_check = SeqCheck::new();
+/// seq_check.check(&matrix);
+/// assert_eq!(seq_check.shortest, 6);
+/// assert_eq!(seq_check.longest, 6);
+/// assert_eq!(seq_check.is_alignment, true);
+/// ```
 pub struct SeqCheck {
+    /// The shortest sequence length.
     pub shortest: usize,
+    /// The longest sequence length.
     pub longest: usize,
+    /// A boolean indicating if the sequences are aligned.
     pub is_alignment: bool,
 }
 
@@ -132,10 +155,6 @@ impl SeqCheck {
         self.check_is_alignment();
     }
 
-    fn check_is_alignment(&mut self) {
-        self.is_alignment = self.shortest == self.longest;
-    }
-
     fn shortest_seq_len(&mut self, matrix: &SeqMatrix) {
         self.shortest = matrix
             .values()
@@ -150,6 +169,10 @@ impl SeqCheck {
             .map(|s| s.len())
             .max_by(|a, b| a.cmp(b))
             .expect("Failed getting the longest sequence length");
+    }
+
+    fn check_is_alignment(&mut self) {
+        self.is_alignment = self.shortest == self.longest;
     }
 }
 

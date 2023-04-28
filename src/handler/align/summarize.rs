@@ -143,8 +143,8 @@ impl<'a> SeqStats<'a> {
         let (matrix, header) = aln.get_alignment(self.input_fmt);
         let mut dna = CharMatrix::new();
         dna.count_chars(&matrix, &header, self.datatype);
-        let mut sites = Sites::new();
-        sites.get_stats(path, &matrix, self.datatype);
+        let mut sites = Sites::new(path);
+        sites.get_stats(&matrix, self.datatype);
         let mut taxa = Taxa::new();
         taxa.summarize_taxa(&matrix, self.datatype);
 

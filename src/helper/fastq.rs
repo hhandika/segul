@@ -1,4 +1,4 @@
-//! Methods for processing FASTQ files.
+//! Statistics for fastq records.
 
 use std::default::Default;
 use std::path::{Path, PathBuf};

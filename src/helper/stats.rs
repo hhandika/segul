@@ -6,19 +6,38 @@ use ahash::AHashMap as HashMap;
 
 use crate::helper::types::{DataType, Header, SeqMatrix};
 
+/// Get parsimony informative sites.
+///
+/// # Example
+/// ```
+/// use std::path::Path;
+/// use segul::helper::types::{DataType, InputFmt};
+/// use segul::helper::sequence::{SeqParser, SeqCheck};
+/// use segul::helper::stats;
+///
+/// let file = Path::new("tests/files/concat.fasta");
+/// let datatype = &DataType::Dna;
+/// let input_fmt = &InputFmt::Fasta;
+///
+/// let seq = SeqParser::new(&file, datatype);
+/// let (matrix, _) = seq.parse(input_fmt);
+/// let pars_inf = stats::get_pars_inf(&matrix, datatype);
+/// assert_eq!(pars_inf, 2);
+/// ```
 pub fn get_pars_inf(matrix: &SeqMatrix, datatype: &DataType) -> usize {
-    Sites::new().get_pars_inf_only(matrix, datatype)
+    Sites::default().get_pars_inf_only(matrix, datatype)
 }
 
+/// Get site summary statistics from a collection of alignments.
 pub struct SiteSummary {
-    // General site summary
+    /// General site summary
     pub total_loci: usize,
     pub total_sites: usize,
     pub min_sites: usize,
     pub max_sites: usize,
     pub mean_sites: f64,
 
-    // Conserved site summary
+    /// Conserved site summary
     pub cons_loci: usize,
     pub prop_cons_loci: f64,
     pub total_cons_site: usize,
@@ -27,7 +46,7 @@ pub struct SiteSummary {
     pub max_cons_site: usize,
     pub mean_cons_site: f64,
 
-    // Variable site summary
+    /// Variable site summary
     pub var_loci: usize,
     pub prop_var_loci: f64,
     pub total_var_site: usize,
@@ -36,7 +55,7 @@ pub struct SiteSummary {
     pub max_var_site: usize,
     pub mean_var_site: f64,
 
-    // Parsimony inf site summary
+    /// Parsimony inf site summary
     pub inf_loci: usize,
     pub prop_inf_loci: f64,
     pub total_inf_site: usize,
@@ -53,6 +72,7 @@ impl Default for SiteSummary {
 }
 
 impl SiteSummary {
+    /// Create a new `SiteSummary` instance.
     pub fn new() -> Self {
         Self {
             total_sites: 0,
@@ -84,6 +104,8 @@ impl SiteSummary {
         }
     }
 
+    /// Summarize all the sites from a collection of alignments.
+    /// Returns a `SiteSummary` instance.
     pub fn summarize(&mut self, sites: &[Sites]) {
         self.total_loci = sites.len();
         self.total_sites = sites.iter().map(|s| s.counts).sum();
@@ -126,16 +148,27 @@ impl SiteSummary {
     }
 }
 
+/// A summary of the characters in a collection of alignments.
 pub struct CharSummary {
+    /// The minimum number of taxa in a collection of alignments.
     pub min_tax: usize,
+    /// The maximum number of taxa in a collection of alignments.
     pub max_tax: usize,
+    /// The mean number of taxa in a collection of alignments.
     pub mean_tax: f64,
+    /// The GC content of the collection of alignments.
     pub gc_content: f64,
+    /// The AT content of the collection of alignments.
     pub at_content: f64,
+    /// The total number of missing data characters in the collection of alignments.
     pub missing_data: usize,
+    /// The proportion of missing data characters in the collection of alignments.
     pub prop_missing_data: f64,
+    /// The total number of characters in the collection of alignments.
     pub total_chars: usize,
+    /// The total number of nucleotides in the collection of alignments.
     pub total_nucleotides: usize,
+    /// A map of the characters in the collection of alignments.
     pub chars: HashMap<char, usize>,
 }
 
@@ -146,6 +179,7 @@ impl Default for CharSummary {
 }
 
 impl CharSummary {
+    /// Create a new `CharSummary` instance.
     pub fn new() -> Self {
         Self {
             total_chars: 0,
@@ -161,6 +195,11 @@ impl CharSummary {
         }
     }
 
+    /// Summarize all the characters from a collection of alignments.
+    /// Returns a `CharSummary` instance.
+    /// # Arguments
+    /// * `chars` - A collection of `CharMatrix` instances.
+    /// * `datatype` - The datatype of the characters.
     pub fn summarize(&mut self, chars: &[CharMatrix], datatype: &DataType) {
         self.min_tax = chars.iter().map(|d| d.ntax).min().unwrap();
         self.max_tax = chars.iter().map(|d| d.ntax).max().unwrap();
@@ -202,6 +241,7 @@ impl CharSummary {
     }
 }
 
+/// Data completeness summary from a collection of alignments.
 pub struct Completeness {
     pub completeness: Vec<(usize, usize)>,
     pub total_tax: usize,
@@ -217,6 +257,11 @@ impl Completeness {
         }
     }
 
+    /// Compute the matrix completeness for a collection of alignments.
+    /// Completeness is defined as the number of alignments with at least
+    /// a given percentage of taxa.
+    /// It will stop computing the completeness if
+    /// it is equal to the total number of taxa.
     pub fn matrix_completeness(&mut self, chars: &[CharMatrix]) {
         let ntax: Vec<usize> = chars.iter().map(|d| d.ntax).collect();
         let mut values: usize = 100;
@@ -244,26 +289,33 @@ impl Completeness {
     }
 }
 
+/// A site summary from an alignment.
 #[derive(Debug, Clone)]
 pub struct Sites {
+    /// The path to the alignment.
+    /// This is used to retrieve the alignment name.
+    /// Used by the writer to sort the output.
     pub path: PathBuf,
+    /// The number of conserved sites.
     pub conserved: usize,
+    /// The number of variable sites.
     pub variable: usize,
+    /// The number of parsimony informative sites.
     pub pars_inf: usize,
+    /// The total number of sites.
     pub counts: usize,
+    /// The proportion of variable sites.
     pub prop_var: f64,
+    /// The proportion of conserved sites.
     pub prop_cons: f64,
+    /// The proportion of parsimony informative sites.
     pub prop_pinf: f64,
 }
 
 impl Default for Sites {
+    /// Create a new `Sites` instance.
+    /// The path is set to an empty `PathBuf`.
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Sites {
-    pub fn new() -> Self {
         Self {
             path: PathBuf::new(),
             conserved: 0,
@@ -275,9 +327,26 @@ impl Sites {
             prop_pinf: 0.0,
         }
     }
+}
 
-    pub fn get_stats(&mut self, path: &Path, matrix: &SeqMatrix, datatype: &DataType) {
-        self.path = path.to_path_buf();
+impl Sites {
+    /// Create a new `Sites` instance.
+    /// The path is set to the given `Path`.
+    pub fn new(path: &Path) -> Self {
+        Self {
+            path: PathBuf::from(path),
+            conserved: 0,
+            variable: 0,
+            pars_inf: 0,
+            counts: 0,
+            prop_var: 0.0,
+            prop_cons: 0.0,
+            prop_pinf: 0.0,
+        }
+    }
+
+    /// Get the site statistics from an alignment.
+    pub fn get_stats(&mut self, matrix: &SeqMatrix, datatype: &DataType) {
         let site_matrix = self.index_sites(matrix, datatype);
         self.get_site_stats(&site_matrix);
         self.count_sites();
@@ -399,9 +468,12 @@ impl Sites {
     }
 }
 
+/// A struct to hold the character counts.
 #[derive(Debug, Clone)]
 pub struct CharMatrix {
+    /// The number of taxa in the alignment.
     pub ntax: usize,
+    /// The character counts.
     pub chars: Chars,
 }
 
@@ -412,6 +484,7 @@ impl Default for CharMatrix {
 }
 
 impl CharMatrix {
+    /// Create a new `CharMatrix`.
     pub fn new() -> Self {
         Self {
             ntax: 0,
@@ -419,6 +492,7 @@ impl CharMatrix {
         }
     }
 
+    /// Count the characters in an alignment.
     pub fn count_chars(&mut self, matrix: &SeqMatrix, header: &Header, datatype: &DataType) {
         self.ntax = header.ntax;
         self.chars.total_chars = header.nchar * self.ntax;
@@ -442,7 +516,10 @@ impl CharMatrix {
     }
 }
 
+/// A struct to hold the character counts per taxon.
 pub struct Taxa {
+    /// The character counts per taxon.
+    /// The key is the taxon name and the value is a `Chars` struct.
     pub records: HashMap<String, Chars>,
 }
 
@@ -453,12 +530,18 @@ impl Default for Taxa {
 }
 
 impl Taxa {
+    /// Create a new `Taxa`.
     pub fn new() -> Self {
         Self {
             records: HashMap::new(),
         }
     }
 
+    /// Summarize the character counts per taxon.
+    ///
+    /// # Arguments
+    /// * `aln` - A sequence matrix.
+    /// * `datatype` - The datatype of the alignment.
     pub fn summarize_taxa(&mut self, aln: &SeqMatrix, datatype: &DataType) {
         aln.iter().for_each(|(id, seq)| {
             let mut chars = Chars::new();
@@ -478,19 +561,31 @@ impl Taxa {
     }
 }
 
+/// A struct to hold the character counts per site.
+/// A struct to hold the character counts.
 #[derive(Debug, Clone)]
 pub struct Chars {
+    /// The character counts.
+    /// The key is the character and the value is the count.
     pub chars: HashMap<char, usize>,
+    /// The total number of characters in the alignment.
     pub total_chars: usize,
+    /// The number of G and C characters in the alignment.
     pub gc_count: usize,
+    /// The number of A and T characters in the alignment.
     pub at_count: usize,
+    /// The number of nucleotides in the alignment.
     pub nucleotides: usize,
+    /// The number of missing data characters in the alignment.
+    /// This includes gaps (-) and missing data (?) characters.
     pub missing_data: usize,
+    /// The proportion of missing data characters in the alignment.
     pub prop_missing_data: f64,
 }
 
 impl Chars {
-    fn new() -> Self {
+    /// Create a new `Chars`.
+    pub fn new() -> Self {
         Self {
             chars: HashMap::new(),
             total_chars: 0,
@@ -502,7 +597,8 @@ impl Chars {
         }
     }
 
-    fn count_gc(&mut self) {
+    /// Calculate GC count.
+    pub fn count_gc(&mut self) {
         self.gc_count = self
             .chars
             .iter()
@@ -511,7 +607,8 @@ impl Chars {
             .sum();
     }
 
-    fn count_at(&mut self) {
+    /// Calculate AT count.
+    pub fn count_at(&mut self) {
         self.at_count = self
             .chars
             .iter()
@@ -520,11 +617,13 @@ impl Chars {
             .sum();
     }
 
-    fn count_nucleotides(&mut self) {
+    /// Calculate nucleotide count.
+    pub fn count_nucleotides(&mut self) {
         self.nucleotides = self.gc_count + self.at_count;
     }
 
-    fn count_missing_data(&mut self) {
+    /// Calculate missing data count.
+    pub fn count_missing_data(&mut self) {
         self.missing_data = self
             .chars
             .iter()
@@ -533,7 +632,8 @@ impl Chars {
             .sum();
     }
 
-    fn calculate_prop_missing_data(&mut self) {
+    /// Calculate proportion of missing data.
+    pub fn calculate_prop_missing_data(&mut self) {
         self.prop_missing_data = self.missing_data as f64 / self.total_chars as f64;
     }
 }
@@ -560,8 +660,8 @@ mod test {
     fn pattern_count_test() {
         let site = b"AATT";
         let site_2 = b"AATTGG";
-        let pattern = Sites::new().get_patterns(site);
-        let pattern_2 = Sites::new().get_patterns(site_2);
+        let pattern = Sites::default().get_patterns(site);
+        let pattern_2 = Sites::default().get_patterns(site_2);
         assert_eq!(2, pattern);
         assert_eq!(3, pattern_2);
     }
@@ -571,7 +671,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new();
+        let mut site = Sites::default();
         let smat = site.index_sites(&mat, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -582,7 +682,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new();
+        let mut site = Sites::default();
         let smat = site.index_sites(&mat, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -593,7 +693,7 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::new();
+        let mut site = Sites::default();
         let smat = site.index_sites(&mat, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(1, site.pars_inf);
@@ -606,7 +706,7 @@ mod test {
         let input_format = InputFmt::Fasta;
         let aln = SeqParser::new(path, &DNA);
         let (matrix, _) = aln.get_alignment(&input_format);
-        let mut site = Sites::new();
+        let mut site = Sites::default();
         let smat = site.index_sites(&matrix, &DNA);
         site.get_site_stats(&smat);
         assert_eq!(18, site.conserved);

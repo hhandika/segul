@@ -126,13 +126,35 @@ impl<'a> Files<'a> {
     }
 }
 
+/// Parse IDs from input sequence files.
+/// # Example
+/// ```
+/// use std::path::PathBuf;
+/// use segul::helper::types::{DataType, InputFmt};
+/// use segul::helper::finder::IDs;
+/// use indexmap::IndexSet;
+///
+/// let files = vec![
+///    PathBuf::from("tests/files/concat/gene_1.nex"),
+///    PathBuf::from("tests/files/concat/gene_2.nex"),
+/// ];
+///
+/// let input_fmt = InputFmt::Nexus;
+/// let datatype = DataType::Dna;
+/// let ids = IDs::new(&files, &input_fmt, &datatype).id_unique();
+/// assert_eq!(ids.len(), 2);
+/// ```
 pub struct IDs<'a> {
+    /// Input files.
     files: &'a [PathBuf],
+    /// Input format.
     input_fmt: &'a InputFmt,
+    /// Input data type.
     datatype: &'a DataType,
 }
 
 impl<'a> IDs<'a> {
+    /// Create a new `IDs` instance.
     pub fn new(files: &'a [PathBuf], input_fmt: &'a InputFmt, datatype: &'a DataType) -> Self {
         Self {
             files,
@@ -141,9 +163,24 @@ impl<'a> IDs<'a> {
         }
     }
 
+    /// Parse IDs in sequence files.
+    /// Return a unique set of IDs.
     pub fn id_unique(&self) -> IndexSet<String> {
         let all_ids = self.parse_id();
         self.filter_unique(&all_ids)
+    }
+
+    fn filter_unique(&self, all_ids: &[IndexSet<String>]) -> IndexSet<String> {
+        let mut id = IndexSet::new();
+        all_ids.iter().for_each(|ids| {
+            ids.iter().for_each(|val| {
+                if !id.contains(val) {
+                    id.insert(val.to_string());
+                }
+            });
+        });
+
+        id
     }
 
     fn parse_id(&self) -> Vec<IndexSet<String>> {
@@ -179,19 +216,6 @@ impl<'a> IDs<'a> {
             s.send(fasta::parse_only_id(file)).unwrap();
         });
         receiver.iter().collect()
-    }
-
-    fn filter_unique(&self, all_ids: &[IndexSet<String>]) -> IndexSet<String> {
-        let mut id = IndexSet::new();
-        all_ids.iter().for_each(|ids| {
-            ids.iter().for_each(|val| {
-                if !id.contains(val) {
-                    id.insert(val.to_string());
-                }
-            });
-        });
-
-        id
     }
 }
 
