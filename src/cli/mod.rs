@@ -218,7 +218,7 @@ trait AlignSeqInput {
     }
 
     fn glob_paths(&self, dir: &str, input_fmt: &InputFmt) -> Vec<PathBuf> {
-        Files::new(Path::new(dir), input_fmt).find()
+        Files::new(Path::new(dir)).find(input_fmt)
     }
 }
 

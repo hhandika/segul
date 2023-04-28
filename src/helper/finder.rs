@@ -1,4 +1,4 @@
-// Module for files finding and IDs indexing.
+//! Find input files and parse IDs from input files.
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
@@ -8,6 +8,7 @@ use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::helper::sequence;
+use crate::helper::types::RawReadFmt;
 use crate::helper::types::{DataType, InputFmt};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
@@ -24,43 +25,95 @@ macro_rules! id_non_fasta {
     }};
 }
 
+/// Find input files from a directory.
 pub struct Files<'a> {
+    /// Input directory.
     dir: &'a Path,
-    input_fmt: &'a InputFmt,
+    /// Glob pattern.
     pattern: String,
 }
 
 impl<'a> Files<'a> {
-    pub fn new(dir: &'a Path, input_fmt: &'a InputFmt) -> Self {
+    /// Create a new `Files` instance.
+    pub fn new(dir: &'a Path) -> Self {
         Self {
             dir,
-            input_fmt,
             pattern: String::new(),
         }
     }
 
-    pub fn find(&mut self) -> Vec<PathBuf> {
-        self.pattern();
-        let files = glob(&self.pattern)
-            .expect("Failed globbing files")
-            .filter_map(|ok| ok.ok())
-            .collect::<Vec<PathBuf>>();
+    /// Find input files for sequence and alignment.
+    /// Return a vector of input files.
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::InputFmt;
+    /// use segul::helper::finder::Files;
+    ///
+    /// let dir = Path::new("tests/files/concat");
+    /// let input_fmt = InputFmt::Nexus;
+    /// let files = Files::new(&dir).find(&input_fmt);
+    /// assert_eq!(files.len(), 4);
+    /// ```
+    pub fn find(&mut self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
+        self.pattern(input_fmt);
+        let files = self.glob_files();
         self.check_glob_results(&files);
 
         files
     }
 
+    /// Find input files for raw reads.
+    /// Return a vector of input files.
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::RawReadFmt;
+    /// use segul::helper::finder::Files;
+    ///
+    /// let dir = Path::new("tests/files/raw");
+    /// let input_fmt = RawReadFmt::Fastq;
+    /// let files = Files::new(&dir).find_raw_read(&input_fmt);
+    /// assert_eq!(files.len(), 4);
+    pub fn find_raw_read(&mut self, input_fmt: &'a RawReadFmt) -> Vec<PathBuf> {
+        self.raw_pattern(&input_fmt);
+        let files = self.glob_files();
+        self.check_glob_results(&files);
+
+        files
+    }
+
+    fn glob_files(&self) -> Vec<PathBuf> {
+        glob(&self.pattern)
+            .expect("Failed globbing files")
+            .filter_map(|ok| ok.ok())
+            .collect::<Vec<PathBuf>>()
+    }
+
     fn check_glob_results(&self, files: &[PathBuf]) {
         if files.is_empty() {
             panic!(
-                "Failed finding input files. \
+                "Failed finding input files using {}. \
                 Check the input directory and the input format.",
+                self.pattern
             );
         }
     }
 
-    fn pattern(&mut self) {
-        self.pattern = match self.input_fmt {
+    fn raw_pattern(&mut self, input_fmt: &'a RawReadFmt) {
+        self.pattern = match input_fmt {
+            RawReadFmt::Fastq => format!("{}/*.f*q", self.dir.display()),
+            RawReadFmt::Gzip => format!("{}/*.f*q.gz*", self.dir.display()),
+            RawReadFmt::Auto => panic!(
+                "The input format is the default auto. \
+            The program cannot use auto for dir input. \
+            Try to specify input format."
+            ),
+        };
+    }
+
+    fn pattern(&mut self, input_fmt: &'a InputFmt) {
+        self.pattern = match input_fmt {
             InputFmt::Fasta => format!("{}/*.fa*", self.dir.display()),
             InputFmt::Nexus => format!("{}/*.nex*", self.dir.display()),
             InputFmt::Phylip => format!("{}/*.phy*", self.dir.display()),
@@ -147,25 +200,26 @@ mod test {
     use super::*;
 
     macro_rules! input {
-        ($files: ident, $fmt: ident) => {
+        ($files: ident) => {
             let path = Path::new("tests/files/concat");
-            let $fmt = InputFmt::Nexus;
 
-            let mut $files = Files::new(path, &$fmt);
+            let mut $files = Files::new(path);
         };
     }
 
     #[test]
     fn files_test() {
-        input!(finder, fmt);
-        let files = finder.find();
+        input!(finder);
+        let fmt = InputFmt::Nexus;
+        let files = finder.find(&fmt);
         assert_eq!(4, files.len());
     }
 
     #[test]
     fn test_pattern() {
-        input!(files, fmt);
-        files.pattern();
+        input!(files);
+        let fmt = InputFmt::Nexus;
+        files.pattern(&fmt);
         assert_eq!("tests/files/concat/*.nex*", files.pattern);
     }
 
@@ -173,16 +227,17 @@ mod test {
     #[should_panic]
     fn check_empty_files_test() {
         let path = Path::new("tests/files/empty/");
-        let mut finder = Files::new(path, &InputFmt::Nexus);
-        let files = finder.find();
+        let mut finder = Files::new(path);
+        let files = finder.find(&InputFmt::Nexus);
         finder.check_glob_results(&files);
     }
 
     #[test]
     fn id_test() {
-        input!(finder, input_fmt);
+        input!(finder);
+        let input_fmt = InputFmt::Nexus;
         let datatype = DataType::Dna;
-        let files = finder.find();
+        let files = finder.find(&input_fmt);
         let id = IDs::new(&files, &input_fmt, &datatype);
         let ids = id.id_unique();
         assert_eq!(3, ids.len());

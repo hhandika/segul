@@ -222,7 +222,7 @@ mod test {
     #[test]
     fn test_min_pinf() {
         let path = Path::new(PATH);
-        let files = Files::new(path, &INPUT_FMT).find();
+        let files = Files::new(path).find(&INPUT_FMT);
         let ftr = SeqFilter::new(
             &files,
             &INPUT_FMT,
