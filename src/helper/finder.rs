@@ -208,11 +208,21 @@ mod test {
     }
 
     #[test]
-    fn files_test() {
+    fn test_files() {
         input!(finder);
         let fmt = InputFmt::Nexus;
         let files = finder.find(&fmt);
         assert_eq!(4, files.len());
+    }
+
+    #[test]
+    fn test_raw_pattern() {
+        let path = Path::new("tests/files/raw");
+        let fmt = RawReadFmt::Fastq;
+        let mut files = Files::new(path);
+        let found_files = files.find_raw_read(&fmt);
+        assert_eq!(4, found_files.len());
+        assert_eq!("tests/files/raw/*.f*q", files.pattern);
     }
 
     #[test]
@@ -225,7 +235,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn check_empty_files_test() {
+    fn test_check_empty_files() {
         let path = Path::new("tests/files/empty/");
         let mut finder = Files::new(path);
         let files = finder.find(&InputFmt::Nexus);
@@ -233,7 +243,7 @@ mod test {
     }
 
     #[test]
-    fn id_test() {
+    fn test_id() {
         input!(finder);
         let input_fmt = InputFmt::Nexus;
         let datatype = DataType::Dna;
