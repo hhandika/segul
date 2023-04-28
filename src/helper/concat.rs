@@ -29,6 +29,9 @@ use crate::helper::types::{DataType, Header, InputFmt, Partition, SeqMatrix};
 /// let datatype = DataType::Dna;
 /// let mut concat = Concat::new(&mut files, &input_fmt, &datatype);
 /// concat.concat_alignment(&spinner);
+///
+/// // With no spinner
+/// concat.concat_alignment_no_spinner();
 /// ```
 pub struct Concat<'a> {
     /// The concatenated alignment.
@@ -46,6 +49,7 @@ pub struct Concat<'a> {
 }
 
 impl<'a> Concat<'a> {
+    /// Create a new Concat instance.
     pub fn new(files: &'a mut [PathBuf], input_fmt: &'a InputFmt, datatype: &'a DataType) -> Self {
         Self {
             input_fmt,
@@ -57,7 +61,7 @@ impl<'a> Concat<'a> {
         }
     }
 
-    /// Concatenate alignments, spinner included for CLI.
+    /// Concatenate alignments, required a spinner for stdout.
     pub fn concat_alignment(&mut self, spin: &ProgressBar) {
         alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
@@ -68,7 +72,7 @@ impl<'a> Concat<'a> {
         self.match_header_datatype();
     }
 
-    /// Concatenate alignments, no spinner for GUI.
+    /// Concatenate alignments, without a spinner.
     pub fn concat_alignment_no_spinner(&mut self) {
         alphanumeric_sort::sort_path_slice(self.files);
         let id = IDs::new(self.files, self.input_fmt, self.datatype).id_unique();
