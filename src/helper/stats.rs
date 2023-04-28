@@ -1,3 +1,4 @@
+//! Statistics for the alignment and sequences.
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 

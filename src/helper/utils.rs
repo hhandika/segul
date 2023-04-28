@@ -1,3 +1,4 @@
+//! Utility functions for the CLI.
 use std::iter;
 
 use chrono::NaiveTime;
