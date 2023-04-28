@@ -39,6 +39,14 @@ impl<'a> Concat<'a> {
         self.match_header_datatype();
     }
 
+    pub fn concat_alignment_no_spinner(&mut self) {
+        alphanumeric_sort::sort_path_slice(self.files);
+        let id = IDs::new(self.files, self.input_fmt, self.datatype).id_unique();
+        self.concat(&id);
+        self.header.ntax = self.alignment.len();
+        self.match_header_datatype();
+    }
+
     fn concat(&mut self, id: &IndexSet<String>) {
         let mut alignment = IndexMap::with_capacity(id.len());
         let mut nchar = 0;
