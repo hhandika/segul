@@ -1,3 +1,4 @@
+//! Concatenate multiple alignments into a single alignment.
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
@@ -8,12 +9,39 @@ use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, Partition, SeqMatrix};
 
+/// Concatenate multiple alignments into a single alignment.
+/// # Arguments
+/// * `files` - A mutable slice of PathBuf that holds the alignment files.
+/// * `input_fmt` - The alignment input format.
+/// * `datatype` - The input data type.
+/// # Example
+/// ```
+/// use std::path::PathBuf;
+/// use segul::helper::concat::Concat;
+/// use segul::helper::types::{DataType, InputFmt};
+///
+/// let mut files = vec![
+///     PathBuf::from("tests/files/concat/gene_1.nex"),
+///    PathBuf::from("tests/files/concat/gene_2.nex"),
+/// ];
+/// let spinner = segul::helper::utils::set_spinner();
+/// let input_fmt = InputFmt::Nexus;
+/// let datatype = DataType::Dna;
+/// let mut concat = Concat::new(&mut files, &input_fmt, &datatype);
+/// concat.concat_alignment(&spinner);
+/// ```
 pub struct Concat<'a> {
+    /// The concatenated alignment.
     pub alignment: SeqMatrix,
+    /// The header of the concatenated alignment.
     pub header: Header,
+    /// The partitions of the concatenated alignment.
     pub partition: Vec<Partition>,
+    /// The input data type.
     datatype: &'a DataType,
+    /// The alignment input format.
     input_fmt: &'a InputFmt,
+    /// The alignment files.
     files: &'a mut [PathBuf],
 }
 
@@ -29,6 +57,7 @@ impl<'a> Concat<'a> {
         }
     }
 
+    /// Concatenate alignments, spinner included for CLI.
     pub fn concat_alignment(&mut self, spin: &ProgressBar) {
         alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
@@ -39,6 +68,7 @@ impl<'a> Concat<'a> {
         self.match_header_datatype();
     }
 
+    /// Concatenate alignments, no spinner for GUI.
     pub fn concat_alignment_no_spinner(&mut self) {
         alphanumeric_sort::sort_path_slice(self.files);
         let id = IDs::new(self.files, self.input_fmt, self.datatype).id_unique();
