@@ -1,5 +1,5 @@
-//! # Utilities for alignment summary statistic and manipulation
-//! SEGUL provide fast and memory efficient utilities for alignment summary statistic and manipulation.
+//! # Utilities for alignment manipulation and summary statistics
+//! SEGUL provides fast and memory efficient utilities for alignment manipulation and summary statistics.
 //!
 //! ## Features:
 //! 1. Computing alignment summary statistics.
