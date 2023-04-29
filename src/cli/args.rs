@@ -18,7 +18,7 @@ pub(crate) struct Cli {
 pub(crate) enum MainSubcommand {
     #[command(subcommand, about = "Raw read sequence analyses", name = "raw")]
     RawRead(RawReadSubcommand),
-    #[command(subcommand, about = "Contigous sequence analyses", name = "contig")]
+    #[command(subcommand, about = "Contiguous sequence analyses", name = "contig")]
     Contig(ContigSubcommand),
     #[command(subcommand, about = "Alignment analyses", name = "align")]
     Alignment(AlignmentSubcommand),
