@@ -1,3 +1,5 @@
+//! Check input and output sequences
+
 use std::ffi::OsStr;
 use std::path::Path;
 
@@ -14,6 +16,18 @@ macro_rules! parse_sequence {
     }};
 }
 
+/// Infer input format automatically based on the file extension.
+/// Return the input format.
+/// # Example
+/// ```
+/// use std::path::Path;
+/// use segul::helper::types::InputFmt;
+/// use segul::helper::sequence::infer_input_auto;
+///
+/// let file = Path::new("tests/files/simple.fas");
+/// let input_fmt = infer_input_auto(&file);
+/// assert_eq!(input_fmt, InputFmt::Fasta);
+/// ```
 pub fn infer_input_auto(input: &Path) -> InputFmt {
     let ext: &str = input
         .extension()
@@ -30,16 +44,38 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
     }
 }
 
+/// Parse sequence files.
 pub struct SeqParser<'a> {
+    /// Path to the sequence file.
     file: &'a Path,
+    /// The data type of the sequences.
     datatype: &'a DataType,
 }
 
 impl<'a> SeqParser<'a> {
+    /// Create a new `SeqParser` instance.
     pub fn new(file: &'a Path, datatype: &'a DataType) -> Self {
         Self { file, datatype }
     }
 
+    /// Parse sequence based on the input format and check if the sequences are aligned.
+    /// Return a tuple of the sequence matrix and the header.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::{DataType, InputFmt};
+    /// use segul::helper::sequence::SeqParser;
+    ///
+    /// let file = Path::new("tests/files/simple.fas");
+    /// let datatype = &DataType::Dna;
+    /// let input_fmt = &InputFmt::Fasta;
+    ///
+    /// let seq = SeqParser::new(&file, datatype);
+    /// let (matrix, header) = seq.get_alignment(input_fmt);
+    /// assert_eq!(matrix.len(), 2);
+    /// assert_eq!(header.aligned, true);
+    /// ```
     pub fn get_alignment(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
         let (matrix, header) = self.parse(input_fmt);
         assert!(
@@ -52,6 +88,8 @@ impl<'a> SeqParser<'a> {
         (matrix, header)
     }
 
+    /// Parse sequence based on the input format.
+    /// Similar to `get_alignment` but does not check if the sequences are aligned.
     pub fn parse(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
         match input_fmt {
             InputFmt::Fasta => parse_sequence!(self, Fasta),
@@ -65,9 +103,32 @@ impl<'a> SeqParser<'a> {
     }
 }
 
+/// Get a sequence shortest and longest length and check if it is aligned.
+/// # Example
+/// ```
+/// use std::path::Path;
+/// use segul::helper::types::{DataType, InputFmt};
+/// use segul::helper::sequence::{SeqParser, SeqCheck};
+///
+/// let file = Path::new("tests/files/simple.fas");
+/// let datatype = &DataType::Dna;
+/// let input_fmt = &InputFmt::Fasta;
+///
+/// let seq = SeqParser::new(&file, datatype);
+/// let (matrix, _) = seq.parse(input_fmt);
+///
+/// let mut seq_check = SeqCheck::new();
+/// seq_check.check(&matrix);
+/// assert_eq!(seq_check.shortest, 6);
+/// assert_eq!(seq_check.longest, 6);
+/// assert_eq!(seq_check.is_alignment, true);
+/// ```
 pub struct SeqCheck {
+    /// The shortest sequence length.
     pub shortest: usize,
+    /// The longest sequence length.
     pub longest: usize,
+    /// A boolean indicating if the sequences are aligned.
     pub is_alignment: bool,
 }
 
@@ -78,6 +139,7 @@ impl Default for SeqCheck {
 }
 
 impl SeqCheck {
+    /// Create a new `SeqCheck` instance.
     pub fn new() -> Self {
         Self {
             shortest: 0,
@@ -86,14 +148,11 @@ impl SeqCheck {
         }
     }
 
+    /// Check if the sequences are aligned.
     pub fn check(&mut self, matrix: &SeqMatrix) {
         self.shortest_seq_len(matrix);
         self.longest_seq_len(matrix);
         self.check_is_alignment();
-    }
-
-    fn check_is_alignment(&mut self) {
-        self.is_alignment = self.shortest == self.longest;
     }
 
     fn shortest_seq_len(&mut self, matrix: &SeqMatrix) {
@@ -110,6 +169,10 @@ impl SeqCheck {
             .map(|s| s.len())
             .max_by(|a, b| a.cmp(b))
             .expect("Failed getting the longest sequence length");
+    }
+
+    fn check_is_alignment(&mut self) {
+        self.is_alignment = self.shortest == self.longest;
     }
 }
 

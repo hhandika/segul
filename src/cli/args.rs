@@ -91,8 +91,8 @@ pub(crate) struct RawSummaryArgs {
         help = "Specify input format", 
         default_value_t = RawReadFmt::Auto,
         value_parser = 
-            builder::PossibleValuesParser::new(["auto","fasta","nexus","phylip"])
-            .map(|x| x.parse::<RawReadFmt>().unwrap()),
+            builder::PossibleValuesParser::new(["auto","fastq","gzip"])
+            .map(|x| x.parse::<RawReadFmt>().expect("Invalid input format")),
     )]
     pub(crate) input_format: RawReadFmt,
     #[arg(

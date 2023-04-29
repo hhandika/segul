@@ -1,4 +1,4 @@
-//! Handle segul main functions. Mostly used by the Cli app.
+//! Handle segul main functions.
 pub mod align;
 pub mod raw;
 pub mod sequence;

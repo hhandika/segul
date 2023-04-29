@@ -28,7 +28,7 @@ macro_rules! test_results {
         let pred = predicates::path::is_dir();
         let res_path = $tmp_dir.path().join($path);
 
-        let files = Files::new(&res_path, &InputFmt::$fmt).find();
+        let files = Files::new(&res_path).find(&InputFmt::$fmt);
 
         assert!(pred.eval(&res_path));
         assert_eq!($res, files.len());
