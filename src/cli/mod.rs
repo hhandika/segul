@@ -179,7 +179,7 @@ trait InputCli {
             .iter()
             .flat_map(|i| {
                 glob(i)
-                    .expect("Failed globbing files")
+                    .expect("Failed finding files")
                     .filter_map(|ok| ok.ok())
                     .collect::<Vec<PathBuf>>()
             })
@@ -234,6 +234,12 @@ impl InputPrint for RawReadPrint<'_> {
             log::info!("{:18}: {}", "Input path", "STDIN");
         }
         log::info!("{:18}: {}", "File counts", utils::fmt_num(&self.fcounts));
+    }
+}
+
+trait RawInputCli {
+    fn glob_paths(&self, dir: &str, input_fmt: &RawReadFmt) -> Vec<PathBuf> {
+        Files::new(Path::new(dir)).find_raw_read(input_fmt)
     }
 }
 

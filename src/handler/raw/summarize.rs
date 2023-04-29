@@ -2,7 +2,7 @@
 
 use std::{
     fs::{self, File},
-    io::{BufWriter, Result, Write},
+    io::{BufRead, BufReader, BufWriter, Result, Write},
     path::{Path, PathBuf},
     sync::mpsc::channel,
 };
@@ -71,7 +71,7 @@ impl<'a> RawSummaryHandler<'a> {
     // Use single tread to reduce memory usage
     fn summarize_lowmem(&self) {
         self.inputs.iter().for_each(|path| {
-            let records = self.parse_record(path);
+            let records = self.parse_fastq(path);
             let output_dir = self.output.join("tsv");
             let fname = format!(
                 "{}_{}",
@@ -91,10 +91,7 @@ impl<'a> RawSummaryHandler<'a> {
         let (sender, receiver) = channel();
 
         self.inputs.par_iter().for_each_with(sender, |s, p| {
-            if self.map {
-                self.map_record(p);
-            }
-            let record = self.parse_record(p);
+            let record = self.parse_fastq(p);
 
             s.send(record)
                 .expect("Failed parallel processing fastq files");
@@ -103,9 +100,31 @@ impl<'a> RawSummaryHandler<'a> {
         receiver.iter().collect()
     }
 
-    fn parse_record(&self, path: &Path) -> (FastqRecords, QScoreRecords) {
-        let gzip_buff = decode_gzip(path);
-        let mut reader = Reader::new(gzip_buff);
+    fn parse_fastq(&self, path: &Path) -> (FastqRecords, QScoreRecords) {
+        match self.input_fmt {
+            RawReadFmt::Fastq => {
+                let file = File::open(path).expect("Failed opening fastq file");
+                let mut buff = BufReader::new(file);
+                if self.map {
+                    self.map_record(&mut buff, path)
+                } else {
+                    self.parse_record(&mut buff, path)
+                }
+            }
+            RawReadFmt::Gzip => {
+                let mut decoder = decode_gzip(path);
+                if self.map {
+                    self.map_record(&mut decoder, path)
+                } else {
+                    self.parse_record(&mut decoder, path)
+                }
+            }
+            _ => unreachable!("Unsupported input format"),
+        }
+    }
+
+    fn parse_record<R: BufRead>(&self, buff: &mut R, path: &Path) -> (FastqRecords, QScoreRecords) {
+        let mut reader = Reader::new(buff);
         let mut reads = Vec::new();
         let mut q_records = Vec::new();
 
@@ -128,9 +147,8 @@ impl<'a> RawSummaryHandler<'a> {
         self.summarize_records(path, &reads, &q_records)
     }
 
-    fn map_record(&self, path: &Path) -> (FastqRecords, QScoreRecords) {
-        let gzip_buff = decode_gzip(path);
-        let mut reader = Reader::new(gzip_buff);
+    fn map_record<R: BufRead>(&self, buff: &mut R, path: &Path) -> (FastqRecords, QScoreRecords) {
+        let mut reader = Reader::new(buff);
         let mut reads = Vec::new();
         let mut q_records = Vec::new();
 

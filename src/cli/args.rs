@@ -280,7 +280,8 @@ pub(crate) struct SequenceExtractArgs {
     #[arg(
         long = "re",
         help = "Specify regular expression for extracting sequences",
-        require_equals = true
+        require_equals = true,
+        conflicts_with_all(["id", "file"]),
     )]
     pub(crate) re: Option<String>,
     #[arg(
@@ -469,7 +470,8 @@ pub(crate) struct IOArgs {
         long,
         value_name = "PATH",
         help = "Input a directory",
-        required_unless_present("input")
+        required_unless_present("input"),
+        conflicts_with("input")
     )]
     pub(crate) dir: Option<String>,
     #[arg(short, long, help = "Input a path (allow wildcard)")]
