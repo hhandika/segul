@@ -291,7 +291,7 @@ impl<'a> RawSummaryHandler<'a> {
 
     fn print_output_info(&self) {
         log::info!("{}", "Output".yellow());
-        log::info!("{:18}: {}", "Summary file", "summary.tsv")
+        log::info!("{:18}: {}", "Dir", self.output.display());
     }
 
     fn write_records<W: Write>(
