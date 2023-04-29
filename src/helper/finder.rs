@@ -76,7 +76,7 @@ impl<'a> Files<'a> {
     /// let files = Files::new(&dir).find_raw_read(&input_fmt);
     /// assert_eq!(files.len(), 4);
     pub fn find_raw_read(&mut self, input_fmt: &'a RawReadFmt) -> Vec<PathBuf> {
-        self.raw_pattern(&input_fmt);
+        self.raw_pattern(input_fmt);
         let files = self.glob_files();
         self.check_glob_results(&files);
 
@@ -85,7 +85,7 @@ impl<'a> Files<'a> {
 
     fn glob_files(&self) -> Vec<PathBuf> {
         glob(&self.pattern)
-            .expect("Failed globbing files")
+            .expect("Failed finding files with matching pattern")
             .filter_map(|ok| ok.ok())
             .collect::<Vec<PathBuf>>()
     }

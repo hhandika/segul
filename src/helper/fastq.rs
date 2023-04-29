@@ -33,7 +33,7 @@ pub struct FastqRecords {
 }
 
 impl FastqRecords {
-    /// Create a new FastqRecords struct
+    /// Create a new FastqRecords instance
     pub fn new(path: &Path) -> Self {
         Self {
             path: PathBuf::from(path),
@@ -212,6 +212,12 @@ pub struct QScoreStream {
     pub max: Option<u8>,
     sum: usize,
     count: usize,
+}
+
+impl Default for QScoreStream {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl QScoreStream {

@@ -583,6 +583,12 @@ pub struct Chars {
     pub prop_missing_data: f64,
 }
 
+impl Default for Chars {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Chars {
     /// Create a new `Chars`.
     pub fn new() -> Self {
@@ -683,8 +689,8 @@ mod test {
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::default();
-        let smat = site.index_sites(&mat, &DNA);
-        site.get_site_stats(&smat);
+        let site_mat = site.index_sites(&mat, &DNA);
+        site.get_site_stats(&site_mat);
         assert_eq!(1, site.pars_inf);
     }
 
