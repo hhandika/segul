@@ -6,7 +6,7 @@ use rayon::prelude::*;
 use crate::handler::OutputPrint;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
-use crate::helper::{filenames, utils};
+use crate::helper::{files, utils};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for Converter<'_> {}
@@ -37,7 +37,7 @@ impl<'a> Converter<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Converting sequence format...");
         files.par_iter().for_each(|file| {
-            let output_fname = filenames::create_output_fname(output, file, self.output_fmt);
+            let output_fname = files::create_output_fname(output, file, self.output_fmt);
             self.convert_any(file, &output_fname);
         });
         spin.finish_with_message("Finished converting sequence format!\n");

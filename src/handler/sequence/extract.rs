@@ -9,7 +9,7 @@ use regex::Regex;
 use crate::handler::OutputPrint;
 use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
-use crate::helper::{filenames, utils};
+use crate::helper::{files, utils};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for Extract<'_> {}
@@ -44,7 +44,7 @@ impl<'a> Extract<'a> {
             let matrix = self.get_matrix(seq);
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
-                let outname = filenames::create_output_fname(output, file, output_fmt);
+                let outname = files::create_output_fname(output, file, output_fmt);
                 let mut writer = SeqWriter::new(&outname, &matrix, &header);
                 writer
                     .write_sequence(output_fmt)

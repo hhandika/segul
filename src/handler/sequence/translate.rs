@@ -10,7 +10,7 @@ use crate::handler::OutputPrint;
 use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::translation::NcbiTables;
 use crate::helper::types::{DataType, GeneticCodes, Header, InputFmt, OutputFmt, SeqMatrix};
-use crate::helper::{filenames, utils};
+use crate::helper::{files, utils};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for Translate<'_> {}
@@ -44,7 +44,7 @@ impl<'a> Translate<'a> {
         files.par_iter().for_each(|file| {
             let (mut seq, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
-            let outname = filenames::create_output_fname(output, file, self.output_fmt);
+            let outname = files::create_output_fname(output, file, self.output_fmt);
             let mut writer = SeqWriter::new(&outname, &trans_mat, &header);
             writer
                 .write_sequence(self.output_fmt)
@@ -65,7 +65,7 @@ impl<'a> Translate<'a> {
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
             let output_dir = output.join(format!("RF-{}", frame));
             fs::create_dir_all(output).expect("Failed creating an output directory");
-            let outname = filenames::create_output_fname(&output_dir, file, self.output_fmt);
+            let outname = files::create_output_fname(&output_dir, file, self.output_fmt);
             let mut writer = SeqWriter::new(&outname, &trans_mat, &header);
             writer
                 .write_sequence(self.output_fmt)

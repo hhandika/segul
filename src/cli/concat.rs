@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use super::{collect_paths, AlignSeqInput, AlignSeqPrint, ConcatCli, InputCli, OutputCli};
 use crate::cli::args::AlignConcatArgs;
 use crate::handler::align::concat::ConcatHandler;
-use crate::helper::filenames;
+use crate::helper::files;
 
 impl ConcatCli for ConcatParser<'_> {}
 impl OutputCli for ConcatParser<'_> {}
@@ -28,7 +28,7 @@ impl<'a> ConcatParser<'a> {
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
         let prefix = self.parse_prefix(&self.args.concat.prefix, &self.args.output);
-        let output = filenames::create_output_fname(&self.args.output, &prefix, &output_fmt);
+        let output = files::create_output_fname(&self.args.output, &prefix, &output_fmt);
         let part_fmt = self.parse_partition_fmt(&self.args.concat.part_fmt, self.args.concat.codon);
         self.check_partition_format(&output_fmt, &part_fmt);
         let task_desc = "Alignment concatenation";

@@ -178,6 +178,9 @@ mod test {
     }
 
     #[test]
+    fn test_read_count() {}
+
+    #[test]
     fn test_qscore_parser() {
         let scores = b"II";
         let scores_2 = b"00";

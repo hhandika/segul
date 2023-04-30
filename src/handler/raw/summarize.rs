@@ -15,14 +15,12 @@ use rayon::prelude::*;
 
 use crate::{
     helper::{
+        files,
         stats::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
         types::{RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    parser::{
-        fastq::{self, FastqSummaryParser},
-        gzip::decode_gzip,
-    },
+    parser::fastq::{self, FastqSummaryParser},
     writer::raw::RawSummaryWriter,
 };
 
@@ -104,12 +102,11 @@ impl<'a> RawSummaryHandler<'a> {
         self.inputs.par_iter().for_each_with(sender, |s, p| {
             let count = match self.input_fmt {
                 RawReadFmt::Fastq => {
-                    let file = File::open(p).expect("Failed opening fastq file");
-                    let mut buff = BufReader::new(file);
+                    let mut buff = files::open_file(p);
                     fastq::count_reads(&mut buff)
                 }
                 RawReadFmt::Gzip => {
-                    let mut decoder = decode_gzip(p);
+                    let mut decoder = files::decode_gzip(p);
                     fastq::count_reads(&mut decoder)
                 }
                 _ => unreachable!("Unsupported input format"),
@@ -147,7 +144,7 @@ impl<'a> RawSummaryHandler<'a> {
                 }
             }
             RawReadFmt::Gzip => {
-                let mut decoder = decode_gzip(path);
+                let mut decoder = files::decode_gzip(path);
                 if self.mode == &SummaryMode::Complete {
                     self.map_record(&mut decoder, path)
                 } else {

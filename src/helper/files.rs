@@ -1,7 +1,25 @@
 //! Helper functions for creating output filenames
 use std::path::{Path, PathBuf};
+use std::{fs::File, io::BufReader};
 
 use crate::helper::types::OutputFmt;
+
+use flate2::read::MultiGzDecoder;
+
+/// Decode gzip compressed files
+/// Returns a BufReader of the decoded file
+pub fn decode_gzip(path: &Path) -> BufReader<MultiGzDecoder<File>> {
+    let file = File::open(path).expect("Failed to open file");
+    let decoder = MultiGzDecoder::new(file);
+    BufReader::new(decoder)
+}
+
+/// Open a file
+/// Returns a BufReader of the file
+pub fn open_file(path: &Path) -> BufReader<File> {
+    let file = File::open(path).expect("Failed opening fastq file");
+    BufReader::new(file)
+}
 
 /// Combine the output directory and the input filename
 /// Returns a PathBuf of the output path

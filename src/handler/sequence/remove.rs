@@ -5,7 +5,7 @@ use rayon::prelude::*;
 use regex::Regex;
 
 use crate::handler::OutputPrint;
-use crate::helper::filenames;
+use crate::helper::files;
 use crate::helper::finder::IDs;
 use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
@@ -81,7 +81,7 @@ impl<'a> Remove<'a> {
     }
 
     fn write_output(&self, matrix: &SeqMatrix, header: &Header, file: &Path) {
-        let outpath = filenames::create_output_fname(self.outdir, file, self.output_fmt);
+        let outpath = files::create_output_fname(self.outdir, file, self.output_fmt);
         let mut writer = SeqWriter::new(&outpath, matrix, header);
         writer
             .write_sequence(self.output_fmt)
@@ -90,8 +90,7 @@ impl<'a> Remove<'a> {
 
     fn remove_sequence(&self, fpath: &Path, ids: &[String]) -> (SeqMatrix, Header) {
         let (mut matrix, header) = SeqParser::new(fpath, self.datatype).parse(self.input_fmt);
-        ids.iter()
-            .for_each(|id| if matrix.remove(id).is_some() {});
+        ids.iter().for_each(|id| if matrix.remove(id).is_some() {});
 
         let fnl_header = if !matrix.is_empty() && header.ntax != matrix.len() {
             self.get_header(&matrix)

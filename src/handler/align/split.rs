@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::handler::{OutputPrint, PartitionPrint};
-use crate::helper::filenames;
+use crate::helper::files;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::utils;
@@ -67,8 +67,7 @@ impl<'a> Splitter<'a> {
             header.ntax = matrix.len();
             header.aligned = true;
             let filename = self.parse_filename(&part.gene, prefix);
-            let output_path =
-                filenames::create_output_fname(self.output, &filename, self.output_fmt);
+            let output_path = files::create_output_fname(self.output, &filename, self.output_fmt);
             let mut out = SeqWriter::new(&output_path, &matrix, &header);
             out.write_sequence(self.output_fmt)
                 .expect("Failed writing the output file");
@@ -98,7 +97,7 @@ impl<'a> Splitter<'a> {
     ) -> SeqMatrix {
         let mut seq_matrix: SeqMatrix = IndexMap::new();
         matrix.iter().for_each(|(taxon, seq)| {
-            // We substract the start position to match rust indexing.
+            // We subtract the start position to match rust indexing.
             let part_seq = self.slice_sequence(seq, start_pos, end_pos);
             if !self.is_empty_seq(&part_seq) {
                 seq_matrix.insert(taxon.clone(), part_seq);

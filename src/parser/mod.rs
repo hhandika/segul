@@ -10,7 +10,6 @@
 pub mod delimited;
 pub mod fasta;
 pub mod fastq;
-pub mod gzip;
 pub mod nexus;
 pub mod partition;
 pub mod phylip;
