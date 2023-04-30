@@ -17,7 +17,7 @@ pub fn decode_gzip(path: &Path) -> BufReader<MultiGzDecoder<File>> {
 /// Open a file
 /// Returns a BufReader of the file
 pub fn open_file(path: &Path) -> BufReader<File> {
-    let file = File::open(path).expect("Failed opening fastq file");
+    let file = File::open(path).expect("Failed opening a file");
     BufReader::new(file)
 }
 
