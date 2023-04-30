@@ -8,17 +8,17 @@ use std::{
 };
 
 use colored::Colorize;
-use noodles::fastq::Reader;
+
 use rayon::prelude::*;
 use std::collections::BTreeMap;
 
 use crate::{
     helper::{
-        fastq::{FastqRecords, QScoreRecords, QScoreStream, ReadQScore, ReadRecord},
+        stats::{FastqRecords, QScoreRecords, QScoreStream, ReadQScore, ReadRecord},
         types::{RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    parser::{fastq::QScoreParser, gzip::decode_gzip},
+    parser::{fastq::FastqSummaryParser, gzip::decode_gzip},
 };
 
 const DEFAULT_OUTPUT: &str = "summary.tsv";
@@ -29,7 +29,6 @@ pub struct RawSummaryHandler<'a> {
     pub input_fmt: &'a RawReadFmt,
     pub mode: &'a SummaryMode,
     pub output: &'a Path,
-    pub map: bool,
 }
 
 impl<'a> RawSummaryHandler<'a> {
@@ -44,7 +43,6 @@ impl<'a> RawSummaryHandler<'a> {
             input_fmt,
             mode,
             output,
-            map: true,
         }
     }
 
@@ -56,20 +54,19 @@ impl<'a> RawSummaryHandler<'a> {
             self.summarize_lowmem();
         } else {
             let mut records = self.par_summarize();
-
+            // Sort records by file name
+            records.sort_by(|a, b| a.0.path.cmp(&b.0.path));
             spin.set_message("Writing records\n");
             let mut writer = self.create_output_file(self.output, DEFAULT_OUTPUT);
             self.write_records(&mut writer, &records)
                 .expect("Failed writing to file");
-            // Sort records by file name
-            records.sort_by(|a, b| a.0.path.cmp(&b.0.path));
         }
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_output_info();
     }
 
-    // Use single tread to reduce memory usage
-    fn summarize_lowmem(&self) {
+    // Use a single tread to reduce memory usage
+    pub fn summarize_lowmem(&self) {
         self.inputs.iter().for_each(|path| {
             let records = self.parse_fastq(path);
             let output_dir = self.output.join("tsv");
@@ -105,7 +102,7 @@ impl<'a> RawSummaryHandler<'a> {
             RawReadFmt::Fastq => {
                 let file = File::open(path).expect("Failed opening fastq file");
                 let mut buff = BufReader::new(file);
-                if self.map {
+                if self.mode == &SummaryMode::Complete {
                     self.map_record(&mut buff, path)
                 } else {
                     self.parse_record(&mut buff, path)
@@ -113,7 +110,7 @@ impl<'a> RawSummaryHandler<'a> {
             }
             RawReadFmt::Gzip => {
                 let mut decoder = decode_gzip(path);
-                if self.map {
+                if self.mode == &SummaryMode::Complete {
                     self.map_record(&mut decoder, path)
                 } else {
                     self.parse_record(&mut decoder, path)
@@ -124,84 +121,18 @@ impl<'a> RawSummaryHandler<'a> {
     }
 
     fn parse_record<R: BufRead>(&self, buff: &mut R, path: &Path) -> (FastqRecords, QScoreRecords) {
-        let mut reader = Reader::new(buff);
-        let mut reads = Vec::new();
-        let mut q_records = Vec::new();
-
-        reader.records().for_each(|r| match r {
-            Ok(record) => {
-                let mut read_records = ReadRecord::new();
-                read_records.summarize(record.sequence());
-                reads.push(read_records);
-                let mut read_qscores = ReadQScore::new();
-                let qrecord = record.quality_scores();
-                let qscores = self.parse_qscores(qrecord);
-                read_qscores.summarize(&qscores);
-                q_records.push(read_qscores);
-            }
-            Err(e) => {
-                log::error!("Error parsing fastq record: {}", e);
-            }
-        });
-
-        self.summarize_records(path, &reads, &q_records)
+        let mut records = FastqSummaryParser::new();
+        records.parse_record(buff);
+        self.summarize_records(path, &records.reads, &records.qscores)
     }
 
     fn map_record<R: BufRead>(&self, buff: &mut R, path: &Path) -> (FastqRecords, QScoreRecords) {
-        let mut reader = Reader::new(buff);
-        let mut reads = Vec::new();
-        let mut q_records = Vec::new();
-
-        // We use BTreeMap to keep the order of the reads
-        let mut read_map: BTreeMap<i32, ReadRecord> = BTreeMap::new();
-        let mut qscore_map: BTreeMap<i32, QScoreStream> = BTreeMap::new();
-
-        reader.records().for_each(|r| match r {
-            Ok(record) => {
-                let mut read_records = ReadRecord::new();
-                let sequence = record.sequence();
-                let qrecord = record.quality_scores();
-                read_records.summarize(sequence);
-                reads.push(read_records);
-                let mut read_qscores = ReadQScore::new();
-                let qscores = self.parse_qscores(qrecord);
-                read_qscores.summarize(&qscores);
-                q_records.push(read_qscores);
-
-                // Map reads to their index
-                let mut index = 1;
-                sequence.iter().for_each(|s| {
-                    if let Some(read) = read_map.get_mut(&index) {
-                        read.add(s);
-                    } else {
-                        let mut read = ReadRecord::new();
-                        read.add(s);
-                        read_map.insert(index, read);
-                    }
-                    index += 1;
-                });
-
-                // Map quality scores to their index
-                let mut index = 1;
-                qscores.iter().for_each(|s| {
-                    if let Some(qscore) = qscore_map.get_mut(&index) {
-                        qscore.update(s);
-                    } else {
-                        let mut qscore = QScoreStream::new();
-                        qscore.update(s);
-                        qscore_map.insert(index, qscore);
-                    }
-                    index += 1;
-                });
-            }
-            Err(e) => {
-                log::error!("Error parsing fastq record: {}", e);
-            }
-        });
-        self.write_per_read_records(path, &read_map, &qscore_map);
-        read_map.clear();
-        qscore_map.clear();
-        self.summarize_records(path, &reads, &q_records)
+        let mut records = FastqSummaryParser::new();
+        let mut mapped_records = records.parse_map_records(buff);
+        self.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
+        mapped_records.reads.clear();
+        mapped_records.qscores.clear();
+        self.summarize_records(path, &records.reads, &records.qscores)
     }
 
     fn write_per_read_records(
@@ -253,18 +184,6 @@ impl<'a> RawSummaryHandler<'a> {
             )
             .expect("Failed writing to file");
         });
-    }
-
-    fn parse_qscores(&self, qscore: &[u8]) -> Vec<u8> {
-        let mut qscores = Vec::with_capacity(qscore.len());
-        let parser = QScoreParser::new(qscore);
-        parser.into_iter().for_each(|q| {
-            if let Some(q) = q {
-                qscores.push(q);
-            }
-        });
-
-        qscores
     }
 
     fn create_output_file(&self, output_dir: &Path, fname: &str) -> BufWriter<File> {
