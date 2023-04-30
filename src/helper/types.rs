@@ -248,26 +248,48 @@ pub enum SummaryOutput {
 /// Data types for genetic codes
 /// Based on NCBI genetic code table
 pub enum GeneticCodes {
-    StandardCode,         // Ncbi Table 1
-    VertMtDna,            // Ncbi Table 2
-    YeastMtDna,           // Ncbi Table 3
-    MoldProtCoelMtDna,    // Ncbi Table 4
-    InvertMtDna,          // Ncbi Table 5
-    CilDasHexNu,          // Ncbi Table 6
-    EchiFlatwormMtDna,    // Ncbi Table 9
-    EuplotidNu,           // Ncbi Table 10
-    BacArchPlantPlast,    // Ncbi Table 11
-    AltYeastNu,           // Ncbi Table 12
-    AsciMtDna,            // Ncbi Table 13
-    AltFlatwormMtDna,     // Ncbi Table 14
-    ChlorMtDna,           // Ncbi Table 16
-    TrematodeMtDna,       // Ncbi Table 21
-    ScenedesmusMtDna,     // Ncbi Table 22
-    ThrausMtDna,          // Ncbi Table 23
-    RhabdopMtDna,         // Ncbi Table 24
-    CaDivSR1GraciBac,     // Ncbi Table 25
-    PachyNu,              // Ncbi Table 26
-    MesodiniumNu,         // Ncbi Table 29
-    PeritrichNu,          // Ncbi Table 30
-    CephalodiscidaeMtDna, // Ncbi Table 33
+    /// Ncbi Table 1
+    StandardCode,
+    /// Ncbi Table 2        
+    VertMtDna,
+    /// Ncbi Table 3         
+    YeastMtDna,
+    /// Ncbi Table 4      
+    MoldProtCoelMtDna,
+    /// Ncbi Table 5   
+    InvertMtDna,
+    /// Ncbi Table 6      
+    CilDasHexNu,
+    /// Ncbi Table 9     
+    EchiFlatwormMtDna,
+    /// Ncbi Table 10  
+    EuplotidNu,
+    /// Ncbi Table 11     
+    BacArchPlantPlast,
+    /// Ncbi Table 12
+    AltYeastNu,
+    /// Ncbi Table 13        
+    AsciMtDna,
+    /// Ncbi Table 14     
+    AltFlatwormMtDna,
+    /// Ncbi Table 16
+    ChlorMtDna,
+    /// Ncbi Table 21
+    TrematodeMtDna,
+    /// Ncbi Table 22  
+    ScenedesmusMtDna,
+    /// Ncbi Table 23
+    ThrausMtDna,
+    /// Ncbi Table 24      
+    RhabdopMtDna,
+    /// Ncbi Table 25
+    CaDivSR1GraciBac,
+    /// Ncbi Table 26   
+    PachyNu,
+    /// Ncbi Table 29
+    MesodiniumNu,
+    /// Ncbi Table 30
+    PeritrichNu,
+    /// Ncbi Table 33
+    CephalodiscidaeMtDna,
 }
