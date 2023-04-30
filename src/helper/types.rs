@@ -92,6 +92,29 @@ pub enum DataType {
     Ignore,
 }
 
+impl std::fmt::Display for DataType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Dna => write!(f, "DNA"),
+            Self::Aa => write!(f, "Amino acid"),
+            Self::Ignore => write!(f, "Ignore Data Type"),
+        }
+    }
+}
+
+impl std::str::FromStr for DataType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "dna" => Ok(Self::Dna),
+            "aa" => Ok(Self::Aa),
+            "ignore" => Ok(Self::Ignore),
+            _ => Err(format!("{} is not a valid data type", s)),
+        }
+    }
+}
+
 /// Data types for sequence data
 pub type SeqMatrix = IndexMap<String, String>;
 
