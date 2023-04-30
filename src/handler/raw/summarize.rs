@@ -1,8 +1,8 @@
 //! A handler for summarizing raw sequence data.
 
 use std::{
-    fs::{self, File},
-    io::{BufRead, BufReader, BufWriter, Result, Write},
+    fs::File,
+    io::{BufRead, BufReader, Result, Write},
     path::{Path, PathBuf},
     sync::mpsc::channel,
 };
@@ -10,22 +10,20 @@ use std::{
 use colored::Colorize;
 
 use rayon::prelude::*;
-use std::collections::BTreeMap;
 
 use crate::{
     helper::{
-        stats::{FastqRecords, QScoreRecords, QScoreStream, ReadQScore, ReadRecord},
+        stats::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
         types::{RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
     parser::{fastq::FastqSummaryParser, gzip::decode_gzip},
+    writer::raw::RawSummaryWriter,
 };
-
-const DEFAULT_OUTPUT: &str = "summary.tsv";
 
 /// Include support for any compressed or uncompressed fastq files.
 pub struct RawSummaryHandler<'a> {
-    pub inputs: &'a [PathBuf],
+    pub inputs: &'a mut [PathBuf],
     pub input_fmt: &'a RawReadFmt,
     pub mode: &'a SummaryMode,
     pub output: &'a Path,
@@ -33,7 +31,7 @@ pub struct RawSummaryHandler<'a> {
 
 impl<'a> RawSummaryHandler<'a> {
     pub fn new(
-        inputs: &'a [PathBuf],
+        inputs: &'a mut [PathBuf],
         input_fmt: &'a RawReadFmt,
         mode: &'a SummaryMode,
         output: &'a Path,
@@ -46,42 +44,40 @@ impl<'a> RawSummaryHandler<'a> {
         }
     }
 
-    pub fn summarize(&self, low_mem: bool) {
+    pub fn summarize(&mut self, low_mem: bool) {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
 
         if low_mem {
-            self.summarize_lowmem();
+            self.summarize_lowmem()
+                .expect("Failed summarizing fastq files");
         } else {
             let mut records = self.par_summarize();
             // Sort records by file name
             records.sort_by(|a, b| a.0.path.cmp(&b.0.path));
             spin.set_message("Writing records\n");
-            let mut writer = self.create_output_file(self.output, DEFAULT_OUTPUT);
-            self.write_records(&mut writer, &records)
-                .expect("Failed writing to file");
+            let writer = RawSummaryWriter::new(self.output);
+            writer.write(&records).expect("Failed writing to file");
         }
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_output_info();
     }
 
-    // Use a single tread to reduce memory usage
-    pub fn summarize_lowmem(&self) {
+    /// Use a single tread and write records to file as they are processed
+    /// to reduce memory usage.
+    pub fn summarize_lowmem(&mut self) -> Result<()> {
+        self.inputs.par_sort();
+        let handler = RawSummaryWriter::new(self.output);
+        let mut writer = handler.write_append();
         self.inputs.iter().for_each(|path| {
             let records = self.parse_fastq(path);
-            let output_dir = self.output.join("tsv");
-            let fname = format!(
-                "{}_{}",
-                path.file_name()
-                    .expect("Failed getting file name")
-                    .to_str()
-                    .expect("Failed converting file name to string"),
-                DEFAULT_OUTPUT
-            );
-            let mut writer = self.create_output_file(&output_dir, &fname);
-            self.write_records(&mut writer, &[records])
+            handler
+                .write_records(&mut writer, &[records])
                 .expect("Failed writing to file");
-        })
+        });
+        writer.flush()?;
+
+        Ok(())
     }
 
     fn par_summarize(&self) -> Vec<(FastqRecords, QScoreRecords)> {
@@ -129,68 +125,11 @@ impl<'a> RawSummaryHandler<'a> {
     fn map_record<R: BufRead>(&self, buff: &mut R, path: &Path) -> (FastqRecords, QScoreRecords) {
         let mut records = FastqSummaryParser::new();
         let mut mapped_records = records.parse_map_records(buff);
-        self.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
+        let writer = RawSummaryWriter::new(self.output);
+        writer.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
         mapped_records.reads.clear();
         mapped_records.qscores.clear();
         self.summarize_records(path, &records.reads, &records.qscores)
-    }
-
-    fn write_per_read_records(
-        &self,
-        fpath: &Path,
-        reads: &BTreeMap<i32, ReadRecord>,
-        qscores: &BTreeMap<i32, QScoreStream>,
-    ) {
-        let output_dir = self.output.join("reads");
-        let fname = format!(
-            "{}_{}",
-            fpath
-                .file_stem()
-                .expect("Failed getting file name")
-                .to_str()
-                .expect("Failed converting file name to string"),
-            "read_summary.tsv"
-        );
-        let mut writer = self.create_output_file(&output_dir, &fname);
-        writeln!(
-            writer,
-            "index\tG\tC\tA\tT\
-        \tProportionG\tProportionC\tProportionA\tProportionT\
-        \tMeanQ\tMinQ\tMaxQ",
-        )
-        .expect("Failed writing to file");
-        reads.iter().for_each(|(i, r)| {
-            let scores = if let Some(q) = qscores.get(i) {
-                q
-            } else {
-                panic!("Failed getting quality scores for index {}", i);
-            };
-            let sum = r.g_count + r.c_count + r.a_count + r.t_count;
-            writeln!(
-                writer,
-                "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                i,
-                r.g_count,
-                r.c_count,
-                r.a_count,
-                r.t_count,
-                r.g_count as f64 / sum as f64,
-                r.c_count as f64 / sum as f64,
-                r.a_count as f64 / sum as f64,
-                r.t_count as f64 / sum as f64,
-                scores.mean,
-                scores.min.unwrap_or(0),
-                scores.max.unwrap_or(0)
-            )
-            .expect("Failed writing to file");
-        });
-    }
-
-    fn create_output_file(&self, output_dir: &Path, fname: &str) -> BufWriter<File> {
-        fs::create_dir_all(output_dir).expect("Failed to create output directory");
-        let fpath = output_dir.join(fname);
-        let file = File::create(fpath).expect("Failed to create summary file");
-        BufWriter::new(file)
     }
 
     fn summarize_records(
@@ -211,85 +150,5 @@ impl<'a> RawSummaryHandler<'a> {
     fn print_output_info(&self) {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Dir", self.output.display());
-    }
-
-    fn write_records<W: Write>(
-        &self,
-        writer: &mut W,
-        records: &[(FastqRecords, QScoreRecords)],
-    ) -> Result<()> {
-        match self.mode {
-            SummaryMode::Minimal => {
-                writeln!(
-                    writer,
-                    "File\tNumReads\tNumBases\tMinReadLen\tMeanReadLen\tMaxReadLen"
-                )?;
-                for (seq, _) in records {
-                    writeln!(
-                        writer,
-                        "{}\t{}\t{}\t{}\t{}\t{}",
-                        seq.path.display(),
-                        seq.num_reads,
-                        seq.num_bases,
-                        seq.min_read_len,
-                        seq.mean_read_len,
-                        seq.max_read_len
-                    )?;
-                }
-            }
-            SummaryMode::Complete => {
-                writeln!(writer,"File\tNumReads\tNumBases\tMinReadLen\tMeanReadLen\tMaxReadLen\tLowQ\tMean\tMin\tMax")?;
-                for (seq, q) in records {
-                    writeln!(
-                        writer,
-                        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                        seq.path.display(),
-                        seq.num_reads,
-                        seq.num_bases,
-                        seq.min_read_len,
-                        seq.mean_read_len,
-                        seq.max_read_len,
-                        q.low_q,
-                        q.mean,
-                        q.min,
-                        q.max
-                    )?;
-                }
-            }
-            SummaryMode::Default => {
-                writeln!(
-                    writer,
-                    "File\tNumReads\tNumBases\t\
-                    MinReadLen\tMeanReadLen\tMaxReadLen\t\
-                    GCcount\tGCcontent\tATcount\tATContent\t\
-                    Ncount\tNcontent\t\
-                    LowQ\tMean\tMin\tMax\
-                    "
-                )?;
-                for (seq, q) in records {
-                    writeln!(
-                        writer,
-                        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                        seq.path.display(),
-                        seq.num_reads,
-                        seq.num_bases,
-                        seq.min_read_len,
-                        seq.mean_read_len,
-                        seq.max_read_len,
-                        seq.gc_count,
-                        seq.gc_content,
-                        seq.at_count,
-                        seq.at_content,
-                        seq.n_count,
-                        seq.n_content,
-                        q.low_q,
-                        q.mean,
-                        q.min,
-                        q.max,
-                    )?;
-                }
-            }
-        }
-        Ok(())
     }
 }

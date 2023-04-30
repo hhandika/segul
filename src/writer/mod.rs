@@ -6,6 +6,7 @@
 //! 2. `PartitionWriter`: write partition data to a file.
 //! 3. `SummaryWriter`: write summary data to a file.
 pub mod partition;
+pub mod raw;
 pub mod sequences;
 pub mod summary;
 
@@ -29,7 +30,7 @@ trait FileWriter {
     }
 
     fn append_output_file(&self, path: &Path) -> Result<BufWriter<File>> {
-        let file = OpenOptions::new().append(true).open(path);
+        let file = OpenOptions::new().append(true).create(true).open(path);
         match file {
             Ok(writer) => Ok(BufWriter::new(writer)),
             Err(error) => panic!("Failed appending to {}: {}", path.display(), error),
