@@ -45,7 +45,7 @@ impl<'a> CsvWriter<'a> {
             .file_stem()
             .and_then(OsStr::to_str)
             .expect("Failed to parse input file stem");
-        let output = self.create_output_fnames(default_prefix);
+        let output = self.create_output_fname(default_prefix);
         let mut writer = self.create_output_file(&output)?;
         write!(
             writer,
@@ -102,7 +102,7 @@ impl<'a> CsvWriter<'a> {
         taxon_summary: &BTreeMap<String, TaxonRecords>,
     ) -> Result<()> {
         let default_prefix = "taxon_summary";
-        let output = self.create_output_fnames(default_prefix);
+        let output = self.create_output_fname(default_prefix);
         let mut writer = self.create_output_file(&output)?;
         write!(
             writer,
@@ -158,7 +158,7 @@ impl<'a> CsvWriter<'a> {
 
     pub fn write_locus_summary(&self, stats: &[(Sites, CharMatrix, Taxa)]) -> Result<()> {
         let default_prefix = "locus_summary";
-        let output = self.create_output_fnames(default_prefix);
+        let output = self.create_output_fname(default_prefix);
         let mut writer = self.create_output_file(&output)?;
         let alphabet = self.match_alphabet(self.datatype);
         self.write_locus_header(&mut writer, alphabet)?;
@@ -173,7 +173,7 @@ impl<'a> CsvWriter<'a> {
         Ok(())
     }
 
-    fn create_output_fnames(&self, default_prefix: &str) -> PathBuf {
+    fn create_output_fname(&self, default_prefix: &str) -> PathBuf {
         match self.prefix {
             Some(fname) => {
                 let out_name = format!("{}_{}", fname, default_prefix);
@@ -188,7 +188,7 @@ impl<'a> CsvWriter<'a> {
             writer,
             "path,\
             locus,\
-            ntaxa,\
+            ntax,\
             chars_count,\
             site_count,\
             conserved_sites,\
@@ -311,11 +311,11 @@ impl<'s> SummaryWriter<'s> {
     }
 
     pub fn print_summary(&self) -> Result<()> {
-        log::info!("\n{}", "General Summmary".yellow());
+        log::info!("\n{}", "General Summary".yellow());
         self.write_gen_sum();
-        log::info!("{}", "Alignment Summmary".yellow());
+        log::info!("{}", "Alignment Summary".yellow());
         self.write_aln_sum();
-        log::info!("{}", "Taxon Summmary".yellow());
+        log::info!("{}", "Taxon Summary".yellow());
         self.write_tax_sum();
 
         log::info!("{}", "Character Count".yellow());
