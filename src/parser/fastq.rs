@@ -66,6 +66,11 @@ impl FastqSummaryParser {
         map_records
     }
 
+    pub fn count_reads<R: BufRead>(&mut self, buff: &mut R) -> usize {
+        let mut reader = Reader::new(buff);
+        reader.records().count()
+    }
+
     fn map_reads(&self, records: &mut FastqMappedRead, sequence: &[u8]) {
         let mut index = 1;
         sequence.iter().for_each(|s| {
