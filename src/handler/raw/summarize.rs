@@ -1,6 +1,7 @@
 //! A handler for summarizing raw sequence data.
 
 use std::{
+    collections::BTreeMap,
     fs::File,
     io::{BufRead, BufReader, Result, Write},
     path::{Path, PathBuf},
@@ -9,6 +10,7 @@ use std::{
 
 use colored::Colorize;
 
+use indicatif::ProgressBar;
 use rayon::prelude::*;
 
 use crate::{
@@ -17,7 +19,10 @@ use crate::{
         types::{RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    parser::{fastq::FastqSummaryParser, gzip::decode_gzip},
+    parser::{
+        fastq::{self, FastqSummaryParser},
+        gzip::decode_gzip,
+    },
     writer::raw::RawSummaryWriter,
 };
 
@@ -48,6 +53,21 @@ impl<'a> RawSummaryHandler<'a> {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
 
+        if self.mode == &SummaryMode::Minimal {
+            let counts = self.count_read();
+            let writer = RawSummaryWriter::new(self.output);
+            spin.set_message("Writing records\n");
+            writer
+                .write_read_count_only(&counts)
+                .expect("Failed writing to file");
+        } else {
+            self.summarize_other_mode(&spin, low_mem);
+        }
+        spin.finish_with_message("Finished processing fastq files\n");
+        self.print_output_info();
+    }
+
+    fn summarize_other_mode(&mut self, spin: &ProgressBar, low_mem: bool) {
         if low_mem {
             self.summarize_lowmem()
                 .expect("Failed summarizing fastq files");
@@ -59,8 +79,6 @@ impl<'a> RawSummaryHandler<'a> {
             let writer = RawSummaryWriter::new(self.output);
             writer.write(&records).expect("Failed writing to file");
         }
-        spin.finish_with_message("Finished processing fastq files\n");
-        self.print_output_info();
     }
 
     /// Use a single tread and write records to file as they are processed
@@ -78,6 +96,30 @@ impl<'a> RawSummaryHandler<'a> {
         writer.flush()?;
 
         Ok(())
+    }
+
+    fn count_read(&self) -> BTreeMap<String, usize> {
+        let (sender, receiver) = channel();
+
+        self.inputs.par_iter().for_each_with(sender, |s, p| {
+            let count = match self.input_fmt {
+                RawReadFmt::Fastq => {
+                    let file = File::open(p).expect("Failed opening fastq file");
+                    let mut buff = BufReader::new(file);
+                    fastq::count_reads(&mut buff)
+                }
+                RawReadFmt::Gzip => {
+                    let mut decoder = decode_gzip(p);
+                    fastq::count_reads(&mut decoder)
+                }
+                _ => unreachable!("Unsupported input format"),
+            };
+
+            s.send((p.display().to_string(), count))
+                .expect("Failed parallel processing fastq files");
+        });
+
+        receiver.iter().collect()
     }
 
     fn par_summarize(&self) -> Vec<(FastqRecords, QScoreRecords)> {

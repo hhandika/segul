@@ -9,7 +9,7 @@ use crate::helper::stats::{FastqRecords, QScoreRecords, QScoreStream, ReadRecord
 
 impl FileWriter for RawSummaryWriter<'_> {}
 
-const DEFAULT_OUTPUT: &str = "summary.tsv";
+const DEFAULT_OUTPUT: &str = "summary.csv";
 
 pub struct RawSummaryWriter<'a> {
     output: &'a Path,
@@ -38,6 +38,19 @@ impl<'a> RawSummaryWriter<'a> {
             .expect("Failed writing to file")
     }
 
+    pub fn write_read_count_only(&self, records: &BTreeMap<String, usize>) -> Result<()> {
+        let output_path = self.output.join(DEFAULT_OUTPUT);
+        let mut writer = self
+            .create_output_file(&output_path)
+            .expect("Failed writing to file");
+        writeln!(writer, "File,NumReads")?;
+        for (path, count) in records {
+            writeln!(writer, "{},{}", path, count)?;
+        }
+        writer.flush()?;
+        Ok(())
+    }
+
     /// Write the summary records to a file.
     pub fn write_records<W: Write>(
         &self,
@@ -46,17 +59,17 @@ impl<'a> RawSummaryWriter<'a> {
     ) -> Result<()> {
         writeln!(
             writer,
-            "File\tNumReads\tNumBases\t\
-                    MinReadLen\tMeanReadLen\tMaxReadLen\t\
-                    GCcount\tGCcontent\tATcount\tATContent\t\
-                    Ncount\tNcontent\t\
-                    LowQ\tMean\tMin\tMax\
+            "File,NumReads,NumBases,\
+                    MinReadLen,MeanReadLen,MaxReadLen,\
+                    GCcount,GCcontent,ATcount,ATContent,\
+                    Ncount,Ncontent,\
+                    LowQ,Mean,Min,Max\
                     "
         )?;
         for (seq, q) in records {
             writeln!(
                 writer,
-                "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
                 seq.path.display(),
                 seq.num_reads,
                 seq.num_bases,
@@ -100,9 +113,9 @@ impl<'a> RawSummaryWriter<'a> {
             .expect("Failed writing to file");
         writeln!(
             writer,
-            "index\tG\tC\tA\tT\
-        \tProportionG\tProportionC\tProportionA\tProportionT\
-        \tMeanQ\tMinQ\tMaxQ",
+            "index,G,C,A,T\
+        ,ProportionG,ProportionC,ProportionA,ProportionT\
+        ,MeanQ,MinQ,MaxQ",
         )
         .expect("Failed writing to file");
         reads.iter().for_each(|(i, r)| {
@@ -114,7 +127,7 @@ impl<'a> RawSummaryWriter<'a> {
             let sum = r.g_count + r.c_count + r.a_count + r.t_count;
             writeln!(
                 writer,
-                "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                "{},{},{},{},{},{},{},{},{},{},{},{}",
                 i,
                 r.g_count,
                 r.c_count,
