@@ -162,6 +162,10 @@ impl<'a> Iterator for QScoreParser<'a> {
 
 #[cfg(test)]
 mod test {
+    use std::path::Path;
+
+    use crate::helper::files;
+
     use super::*;
 
     macro_rules! qscore_parser {
@@ -178,7 +182,12 @@ mod test {
     }
 
     #[test]
-    fn test_read_count() {}
+    fn test_read_count() {
+        let path = Path::new("tests/files/raw/read_1.fastq");
+        let mut buff = files::open_file(path);
+        let count = count_reads(&mut buff);
+        assert_eq!(count, 2);
+    }
 
     #[test]
     fn test_qscore_parser() {
