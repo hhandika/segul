@@ -49,6 +49,31 @@ pub enum InputFmt {
     Phylip,
 }
 
+impl std::fmt::Display for InputFmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Auto => write!(f, "auto"),
+            Self::Fasta => write!(f, "fasta"),
+            Self::Nexus => write!(f, "nexus"),
+            Self::Phylip => write!(f, "phylip"),
+        }
+    }
+}
+
+impl std::str::FromStr for InputFmt {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auto" => Ok(Self::Auto),
+            "fasta" => Ok(Self::Fasta),
+            "nexus" => Ok(Self::Nexus),
+            "phylip" => Ok(Self::Phylip),
+            _ => Err(format!("{} is not a valid format", s)),
+        }
+    }
+}
+
 /// Data types for output sequences
 pub enum OutputFmt {
     /// Fastq format
@@ -63,6 +88,35 @@ pub enum OutputFmt {
     NexusInt,
     /// Interleaved Phylip format
     PhylipInt,
+}
+
+impl std::fmt::Display for OutputFmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Fasta => write!(f, "fasta"),
+            Self::Nexus => write!(f, "nexus"),
+            Self::Phylip => write!(f, "phylip"),
+            Self::FastaInt => write!(f, "Interleaved fasta"),
+            Self::NexusInt => write!(f, "Interleaved nexus"),
+            Self::PhylipInt => write!(f, "Interleaved phylip"),
+        }
+    }
+}
+
+impl std::str::FromStr for OutputFmt {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "fasta" => Ok(Self::Fasta),
+            "nexus" => Ok(Self::Nexus),
+            "phylip" => Ok(Self::Phylip),
+            "fasta-int" => Ok(Self::FastaInt),
+            "nexus-int" => Ok(Self::NexusInt),
+            "phylip-int" => Ok(Self::PhylipInt),
+            _ => Err(format!("{} is not a valid format", s)),
+        }
+    }
 }
 
 /// Data types for alignment partitions
