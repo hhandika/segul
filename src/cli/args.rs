@@ -100,7 +100,7 @@ pub(crate) struct RawSummaryArgs {
         help = "Summary mode", 
         default_value_t = SummaryMode::Default,
         value_parser = 
-            builder::PossibleValuesParser::new(["minimal", "default", "full"])
+            builder::PossibleValuesParser::new(["minimal", "default", "complete"])
             .map(|x| x.parse::<SummaryMode>().unwrap()))]
     pub(crate) mode: SummaryMode,
     #[arg(short = 'o', long = "output", help = "Output path", default_value = "Raw-Summary")]
