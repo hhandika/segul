@@ -19,17 +19,11 @@ use glob::glob;
 use std::ffi::OsStr;
 
 use std::fs;
-use std::io::Result;
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
 use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use log::LevelFilter;
-use log4rs::append::console::ConsoleAppender;
-use log4rs::append::file::FileAppender;
-use log4rs::config::{Appender, Config, Root};
-use log4rs::encode::pattern::PatternEncoder;
 
 use crate::cli::args::{Cli, MainSubcommand};
 use crate::cli::concat::ConcatParser;
@@ -46,13 +40,12 @@ use crate::cli::summarize::SummaryParser;
 use crate::cli::translate::TranslateParser;
 use crate::helper::finder::Files;
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt, RawReadFmt};
-use crate::helper::utils;
+use crate::helper::{logger, utils};
 
-pub const LOG_FILE: &str = "segul.log";
-
+/// Parse command line arguments and execute commands.
 pub fn parse_cli() {
     let args = Cli::parse();
-    setup_logger().expect("Failed setting up a log file.");
+    logger::setup_logger(&args.log).expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
     match args.subcommand {
         MainSubcommand::RawRead(subcommand) => match subcommand {
@@ -101,35 +94,6 @@ pub fn parse_cli() {
             }
         },
     }
-}
-
-pub fn setup_logger() -> Result<()> {
-    let log_dir = std::env::current_dir()?;
-    let target = log_dir.join(LOG_FILE);
-    let tofile = FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new(
-            "{d(%Y-%m-%d %H:%M:%S %Z)} - {l} - {m}\n",
-        )))
-        .build(target)?;
-
-    let stdout = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{m}\n")))
-        .build();
-
-    let config = Config::builder()
-        .appender(Appender::builder().build("stdout", Box::new(stdout)))
-        .appender(Appender::builder().build("logfile", Box::new(tofile)))
-        .build(
-            Root::builder()
-                .appender("stdout")
-                .appender("logfile")
-                .build(LevelFilter::Info),
-        )
-        .expect("Failed building log configuration");
-
-    log4rs::init_config(config).expect("Cannot initiate log configuration");
-
-    Ok(())
 }
 
 macro_rules! check_output_path {

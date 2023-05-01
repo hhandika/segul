@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use clap::{builder, Args, Parser, Subcommand, crate_name, crate_authors, crate_version, crate_description};
 use clap::builder::TypedValueParser as _;
 use crate::helper::types::{RawReadFmt, SummaryMode};
+use crate::helper::logger;
 
 #[derive(Parser)]
 #[command(name = crate_name!())]
@@ -12,6 +13,12 @@ use crate::helper::types::{RawReadFmt, SummaryMode};
 pub(crate) struct Cli {
     #[command(subcommand)]
     pub(crate) subcommand: MainSubcommand,
+    #[arg(
+        long = "log",
+        help = "Log file name",
+        default_value = logger::LOG_FILE,
+    )]
+    pub(crate) log: PathBuf,
 }
 
 #[derive(Subcommand)]

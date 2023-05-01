@@ -3,6 +3,7 @@ pub mod alphabet;
 pub mod concat;
 pub mod files;
 pub mod finder;
+pub mod logger;
 pub mod sequence;
 pub mod stats;
 pub mod translation;
