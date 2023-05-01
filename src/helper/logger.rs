@@ -19,10 +19,13 @@ pub const LOG_FILE: &str = "segul.log";
 /// # Example
 ///
 /// ```
+/// use std::path::Path;
+///
 /// use segul::helper::logger;
 ///
 /// fn main() {
-///    logger::setup_logger().expect("Failed setting up logger");
+///    let log_path = Path::new("segul.log");
+///    logger::setup_logger(log_path).expect("Failed setting up logger");
 /// }
 /// ```
 pub fn setup_logger(file_path: &Path) -> Result<()> {
