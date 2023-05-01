@@ -15,8 +15,9 @@ pub(crate) struct Cli {
     pub(crate) subcommand: MainSubcommand,
     #[arg(
         long = "log",
-        help = "Log file name",
+        help = "Log file path",
         default_value = logger::LOG_FILE,
+        global = true
     )]
     pub(crate) log: PathBuf,
 }

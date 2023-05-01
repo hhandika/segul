@@ -1,5 +1,6 @@
 //! Command line interface for parsing and executing commands.
 mod args;
+mod cli;
 mod concat;
 mod convert;
 mod extract;
@@ -20,79 +21,32 @@ use std::ffi::OsStr;
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use clap::Parser;
 use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
-use crate::cli::args::{Cli, MainSubcommand};
-use crate::cli::concat::ConcatParser;
-use crate::cli::convert::ConvertParser;
-use crate::cli::extract::ExtractParser;
-use crate::cli::filter::FilterParser;
-use crate::cli::id::IdParser;
-use crate::cli::partition::PartParser;
-use crate::cli::raw::RawSummaryParser;
-use crate::cli::remove::RemoveParser;
-use crate::cli::rename::RenameParser;
-use crate::cli::split::SplitParser;
-use crate::cli::summarize::SummaryParser;
-use crate::cli::translate::TranslateParser;
+use crate::cli::args::Cli;
 use crate::helper::finder::Files;
 use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt, RawReadFmt};
 use crate::helper::{logger, utils};
 
 /// Parse command line arguments and execute commands.
 pub fn parse_cli() {
+    let time = Instant::now();
     let args = Cli::parse();
     logger::setup_logger(&args.log).expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
-    match args.subcommand {
-        MainSubcommand::RawRead(subcommand) => match subcommand {
-            args::RawReadSubcommand::RawSummary(raw_args) => {
-                RawSummaryParser::new(&raw_args).summarize();
-            }
-        },
-        MainSubcommand::Contig(_) => {
-            println!("Contig");
-        }
-        MainSubcommand::Alignment(subcommand) => match subcommand {
-            args::AlignmentSubcommand::Concat(concat_args) => {
-                ConcatParser::new(&concat_args).concat();
-            }
-            args::AlignmentSubcommand::Convert(convert_args) => {
-                ConvertParser::new(&convert_args).convert();
-            }
-            args::AlignmentSubcommand::Filter(filter_args) => {
-                FilterParser::new(&filter_args).filter();
-            }
-            args::AlignmentSubcommand::Split(split_args) => SplitParser::new(&split_args).split(),
-            args::AlignmentSubcommand::AlignSummary(summary_args) => {
-                SummaryParser::new(&summary_args).summarize();
-            }
-        },
-        MainSubcommand::Partition(subcommand) => match subcommand {
-            args::PartitionSubcommand::Convert(part_args) => {
-                PartParser::new(&part_args).convert();
-            }
-        },
-        MainSubcommand::Sequence(subcommand) => match subcommand {
-            args::SequenceSubcommand::Extract(extract_args) => {
-                ExtractParser::new(&extract_args).extract();
-            }
-            args::SequenceSubcommand::Id(id_args) => {
-                IdParser::new(&id_args).find();
-            }
-            args::SequenceSubcommand::Remove(remove_args) => {
-                RemoveParser::new(&remove_args).remove();
-            }
-            args::SequenceSubcommand::Rename(rename_args) => {
-                RenameParser::new(&rename_args).rename();
-            }
-            args::SequenceSubcommand::Translate(translate_args) => {
-                TranslateParser::new(&translate_args).translate();
-            }
-        },
+    cli::match_cli_subcommand(&args.subcommand);
+    log::info!("{:18}: {}", "Log file", &args.log.display());
+    let duration = time.elapsed();
+    println!();
+    if duration.as_secs() < 60 {
+        log::info!("{:18}: {:?}", "Execution time", duration);
+    } else {
+        let time = utils::parse_duration(duration.as_secs());
+        log::info!("{:18}: {}", "Execution time (HH:MM:SS)", time);
     }
 }
 
