@@ -5,7 +5,10 @@ use std::sync::mpsc::channel;
 
 use glob::glob;
 use indexmap::IndexSet;
+use lazy_static::lazy_static;
 use rayon::prelude::*;
+use regex::Regex;
+use walkdir::WalkDir;
 
 use crate::helper::sequence;
 use crate::helper::types::RawReadFmt;
@@ -83,6 +86,30 @@ impl<'a> Files<'a> {
         files
     }
 
+    /// Find input files for raw reads, recursively.
+    /// Return a vector of input files.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::RawReadFmt;
+    /// use segul::helper::finder::Files;
+    ///
+    /// let dir = Path::new("tests/files/raw");
+    /// let input_fmt = RawReadFmt::Fastq;
+    /// let files = Files::new(&dir).find_raw_read_recursive();
+    /// assert_eq!(files.len(), 4);
+    /// ```
+    pub fn find_raw_read_recursive(&self) -> Vec<PathBuf> {
+        WalkDir::new(self.dir)
+            .into_iter()
+            .filter_map(|ok| ok.ok())
+            .filter(|e| e.file_type().is_file())
+            .filter(|e| re_matches_fastq_lazy(e.file_name().to_str().unwrap()))
+            .map(|e| e.into_path())
+            .collect()
+    }
+
     fn glob_files(&self) -> Vec<PathBuf> {
         glob(&self.pattern)
             .expect("Failed finding files with matching pattern")
@@ -124,6 +151,14 @@ impl<'a> Files<'a> {
             ),
         };
     }
+}
+
+fn re_matches_fastq_lazy(fname: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?i)(.fq|.fastq)(?:.*)").unwrap();
+    }
+
+    RE.is_match(fname)
 }
 
 /// Parse IDs from input sequence files.
