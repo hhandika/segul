@@ -435,6 +435,7 @@ pub enum SummaryOutput {
 
 /// Data types for genetic codes
 /// Based on NCBI genetic code table
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum GeneticCodes {
     /// Ncbi Table 1
     StandardCode,
@@ -480,6 +481,67 @@ pub enum GeneticCodes {
     PeritrichNu,
     /// Ncbi Table 33
     CephalodiscidaeMtDna,
+}
+
+impl std::fmt::Display for GeneticCodes {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::StandardCode => write!(f, "Standard Code"),
+            Self::VertMtDna => write!(f, "Vertebrate Mitochondrial DNA"),
+            Self::YeastMtDna => write!(f, "Yeast Mitochondrial DNA"),
+            Self::MoldProtCoelMtDna => write!(f, "Mold, Protozoan, and Coelenterate Mitochondrial DNA and the Mycoplasma/Spiroplasma Code"),
+            Self::InvertMtDna => write!(f, "Invertebrate Mitochondrial DNA"),
+            Self::CilDasHexNu => write!(f, "Ciliate, Dasycladacean and Hexamita Nuclear Code"),
+            Self::EchiFlatwormMtDna => write!(f, "Echinoderm and Flatworm Mitochondrial DNA"),
+            Self::EuplotidNu => write!(f, "Euplotid Nuclear Code"),
+            Self::BacArchPlantPlast => write!(f, "Bacterial, Archaeal and Plant Plastid Code"),
+            Self::AltYeastNu => write!(f, "Alternative Yeast Nuclear Code"),
+            Self::AsciMtDna => write!(f, "Ascidian Mitochondrial DNA"),
+            Self::AltFlatwormMtDna => write!(f, "Alternative Flatworm Mitochondrial DNA"),
+            Self::ChlorMtDna => write!(f, "Chlorophycean Mitochondrial DNA"),
+            Self::TrematodeMtDna => write!(f, "Trematode Mitochondrial DNA"),
+            Self::ScenedesmusMtDna => write!(f, "Scenedesmus obliquus Mitochondrial DNA"),
+            Self::ThrausMtDna => write!(f, "Thraustochytrium Mitochondrial DNA"),
+            Self::RhabdopMtDna => write!(f, "Rhabdopleuridae Mitochondrial DNA"),
+            Self::CaDivSR1GraciBac => write!(f, "Candidate Division SR1 and Gracilibacteria"),
+            Self::PachyNu => write!(f, "Pachysolen tannophilus Nuclear Code"),
+            Self::MesodiniumNu => write!(f, "Mesodinium Nuclear Code"),
+            Self::PeritrichNu => write!(f, "Peritrich Nuclear Code"),
+            Self::CephalodiscidaeMtDna => write!(f, "Cephalodiscidae Mitochondrial DNA"),
+        }
+    }
+}
+
+impl std::str::FromStr for GeneticCodes {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "1" => Ok(Self::StandardCode),
+            "2" => Ok(Self::VertMtDna),
+            "3" => Ok(Self::YeastMtDna),
+            "4" => Ok(Self::MoldProtCoelMtDna),
+            "5" => Ok(Self::InvertMtDna),
+            "6" => Ok(Self::CilDasHexNu),
+            "9" => Ok(Self::EchiFlatwormMtDna),
+            "10" => Ok(Self::EuplotidNu),
+            "11" => Ok(Self::BacArchPlantPlast),
+            "12" => Ok(Self::AltYeastNu),
+            "13" => Ok(Self::AsciMtDna),
+            "14" => Ok(Self::AltFlatwormMtDna),
+            "16" => Ok(Self::ChlorMtDna),
+            "21" => Ok(Self::TrematodeMtDna),
+            "22" => Ok(Self::ScenedesmusMtDna),
+            "23" => Ok(Self::ThrausMtDna),
+            "24" => Ok(Self::RhabdopMtDna),
+            "25" => Ok(Self::CaDivSR1GraciBac),
+            "26" => Ok(Self::PachyNu),
+            "29" => Ok(Self::MesodiniumNu),
+            "30" => Ok(Self::PeritrichNu),
+            "33" => Ok(Self::CephalodiscidaeMtDna),
+            _ => Err(format!("{} is not a valid genetic code", s)),
+        }
+    }
 }
 
 #[cfg(test)]

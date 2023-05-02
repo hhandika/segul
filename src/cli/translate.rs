@@ -4,7 +4,6 @@ use colored::Colorize;
 
 use crate::cli::AlignSeqPrint;
 use crate::handler::sequence::translate::Translate;
-use crate::helper::types::GeneticCodes;
 
 use super::args::SequenceTranslateArgs;
 use super::{collect_paths, AlignSeqInput, InputCli, InputPrint, OutputCli};
@@ -14,17 +13,9 @@ impl InputPrint for TranslateParser<'_> {}
 impl OutputCli for TranslateParser<'_> {}
 impl AlignSeqInput for TranslateParser<'_> {}
 
-macro_rules! parse_table_args {
-    ($self:ident, $code:ident, $table:ident) => {{
-        $self.trans_table = GeneticCodes::$code;
-        log::info!("{:18}: {}", "Translation Table", $table);
-    }};
-}
-
 pub(in crate::cli) struct TranslateParser<'a> {
     args: &'a SequenceTranslateArgs,
     input_dir: Option<PathBuf>,
-    trans_table: GeneticCodes,
 }
 
 impl<'a> TranslateParser<'a> {
@@ -32,7 +23,6 @@ impl<'a> TranslateParser<'a> {
         Self {
             args,
             input_dir: None,
-            trans_table: GeneticCodes::StandardCode,
         }
     }
 
@@ -62,8 +52,8 @@ impl<'a> TranslateParser<'a> {
         .print();
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "Params".yellow());
-        self.parse_trans_table();
-        let translate = Translate::new(&self.trans_table, &input_fmt, &datatype, &output_fmt);
+        self.show_trans_table();
+        let translate = Translate::new(&self.args.table, &input_fmt, &datatype, &output_fmt);
         match frame {
             Some(num) => {
                 log::info!("{:18}: {}\n", "Reading frame", &num);
@@ -76,33 +66,8 @@ impl<'a> TranslateParser<'a> {
         }
     }
 
-    fn parse_trans_table(&mut self) {
-        let table = &self.args.table;
-        match table {
-            1 => parse_table_args!(self, StandardCode, table),
-            2 => parse_table_args!(self, VertMtDna, table),
-            3 => parse_table_args!(self, YeastMtDna, table),
-            4 => parse_table_args!(self, MoldProtCoelMtDna, table),
-            5 => parse_table_args!(self, InvertMtDna, table),
-            6 => parse_table_args!(self, CilDasHexNu, table),
-            9 => parse_table_args!(self, EchiFlatwormMtDna, table),
-            10 => parse_table_args!(self, EuplotidNu, table),
-            11 => parse_table_args!(self, BacArchPlantPlast, table),
-            12 => parse_table_args!(self, AltYeastNu, table),
-            13 => parse_table_args!(self, AsciMtDna, table),
-            14 => parse_table_args!(self, AltFlatwormMtDna, table),
-            16 => parse_table_args!(self, ChlorMtDna, table),
-            21 => parse_table_args!(self, TrematodeMtDna, table),
-            22 => parse_table_args!(self, ScenedesmusMtDna, table),
-            23 => parse_table_args!(self, ThrausMtDna, table),
-            24 => parse_table_args!(self, RhabdopMtDna, table),
-            25 => parse_table_args!(self, CaDivSR1GraciBac, table),
-            26 => parse_table_args!(self, PachyNu, table),
-            29 => parse_table_args!(self, MesodiniumNu, table),
-            30 => parse_table_args!(self, PeritrichNu, table),
-            33 => parse_table_args!(self, CephalodiscidaeMtDna, table),
-            _ => unimplemented!("The Genetic Codes is not supported!"),
-        }
+    fn show_trans_table(&mut self) {
+        log::info!("{:18}: {}", "Translation Table", self.args.table);
     }
 
     fn get_reading_frame(&self) -> Option<usize> {
