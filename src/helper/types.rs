@@ -1,4 +1,7 @@
 //! Data types for supported formats
+use std::ffi::OsStr;
+use std::path::Path;
+
 use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
 
@@ -33,6 +36,22 @@ impl std::str::FromStr for RawReadFmt {
             "gzip" => Ok(Self::Gzip),
             _ => Err(format!("{} is not a valid format", s)),
         }
+    }
+}
+
+pub fn infer_raw_input_auto(input: &Path) -> RawReadFmt {
+    let ext: &str = input
+        .extension()
+        .and_then(OsStr::to_str)
+        .expect("Failed parsing extension");
+    match ext {
+        "fq" | "fastq" => RawReadFmt::Fastq,
+        "gz" | "gzip" => RawReadFmt::Gzip,
+        _ => panic!(
+            "The program cannot recognize the file extension. \
+        Maybe try to specify the input format using the -f or \
+        --input-format option."
+        ),
     }
 }
 
@@ -105,6 +124,35 @@ impl std::str::FromStr for InputFmt {
             "phylip" => Ok(Self::Phylip),
             _ => Err(format!("{} is not a valid format", s)),
         }
+    }
+}
+
+/// Infer input format automatically based on the file extension.
+/// Return the input format.
+/// # Example
+/// ```
+/// use std::path::Path;
+/// use segul::helper::types::InputFmt;
+/// use segul::helper::types::infer_input_auto;
+///
+/// let file = Path::new("tests/files/simple.fas");
+/// let input_fmt = infer_input_auto(&file);
+/// assert_eq!(input_fmt, InputFmt::Fasta);
+/// ```
+pub fn infer_input_auto(input: &Path) -> InputFmt {
+    let ext: &str = input
+        .extension()
+        .and_then(OsStr::to_str)
+        .expect("Failed parsing extension");
+    match ext {
+        "fas" | "fa" | "fasta" => InputFmt::Fasta,
+        "nex" | "nexus" => InputFmt::Nexus,
+        "phy" | "phylip" => InputFmt::Phylip,
+        _ => panic!(
+            "The program cannot recognize the file extension. \
+        Maybe try to specify the input format using the -f or \
+        --input-format option."
+        ),
     }
 }
 
@@ -403,4 +451,16 @@ pub enum GeneticCodes {
     PeritrichNu,
     /// Ncbi Table 33
     CephalodiscidaeMtDna,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_parsing_input_fmt() {
+        let file = Path::new("tests/files/simple.nex");
+        let input_fmt = infer_input_auto(file);
+        assert_eq!(InputFmt::Nexus, input_fmt);
+    }
 }

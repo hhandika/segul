@@ -1,8 +1,7 @@
 //! Check input and output sequences
-
-use std::ffi::OsStr;
 use std::path::Path;
 
+use crate::helper::types;
 use crate::helper::types::{DataType, Header, InputFmt, SeqMatrix};
 use crate::parser::fasta::Fasta;
 use crate::parser::nexus::Nexus;
@@ -14,34 +13,6 @@ macro_rules! parse_sequence {
         seq.parse();
         (seq.matrix, seq.header)
     }};
-}
-
-/// Infer input format automatically based on the file extension.
-/// Return the input format.
-/// # Example
-/// ```
-/// use std::path::Path;
-/// use segul::helper::types::InputFmt;
-/// use segul::helper::sequence::infer_input_auto;
-///
-/// let file = Path::new("tests/files/simple.fas");
-/// let input_fmt = infer_input_auto(&file);
-/// assert_eq!(input_fmt, InputFmt::Fasta);
-/// ```
-pub fn infer_input_auto(input: &Path) -> InputFmt {
-    let ext: &str = input
-        .extension()
-        .and_then(OsStr::to_str)
-        .expect("Failed parsing extension");
-    match ext {
-        "fas" | "fa" | "fasta" => InputFmt::Fasta,
-        "nex" | "nexus" => InputFmt::Nexus,
-        "phy" | "phylip" => InputFmt::Phylip,
-        _ => panic!(
-            "The program cannot recognize the file extension. \
-        Maybe try to specify the input format using the -f or --input-format option."
-        ),
-    }
 }
 
 /// Parse sequence files.
@@ -96,7 +67,7 @@ impl<'a> SeqParser<'a> {
             InputFmt::Nexus => parse_sequence!(self, Nexus),
             InputFmt::Phylip => parse_sequence!(self, Phylip),
             InputFmt::Auto => {
-                let input_fmt = infer_input_auto(self.file);
+                let input_fmt = types::infer_input_auto(self.file);
                 self.parse(&input_fmt)
             }
         }
@@ -190,12 +161,5 @@ mod test {
         assert_eq!(1, header.ntax);
         assert_eq!(6, header.nchar);
         assert_eq!(1, matrix.len());
-    }
-
-    #[test]
-    fn test_parsing_input_fmt() {
-        let file = Path::new("tests/files/simple.nex");
-        let input_fmt = infer_input_auto(file);
-        assert_eq!(InputFmt::Nexus, input_fmt);
     }
 }

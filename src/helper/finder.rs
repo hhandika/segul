@@ -10,12 +10,13 @@ use rayon::prelude::*;
 use regex::Regex;
 use walkdir::WalkDir;
 
-use crate::helper::sequence;
 use crate::helper::types::RawReadFmt;
 use crate::helper::types::{DataType, InputFmt};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
+
+use super::types;
 
 macro_rules! id_non_fasta {
     ($self:ident,  $type: ident, $datatype:ident) => {{
@@ -25,6 +26,18 @@ macro_rules! id_non_fasta {
                 .expect("Failed parallel processing IDs");
         });
         receiver.iter().collect()
+    }};
+}
+
+macro_rules! walk_dir {
+    ($self:ident, $match: ident) => {{
+        WalkDir::new($self.dir)
+            .into_iter()
+            .filter_map(|ok| ok.ok())
+            .filter(|e| e.file_type().is_file())
+            .filter(|e| $match(e.file_name().to_str().unwrap()))
+            .map(|e| e.into_path())
+            .collect()
     }};
 }
 
@@ -59,11 +72,32 @@ impl<'a> Files<'a> {
     /// assert_eq!(files.len(), 4);
     /// ```
     pub fn find(&mut self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
-        self.pattern(input_fmt);
-        let files = self.glob_files();
-        self.check_glob_results(&files);
+        let files = if InputFmt::Auto == *input_fmt {
+            self.find_recursive()
+        } else {
+            self.pattern(input_fmt);
+            self.glob_files()
+        };
+        self.check_results(&files);
 
         files
+    }
+
+    /// Find input files for sequence and alignment, recursively.
+    /// Return a vector of input files.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::InputFmt;
+    /// use segul::helper::finder::Files;
+    ///
+    /// let dir = Path::new("tests/files/concat");
+    /// let files = Files::new(&dir).find_recursive();
+    /// assert_eq!(files.len(), 4);
+    /// ```
+    pub fn find_recursive(&self) -> Vec<PathBuf> {
+        walk_dir!(self, re_match_sequence_lazy)
     }
 
     /// Find input files for raw reads.
@@ -79,9 +113,14 @@ impl<'a> Files<'a> {
     /// let files = Files::new(&dir).find_raw_read(&input_fmt);
     /// assert_eq!(files.len(), 4);
     pub fn find_raw_read(&mut self, input_fmt: &'a RawReadFmt) -> Vec<PathBuf> {
-        self.raw_pattern(input_fmt);
-        let files = self.glob_files();
-        self.check_glob_results(&files);
+        let files = if RawReadFmt::Auto == *input_fmt {
+            self.find_raw_read_recursive()
+        } else {
+            self.raw_pattern(input_fmt);
+            self.glob_files()
+        };
+
+        self.check_results(&files);
 
         files
     }
@@ -96,18 +135,28 @@ impl<'a> Files<'a> {
     /// use segul::helper::finder::Files;
     ///
     /// let dir = Path::new("tests/files/raw");
-    /// let input_fmt = RawReadFmt::Fastq;
     /// let files = Files::new(&dir).find_raw_read_recursive();
     /// assert_eq!(files.len(), 4);
     /// ```
     pub fn find_raw_read_recursive(&self) -> Vec<PathBuf> {
-        WalkDir::new(self.dir)
-            .into_iter()
-            .filter_map(|ok| ok.ok())
-            .filter(|e| e.file_type().is_file())
-            .filter(|e| re_matches_fastq_lazy(e.file_name().to_str().unwrap()))
-            .map(|e| e.into_path())
-            .collect()
+        walk_dir!(self, re_matches_fastq_lazy)
+    }
+
+    /// Find input files for contiguous sequences, recursively.
+    /// Return a vector of input files.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::InputFmt;
+    /// use segul::helper::finder::Files;
+    ///
+    /// let dir = Path::new("tests/files/contigs");
+    /// let files = Files::new(&dir).find_contig_recursive();
+    /// assert_eq!(files.len(), 2);
+    /// ```
+    pub fn find_contig_recursive(&self) -> Vec<PathBuf> {
+        walk_dir!(self, re_matches_fasta_lazy)
     }
 
     fn glob_files(&self) -> Vec<PathBuf> {
@@ -117,7 +166,7 @@ impl<'a> Files<'a> {
             .collect::<Vec<PathBuf>>()
     }
 
-    fn check_glob_results(&self, files: &[PathBuf]) {
+    fn check_results(&self, files: &[PathBuf]) {
         if files.is_empty() {
             panic!(
                 "Failed finding input files using {}. \
@@ -131,11 +180,7 @@ impl<'a> Files<'a> {
         self.pattern = match input_fmt {
             RawReadFmt::Fastq => format!("{}/*.f*q", self.dir.display()),
             RawReadFmt::Gzip => format!("{}/*.f*q.gz*", self.dir.display()),
-            RawReadFmt::Auto => panic!(
-                "The input format is the default auto. \
-            The program cannot use auto for dir input. \
-            Try to specify input format."
-            ),
+            RawReadFmt::Auto => unreachable!("Unsupported input format"),
         };
     }
 
@@ -144,11 +189,7 @@ impl<'a> Files<'a> {
             InputFmt::Fasta => format!("{}/*.fa*", self.dir.display()),
             InputFmt::Nexus => format!("{}/*.nex*", self.dir.display()),
             InputFmt::Phylip => format!("{}/*.phy*", self.dir.display()),
-            InputFmt::Auto => panic!(
-                "The input format is the default auto. \
-            The program cannot use auto for dir input. \
-            Try to specify input format."
-            ),
+            InputFmt::Auto => unreachable!("Unsupported input format"),
         };
     }
 }
@@ -156,6 +197,22 @@ impl<'a> Files<'a> {
 fn re_matches_fastq_lazy(fname: &str) -> bool {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?i)(.fq|.fastq)(?:.*)").unwrap();
+    }
+
+    RE.is_match(fname)
+}
+
+fn re_matches_fasta_lazy(fname: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?i)(.fa*)(?:.*)").unwrap();
+    }
+
+    RE.is_match(fname)
+}
+
+fn re_match_sequence_lazy(fname: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?i)(.nex*|.phy*|.fa*)(?:.*)").unwrap();
     }
 
     RE.is_match(fname)
@@ -230,7 +287,7 @@ impl<'a> IDs<'a> {
     fn id_auto(&self) -> Vec<IndexSet<String>> {
         let (sender, receiver) = channel();
         self.files.par_iter().for_each_with(sender, |s, file| {
-            let input_fmt = sequence::infer_input_auto(file);
+            let input_fmt = types::infer_input_auto(file);
             match input_fmt {
                 InputFmt::Fasta => s.send(fasta::parse_only_id(file)).unwrap(),
                 InputFmt::Nexus => s
@@ -275,6 +332,14 @@ mod test {
     }
 
     #[test]
+    fn test_files_recursive() {
+        input!(finder);
+        let fmt = InputFmt::Auto;
+        let files = finder.find(&fmt);
+        assert_eq!(4, files.len());
+    }
+
+    #[test]
     fn test_raw_pattern() {
         let path = Path::new("tests/files/raw");
         let fmt = RawReadFmt::Fastq;
@@ -298,7 +363,7 @@ mod test {
         let path = Path::new("tests/files/empty/");
         let mut finder = Files::new(path);
         let files = finder.find(&InputFmt::Nexus);
-        finder.check_glob_results(&files);
+        finder.check_results(&files);
     }
 
     #[test]
@@ -310,5 +375,33 @@ mod test {
         let id = IDs::new(&files, &input_fmt, &datatype);
         let ids = id.id_unique();
         assert_eq!(3, ids.len());
+    }
+
+    #[test]
+    fn match_fastq() {
+        let fname = "test.fastq";
+        assert!(re_matches_fastq_lazy(fname));
+    }
+
+    #[test]
+    fn match_fasta() {
+        let fname = "test.fasta";
+        let fname2 = "test.fa";
+        let fname3 = "test.fas";
+        assert!(re_matches_fasta_lazy(fname));
+        assert!(re_matches_fasta_lazy(fname2));
+        assert!(re_matches_fasta_lazy(fname3));
+    }
+
+    #[test]
+    fn match_sequence_fmt() {
+        let fname = "test.fasta";
+        let fname2 = "test.nex";
+        let fname3 = "test.phy";
+        let fname4 = "test.nexus";
+        assert!(re_match_sequence_lazy(fname));
+        assert!(re_match_sequence_lazy(fname2));
+        assert!(re_match_sequence_lazy(fname3));
+        assert!(re_match_sequence_lazy(fname4));
     }
 }

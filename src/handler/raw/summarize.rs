@@ -17,7 +17,7 @@ use crate::{
     helper::{
         files,
         stats::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
-        types::{RawReadFmt, SummaryMode},
+        types::{infer_raw_input_auto, RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
     parser::fastq::{self, FastqSummaryParser},
@@ -100,7 +100,12 @@ impl<'a> RawSummaryHandler<'a> {
         let (sender, receiver) = channel();
 
         self.inputs.par_iter().for_each_with(sender, |s, p| {
-            let count = match self.input_fmt {
+            let input_fmt = if self.input_fmt == &RawReadFmt::Auto {
+                infer_raw_input_auto(p)
+            } else {
+                self.input_fmt.clone()
+            };
+            let count = match input_fmt {
                 RawReadFmt::Fastq => {
                     let mut buff = files::open_file(p);
                     fastq::count_reads(&mut buff)
@@ -133,7 +138,12 @@ impl<'a> RawSummaryHandler<'a> {
     }
 
     fn parse_fastq(&self, path: &Path) -> (FastqRecords, QScoreRecords) {
-        match self.input_fmt {
+        let input_fmt = if self.input_fmt == &RawReadFmt::Auto {
+            infer_raw_input_auto(path)
+        } else {
+            self.input_fmt.clone()
+        };
+        match input_fmt {
             RawReadFmt::Fastq => {
                 let file = File::open(path).expect("Failed opening fastq file");
                 let mut buff = BufReader::new(file);
