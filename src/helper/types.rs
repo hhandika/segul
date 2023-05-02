@@ -36,8 +36,42 @@ impl std::str::FromStr for RawReadFmt {
     }
 }
 
+/// Data type for contig sequences
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum ContigFmt {
+    /// Infer format from file extension
+    Auto,
+    /// Fasta format
+    Fasta,
+    /// Gzip compressed fasta format
+    Gzip,
+}
+
+impl std::fmt::Display for ContigFmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Auto => write!(f, "auto"),
+            Self::Fasta => write!(f, "fasta"),
+            Self::Gzip => write!(f, "gzip"),
+        }
+    }
+}
+
+impl std::str::FromStr for ContigFmt {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auto" => Ok(Self::Auto),
+            "fasta" => Ok(Self::Fasta),
+            "gzip" => Ok(Self::Gzip),
+            _ => Err(format!("{} is not a valid format", s)),
+        }
+    }
+}
+
 /// Data types for input sequences
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum InputFmt {
     /// Infer format from file extension
     Auto,
