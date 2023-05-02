@@ -217,6 +217,35 @@ pub enum PartitionFmt {
     RaxmlCodon,
 }
 
+impl std::fmt::Display for PartitionFmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Charset => write!(f, "charset"),
+            Self::CharsetCodon => write!(f, "charset-codon"),
+            Self::Nexus => write!(f, "nexus"),
+            Self::NexusCodon => write!(f, "nexus-codon"),
+            Self::Raxml => write!(f, "raxml"),
+            Self::RaxmlCodon => write!(f, "raxml-codon"),
+        }
+    }
+}
+
+impl std::str::FromStr for PartitionFmt {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "charset" => Ok(Self::Charset),
+            "charset-codon" => Ok(Self::CharsetCodon),
+            "nexus" => Ok(Self::Nexus),
+            "nexus-codon" => Ok(Self::NexusCodon),
+            "raxml" => Ok(Self::Raxml),
+            "raxml-codon" => Ok(Self::RaxmlCodon),
+            _ => Err(format!("{} is not a valid format", s)),
+        }
+    }
+}
+
 /// Data types for sequence data
 #[derive(PartialEq)]
 pub enum DataType {
