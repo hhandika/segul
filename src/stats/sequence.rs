@@ -13,7 +13,7 @@ use crate::helper::types::{DataType, Header, SeqMatrix};
 /// use std::path::Path;
 /// use segul::helper::types::{DataType, InputFmt};
 /// use segul::helper::sequence::{SeqParser, SeqCheck};
-/// use segul::helper::stats;
+/// use segul::stats::sequence as stats;
 ///
 /// let file = Path::new("tests/files/concat.fasta");
 /// let datatype = &DataType::Dna;
