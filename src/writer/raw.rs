@@ -5,7 +5,7 @@ use std::path::Path;
 
 use super::FileWriter;
 
-use crate::helper::stats::{FastqRecords, QScoreRecords, QScoreStream, ReadRecord};
+use crate::stats::raw::{FastqRecords, QScoreRecords, QScoreStream, ReadRecord};
 
 impl FileWriter for RawSummaryWriter<'_> {}
 

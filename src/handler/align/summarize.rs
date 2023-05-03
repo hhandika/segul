@@ -9,9 +9,9 @@ use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
-use crate::helper::stats::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::helper::types::{DataType, InputFmt, TaxonRecords};
 use crate::helper::utils;
+use crate::stats::sequence::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::writer::summary::{CsvWriter, SummaryWriter};
 
 pub struct SeqStats<'a> {

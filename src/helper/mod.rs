@@ -5,7 +5,6 @@ pub mod files;
 pub mod finder;
 pub mod logger;
 pub mod sequence;
-pub mod stats;
 pub mod translation;
 pub mod types;
 pub mod utils;

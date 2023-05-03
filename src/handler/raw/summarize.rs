@@ -16,11 +16,11 @@ use rayon::prelude::*;
 use crate::{
     helper::{
         files,
-        stats::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
         types::{infer_raw_input_auto, RawReadFmt, SummaryMode},
         utils::set_spinner,
     },
     parser::fastq::{self, FastqSummaryParser},
+    stats::raw::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
     writer::raw::RawSummaryWriter,
 };
 
