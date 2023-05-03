@@ -1,4 +1,4 @@
-# SEGUL
+# SEGUL <img src="https://raw.githubusercontent.com/hhandika/segui/main/assets/images/logo.png" alt="nahpu logo" align="right" width="150"/>
 
 ![Segul-Tests](https://github.com/hhandika/segul/workflows/Segul-Tests/badge.svg)
 ![Crate-IO](https://img.shields.io/crates/v/segul)
