@@ -4,14 +4,14 @@
 use std::cmp::Reverse;
 
 #[inline]
-fn sort_vector_asc(vec: &[u32]) -> Vec<u32> {
+fn sort_vector_asc(vec: &[usize]) -> Vec<usize> {
     let mut sorted_vec = vec.to_vec();
     sorted_vec.sort_unstable();
 
     sorted_vec
 }
 
-pub fn median(vec: &[u32]) -> f64 {
+pub fn median(vec: &[usize]) -> f64 {
     let sorted_vec = sort_vector_asc(&vec);
     let n = sorted_vec.len();
     let midpoint = n / 2;
@@ -33,29 +33,29 @@ fn sum_of_square(vec: &[f64]) -> f64 {
 }
 
 #[inline(always)]
-fn dev_mean(vec: &[u32], mean: &f64) -> Vec<f64> {
+fn dev_mean(vec: &[usize], mean: &f64) -> Vec<f64> {
     vec.iter().map(|&val| val as f64 - *mean).collect()
 }
 
-fn variance(vec: &[u32], mean: &f64) -> f64 {
+fn variance(vec: &[usize], mean: &f64) -> f64 {
     let d_mean = dev_mean(vec, mean);
     let n = vec.len() as f64 - 1.0;
     sum_of_square(&d_mean) / n
 }
 
-pub fn stdev(vec: &[u32], mean: &f64) -> f64 {
+pub fn stdev(vec: &[usize], mean: &f64) -> f64 {
     let var = variance(vec, mean);
     var.sqrt()
 }
 
-fn sort_vec_desc(vec: &[u32]) -> Vec<u32> {
+fn sort_vec_desc(vec: &[usize]) -> Vec<usize> {
     let mut sorted_vec = vec.to_vec();
     sorted_vec.sort_by_key(|v| Reverse(*v));
 
     sorted_vec
 }
 
-fn cumsum(vec: &[u32]) -> Vec<u32> {
+fn cumsum(vec: &[usize]) -> Vec<usize> {
     let mut csum = Vec::new();
     let mut sum = 0;
     vec.iter().for_each(|v| {
@@ -66,20 +66,20 @@ fn cumsum(vec: &[u32]) -> Vec<u32> {
 }
 
 pub struct NStats {
-    sorted_contigs: Vec<u32>,
-    csum_contigs: Vec<u32>,
-    sum_contigs: u32,
-    pub n50: u32,
-    pub n75: u32,
-    pub n90: u32,
+    sorted_contigs: Vec<usize>,
+    csum_contigs: Vec<usize>,
+    sum_contigs: usize,
+    pub n50: usize,
+    pub n75: usize,
+    pub n90: usize,
 }
 
 impl NStats {
-    pub fn new(contigs: &[u32]) -> Self {
+    pub fn new(contigs: &[usize]) -> Self {
         let mut nstats = Self {
             sorted_contigs: sort_vec_desc(contigs),
             csum_contigs: Vec::new(),
-            sum_contigs: contigs.iter().sum::<u32>(),
+            sum_contigs: contigs.iter().sum::<usize>(),
             n50: 0,
             n75: 0,
             n90: 0,
@@ -108,14 +108,14 @@ impl NStats {
         self.n90 = self.sorted_contigs[idx];
     }
 
-    fn get_n_idx(&mut self, n: u32) -> usize {
+    fn get_n_idx(&mut self, n: usize) -> usize {
         self.csum_contigs.iter().position(|i| *i >= n).unwrap()
     }
 
-    fn n_len(&mut self, i: f64) -> u32 {
+    fn n_len(&mut self, i: f64) -> usize {
         let n = self.sum_contigs as f64 * i;
 
-        n as u32
+        n as usize
     }
 }
 
@@ -126,14 +126,14 @@ mod test {
 
     #[test]
     fn median_test() {
-        let odd: Vec<u32> = vec![1, 4, 3, 5, 6];
-        let even: Vec<u32> = vec![1, 4, 3, 5, 6, 6, 8, 10];
+        let odd: Vec<usize> = vec![1, 4, 3, 5, 6];
+        let even: Vec<usize> = vec![1, 4, 3, 5, 6, 6, 8, 10];
         assert_eq!(4.0, median(&odd));
         assert_eq!(5.5, median(&even));
     }
     #[test]
     fn var_test() {
-        let data: Vec<u32> = vec![1, 4, 3, 5, 6, 6, 8, 10];
+        let data: Vec<usize> = vec![1, 4, 3, 5, 6, 6, 8, 10];
         let mean = 5.375;
         let exp = 7.982143;
         let res = variance(&data, &mean);
@@ -142,7 +142,7 @@ mod test {
 
     #[test]
     fn stdev_test() {
-        let data: Vec<u32> = vec![1, 4, 3, 5, 6, 6, 8, 10];
+        let data: Vec<usize> = vec![1, 4, 3, 5, 6, 6, 8, 10];
         let mean = 5.375;
 
         let exp = 2.825269;
