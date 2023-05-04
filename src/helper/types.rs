@@ -76,6 +76,22 @@ impl std::fmt::Display for ContigFmt {
     }
 }
 
+pub fn infer_contig_fmt_auto(input: &Path) -> ContigFmt {
+    let ext: &str = input
+        .extension()
+        .and_then(OsStr::to_str)
+        .expect("Failed parsing extension");
+    match ext {
+        "fa" | "fasta" => ContigFmt::Fasta,
+        "gz" | "gzip" => ContigFmt::Gzip,
+        _ => panic!(
+            "The program cannot recognize the file extension. \
+        Maybe try to specify the input format using the -f or \
+        --input-format option."
+        ),
+    }
+}
+
 impl std::str::FromStr for ContigFmt {
     type Err = String;
 

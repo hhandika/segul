@@ -12,7 +12,7 @@ macro_rules! initiate_raw_cmd {
         // let dir = env::current_dir().unwrap().join("tests/files/raw");
         let path = std::path::PathBuf::from($tmp_dir.path());
         let mut $cmd = utils::segul(&path);
-        $cmd.arg("raw").arg("summary");
+        $cmd.arg("read").arg("summary");
         // .arg("-d")
         // .arg(dir)
         // .arg("-f")
@@ -21,7 +21,7 @@ macro_rules! initiate_raw_cmd {
 }
 
 #[test]
-fn test_raw_cmd() {
+fn test_read_cmd() {
     initiate_raw_cmd!(cmd, tmp_dir);
     cmd.arg("--help").assert().success();
     // let pred = predicates::path::is_dir();
