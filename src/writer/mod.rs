@@ -6,7 +6,7 @@
 //! 2. `PartitionWriter`: write partition data to a file.
 //! 3. `SummaryWriter`: write summary data to a file.
 pub mod partition;
-pub mod raw;
+pub mod read;
 pub mod sequences;
 pub mod summary;
 

@@ -7,15 +7,15 @@ use super::FileWriter;
 
 use crate::stats::read::{FastqRecords, QScoreRecords, QScoreStream, ReadRecord};
 
-impl FileWriter for RawSummaryWriter<'_> {}
+impl FileWriter for ReadSummaryWriter<'_> {}
 
 const DEFAULT_OUTPUT: &str = "summary.csv";
 
-pub struct RawSummaryWriter<'a> {
+pub struct ReadSummaryWriter<'a> {
     output: &'a Path,
 }
 
-impl<'a> RawSummaryWriter<'a> {
+impl<'a> ReadSummaryWriter<'a> {
     pub fn new(output: &'a Path) -> Self {
         Self { output }
     }
