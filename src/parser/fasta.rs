@@ -1,4 +1,4 @@
-//! A module for parsing fasta files.
+//! A simple fasta parser
 
 use std::fs::File;
 use std::io::prelude::*;

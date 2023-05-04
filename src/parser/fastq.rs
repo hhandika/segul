@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, io::BufRead};
 
 use noodles::fastq::Reader;
 
-use crate::stats::raw::{QScoreStream, ReadQScore, ReadRecord};
+use crate::stats::read::{QScoreStream, ReadQScore, ReadRecord};
 
 macro_rules! insert_records {
     ($self: ident, $record: ident, $sequence: ident, $qrecord: ident) => {

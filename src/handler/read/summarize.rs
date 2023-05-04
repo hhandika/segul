@@ -20,7 +20,7 @@ use crate::{
         utils::set_spinner,
     },
     parser::fastq::{self, FastqSummaryParser},
-    stats::raw::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
+    stats::read::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
     writer::raw::RawSummaryWriter,
 };
 
