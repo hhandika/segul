@@ -225,5 +225,7 @@ mod test {
         assert_eq!(parser.nucleotide, 485);
         assert_eq!(parser.contig_count, 2);
         assert_eq!(parser.total_len, 485);
+        assert_eq!(parser.min_len, 227);
+        assert_eq!(parser.max_len, 258);
     }
 }
