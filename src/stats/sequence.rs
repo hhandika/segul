@@ -561,7 +561,6 @@ impl Taxa {
     }
 }
 
-/// A struct to hold the character counts per site.
 /// A struct to hold the character counts.
 #[derive(Debug, Clone)]
 pub struct Chars {
