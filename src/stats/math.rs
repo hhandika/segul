@@ -1,6 +1,5 @@
 //! Heru Handika
 //! Module for statistics
-
 use std::cmp::Reverse;
 
 pub fn mean(vec: &[usize], sum: usize) -> f64 {
@@ -45,7 +44,7 @@ impl NStats {
         }
     }
 
-    pub fn count(&mut self, contigs: &[usize]) {
+    pub fn calculate(&mut self, contigs: &[usize]) {
         let sorted_contig = self.sort_vec_desc(contigs);
         let csum = self.cumsum(&sorted_contig);
         self.n50(&sorted_contig, &csum);
@@ -176,7 +175,7 @@ mod test {
         let contigs = vec![2, 3, 4, 5, 6, 7, 8, 9, 10];
         let sum = contigs.iter().sum::<usize>();
         let mut seq = NStats::new(sum);
-        seq.count(&contigs);
+        seq.calculate(&contigs);
         assert_eq!(8, seq.n50);
         assert_eq!(6, seq.n75);
         assert_eq!(4, seq.n90);

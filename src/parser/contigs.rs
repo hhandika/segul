@@ -141,11 +141,7 @@ impl ContigSummaryParser {
 
     fn summarize(&mut self, contigs: &[usize]) {
         self.total_len = self.total_len(contigs);
-        let mut nstats = NStats::new(self.total_len);
-        nstats.count(contigs);
-        self.n50 = nstats.n50;
-        self.n75 = nstats.n75;
-        self.n90 = nstats.n90;
+        self.nstat(contigs);
         self.contig_count = contigs.len();
         self.base_count = self.base_count();
         self.nucleotide = self.nucleotide();
@@ -158,6 +154,14 @@ impl ContigSummaryParser {
         self.contig750_count = self.contig750(contigs);
         self.contig1000_count = self.contig1000(contigs);
         self.contig1500_count = self.contig1500(contigs);
+    }
+
+    fn nstat(&mut self, contigs: &[usize]) {
+        let mut nstats = NStats::new(self.total_len);
+        nstats.calculate(contigs);
+        self.n50 = nstats.n50;
+        self.n75 = nstats.n75;
+        self.n90 = nstats.n90;
     }
 
     fn total_len(&mut self, contigs: &[usize]) -> usize {
