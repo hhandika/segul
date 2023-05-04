@@ -1,19 +1,19 @@
 use std::path::PathBuf;
 
-use crate::handler::raw::summarize::RawSummaryHandler;
+use crate::handler::read::summarize::ReadSummaryHandler;
 
 use super::{args::RawSummaryArgs, collect_paths, InputCli, OutputCli, RawInputCli, RawReadPrint};
 
-impl InputCli for RawSummaryParser<'_> {}
-impl OutputCli for RawSummaryParser<'_> {}
-impl RawInputCli for RawSummaryParser<'_> {}
+impl InputCli for ReadSummaryCliParser<'_> {}
+impl OutputCli for ReadSummaryCliParser<'_> {}
+impl RawInputCli for ReadSummaryCliParser<'_> {}
 
-pub(in crate::cli) struct RawSummaryParser<'a> {
+pub(in crate::cli) struct ReadSummaryCliParser<'a> {
     args: &'a RawSummaryArgs,
     input_dir: Option<PathBuf>,
 }
 
-impl<'a> RawSummaryParser<'a> {
+impl<'a> ReadSummaryCliParser<'a> {
     pub(in crate::cli) fn new(args: &'a RawSummaryArgs) -> Self {
         Self {
             args,
@@ -29,7 +29,7 @@ impl<'a> RawSummaryParser<'a> {
         let task = "Summarize raw read sequences";
         RawReadPrint::new(&self.input_dir, input_fmt, task, fcounts).print();
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        RawSummaryHandler::new(
+        ReadSummaryHandler::new(
             &mut files,
             &self.args.input_format,
             &self.args.mode,

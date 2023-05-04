@@ -1,6 +1,6 @@
 //! Handle segul main functions.
 pub mod align;
-pub mod raw;
+pub mod read;
 pub mod sequence;
 
 use std::path::Path;

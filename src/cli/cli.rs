@@ -5,7 +5,7 @@ use crate::cli::extract::ExtractParser;
 use crate::cli::filter::FilterParser;
 use crate::cli::id::IdParser;
 use crate::cli::partition::PartParser;
-use crate::cli::raw::RawSummaryParser;
+use crate::cli::read::ReadSummaryCliParser;
 use crate::cli::remove::RemoveParser;
 use crate::cli::rename::RenameParser;
 use crate::cli::split::SplitParser;
@@ -31,7 +31,7 @@ pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
 fn match_raw_read_subcommand(subcommand: &RawReadSubcommand) {
     match subcommand {
         RawReadSubcommand::RawSummary(raw_args) => {
-            RawSummaryParser::new(&raw_args).summarize();
+            ReadSummaryCliParser::new(&raw_args).summarize();
         }
     };
 }

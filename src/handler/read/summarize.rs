@@ -25,14 +25,14 @@ use crate::{
 };
 
 /// Include support for any compressed or uncompressed fastq files.
-pub struct RawSummaryHandler<'a> {
+pub struct ReadSummaryHandler<'a> {
     pub inputs: &'a mut [PathBuf],
     pub input_fmt: &'a RawReadFmt,
     pub mode: &'a SummaryMode,
     pub output: &'a Path,
 }
 
-impl<'a> RawSummaryHandler<'a> {
+impl<'a> ReadSummaryHandler<'a> {
     pub fn new(
         inputs: &'a mut [PathBuf],
         input_fmt: &'a RawReadFmt,

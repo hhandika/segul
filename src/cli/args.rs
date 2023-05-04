@@ -24,7 +24,7 @@ pub(crate) struct Cli {
 
 #[derive(Subcommand)]
 pub(crate) enum MainSubcommand {
-    #[command(subcommand, about = "Raw read sequence analyses", name = "raw")]
+    #[command(subcommand, about = "Sequence read analyses", name = "read")]
     RawRead(RawReadSubcommand),
     #[command(subcommand, about = "Contiguous sequence analyses", name = "contig")]
     Contig(ContigSubcommand),
@@ -42,7 +42,7 @@ pub(crate) enum MainSubcommand {
 
 #[derive(Subcommand)]
 pub(crate) enum RawReadSubcommand {
-    #[command(about = "Compute raw read statistics", name = "summary")]
+    #[command(about = "Compute sequence read statistics", name = "summary")]
     RawSummary(RawSummaryArgs),
 }
 
