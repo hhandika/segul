@@ -7,9 +7,9 @@ use anyhow::{Context, Result};
 use colored::Colorize;
 
 use crate::helper::alphabet;
-use crate::helper::stats::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::helper::types::{DataType, TaxonRecords};
 use crate::helper::utils;
+use crate::stats::sequence::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::writer::FileWriter;
 
 trait Alphabet {

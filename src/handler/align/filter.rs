@@ -9,12 +9,12 @@ use rayon::prelude::*;
 
 use super::concat::ConcatHandler;
 use crate::helper::sequence::SeqParser;
-use crate::helper::stats;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::utils;
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
+use crate::stats::sequence;
 
 pub enum Params {
     MinTax(usize),
@@ -188,7 +188,7 @@ impl<'a> SeqFilter<'a> {
 
     fn get_pars_inf(&self, file: &Path) -> usize {
         let (matrix, _) = self.get_alignment(file);
-        stats::get_pars_inf(&matrix, self.datatype)
+        sequence::get_pars_inf(&matrix, self.datatype)
     }
 
     fn parse_id(&self, file: &Path) -> IndexSet<String> {

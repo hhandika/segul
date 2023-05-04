@@ -4,6 +4,7 @@ use colored::Colorize;
 
 use crate::cli::AlignSeqPrint;
 use crate::handler::sequence::translate::Translate;
+use crate::helper::types::GeneticCodes;
 
 use super::args::SequenceTranslateArgs;
 use super::{collect_paths, AlignSeqInput, InputCli, InputPrint, OutputCli};
@@ -53,7 +54,8 @@ impl<'a> TranslateParser<'a> {
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "Params".yellow());
         self.show_trans_table();
-        let translate = Translate::new(&self.args.table, &input_fmt, &datatype, &output_fmt);
+        let table = self.parse_table_num();
+        let translate = Translate::new(&table, &input_fmt, &datatype, &output_fmt);
         match frame {
             Some(num) => {
                 log::info!("{:18}: {}\n", "Reading frame", &num);
@@ -64,6 +66,10 @@ impl<'a> TranslateParser<'a> {
                 translate.translate_all_autoframe(&files, &self.args.output);
             }
         }
+    }
+
+    fn parse_table_num(&self) -> GeneticCodes {
+        self.args.table.parse().expect("Invalid table number")
     }
 
     fn show_trans_table(&mut self) {

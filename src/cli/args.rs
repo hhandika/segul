@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{builder, Args, Parser, Subcommand, crate_name, crate_authors, crate_version, crate_description};
 use clap::builder::TypedValueParser as _;
-use crate::helper::types::{RawReadFmt, SummaryMode, GeneticCodes};
+use crate::helper::types::{RawReadFmt, SummaryMode};
 use crate::helper::logger;
 
 #[derive(Parser)]
@@ -439,8 +439,8 @@ pub(crate) struct SequenceTranslateArgs {
     #[arg(
         long = "table",
         help = "Specify NCBI translation table",
-        default_value_t = GeneticCodes::StandardCode,
-        value_name = "INT",
+        default_value = "1",
+        value_name = "NUMBER",
         value_parser = builder::PossibleValuesParser::new(
             [
                 "1",
@@ -465,10 +465,9 @@ pub(crate) struct SequenceTranslateArgs {
                 "29",
                 "30",
                 "33",
-            ])
-             .map(|s| s.parse::<GeneticCodes>().unwrap_or(GeneticCodes::StandardCode))
+            ]) 
     )]
-    pub(crate) table: GeneticCodes,
+    pub(crate) table: String,
 }
 
 #[derive(Args)]
