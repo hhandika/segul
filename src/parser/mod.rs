@@ -7,6 +7,7 @@
 //! 4. `partition`: Partition format parser.
 //! 5. `phylip`: Phylip format parser.
 //! 6. `txt`: Plain text format parser.
+pub mod contigs;
 pub mod delimited;
 pub mod fasta;
 pub mod fastq;

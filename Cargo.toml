@@ -30,7 +30,7 @@ num-format = "0.*"
 rayon = "1.*"
 regex = "1.*"
 clap = { version = "4.1.1", features = ["cargo", "derive"] }
-noodles = { version = "0.31.1", features = ["fastq", "vcf"] }
+noodles = { version = "0.31.1", features = ["fastq", "fasta"] }
 flate2 = "1.0.25"
 serde_json = "1.0.91"
 serde = { version = "1.0.152", features = ["derive"] }

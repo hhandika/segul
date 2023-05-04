@@ -90,13 +90,13 @@ impl<'a> Fasta<'a> {
     }
 }
 
-struct Records {
-    id: String,
-    seq: String,
+pub struct Records {
+    pub id: String,
+    pub seq: String,
 }
 
 impl Records {
-    fn new(id: &str, seq: &str) -> Self {
+    pub fn new(id: &str, seq: &str) -> Self {
         Self {
             id: String::from(id),
             seq: String::from(seq),
@@ -104,14 +104,14 @@ impl Records {
     }
 }
 
-struct FastaReader<R> {
+pub struct FastaReader<R> {
     reader: BufReader<R>,
     id: String,
     seq: String,
 }
 
 impl<R: Read> FastaReader<R> {
-    fn new(file: R) -> Self {
+    pub fn new(file: R) -> Self {
         Self {
             reader: BufReader::new(file),
             id: String::new(),
@@ -119,7 +119,7 @@ impl<R: Read> FastaReader<R> {
         }
     }
 
-    fn next_seq(&mut self) -> Option<Records> {
+    pub fn next_seq(&mut self) -> Option<Records> {
         while let Some(Ok(line)) = self.reader.by_ref().lines().next() {
             if let Some(id) = line.strip_prefix('>') {
                 if self.id.is_empty() {
