@@ -40,11 +40,7 @@ pub struct ContigSummaryParser {
     /// AT content
     pub at_content: f64,
     /// N50
-    pub n50: usize,
-    /// N75
-    pub n75: usize,
-    /// N90
-    pub n90: usize,
+    pub nstats: NStats,
     /// Mean
     pub mean: f64,
     /// Median
@@ -79,9 +75,7 @@ impl ContigSummaryParser {
             unknown: 0,
             gc_content: 0.0,
             at_content: 0.0,
-            n50: 0,
-            n75: 0,
-            n90: 0,
+            nstats: NStats::new(),
             mean: 0.0,
             median: 0.0,
             total_len: 0,
@@ -157,11 +151,7 @@ impl ContigSummaryParser {
     }
 
     fn nstat(&mut self, contigs: &[usize]) {
-        let mut nstats = NStats::new(self.total_len);
-        nstats.calculate(contigs);
-        self.n50 = nstats.n50;
-        self.n75 = nstats.n75;
-        self.n90 = nstats.n90;
+        self.nstats.calculate(contigs, self.total_len);
     }
 
     fn total_len(&mut self, contigs: &[usize]) -> usize {
@@ -234,5 +224,6 @@ mod test {
         assert_eq!(parser.base_count, 485);
         assert_eq!(parser.nucleotide, 485);
         assert_eq!(parser.contig_count, 2);
+        assert_eq!(parser.total_len, 485);
     }
 }

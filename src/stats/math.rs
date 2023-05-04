@@ -35,16 +35,17 @@ pub struct NStats {
 }
 
 impl NStats {
-    pub fn new(sum: usize) -> Self {
+    pub fn new() -> Self {
         Self {
             n50: 0,
             n75: 0,
             n90: 0,
-            sum,
+            sum: 0,
         }
     }
 
-    pub fn calculate(&mut self, contigs: &[usize]) {
+    pub fn calculate(&mut self, contigs: &[usize], total_len: usize) {
+        self.sum = total_len;
         let sorted_contig = self.sort_vec_desc(contigs);
         let csum = self.cumsum(&sorted_contig);
         self.n50(&sorted_contig, &csum);
@@ -158,7 +159,7 @@ mod test {
     fn csum_test() {
         let a = vec![1, 2, 3];
         let res = vec![1, 3, 6];
-        let nstat = NStats::new(6);
+        let nstat = NStats::new();
         assert_eq!(res, nstat.cumsum(&a));
     }
 
@@ -166,7 +167,7 @@ mod test {
     fn sorted_vec_desc_test() {
         let a = vec![1, 2, 3];
         let res = vec![3, 2, 1];
-        let nstat = NStats::new(6);
+        let nstat = NStats::new();
         assert_eq!(res, nstat.sort_vec_desc(&a));
     }
 
@@ -174,8 +175,8 @@ mod test {
     fn n50_stats_test() {
         let contigs = vec![2, 3, 4, 5, 6, 7, 8, 9, 10];
         let sum = contigs.iter().sum::<usize>();
-        let mut seq = NStats::new(sum);
-        seq.calculate(&contigs);
+        let mut seq = NStats::new();
+        seq.calculate(&contigs, sum);
         assert_eq!(8, seq.n50);
         assert_eq!(6, seq.n75);
         assert_eq!(4, seq.n90);
