@@ -45,11 +45,11 @@ pub struct ContigSummaryParser {
     /// Mean, median, min, max, and stdev
     pub stats: CommonStats,
     /// Number of contigs > 750 bp
-    pub contig750_count: usize,
+    pub contig750: usize,
     /// Number of contigs > 1000 bp
-    pub contig1000_count: usize,
+    pub contig1000: usize,
     /// Number of contigs > 1500 bp
-    pub contig1500_count: usize,
+    pub contig1500: usize,
 }
 
 impl ContigSummaryParser {
@@ -70,9 +70,9 @@ impl ContigSummaryParser {
             at_content: 0.0,
             nstats: NStats::new(),
             stats: CommonStats::new(),
-            contig750_count: 0,
-            contig1000_count: 0,
-            contig1500_count: 0,
+            contig750: 0,
+            contig1000: 0,
+            contig1500: 0,
         }
     }
 
@@ -124,51 +124,55 @@ impl ContigSummaryParser {
 
     fn summarize(&mut self, contigs: &[usize]) {
         self.common_stats(contigs);
-        self.nstat(contigs);
+        self.calculate_nstat(contigs);
+        self.count_contigs(contigs);
+        self.count_bases();
+        self.count_nucleotide();
+        self.calculate_gc_content();
+        self.calculate_at_content();
+        self.count_contig750(contigs);
+        self.count_contig1000(contigs);
+        self.count_contig1500(contigs);
+    }
+
+    fn count_contigs(&mut self, contigs: &[usize]) {
         self.contig_count = contigs.len();
-        self.base_count = self.base_count();
-        self.nucleotide = self.nucleotide();
-        self.gc_content = self.gc_content();
-        self.at_content = self.at_content();
-        self.contig750_count = self.contig750(contigs);
-        self.contig1000_count = self.contig1000(contigs);
-        self.contig1500_count = self.contig1500(contigs);
     }
 
     fn common_stats(&mut self, contigs: &[usize]) {
         self.stats.calculate(contigs);
     }
 
-    fn nstat(&mut self, contigs: &[usize]) {
+    fn calculate_nstat(&mut self, contigs: &[usize]) {
         self.nstats.calculate(contigs, self.stats.sum);
     }
 
-    fn base_count(&mut self) -> usize {
-        self.g_count + self.c_count + self.a_count + self.t_count + self.n_count
+    fn count_bases(&mut self) {
+        self.base_count = self.g_count + self.c_count + self.a_count + self.t_count + self.n_count;
     }
 
-    fn nucleotide(&mut self) -> usize {
-        self.base_count - self.n_count
+    fn count_nucleotide(&mut self) {
+        self.nucleotide = self.base_count - self.n_count;
     }
 
-    fn gc_content(&mut self) -> f64 {
-        (self.g_count + self.c_count) as f64 / self.base_count as f64
+    fn calculate_gc_content(&mut self) {
+        self.gc_content = (self.g_count + self.c_count) as f64 / self.base_count as f64;
     }
 
-    fn at_content(&mut self) -> f64 {
-        (self.a_count + self.t_count) as f64 / self.base_count as f64
+    fn calculate_at_content(&mut self) {
+        self.at_content = (self.a_count + self.t_count) as f64 / self.base_count as f64;
     }
 
-    fn contig750(&mut self, contigs: &[usize]) -> usize {
-        contigs.iter().filter(|&c| *c > 750).count()
+    fn count_contig750(&mut self, contigs: &[usize]) {
+        self.contig750 = contigs.iter().filter(|&c| *c > 750).count();
     }
 
-    fn contig1000(&mut self, contigs: &[usize]) -> usize {
-        contigs.iter().filter(|&c| *c > 1000).count()
+    fn count_contig1000(&mut self, contigs: &[usize]) {
+        self.contig1000 = contigs.iter().filter(|&c| *c > 1000).count();
     }
 
-    fn contig1500(&mut self, contigs: &[usize]) -> usize {
-        contigs.iter().filter(|&c| *c > 1500).count()
+    fn count_contig1500(&mut self, contigs: &[usize]) {
+        self.contig1500 = contigs.iter().filter(|&c| *c > 1500).count();
     }
 }
 
