@@ -5,9 +5,9 @@ use std::path::Path;
 use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
 
-/// Data types for raw read sequences
+/// Data types for high-throughput sequencing reads
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum RawReadFmt {
+pub enum SeqReadFmt {
     /// Infer format from file extension
     Auto,
     /// Fastq format
@@ -16,7 +16,7 @@ pub enum RawReadFmt {
     Gzip,
 }
 
-impl std::fmt::Display for RawReadFmt {
+impl std::fmt::Display for SeqReadFmt {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Auto => write!(f, "auto"),
@@ -26,7 +26,7 @@ impl std::fmt::Display for RawReadFmt {
     }
 }
 
-impl std::str::FromStr for RawReadFmt {
+impl std::str::FromStr for SeqReadFmt {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -39,14 +39,14 @@ impl std::str::FromStr for RawReadFmt {
     }
 }
 
-pub fn infer_raw_input_auto(input: &Path) -> RawReadFmt {
+pub fn infer_raw_input_auto(input: &Path) -> SeqReadFmt {
     let ext: &str = input
         .extension()
         .and_then(OsStr::to_str)
         .expect("Failed parsing extension");
     match ext {
-        "fq" | "fastq" => RawReadFmt::Fastq,
-        "gz" | "gzip" => RawReadFmt::Gzip,
+        "fq" | "fastq" => SeqReadFmt::Fastq,
+        "gz" | "gzip" => SeqReadFmt::Gzip,
         _ => panic!(
             "The program cannot recognize the file extension. \
         Maybe try to specify the input format using the -f or \

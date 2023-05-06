@@ -4,7 +4,7 @@ use std::env;
 
 use predicates::Predicate;
 
-use segul::helper::finder::Files;
+use segul::helper::finder::SeqFileFinder;
 use segul::helper::types::InputFmt;
 
 macro_rules! test_filter {

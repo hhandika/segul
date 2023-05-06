@@ -10,13 +10,13 @@ use rayon::prelude::*;
 use regex::Regex;
 use walkdir::WalkDir;
 
-use crate::helper::types::RawReadFmt;
+use crate::helper::types::SeqReadFmt;
 use crate::helper::types::{DataType, InputFmt};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
 
-use super::types;
+use super::types::{self, ContigFmt};
 
 macro_rules! id_non_fasta {
     ($self:ident,  $type: ident, $datatype:ident) => {{
@@ -41,15 +41,176 @@ macro_rules! walk_dir {
     }};
 }
 
-/// Find input files from a directory.
-pub struct Files<'a> {
+trait FileFinder {
+    fn glob_files(&self, pattern: &str) -> Vec<PathBuf> {
+        glob(pattern)
+            .expect("Failed finding files with matching pattern")
+            .filter_map(|ok| ok.ok())
+            .collect::<Vec<PathBuf>>()
+    }
+
+    fn check_results(&self, files: &[PathBuf]) {
+        if files.is_empty() {
+            panic!(
+                "No input files found. \
+                    Please check your input directory and file format."
+            );
+        }
+    }
+}
+
+impl FileFinder for SeqReadFinder<'_> {}
+
+/// Find high-throughput sequencing read files.
+/// Supported file formats uncompressed FASTQ and
+/// compressed GZIP FASTQ.
+pub struct SeqReadFinder<'a> {
     /// Input directory.
     dir: &'a Path,
     /// Glob pattern.
     pattern: String,
 }
 
-impl<'a> Files<'a> {
+impl<'a> SeqReadFinder<'a> {
+    pub fn new(dir: &'a Path) -> Self {
+        Self {
+            dir,
+            pattern: String::new(),
+        }
+    }
+
+    /// Find input files for raw reads.
+    /// Return a vector of input files.
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::SeqReadFmt;
+    /// use segul::helper::finder::SeqReadFinder;
+    ///
+    /// let dir = Path::new("tests/files/raw");
+    /// let input_fmt = SeqReadFmt::Fastq;
+    /// let files = SeqReadFinder::new(&dir).find(&input_fmt);
+    /// assert_eq!(files.len(), 4);
+    pub fn find(&mut self, input_fmt: &'a SeqReadFmt) -> Vec<PathBuf> {
+        let files = if SeqReadFmt::Auto == *input_fmt {
+            self.find_recursive()
+        } else {
+            self.raw_pattern(input_fmt);
+            self.glob_files(&self.pattern)
+        };
+
+        self.check_results(&files);
+
+        files
+    }
+
+    /// Find input files for raw reads, recursively.
+    /// Return a vector of input files.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::SeqReadFmt;
+    /// use segul::helper::finder::SeqReadFinder;
+    ///
+    /// let dir = Path::new("tests/files/raw");
+    /// let files = SeqReadFinder::new(&dir).find_recursive();
+    /// assert_eq!(files.len(), 4);
+    /// ```
+    pub fn find_recursive(&self) -> Vec<PathBuf> {
+        walk_dir!(self, re_matches_fastq_lazy)
+    }
+
+    fn raw_pattern(&mut self, input_fmt: &'a SeqReadFmt) {
+        self.pattern = match input_fmt {
+            SeqReadFmt::Fastq => format!("{}/*.f*q", self.dir.display()),
+            SeqReadFmt::Gzip => format!("{}/*.f*q.gz*", self.dir.display()),
+            SeqReadFmt::Auto => unreachable!("Unsupported input format"),
+        };
+    }
+}
+
+pub struct ContigFileFinder<'a> {
+    /// Input directory.
+    dir: &'a Path,
+    /// Glob pattern.
+    pattern: String,
+}
+
+impl FileFinder for ContigFileFinder<'_> {}
+
+impl<'a> ContigFileFinder<'a> {
+    pub fn new(dir: &'a Path) -> Self {
+        Self {
+            dir,
+            pattern: String::new(),
+        }
+    }
+
+    /// Find input files for contiguous sequences.
+    /// Return a vector of input files.
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::ContigFmt;
+    /// use segul::helper::finder::ContigFileFinder;
+    ///
+    /// let dir = Path::new("tests/files/contigs");
+    /// let input_fmt = ContigFmt::Fasta;
+    /// let files = ContigFileFinder::new(&dir).find(&input_fmt);
+    /// assert_eq!(files.len(), 2);
+    pub fn find(&mut self, input_fmt: &'a ContigFmt) -> Vec<PathBuf> {
+        let files = if ContigFmt::Auto == *input_fmt {
+            self.find_recursive()
+        } else {
+            self.contig_pattern(input_fmt);
+            self.glob_files(&self.pattern)
+        };
+
+        self.check_results(&files);
+
+        files
+    }
+
+    /// Find input files for contiguous sequences, recursively.
+    /// Return a vector of input files.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::InputFmt;
+    /// use segul::helper::finder::ContigFileFinder;
+    ///
+    /// let dir = Path::new("tests/files/contigs");
+    /// let files = ContigFileFinder::new(&dir).find_recursive();
+    /// assert_eq!(files.len(), 2);
+    /// ```
+    pub fn find_recursive(&self) -> Vec<PathBuf> {
+        walk_dir!(self, re_matches_fasta_lazy)
+    }
+
+    fn contig_pattern(&mut self, input_fmt: &'a ContigFmt) {
+        self.pattern = match input_fmt {
+            ContigFmt::Fasta => format!("{}/*.f*a", self.dir.display()),
+            ContigFmt::Gzip => format!("{}/*.f*a.gz*", self.dir.display()),
+            ContigFmt::Auto => unreachable!("Unsupported input format"),
+        };
+    }
+}
+
+/// Find sequence files from a directory.
+/// Supported file formats are FASTA, PHYLIP, and NEXUS.
+/// include support for interleaved and sequential formats.
+pub struct SeqFileFinder<'a> {
+    /// Input directory.
+    dir: &'a Path,
+    /// Glob pattern.
+    pattern: String,
+}
+
+impl FileFinder for SeqFileFinder<'_> {}
+
+impl<'a> SeqFileFinder<'a> {
     /// Create a new `Files` instance.
     pub fn new(dir: &'a Path) -> Self {
         Self {
@@ -64,11 +225,11 @@ impl<'a> Files<'a> {
     /// ```
     /// use std::path::Path;
     /// use segul::helper::types::InputFmt;
-    /// use segul::helper::finder::Files;
+    /// use segul::helper::finder::SeqFileFinder;
     ///
     /// let dir = Path::new("tests/files/concat");
     /// let input_fmt = InputFmt::Nexus;
-    /// let files = Files::new(&dir).find(&input_fmt);
+    /// let files = SeqFileFinder::new(&dir).find(&input_fmt);
     /// assert_eq!(files.len(), 4);
     /// ```
     pub fn find(&mut self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
@@ -76,7 +237,7 @@ impl<'a> Files<'a> {
             self.find_recursive()
         } else {
             self.pattern(input_fmt);
-            self.glob_files()
+            self.glob_files(&self.pattern)
         };
         self.check_results(&files);
 
@@ -90,80 +251,14 @@ impl<'a> Files<'a> {
     /// ```
     /// use std::path::Path;
     /// use segul::helper::types::InputFmt;
-    /// use segul::helper::finder::Files;
+    /// use segul::helper::finder::SeqFileFinder;
     ///
     /// let dir = Path::new("tests/files/concat");
-    /// let files = Files::new(&dir).find_recursive();
+    /// let files = SeqFileFinder::new(&dir).find_recursive();
     /// assert_eq!(files.len(), 4);
     /// ```
     pub fn find_recursive(&self) -> Vec<PathBuf> {
         walk_dir!(self, re_match_sequence_lazy)
-    }
-
-    /// Find input files for raw reads.
-    /// Return a vector of input files.
-    /// # Example
-    /// ```
-    /// use std::path::Path;
-    /// use segul::helper::types::RawReadFmt;
-    /// use segul::helper::finder::Files;
-    ///
-    /// let dir = Path::new("tests/files/raw");
-    /// let input_fmt = RawReadFmt::Fastq;
-    /// let files = Files::new(&dir).find_raw_read(&input_fmt);
-    /// assert_eq!(files.len(), 4);
-    pub fn find_raw_read(&mut self, input_fmt: &'a RawReadFmt) -> Vec<PathBuf> {
-        let files = if RawReadFmt::Auto == *input_fmt {
-            self.find_raw_read_recursive()
-        } else {
-            self.raw_pattern(input_fmt);
-            self.glob_files()
-        };
-
-        self.check_results(&files);
-
-        files
-    }
-
-    /// Find input files for raw reads, recursively.
-    /// Return a vector of input files.
-    ///
-    /// # Example
-    /// ```
-    /// use std::path::Path;
-    /// use segul::helper::types::RawReadFmt;
-    /// use segul::helper::finder::Files;
-    ///
-    /// let dir = Path::new("tests/files/raw");
-    /// let files = Files::new(&dir).find_raw_read_recursive();
-    /// assert_eq!(files.len(), 4);
-    /// ```
-    pub fn find_raw_read_recursive(&self) -> Vec<PathBuf> {
-        walk_dir!(self, re_matches_fastq_lazy)
-    }
-
-    /// Find input files for contiguous sequences, recursively.
-    /// Return a vector of input files.
-    ///
-    /// # Example
-    /// ```
-    /// use std::path::Path;
-    /// use segul::helper::types::InputFmt;
-    /// use segul::helper::finder::Files;
-    ///
-    /// let dir = Path::new("tests/files/contigs");
-    /// let files = Files::new(&dir).find_contig_recursive();
-    /// assert_eq!(files.len(), 2);
-    /// ```
-    pub fn find_contig_recursive(&self) -> Vec<PathBuf> {
-        walk_dir!(self, re_matches_fasta_lazy)
-    }
-
-    fn glob_files(&self) -> Vec<PathBuf> {
-        glob(&self.pattern)
-            .expect("Failed finding files with matching pattern")
-            .filter_map(|ok| ok.ok())
-            .collect::<Vec<PathBuf>>()
     }
 
     fn check_results(&self, files: &[PathBuf]) {
@@ -174,14 +269,6 @@ impl<'a> Files<'a> {
                 self.pattern
             );
         }
-    }
-
-    fn raw_pattern(&mut self, input_fmt: &'a RawReadFmt) {
-        self.pattern = match input_fmt {
-            RawReadFmt::Fastq => format!("{}/*.f*q", self.dir.display()),
-            RawReadFmt::Gzip => format!("{}/*.f*q.gz*", self.dir.display()),
-            RawReadFmt::Auto => unreachable!("Unsupported input format"),
-        };
     }
 
     fn pattern(&mut self, input_fmt: &'a InputFmt) {
@@ -319,7 +406,7 @@ mod test {
         ($files: ident) => {
             let path = Path::new("tests/files/concat");
 
-            let mut $files = Files::new(path);
+            let mut $files = SeqFileFinder::new(path);
         };
     }
 
@@ -342,11 +429,21 @@ mod test {
     #[test]
     fn test_raw_pattern() {
         let path = Path::new("tests/files/raw");
-        let fmt = RawReadFmt::Fastq;
-        let mut files = Files::new(path);
-        let found_files = files.find_raw_read(&fmt);
+        let fmt = SeqReadFmt::Fastq;
+        let mut files = SeqReadFinder::new(path);
+        let found_files = files.find(&fmt);
         assert_eq!(4, found_files.len());
         assert_eq!("tests/files/raw/*.f*q", files.pattern);
+    }
+
+    #[test]
+    fn test_contig_file_pattern() {
+        let path = Path::new("tests/files/contigs");
+        let fmt = ContigFmt::Fasta;
+        let mut files = ContigFileFinder::new(path);
+        let found_files = files.find(&fmt);
+        assert_eq!(2, found_files.len());
+        assert_eq!("tests/files/contigs/*.f*a", files.pattern);
     }
 
     #[test]
@@ -361,7 +458,7 @@ mod test {
     #[should_panic]
     fn test_check_empty_files() {
         let path = Path::new("tests/files/empty/");
-        let mut finder = Files::new(path);
+        let mut finder = SeqFileFinder::new(path);
         let files = finder.find(&InputFmt::Nexus);
         finder.check_results(&files);
     }

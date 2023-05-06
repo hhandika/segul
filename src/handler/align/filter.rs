@@ -214,7 +214,7 @@ impl<'a> SeqFilter<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::helper::finder::Files;
+    use crate::helper::finder::SeqFileFinder;
 
     const PATH: &str = "tests/files/pinf/";
     const INPUT_FMT: InputFmt = InputFmt::Fasta;
@@ -222,7 +222,7 @@ mod test {
     #[test]
     fn test_min_pinf() {
         let path = Path::new(PATH);
-        let files = Files::new(path).find(&INPUT_FMT);
+        let files = SeqFileFinder::new(path).find(&INPUT_FMT);
         let ftr = SeqFilter::new(
             &files,
             &INPUT_FMT,

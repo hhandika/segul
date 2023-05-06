@@ -160,7 +160,7 @@ impl<'a> Concat<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::helper::finder::Files;
+    use crate::helper::finder::SeqFileFinder;
     use crate::helper::utils;
 
     const DNA: DataType = DataType::Dna;
@@ -168,7 +168,7 @@ mod test {
     #[test]
     fn test_concat_nexus() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path).find(&InputFmt::Nexus);
+        let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
@@ -179,7 +179,7 @@ mod test {
     #[should_panic]
     fn test_get_alignment_panic() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path).find(&InputFmt::Nexus);
+        let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         concat.get_alignment(Path::new("."));
     }
@@ -187,7 +187,7 @@ mod test {
     #[test]
     fn test_concat_check_result() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path).find(&InputFmt::Nexus);
+        let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
@@ -199,7 +199,7 @@ mod test {
     #[test]
     fn test_concat_partition() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path).find(&InputFmt::Nexus);
+        let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
@@ -226,7 +226,7 @@ mod test {
     #[test]
     fn test_header_datatype() {
         let path = Path::new("tests/files/concat/");
-        let mut files = Files::new(path).find(&InputFmt::Nexus);
+        let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DataType::Aa);
         concat.match_header_datatype();
         assert_eq!(concat.header.datatype, String::from("protein"));

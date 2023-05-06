@@ -4,12 +4,8 @@ use std::env;
 
 use predicates::Predicate;
 
-use segul::helper::finder::Files;
+use segul::helper::finder::SeqFileFinder;
 use segul::helper::types::InputFmt;
-// use std::path::Path;
-
-// use assert_cmd::Command;
-// use tempdir::TempDir;
 
 pub const DIR: &str = "temp";
 

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{builder, Args, Parser, Subcommand, crate_name, crate_authors, crate_version, crate_description};
 use clap::builder::TypedValueParser as _;
-use crate::helper::types::{RawReadFmt, SummaryMode};
+use crate::helper::types::{SeqReadFmt, SummaryMode};
 use crate::helper::logger;
 
 #[derive(Parser)]
@@ -97,12 +97,12 @@ pub(crate) struct RawSummaryArgs {
         short = 'f', 
         long ="input-format", 
         help = "Specify input format", 
-        default_value_t = RawReadFmt::Auto,
+        default_value_t = SeqReadFmt::Auto,
         value_parser = 
             builder::PossibleValuesParser::new(["auto","fastq","gzip"])
-            .map(|x| x.parse::<RawReadFmt>().expect("Invalid input format")),
+            .map(|x| x.parse::<SeqReadFmt>().expect("Invalid input format")),
     )]
-    pub(crate) input_format: RawReadFmt,
+    pub(crate) input_format: SeqReadFmt,
     #[arg(
         long = "mode", 
         help = "Summary mode", 

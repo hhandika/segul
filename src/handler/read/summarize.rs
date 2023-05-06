@@ -16,7 +16,7 @@ use rayon::prelude::*;
 use crate::{
     helper::{
         files,
-        types::{infer_raw_input_auto, RawReadFmt, SummaryMode},
+        types::{infer_raw_input_auto, SeqReadFmt, SummaryMode},
         utils::set_spinner,
     },
     parser::fastq::{self, FastqSummaryParser},
@@ -27,7 +27,7 @@ use crate::{
 /// Include support for any compressed or uncompressed fastq files.
 pub struct ReadSummaryHandler<'a> {
     pub inputs: &'a mut [PathBuf],
-    pub input_fmt: &'a RawReadFmt,
+    pub input_fmt: &'a SeqReadFmt,
     pub mode: &'a SummaryMode,
     pub output: &'a Path,
 }
@@ -35,7 +35,7 @@ pub struct ReadSummaryHandler<'a> {
 impl<'a> ReadSummaryHandler<'a> {
     pub fn new(
         inputs: &'a mut [PathBuf],
-        input_fmt: &'a RawReadFmt,
+        input_fmt: &'a SeqReadFmt,
         mode: &'a SummaryMode,
         output: &'a Path,
     ) -> Self {
@@ -100,17 +100,17 @@ impl<'a> ReadSummaryHandler<'a> {
         let (sender, receiver) = channel();
 
         self.inputs.par_iter().for_each_with(sender, |s, p| {
-            let input_fmt = if self.input_fmt == &RawReadFmt::Auto {
+            let input_fmt = if self.input_fmt == &SeqReadFmt::Auto {
                 infer_raw_input_auto(p)
             } else {
                 self.input_fmt.clone()
             };
             let count = match input_fmt {
-                RawReadFmt::Fastq => {
+                SeqReadFmt::Fastq => {
                     let mut buff = files::open_file(p);
                     fastq::count_reads(&mut buff)
                 }
-                RawReadFmt::Gzip => {
+                SeqReadFmt::Gzip => {
                     let mut decoder = files::decode_gzip(p);
                     fastq::count_reads(&mut decoder)
                 }
@@ -138,13 +138,13 @@ impl<'a> ReadSummaryHandler<'a> {
     }
 
     fn parse_fastq(&self, path: &Path) -> (FastqRecords, QScoreRecords) {
-        let input_fmt = if self.input_fmt == &RawReadFmt::Auto {
+        let input_fmt = if self.input_fmt == &SeqReadFmt::Auto {
             infer_raw_input_auto(path)
         } else {
             self.input_fmt.clone()
         };
         match input_fmt {
-            RawReadFmt::Fastq => {
+            SeqReadFmt::Fastq => {
                 let file = File::open(path).expect("Failed opening fastq file");
                 let mut buff = BufReader::new(file);
                 if self.mode == &SummaryMode::Complete {
@@ -153,7 +153,7 @@ impl<'a> ReadSummaryHandler<'a> {
                     self.parse_record(&mut buff, path)
                 }
             }
-            RawReadFmt::Gzip => {
+            SeqReadFmt::Gzip => {
                 let mut decoder = files::decode_gzip(path);
                 if self.mode == &SummaryMode::Complete {
                     self.map_record(&mut decoder, path)

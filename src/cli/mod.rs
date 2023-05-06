@@ -28,8 +28,8 @@ use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::cli::args::Cli;
-use crate::helper::finder::Files;
-use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt, RawReadFmt};
+use crate::helper::finder::{SeqFileFinder, SeqReadFinder};
+use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt, SeqReadFmt};
 use crate::helper::{logger, utils};
 
 /// Parse command line arguments and execute commands.
@@ -136,7 +136,7 @@ trait AlignSeqInput {
     }
 
     fn glob_paths(&self, dir: &str, input_fmt: &InputFmt) -> Vec<PathBuf> {
-        Files::new(Path::new(dir)).find(input_fmt)
+        SeqFileFinder::new(Path::new(dir)).find(input_fmt)
     }
 }
 
@@ -156,14 +156,14 @@ impl InputPrint for RawReadPrint<'_> {
 }
 
 trait RawInputCli {
-    fn glob_paths(&self, dir: &str, input_fmt: &RawReadFmt) -> Vec<PathBuf> {
-        Files::new(Path::new(dir)).find_raw_read(input_fmt)
+    fn glob_paths(&self, dir: &str, input_fmt: &SeqReadFmt) -> Vec<PathBuf> {
+        SeqReadFinder::new(Path::new(dir)).find(input_fmt)
     }
 }
 
 struct RawReadPrint<'a> {
     input: &'a Option<PathBuf>,
-    input_fmt: &'a RawReadFmt,
+    input_fmt: &'a SeqReadFmt,
     task_desc: &'a str,
     fcounts: usize,
 }
@@ -171,7 +171,7 @@ struct RawReadPrint<'a> {
 impl<'a> RawReadPrint<'a> {
     fn new(
         input: &'a Option<PathBuf>,
-        input_fmt: &'a RawReadFmt,
+        input_fmt: &'a SeqReadFmt,
         task_desc: &'a str,
         fcounts: usize,
     ) -> Self {
