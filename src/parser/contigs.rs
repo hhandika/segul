@@ -200,5 +200,10 @@ mod test {
         assert_eq!(parser.stats.sum, 485);
         assert_eq!(parser.stats.min, 227);
         assert_eq!(parser.stats.max, 258);
+        assert_eq!(parser.stats.mean, 242.5);
+        assert_eq!(parser.stats.median, 242.5);
+        assert_eq!(parser.contig1000, 0);
+        assert_eq!(parser.contig1500, 0);
+        assert_eq!(parser.contig750, 0);
     }
 }
