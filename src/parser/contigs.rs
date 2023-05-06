@@ -6,7 +6,7 @@ use crate::{
         files,
         types::{infer_contig_fmt_auto, ContigFmt},
     },
-    stats::math::{self, NStats},
+    stats::stats::{CommonStats, NStats},
 };
 
 use super::fasta::FastaReader;
@@ -41,16 +41,9 @@ pub struct ContigSummaryParser {
     pub at_content: f64,
     /// N50
     pub nstats: NStats,
-    /// Mean
-    pub mean: f64,
-    /// Median
-    pub median: f64,
-    /// Sum of all contig lengths
-    pub total_len: usize,
-    /// Maximum contig length
-    pub max_len: usize,
-    /// Minimum contig length
-    pub min_len: usize,
+    /// Common stat for contigs
+    /// Mean, median, min, max, and stdev
+    pub stats: CommonStats,
     /// Number of contigs > 750 bp
     pub contig750_count: usize,
     /// Number of contigs > 1000 bp
@@ -76,11 +69,7 @@ impl ContigSummaryParser {
             gc_content: 0.0,
             at_content: 0.0,
             nstats: NStats::new(),
-            mean: 0.0,
-            median: 0.0,
-            total_len: 0,
-            max_len: 0,
-            min_len: 0,
+            stats: CommonStats::new(),
             contig750_count: 0,
             contig1000_count: 0,
             contig1500_count: 0,
@@ -134,44 +123,24 @@ impl ContigSummaryParser {
     }
 
     fn summarize(&mut self, contigs: &[usize]) {
-        self.total_len = self.total_len(contigs);
+        self.common_stats(contigs);
         self.nstat(contigs);
         self.contig_count = contigs.len();
         self.base_count = self.base_count();
         self.nucleotide = self.nucleotide();
         self.gc_content = self.gc_content();
         self.at_content = self.at_content();
-        self.mean = self.mean(contigs);
-        self.median = self.median(contigs);
-        self.max_len = self.max(contigs);
-        self.min_len = self.min(contigs);
         self.contig750_count = self.contig750(contigs);
         self.contig1000_count = self.contig1000(contigs);
         self.contig1500_count = self.contig1500(contigs);
     }
 
+    fn common_stats(&mut self, contigs: &[usize]) {
+        self.stats.calculate(contigs);
+    }
+
     fn nstat(&mut self, contigs: &[usize]) {
-        self.nstats.calculate(contigs, self.total_len);
-    }
-
-    fn total_len(&mut self, contigs: &[usize]) -> usize {
-        contigs.iter().sum::<usize>()
-    }
-
-    fn mean(&mut self, contigs: &[usize]) -> f64 {
-        math::mean(contigs, self.total_len)
-    }
-
-    fn median(&mut self, contigs: &[usize]) -> f64 {
-        math::median(contigs)
-    }
-
-    fn min(&mut self, contigs: &[usize]) -> usize {
-        *contigs.iter().min().unwrap_or(&0)
-    }
-
-    fn max(&mut self, contigs: &[usize]) -> usize {
-        *contigs.iter().max().unwrap_or(&0)
+        self.nstats.calculate(contigs, self.stats.sum);
     }
 
     fn base_count(&mut self) -> usize {
@@ -224,8 +193,8 @@ mod test {
         assert_eq!(parser.base_count, 485);
         assert_eq!(parser.nucleotide, 485);
         assert_eq!(parser.contig_count, 2);
-        assert_eq!(parser.total_len, 485);
-        assert_eq!(parser.min_len, 227);
-        assert_eq!(parser.max_len, 258);
+        assert_eq!(parser.stats.sum, 485);
+        assert_eq!(parser.stats.min, 227);
+        assert_eq!(parser.stats.max, 258);
     }
 }
