@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{builder, Args, Parser, Subcommand, crate_name, crate_authors, crate_version, crate_description};
 use clap::builder::TypedValueParser as _;
-use crate::helper::types::{SeqReadFmt, SummaryMode};
+use crate::helper::types::{SeqReadFmt, SummaryMode, ContigFmt};
 use crate::helper::logger;
 
 #[derive(Parser)]
@@ -25,7 +25,7 @@ pub(crate) struct Cli {
 #[derive(Subcommand)]
 pub(crate) enum MainSubcommand {
     #[command(subcommand, about = "Sequence read analyses", name = "read")]
-    RawRead(RawReadSubcommand),
+    RawRead(SeqReadSubcommand),
     #[command(subcommand, about = "Contiguous sequence analyses", name = "contig")]
     Contig(ContigSubcommand),
     #[command(subcommand, about = "Alignment analyses", name = "align")]
@@ -41,15 +41,15 @@ pub(crate) enum MainSubcommand {
 }
 
 #[derive(Subcommand)]
-pub(crate) enum RawReadSubcommand {
+pub(crate) enum SeqReadSubcommand {
     #[command(about = "Compute sequence read statistics", name = "summary")]
-    RawSummary(RawSummaryArgs),
+    RawSummary(SeqReadSummaryArgs),
 }
 
 #[derive(Subcommand)]
 pub(crate) enum ContigSubcommand {
     #[command(about = "Compute contig statistics", name = "summary")]
-    ContigStats(ContigStatArgs),
+    ContigSummary(ContigSummaryArgs),
 }
 
 #[derive(Subcommand)]
@@ -90,7 +90,7 @@ pub(crate) enum SequenceSubcommand {
 }
 
 #[derive(Args)]
-pub(crate) struct RawSummaryArgs {
+pub(crate) struct SeqReadSummaryArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[arg(
@@ -111,16 +111,28 @@ pub(crate) struct RawSummaryArgs {
             builder::PossibleValuesParser::new(["minimal", "default", "complete"])
             .map(|x| x.parse::<SummaryMode>().unwrap()))]
     pub(crate) mode: SummaryMode,
-    #[arg(short = 'o', long = "output", help = "Output path", default_value = "Raw-Summary")]
+    #[arg(short = 'o', long = "output", help = "Output path", default_value = "Read-Summary")]
     pub(crate) output: PathBuf,
     #[arg(long = "low-mem", help = "Use low memory mode")]
     pub(crate) low_mem: bool,
 }
 
 #[derive(Args)]
-pub(crate) struct ContigStatArgs {
+pub(crate) struct ContigSummaryArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
+    #[arg(
+        short = 'f', 
+        long ="input-format", 
+        help = "Specify input format", 
+        default_value_t = ContigFmt::Auto,
+        value_parser = 
+            builder::PossibleValuesParser::new(["auto","fasta","gzip"])
+            .map(|x| x.parse::<ContigFmt>().expect("Invalid input format")),
+    )]
+    pub(crate) input_format: ContigFmt,
+    #[arg(short = 'o', long = "output", help = "Output path", default_value = "Contig-Summary")]
+    pub(crate) output: PathBuf,
 }
 
 #[derive(Args)]

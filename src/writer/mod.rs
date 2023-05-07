@@ -5,6 +5,7 @@
 //! 1. `SeqWriter`: write sequence data to a file.
 //! 2. `PartitionWriter`: write partition data to a file.
 //! 3. `SummaryWriter`: write summary data to a file.
+pub mod contigs;
 pub mod partition;
 pub mod read;
 pub mod sequences;

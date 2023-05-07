@@ -12,25 +12,35 @@ use crate::cli::split::SplitParser;
 use crate::cli::summarize::SummaryParser;
 use crate::cli::translate::TranslateParser;
 
-use super::args::{
-    AlignmentSubcommand, PartitionSubcommand, RawReadSubcommand, SequenceSubcommand,
+use super::{
+    args::{
+        AlignmentSubcommand, ContigSubcommand, PartitionSubcommand, SeqReadSubcommand,
+        SequenceSubcommand,
+    },
+    contigs::ContigCliParser,
 };
 
 pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
     match subcommand {
         MainSubcommand::RawRead(subcommand) => match_raw_read_subcommand(subcommand),
-        MainSubcommand::Contig(_) => {
-            println!("Contig");
-        }
+        MainSubcommand::Contig(subcommand) => match_contig_subcommand(subcommand),
         MainSubcommand::Alignment(subcommand) => match_alignment_subcommand(subcommand),
         MainSubcommand::Partition(subcommand) => match_partition_subcommand(subcommand),
         MainSubcommand::Sequence(subcommand) => match_sequence_subcommand(subcommand),
     }
 }
 
-fn match_raw_read_subcommand(subcommand: &RawReadSubcommand) {
+fn match_contig_subcommand(subcommand: &ContigSubcommand) {
     match subcommand {
-        RawReadSubcommand::RawSummary(raw_args) => {
+        ContigSubcommand::ContigSummary(summary_args) => {
+            ContigCliParser::new(&summary_args).summarize();
+        }
+    };
+}
+
+fn match_raw_read_subcommand(subcommand: &SeqReadSubcommand) {
+    match subcommand {
+        SeqReadSubcommand::RawSummary(raw_args) => {
             ReadSummaryCliParser::new(&raw_args).summarize();
         }
     };

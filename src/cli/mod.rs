@@ -2,6 +2,7 @@
 mod args;
 mod cli;
 mod concat;
+mod contigs;
 mod convert;
 mod extract;
 mod filter;
@@ -28,8 +29,8 @@ use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::cli::args::Cli;
-use crate::helper::finder::{SeqFileFinder, SeqReadFinder};
-use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt, SeqReadFmt};
+use crate::helper::finder::{ContigFileFinder, SeqFileFinder, SeqReadFinder};
+use crate::helper::types::{ContigFmt, DataType, InputFmt, OutputFmt, PartitionFmt, SeqReadFmt};
 use crate::helper::{logger, utils};
 
 /// Parse command line arguments and execute commands.
@@ -172,6 +173,52 @@ impl<'a> RawReadPrint<'a> {
     fn new(
         input: &'a Option<PathBuf>,
         input_fmt: &'a SeqReadFmt,
+        task_desc: &'a str,
+        fcounts: usize,
+    ) -> Self {
+        Self {
+            input,
+            input_fmt,
+            task_desc,
+            fcounts,
+        }
+    }
+
+    fn print(&self) {
+        self.print_input_info();
+        log::info!("{:18}: {}\n", "Input format:", self.input_fmt);
+        log::info!("{:18}: {}\n", "Task", self.task_desc);
+    }
+}
+
+trait ContigInputCli {
+    fn glob_paths(&self, dir: &str, input_fmt: &ContigFmt) -> Vec<PathBuf> {
+        ContigFileFinder::new(Path::new(dir)).find(input_fmt)
+    }
+}
+
+impl InputPrint for ContigPrint<'_> {
+    fn print_input_info(&self) {
+        if let Some(input) = self.input {
+            log::info!("{:18}: {}", "Input dir", &input.display());
+        } else {
+            log::info!("{:18}: {}", "Input path", "STDIN");
+        }
+        log::info!("{:18}: {}", "File counts", utils::fmt_num(&self.fcounts));
+    }
+}
+
+struct ContigPrint<'a> {
+    input: &'a Option<PathBuf>,
+    input_fmt: &'a ContigFmt,
+    task_desc: &'a str,
+    fcounts: usize,
+}
+
+impl<'a> ContigPrint<'a> {
+    fn new(
+        input: &'a Option<PathBuf>,
+        input_fmt: &'a ContigFmt,
         task_desc: &'a str,
         fcounts: usize,
     ) -> Self {

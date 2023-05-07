@@ -2,19 +2,21 @@ use std::path::PathBuf;
 
 use crate::handler::read::summarize::ReadSummaryHandler;
 
-use super::{args::RawSummaryArgs, collect_paths, InputCli, OutputCli, RawInputCli, RawReadPrint};
+use super::{
+    args::SeqReadSummaryArgs, collect_paths, InputCli, OutputCli, RawInputCli, RawReadPrint,
+};
 
 impl InputCli for ReadSummaryCliParser<'_> {}
 impl OutputCli for ReadSummaryCliParser<'_> {}
 impl RawInputCli for ReadSummaryCliParser<'_> {}
 
 pub(in crate::cli) struct ReadSummaryCliParser<'a> {
-    args: &'a RawSummaryArgs,
+    args: &'a SeqReadSummaryArgs,
     input_dir: Option<PathBuf>,
 }
 
 impl<'a> ReadSummaryCliParser<'a> {
-    pub(in crate::cli) fn new(args: &'a RawSummaryArgs) -> Self {
+    pub(in crate::cli) fn new(args: &'a SeqReadSummaryArgs) -> Self {
         Self {
             args,
             input_dir: None,
