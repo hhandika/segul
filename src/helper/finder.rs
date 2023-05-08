@@ -35,7 +35,7 @@ macro_rules! walk_dir {
             .into_iter()
             .filter_map(|ok| ok.ok())
             .filter(|e| e.file_type().is_file())
-            .filter(|e| $match(e.file_name().to_str().unwrap()))
+            .filter(|e| $match(e.file_name().to_str().expect("Failed parsing file name")))
             .map(|e| e.into_path())
             .collect()
     }};
