@@ -9,7 +9,6 @@
 //! 6. `txt`: Plain text format parser.
 pub mod delimited;
 pub mod fasta;
-pub mod fastq;
 pub mod nexus;
 pub mod partition;
 pub mod phylip;

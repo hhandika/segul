@@ -19,7 +19,7 @@ use crate::{
         types::{infer_raw_input_auto, SeqReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    parser::fastq::{self, FastqSummaryParser},
+    stats::fastq::{self, FastqSummaryParser},
     stats::read::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
     writer::read::ReadSummaryWriter,
 };
