@@ -19,10 +19,7 @@ use anyhow::{Context, Result};
 
 trait FileWriter {
     fn create_output_file(&self, path: &Path) -> Result<BufWriter<File>> {
-        let dir_name = path.parent().expect("Failed creating parent directory");
-        fs::create_dir_all(dir_name).with_context(|| {
-            format!("Failed creating an output directory for {}", path.display())
-        })?;
+        create_parent_directory(path)?;
         let file = OpenOptions::new().write(true).create_new(true).open(path);
         match file {
             Ok(writer) => Ok(BufWriter::new(writer)),
@@ -31,10 +28,18 @@ trait FileWriter {
     }
 
     fn append_output_file(&self, path: &Path) -> Result<BufWriter<File>> {
+        create_parent_directory(path)?;
         let file = OpenOptions::new().append(true).create(true).open(path);
         match file {
             Ok(writer) => Ok(BufWriter::new(writer)),
             Err(error) => panic!("Failed appending to {}: {}", path.display(), error),
         }
     }
+}
+
+fn create_parent_directory(path: &Path) -> Result<()> {
+    let dir_name = path.parent().expect("Failed creating parent directory");
+    fs::create_dir_all(dir_name)
+        .with_context(|| format!("Failed creating an output directory for {}", path.display()))?;
+    Ok(())
 }
