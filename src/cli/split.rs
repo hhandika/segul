@@ -1,12 +1,12 @@
 use std::path::{Path, PathBuf};
 
 use crate::handler::align::split::Splitter;
+use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::PartitionFmt;
 
 use super::args::AlignSplitArgs;
-use super::{AlignSeqInput, AlignSeqPrint, ConcatCli, InputCli, InputPrint, OutputCli};
+use super::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
 
-impl InputPrint for SplitParser<'_> {}
 impl OutputCli for SplitParser<'_> {}
 impl InputCli for SplitParser<'_> {}
 impl ConcatCli for SplitParser<'_> {}
@@ -35,7 +35,7 @@ impl<'a> SplitParser<'a> {
 
         let part_fmt = self.parse_part_fmt(partitions);
         let task_desc = "Alignment splitting";
-        AlignSeqPrint::new(&None::<PathBuf>, &input_fmt, &datatype, task_desc, 1).print();
+        AlignSeqLogger::new(&None::<PathBuf>, &input_fmt, &datatype, task_desc, 1).log();
         self.check_output_dir_exist(&self.args.output, self.args.force);
         let split = Splitter::new(
             &self.args.input,

@@ -2,9 +2,10 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 use crate::handler::sequence::id::Id;
+use crate::helper::logger::AlignSeqLogger;
 
 use super::args::SequenceIdArgs;
-use super::{collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, OutputCli};
+use super::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for IdParser<'_> {}
 impl OutputCli for IdParser<'_> {}
@@ -30,14 +31,14 @@ impl<'a> IdParser<'a> {
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
 
-        AlignSeqPrint::new(
+        AlignSeqLogger::new(
             &self.input_dir,
             &input_fmt,
             &datatype,
             task_desc,
             files.len(),
         )
-        .print();
+        .log();
 
         let output = self.args.output.with_extension("txt");
         self.check_output_file_exist(&output, self.args.io.force);

@@ -2,15 +2,14 @@ use std::path::{Path, PathBuf};
 
 use colored::Colorize;
 
-use crate::cli::AlignSeqPrint;
 use crate::handler::sequence::extract::{Extract, ExtractOpts};
+use crate::helper::logger::AlignSeqLogger;
 use crate::parser::txt;
 
 use super::args::SequenceExtractArgs;
-use super::{collect_paths, AlignSeqInput, InputCli, InputPrint, OutputCli};
+use super::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for ExtractParser<'_> {}
-impl InputPrint for ExtractParser<'_> {}
 impl OutputCli for ExtractParser<'_> {}
 impl AlignSeqInput for ExtractParser<'_> {}
 
@@ -36,14 +35,14 @@ impl<'a> ExtractParser<'a> {
         let task_desc = "Sequence extraction";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        AlignSeqPrint::new(
+        AlignSeqLogger::new(
             &self.input_dir,
             &input_fmt,
             &datatype,
             task_desc,
             files.len(),
         )
-        .print();
+        .log();
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "ExtractOpts".yellow());
         self.parse_params();

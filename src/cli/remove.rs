@@ -2,15 +2,14 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 
-use crate::handler::sequence::remove::{Remove, RemoveOpts};
-
-use super::{
-    args::SequenceRemoveArgs, collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, InputPrint,
-    OutputCli,
+use crate::{
+    handler::sequence::remove::{Remove, RemoveOpts},
+    helper::logger::AlignSeqLogger,
 };
 
+use super::{args::SequenceRemoveArgs, collect_paths, AlignSeqInput, InputCli, OutputCli};
+
 impl InputCli for RemoveParser<'_> {}
-impl InputPrint for RemoveParser<'_> {}
 impl OutputCli for RemoveParser<'_> {}
 impl AlignSeqInput for RemoveParser<'_> {}
 
@@ -35,14 +34,14 @@ impl<'a> RemoveParser<'a> {
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
 
-        AlignSeqPrint::new(
+        AlignSeqLogger::new(
             &self.input_dir,
             &input_fmt,
             &datatype,
             task_desc,
             files.len(),
         )
-        .print();
+        .log();
         let opts = self.parse_remove_opts();
 
         self.check_output_dir_exist(&self.args.output, self.args.io.force);

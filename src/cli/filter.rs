@@ -5,12 +5,13 @@ use colored::Colorize;
 use crate::cli::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
 use crate::handler::align::filter::{Params, SeqFilter};
 use crate::helper::finder::IDs;
+use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::{DataType, InputFmt, PartitionFmt};
 use crate::helper::{files, utils};
 use crate::parser::txt;
 
 use super::args::AlignFilterArgs;
-use super::{collect_paths, AlignSeqPrint};
+use super::collect_paths;
 
 impl InputCli for FilterParser<'_> {}
 impl OutputCli for FilterParser<'_> {}
@@ -51,14 +52,14 @@ impl<'a> FilterParser<'a> {
         let dir = &self.args.io.dir;
         let input_fmt = &self.input_fmt; // Binding to satisfy the macro
         self.files = collect_paths!(self, dir, input_fmt);
-        AlignSeqPrint::new(
+        AlignSeqLogger::new(
             &self.input_dir,
             input_fmt,
             &self.datatype,
             task_desc,
             self.files.len(),
         )
-        .print();
+        .log();
 
         if let Some(npercent) = &self.args.npercent {
             self.filter_min_taxa_npercent(npercent);

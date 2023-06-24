@@ -37,7 +37,7 @@ use crate::helper::{logger, utils};
 pub fn parse_cli() {
     let time = Instant::now();
     let args = Cli::parse();
-    logger::setup_logger(&args.log).expect("Failed setting up a log file.");
+    logger::init_logger(&args.log).expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
     cli::match_cli_subcommand(&args.subcommand);
     log::info!("{:18}: {}", "Log file", &args.log.display());
@@ -136,160 +136,15 @@ trait AlignSeqInput {
     }
 }
 
-trait InputPrint {
-    fn print_input_info(&self) {}
-}
-
-impl InputPrint for RawReadPrint<'_> {
-    fn print_input_info(&self) {
-        if let Some(input) = self.input {
-            log::info!("{:18}: {}", "Input dir", &input.display());
-        } else {
-            log::info!("{:18}: {}", "Input path", "STDIN");
-        }
-        log::info!("{:18}: {}", "File counts", utils::fmt_num(&self.fcounts));
-    }
-}
-
 trait RawInputCli {
     fn glob_paths(&self, dir: &str, input_fmt: &SeqReadFmt) -> Vec<PathBuf> {
         SeqReadFinder::new(Path::new(dir)).find(input_fmt)
     }
 }
 
-struct RawReadPrint<'a> {
-    input: &'a Option<PathBuf>,
-    input_fmt: &'a SeqReadFmt,
-    task_desc: &'a str,
-    fcounts: usize,
-}
-
-impl<'a> RawReadPrint<'a> {
-    fn new(
-        input: &'a Option<PathBuf>,
-        input_fmt: &'a SeqReadFmt,
-        task_desc: &'a str,
-        fcounts: usize,
-    ) -> Self {
-        Self {
-            input,
-            input_fmt,
-            task_desc,
-            fcounts,
-        }
-    }
-
-    fn print(&self) {
-        self.print_input_info();
-        log::info!("{:18}: {}\n", "Input format:", self.input_fmt);
-        log::info!("{:18}: {}\n", "Task", self.task_desc);
-    }
-}
-
 trait ContigInputCli {
     fn glob_paths(&self, dir: &str, input_fmt: &ContigFmt) -> Vec<PathBuf> {
         ContigFileFinder::new(Path::new(dir)).find(input_fmt)
-    }
-}
-
-impl InputPrint for ContigPrint<'_> {
-    fn print_input_info(&self) {
-        if let Some(input) = self.input {
-            log::info!("{:18}: {}", "Input dir", &input.display());
-        } else {
-            log::info!("{:18}: {}", "Input path", "STDIN");
-        }
-        log::info!("{:18}: {}", "File counts", utils::fmt_num(&self.fcounts));
-    }
-}
-
-struct ContigPrint<'a> {
-    input: &'a Option<PathBuf>,
-    input_fmt: &'a ContigFmt,
-    task_desc: &'a str,
-    fcounts: usize,
-}
-
-impl<'a> ContigPrint<'a> {
-    fn new(
-        input: &'a Option<PathBuf>,
-        input_fmt: &'a ContigFmt,
-        task_desc: &'a str,
-        fcounts: usize,
-    ) -> Self {
-        Self {
-            input,
-            input_fmt,
-            task_desc,
-            fcounts,
-        }
-    }
-
-    fn print(&self) {
-        self.print_input_info();
-        log::info!("{:18}: {}\n", "Input format:", self.input_fmt);
-        log::info!("{:18}: {}\n", "Task", self.task_desc);
-    }
-}
-
-impl InputPrint for AlignSeqPrint<'_> {
-    fn print_input_info(&self) {
-        if let Some(input) = self.input {
-            log::info!("{:18}: {}", "Input dir", &input.display());
-        } else {
-            log::info!("{:18}: {}", "Input path", "STDIN");
-        }
-        log::info!("{:18}: {}", "File counts", utils::fmt_num(&self.fcounts));
-    }
-}
-
-struct AlignSeqPrint<'a> {
-    input: &'a Option<PathBuf>,
-    input_fmt: &'a InputFmt,
-    datatype: &'a DataType,
-    task_desc: &'a str,
-    fcounts: usize,
-}
-
-impl<'a> AlignSeqPrint<'a> {
-    fn new(
-        input: &'a Option<PathBuf>,
-        input_fmt: &'a InputFmt,
-        datatype: &'a DataType,
-        task_desc: &'a str,
-        fcounts: usize,
-    ) -> Self {
-        Self {
-            input,
-            input_fmt,
-            datatype,
-            task_desc,
-            fcounts,
-        }
-    }
-
-    fn print(&self) {
-        self.print_input_info();
-        self.print_seq_input_fmt();
-        self.print_seq_datatype();
-        log::info!("{:18}: {}\n", "Task", self.task_desc);
-    }
-
-    fn print_seq_datatype(&self) {
-        match self.datatype {
-            DataType::Aa => log::info!("{:18}: {}", "Data type", "Amino Acid"),
-            DataType::Dna => log::info!("{:18}: {}", "Data type", "DNA"),
-            DataType::Ignore => log::info!("{:18}: {}", "Data type", "Ignore"),
-        }
-    }
-
-    fn print_seq_input_fmt(&self) {
-        match self.input_fmt {
-            InputFmt::Auto => log::info!("{:18}: {}", "Input format", "Auto"),
-            InputFmt::Fasta => log::info!("{:18}: {}", "Input format", "FASTA"),
-            InputFmt::Nexus => log::info!("{:18}: {}", "Input format", "NEXUS"),
-            InputFmt::Phylip => log::info!("{:18}: {}", "Input format", "PHYLIP"),
-        }
     }
 }
 

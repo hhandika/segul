@@ -1,10 +1,8 @@
 use std::path::PathBuf;
 
+use super::{args::ContigSummaryArgs, collect_paths, ContigInputCli, InputCli, OutputCli};
 use crate::handler::contig::summarize::ContigSummaryHandler;
-
-use super::{
-    args::ContigSummaryArgs, collect_paths, ContigInputCli, ContigPrint, InputCli, OutputCli,
-};
+use crate::helper::logger::ContigLogger;
 
 pub(in crate::cli) struct ContigCliParser<'a> {
     args: &'a ContigSummaryArgs,
@@ -29,7 +27,7 @@ impl<'a> ContigCliParser<'a> {
         let files = collect_paths!(self, dir, input_fmt);
         let fcounts = files.len();
         let task = "Summarize contig sequences";
-        ContigPrint::new(&self.input_dir, input_fmt, task, fcounts).print();
+        ContigLogger::new(&self.input_dir, input_fmt, task, fcounts).log();
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         ContigSummaryHandler::new(&files, input_fmt, &self.args.output).summarize();
     }

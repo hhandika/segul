@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
-use super::{collect_paths, AlignSeqInput, AlignSeqPrint, ConcatCli, InputCli, OutputCli};
+use super::{collect_paths, AlignSeqInput, ConcatCli, InputCli, OutputCli};
 use crate::cli::args::AlignConcatArgs;
 use crate::handler::align::concat::ConcatHandler;
 use crate::helper::files;
+use crate::helper::logger::AlignSeqLogger;
 
 impl ConcatCli for ConcatParser<'_> {}
 impl OutputCli for ConcatParser<'_> {}
@@ -34,14 +35,14 @@ impl<'a> ConcatParser<'a> {
         let task_desc = "Alignment concatenation";
         let dir = &self.args.io.dir;
         let mut files = collect_paths!(self, dir, input_fmt);
-        AlignSeqPrint::new(
+        AlignSeqLogger::new(
             &self.input_dir,
             &input_fmt,
             &datatype,
             task_desc,
             files.len(),
         )
-        .print();
+        .log();
 
         let is_overwrite = self.args.io.force;
         self.check_output_dir_exist(&self.args.output, is_overwrite);

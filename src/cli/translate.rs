@@ -1,16 +1,14 @@
 use std::path::PathBuf;
 
+use crate::handler::sequence::translate::Translate;
+use crate::helper::logger::AlignSeqLogger;
+use crate::helper::types::GeneticCodes;
 use colored::Colorize;
 
-use crate::cli::AlignSeqPrint;
-use crate::handler::sequence::translate::Translate;
-use crate::helper::types::GeneticCodes;
-
 use super::args::SequenceTranslateArgs;
-use super::{collect_paths, AlignSeqInput, InputCli, InputPrint, OutputCli};
+use super::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for TranslateParser<'_> {}
-impl InputPrint for TranslateParser<'_> {}
 impl OutputCli for TranslateParser<'_> {}
 impl AlignSeqInput for TranslateParser<'_> {}
 
@@ -43,14 +41,14 @@ impl<'a> TranslateParser<'a> {
         let task_desc = "Sequence Translation";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        AlignSeqPrint::new(
+        AlignSeqLogger::new(
             &self.input_dir,
             &input_fmt,
             &datatype,
             task_desc,
             files.len(),
         )
-        .print();
+        .log();
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "Params".yellow());
         self.show_trans_table();

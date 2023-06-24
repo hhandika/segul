@@ -3,14 +3,14 @@ use std::path::{Path, PathBuf};
 use colored::Colorize;
 
 use crate::handler::sequence::rename::{Rename, RenameDry, RenameOpts};
+use crate::helper::logger::AlignSeqLogger;
 use crate::helper::utils;
 use crate::parser::delimited;
 
 use super::args::SequenceRenameArgs;
-use super::{collect_paths, AlignSeqInput, AlignSeqPrint, InputCli, InputPrint, OutputCli};
+use super::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for RenameParser<'_> {}
-impl InputPrint for RenameParser<'_> {}
 impl OutputCli for RenameParser<'_> {}
 impl AlignSeqInput for RenameParser<'_> {}
 
@@ -34,14 +34,14 @@ impl<'a> RenameParser<'a> {
         let task_desc = "Sequence Renaming";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        AlignSeqPrint::new(
+        AlignSeqLogger::new(
             &self.input_dir,
             &input_fmt,
             &datatype,
             task_desc,
             files.len(),
         )
-        .print();
+        .log();
         let opts = self.parse_rename_opts();
         if self.args.dry_run {
             RenameDry::new(&input_fmt, &datatype, &opts).dry_run(&files);

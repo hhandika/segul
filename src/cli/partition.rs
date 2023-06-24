@@ -3,12 +3,11 @@ use std::path::{Path, PathBuf};
 
 use crate::handler::sequence::partition::PartConverter;
 use crate::helper::types::PartitionFmt;
-use crate::helper::utils;
+use crate::helper::{logger, utils};
 
 use super::args::PartitionArgs;
-use super::{AlignSeqInput, ConcatCli, InputCli, InputPrint, OutputCli};
+use super::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
 
-impl InputPrint for PartParser<'_> {}
 impl InputCli for PartParser<'_> {}
 impl ConcatCli for PartParser<'_> {}
 impl OutputCli for PartParser<'_> {}
@@ -35,7 +34,7 @@ impl<'a> PartParser<'a> {
         let out_part_fmt = self.parse_partition_fmt(&self.args.out_part, self.args.codon);
 
         inputs.iter().for_each(|input| {
-            self.print_input_info(input, input_counts);
+            logger::log_input_partition(input, input_counts);
             let output = self.construct_output_path(input, &out_part_fmt);
             self.check_output_file_exist(&output, self.args.force);
             let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
@@ -47,11 +46,11 @@ impl<'a> PartParser<'a> {
     }
 
     fn construct_output_path(&self, input: &Path, out_part_fmt: &PartitionFmt) -> PathBuf {
-        let fstem = input
+        let file_stem = input
             .file_stem()
             .and_then(OsStr::to_str)
             .expect("Failed to parse input file stem");
-        let mut fname = PathBuf::from(format!("{}_partition", fstem));
+        let mut fname = PathBuf::from(format!("{}_partition", file_stem));
         match *out_part_fmt {
             PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
                 fname.set_extension("nex");
@@ -63,11 +62,5 @@ impl<'a> PartParser<'a> {
         }
         let parent_path = input.parent().expect("Failed to parse input parent path");
         parent_path.join(fname)
-    }
-
-    fn print_input_info(&self, input: &Path, input_counts: usize) {
-        log::info!("{:18}: {}", "Input dir", &input.display());
-        log::info!("{:18}: {}", "File counts", utils::fmt_num(&input_counts));
-        log::info!("{:18}: {}\n", "Task", "Converting partitions");
     }
 }
