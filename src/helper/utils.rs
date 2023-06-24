@@ -1,5 +1,5 @@
 //! Utility functions for the CLI.
-use std::iter;
+use std::{iter, time::Duration};
 
 use chrono::NaiveTime;
 use colored::Colorize;
@@ -10,6 +10,15 @@ const DIVIDER_LEN: usize = 57;
 
 pub fn fmt_num(num: &usize) -> String {
     num.to_formatted_string(&Locale::en)
+}
+
+pub fn print_execution_time(duration: Duration) {
+    if duration.as_secs() < 60 {
+        log::info!("{:18}: {:?}", "Execution time", duration);
+    } else {
+        let time = parse_duration(duration.as_secs());
+        log::info!("{:18}: {}", "Execution time (HH:MM:SS)", time);
+    }
 }
 
 pub fn parse_duration(duration: u64) -> String {
@@ -25,8 +34,6 @@ pub fn parse_duration(duration: u64) -> String {
 
 #[cfg(not(tarpaulin_include))]
 pub fn set_spinner() -> ProgressBar {
-    use std::time::Duration;
-
     let spin = ProgressBar::new_spinner();
     let duration: Duration = Duration::from_millis(150);
     spin.enable_steady_tick(duration);

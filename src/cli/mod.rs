@@ -43,12 +43,7 @@ pub fn parse_cli() {
     log::info!("{:18}: {}", "Log file", &args.log.display());
     let duration = time.elapsed();
     println!();
-    if duration.as_secs() < 60 {
-        log::info!("{:18}: {:?}", "Execution time", duration);
-    } else {
-        let time = utils::parse_duration(duration.as_secs());
-        log::info!("{:18}: {}", "Execution time (HH:MM:SS)", time);
-    }
+    utils::print_execution_time(duration);
 }
 
 macro_rules! check_output_path {
