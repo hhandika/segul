@@ -230,18 +230,18 @@ impl QScoreStream {
     }
 
     pub fn update(&mut self, score: &u8) {
-        self.get_mean(score);
-        self.get_min(score);
-        self.get_max(score);
+        self.calculate_mean(score);
+        self.calculate_min(score);
+        self.calculate_max(score);
     }
 
-    fn get_mean(&mut self, score: &u8) {
+    fn calculate_mean(&mut self, score: &u8) {
         self.sum += *score as usize;
         self.count += 1;
         self.mean = self.sum as f64 / self.count as f64;
     }
 
-    fn get_min(&mut self, score: &u8) {
+    fn calculate_min(&mut self, score: &u8) {
         if let Some(min) = self.min {
             if min > *score {
                 self.min = Some(*score);
@@ -251,7 +251,7 @@ impl QScoreStream {
         }
     }
 
-    fn get_max(&mut self, score: &u8) {
+    fn calculate_max(&mut self, score: &u8) {
         if let Some(max) = self.max {
             if max < *score {
                 self.max = Some(*score);

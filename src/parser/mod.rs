@@ -12,6 +12,7 @@ pub mod fasta;
 pub mod nexus;
 pub mod partition;
 pub mod phylip;
+pub mod qscores;
 pub mod txt;
 
 macro_rules! insert_matrix {

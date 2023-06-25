@@ -19,7 +19,7 @@ use crate::{
         types::{infer_raw_input_auto, SeqReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    stats::fastq::{self, FastqSummaryParser},
+    stats::fastq::{self, FastqSummary},
     stats::read::{FastqRecords, QScoreRecords, ReadQScore, ReadRecord},
     writer::read::ReadSummaryWriter,
 };
@@ -166,19 +166,19 @@ impl<'a> ReadSummaryHandler<'a> {
     }
 
     fn parse_record<R: BufRead>(&self, buff: &mut R, path: &Path) -> (FastqRecords, QScoreRecords) {
-        let mut records = FastqSummaryParser::new();
-        records.parse_record(buff);
-        self.summarize_records(path, &records.reads, &records.qscores)
+        let mut summary = FastqSummary::new();
+        summary.compute(buff);
+        self.summarize_records(path, &summary.reads, &summary.qscores)
     }
 
     fn map_record<R: BufRead>(&self, buff: &mut R, path: &Path) -> (FastqRecords, QScoreRecords) {
-        let mut records = FastqSummaryParser::new();
-        let mut mapped_records = records.parse_map_records(buff);
+        let mut summary = FastqSummary::new();
+        let mut mapped_records = summary.compute_mapped(buff);
         let writer = ReadSummaryWriter::new(self.output);
         writer.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
         mapped_records.reads.clear();
         mapped_records.qscores.clear();
-        self.summarize_records(path, &records.reads, &records.qscores)
+        self.summarize_records(path, &summary.reads, &summary.qscores)
     }
 
     fn summarize_records(
