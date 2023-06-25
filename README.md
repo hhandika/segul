@@ -24,19 +24,18 @@ It is designed to handle operations on large genomic datasets, while using minim
 
 | Feature                          | Quick Link                                               |
 | -------------------------------- | -------------------------------------------------------- |
-| Alignment concatenation          | [Docs](https://docs.page/hhandika/segul-docs/usage_concat) |
-| Alignment conversion             | [Docs]                                                         |
-| Alignment filtering              | [Docs]                                                         |
-| Alignment splitting              | [Docs]                                                         |
-| Alignment summary statistics     | [Docs]                                                         |
-| Contiguous sequence statistics   | [Docs]                                                         |
-| Partition format conversion      | [Docs]                                                         |
-| Sequence ID extraction           | [Docs]                                                         |
-| Sequence ID renaming             | [Docs]                                                         |
-| Sequence read summary statistics | [Docs]                                                         |
-| Sequence removal                 | [Docs]                                                         |
-| Sequence translation             | [Docs]                                                         |
-| GUI support                      | [Docs] [Source Code]                                                         |
+| Alignment concatenation          | [[CLI]](https://docs.page/hhandika/segul-docs/usage_concat) [[GUI]]()|
+| Alignment conversion             | [[CLI]]() [[GUI]]()                                                         |
+| Alignment filtering              | [[CLI]]() [[GUI]]()                                                         |
+| Alignment splitting              | [[CLI]]() [[GUI]]()                                                         |
+| Alignment summary statistics     | [[CLI]]() [[GUI]]()                                                         |
+| Contiguous sequence statistics   | [[CLI]]() [[GUI]]()                                                         |
+| Partition format conversion      | [[CLI]]() [[GUI]]()                                                         |
+| Sequence ID extraction           | [[CLI]]() [[GUI]]()                                                         |
+| Sequence ID renaming             | [[CLI]]() [[GUI]]()                                                         |
+| Sequence read summary statistics | [[CLI]]() [[GUI]]()                                                         |
+| Sequence removal                 | [[CLI]]() [[GUI]]()                                                         |
+| Sequence translation             | [[CLI]]() [[GUI]]()                                                         |
 
 Supported common sequence formats:
 
