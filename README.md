@@ -37,7 +37,7 @@ It is designed to handle operations on large genomic datasets, while using minim
 | Sequence removal                 | [[CLI]]() [[GUI]]()                                                         |
 | Sequence translation             | [[CLI]]() [[GUI]]()                                                         |
 
-Supported common sequence formats:
+Supported sequence formats:
 
 1. NEXUS
 2. Relaxed PHYLIP
