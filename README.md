@@ -16,26 +16,27 @@ It is designed to handle operations on large genomic datasets, while using minim
 ## Links
 
 - App Documentation: [[EN]](https://docs.page/hhandika/segul-docs/)
-- Source Code Documentation: [[EN]](https://docs.rs/segul/0.18.1/segul/)
-- GUI source code: [[LINK]](https://github.com/hhandika/segui)
-- Citation: [pre-print](https://doi.org/10.22541/au.165167823.30911834/v1)
+- API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
+- GUI source code: [[Repository]](https://github.com/hhandika/segui)
+- Citation: [[Pre-print]](https://doi.org/10.22541/au.165167823.30911834/v1)
 
 ## Features
 
-| Feature                          | Quick Link                                               |
-| -------------------------------- | -------------------------------------------------------- |
-| Alignment concatenation          | [[CLI]](https://docs.page/hhandika/segul-docs/usage_concat) [[GUI]]()|
-| Alignment conversion             | [[CLI]]() [[GUI]]()                                                         |
-| Alignment filtering              | [[CLI]]() [[GUI]]()                                                         |
-| Alignment splitting              | [[CLI]]() [[GUI]]()                                                         |
-| Alignment summary statistics     | [[CLI]]() [[GUI]]()                                                         |
-| Contiguous sequence statistics   | [[CLI]]() [[GUI]]()                                                         |
-| Partition format conversion      | [[CLI]]() [[GUI]]()                                                         |
-| Sequence ID extraction           | [[CLI]]() [[GUI]]()                                                         |
-| Sequence ID renaming             | [[CLI]]() [[GUI]]()                                                         |
-| Sequence read summary statistics | [[CLI]]() [[GUI]]()                                                         |
-| Sequence removal                 | [[CLI]]() [[GUI]]()                                                         |
-| Sequence translation             | [[CLI]]() [[GUI]]()                                                         |
+| Feature                        | Quick Link                                                           |
+| ------------------------------ | -------------------------------------------------------------------- |
+| Alignment concatenation        | [CLI](https://docs.page/hhandika/segul-docs/usage_concat) [GUI]()    |
+| Alignment conversion           | [CLI](https://docs.page/hhandika/segul-docs/usage_convert) [GUI]()   |
+| Alignment filtering            | [CLI](https://docs.page/hhandika/segul-docs/usage_filter) [GUI]()    |
+| Alignment splitting            | [CLI](https://docs.page/hhandika/segul-docs/usage_split) [GUI]()     |
+| Alignment partition conversion | [CLI](https://docs.page/hhandika/segul-docs/usage_part) [GUI]()      |
+| Alignment summary statistics   | [CLI](https://docs.page/hhandika/segul-docs/usage_summary) [GUI]()   |
+| Contig summary statistics      | [CLI]() [GUI]()                                                      |
+| Raw read summary statistics    | [CLI]() [GUI]()                                                      |
+| Sequence extraction            | [CLI](https://docs.page/hhandika/segul-docs/usage_extract) [GUI]()   |
+| Sequence ID extraction         | [CLI](https://docs.page/hhandika/segul-docs/usage_id) [GUI]()        |
+| Sequence ID renaming           | [CLI](https://docs.page/hhandika/segul-docs/usage_rename) [GUI]()    |
+| Sequence removal               | [CLI](https://docs.page/hhandika/segul-docs/usage_remove) [GUI]()    |
+| Sequence translation           | [CLI](https://docs.page/hhandika/segul-docs/usage_translate) [GUI]() |
 
 Supported sequence formats:
 
