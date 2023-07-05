@@ -59,6 +59,10 @@ macro_rules! check_output_path {
                         println!();
                     } else {
                         println!("{}", "Aborted!".red());
+                        println!(
+                            "Use different name for the directory \
+                        or rename conflicting directory!"
+                        );
                         std::process::exit(0);
                     }
                 }
