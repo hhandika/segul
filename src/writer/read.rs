@@ -5,7 +5,8 @@ use std::path::Path;
 
 use super::FileWriter;
 
-use crate::stats::read::{FastqRecords, QScoreRecords, QScoreStream, ReadRecord};
+use crate::stats::fastq::FastqSummary;
+use crate::stats::read::{QScoreStream, ReadRecord};
 
 const DEFAULT_OUTPUT: &str = "read-summary.csv";
 
@@ -20,7 +21,7 @@ impl<'a> ReadSummaryWriter<'a> {
         Self { output }
     }
 
-    pub fn write(&self, records: &[(FastqRecords, QScoreRecords)]) -> Result<()> {
+    pub fn write(&self, records: &[FastqSummary]) -> Result<()> {
         let output_path = self.output.join(DEFAULT_OUTPUT);
         let mut writer = self
             .create_output_file(&output_path)
@@ -52,40 +53,41 @@ impl<'a> ReadSummaryWriter<'a> {
     }
 
     /// Write the summary records to a file.
-    pub fn write_records<W: Write>(
-        &self,
-        writer: &mut W,
-        records: &[(FastqRecords, QScoreRecords)],
-    ) -> Result<()> {
+    pub fn write_records<W: Write>(&self, writer: &mut W, records: &[FastqSummary]) -> Result<()> {
         writeln!(
             writer,
             "File,NumReads,NumBases,\
-                    MinReadLen,MeanReadLen,MaxReadLen,\
-                    GCcount,GCcontent,ATcount,ATContent,\
-                    Ncount,Ncontent,\
+                    MeanReadLen,MinReadLen,MaxReadLen,\
+                    G,C,A,T,N\
                     LowQ,Mean,Min,Max\
                     "
         )?;
-        for (seq, q) in records {
+        // GCcount,GCcontent,ATcount,ATContent,\
+        // Ncount,Ncontent,\
+        for rec in records {
             writeln!(
                 writer,
-                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
-                seq.path.display(),
-                seq.num_reads,
-                seq.num_bases,
-                seq.min_read_len,
-                seq.mean_read_len,
-                seq.max_read_len,
-                seq.gc_count,
-                seq.gc_content,
-                seq.at_count,
-                seq.at_content,
-                seq.n_count,
-                seq.n_content,
-                q.low_q,
-                q.mean,
-                q.min,
-                q.max,
+                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                rec.path.display(),
+                rec.reads.stats.count,
+                rec.reads.len,
+                rec.reads.stats.mean,
+                rec.reads.stats.min.unwrap_or(0),
+                rec.reads.stats.max.unwrap_or(0),
+                rec.reads.g_count,
+                rec.reads.c_count,
+                rec.reads.a_count,
+                rec.reads.t_count,
+                rec.reads.n_count,
+                // seq.gc_content,
+                // seq.at_count,
+                // seq.at_content,
+                // seq.n_count,
+                // seq.n_content,
+                rec.qscores.low_q,
+                rec.qscores.sum,
+                rec.qscores.min,
+                rec.qscores.max,
             )?;
         }
 

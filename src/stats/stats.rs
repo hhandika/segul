@@ -119,6 +119,61 @@ impl CommonStats {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct StreamStats {
+    pub count: usize,
+    pub mean: f64,
+    pub min: Option<usize>,
+    pub max: Option<usize>,
+}
+
+impl Default for StreamStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl StreamStats {
+    pub fn new() -> Self {
+        Self {
+            count: 0,
+            mean: 0.0,
+            min: None,
+            max: None,
+        }
+    }
+
+    pub fn update(&mut self, sum: usize, values: &usize) {
+        self.calculate_mean(sum);
+        self.calculate_min(values);
+        self.calculate_max(values);
+    }
+
+    fn calculate_mean(&mut self, sum: usize) {
+        self.count += 1;
+        self.mean = sum as f64 / self.count as f64;
+    }
+
+    fn calculate_min(&mut self, values: &usize) {
+        if let Some(min) = self.min {
+            if min > *values {
+                self.min = Some(*values);
+            }
+        } else {
+            self.min = Some(*values);
+        }
+    }
+
+    fn calculate_max(&mut self, values: &usize) {
+        if let Some(max) = self.max {
+            if max < *values {
+                self.max = Some(*values);
+            }
+        } else {
+            self.max = Some(*values);
+        }
+    }
+}
 /// N50, N75, and N90 statistics for a vector of values
 /// N50 is the length of the shortest contig at 50% of the total length
 /// N75 is the length of the shortest contig at 75% of the total length

@@ -1,25 +1,29 @@
 //! Fastq parser only for Illumina 1.8+ and Sanger quality scores
 
-use std::{collections::BTreeMap, io::BufRead};
+use std::{
+    collections::BTreeMap,
+    io::BufRead,
+    path::{Path, PathBuf},
+};
 
 use noodles::fastq::Reader;
 
 use crate::{
+    helper::{
+        files,
+        types::{infer_raw_input_auto, SeqReadFmt},
+    },
     parser::qscores::QScoreParser,
     stats::read::{QScoreStream, ReadQScore, ReadRecord},
 };
 
-macro_rules! insert_records {
+macro_rules! update_records {
     ($self: ident, $record: ident, $sequence: ident, $qrecord: ident) => {
-        let mut read_records = ReadRecord::new();
         let $sequence = $record.sequence();
         let $qrecord = $record.quality_scores();
-        read_records.summarize($sequence);
-        $self.reads.push(read_records);
-        let mut read_qscores = ReadQScore::new();
+        $self.reads.summarize($sequence);
         let qscores = $self.parse_qscores($qrecord);
-        read_qscores.summarize(&qscores);
-        $self.qscores.push(read_qscores);
+        $self.qscores.summarize(&qscores);
     };
 }
 
@@ -30,23 +34,58 @@ pub fn count_reads<R: BufRead>(buff: &mut R) -> usize {
 
 pub struct FastqSummary {
     /// Input file path
-    pub reads: Vec<ReadRecord>,
-    pub qscores: Vec<ReadQScore>,
+    pub path: PathBuf,
+    pub reads: ReadRecord,
+    pub qscores: ReadQScore,
 }
 
 impl FastqSummary {
-    pub fn new() -> Self {
+    pub fn new(path: &Path) -> Self {
         Self {
-            reads: Vec::new(),
-            qscores: Vec::new(),
+            path: path.to_path_buf(),
+            reads: ReadRecord::new(),
+            qscores: ReadQScore::new(),
         }
+    }
+
+    pub fn summarize(&mut self, file_fmt: &SeqReadFmt) {
+        self.parse_file(file_fmt);
+    }
+
+    fn parse_file(&mut self, file_fmt: &SeqReadFmt) {
+        match file_fmt {
+            SeqReadFmt::Fastq => {
+                let mut buff = files::open_file(&self.path);
+                self.count(&mut buff)
+            }
+            SeqReadFmt::Gzip => {
+                let mut decoder = files::decode_gzip(&self.path);
+                self.count(&mut decoder)
+            }
+            SeqReadFmt::Auto => {
+                let file_fmt = infer_raw_input_auto(&self.path);
+                self.parse_file(&file_fmt)
+            }
+        }
+    }
+
+    fn count<R: BufRead>(&mut self, buff: &mut R) {
+        let mut reader = Reader::new(buff);
+        reader.records().for_each(|r| match r {
+            Ok(record) => {
+                update_records!(self, record, sequence, qrecord);
+            }
+            Err(e) => {
+                log::error!("Error parsing fastq record: {}", e);
+            }
+        });
     }
 
     pub fn compute<R: BufRead>(&mut self, buff: &mut R) {
         let mut reader = Reader::new(buff);
         reader.records().for_each(|r| match r {
             Ok(record) => {
-                insert_records!(self, record, sequence, qrecord);
+                update_records!(self, record, sequence, qrecord);
             }
             Err(e) => {
                 log::error!("Error parsing fastq record: {}", e);
@@ -60,7 +99,7 @@ impl FastqSummary {
 
         reader.records().for_each(|r| match r {
             Ok(record) => {
-                insert_records!(self, record, sequence, qrecord);
+                update_records!(self, record, sequence, qrecord);
                 // Map reads to their index
                 self.map_reads(&mut map_records, sequence);
                 // Map quality scores to their index

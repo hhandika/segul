@@ -2,6 +2,8 @@
 
 use std::path::{Path, PathBuf};
 
+use super::stats::StreamStats;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct FastqRecords {
     /// File path
@@ -123,6 +125,8 @@ pub struct ReadRecord {
     pub t_count: usize,
     /// N count in read
     pub n_count: usize,
+    /// read common stats
+    pub stats: StreamStats,
 }
 
 impl Default for ReadRecord {
@@ -140,11 +144,12 @@ impl ReadRecord {
             a_count: 0,
             t_count: 0,
             n_count: 0,
+            stats: StreamStats::new(),
         }
     }
 
     pub fn summarize(&mut self, read: &[u8]) {
-        self.len = read.len();
+        self.len += read.len();
         read.iter().for_each(|r| match r {
             b'G' | b'g' => self.g_count += 1,
             b'C' | b'c' => self.c_count += 1,
@@ -153,6 +158,7 @@ impl ReadRecord {
             b'N' | b'n' => self.n_count += 1,
             _ => (),
         });
+        self.stats.update(self.len, &read.len());
     }
 
     pub fn add(&mut self, base: &u8) {
@@ -196,7 +202,7 @@ impl ReadQScore {
     }
 
     pub fn summarize(&mut self, qread: &[u8]) {
-        self.len = qread.len();
+        self.len += qread.len();
         self.low_q = qread.iter().map(|x| usize::from(*x < 20)).sum();
         self.min = qread.iter().copied().min().unwrap_or(0);
         self.max = qread.iter().copied().max().unwrap_or(0);
@@ -300,6 +306,7 @@ mod test {
                 a_count: 25,
                 t_count: 25,
                 n_count: 0,
+                stats: StreamStats::new(),
             },
             ReadRecord {
                 len: 100,
@@ -308,6 +315,7 @@ mod test {
                 a_count: 25,
                 t_count: 25,
                 n_count: 0,
+                stats: StreamStats::new(),
             },
         ];
         fq.summarize(&read_records);
