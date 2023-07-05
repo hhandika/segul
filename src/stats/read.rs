@@ -193,11 +193,11 @@ impl ReadRecord {
     }
 
     fn update_gc(&mut self) {
-        self.gc_count += self.g_count + self.c_count;
+        self.gc_count = self.g_count + self.c_count;
     }
 
     fn update_at(&mut self) {
-        self.at_count += self.a_count + self.t_count;
+        self.at_count = self.a_count + self.t_count;
     }
 
     fn update_gc_content(&mut self) {
