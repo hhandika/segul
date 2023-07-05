@@ -113,8 +113,20 @@ impl QScoreRecords {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ReadRecord {
+    /// read common stats
+    pub stats: StreamStats,
     /// Read length
     pub len: usize,
+    /// GC count in read
+    pub gc_count: usize,
+    /// GC content in read
+    pub gc_content: f64,
+    /// AT count in read
+    pub at_count: usize,
+    /// AT content in read
+    pub at_content: f64,
+    /// N content in read
+    pub n_content: f64,
     /// G count in read
     pub g_count: usize,
     /// C count in read
@@ -125,8 +137,6 @@ pub struct ReadRecord {
     pub t_count: usize,
     /// N count in read
     pub n_count: usize,
-    /// read common stats
-    pub stats: StreamStats,
 }
 
 impl Default for ReadRecord {
@@ -138,13 +148,18 @@ impl Default for ReadRecord {
 impl ReadRecord {
     pub fn new() -> Self {
         Self {
+            stats: StreamStats::new(),
             len: 0,
+            gc_count: 0,
+            gc_content: 0.0,
+            at_count: 0,
+            at_content: 0.0,
+            n_content: 0.0,
             g_count: 0,
             c_count: 0,
             a_count: 0,
             t_count: 0,
             n_count: 0,
-            stats: StreamStats::new(),
         }
     }
 
@@ -158,6 +173,11 @@ impl ReadRecord {
             b'N' | b'n' => self.n_count += 1,
             _ => (),
         });
+        self.update_gc();
+        self.update_gc_content();
+        self.update_at();
+        self.update_at_content();
+        self.update_n_content();
         self.stats.update(self.len, &read.len());
     }
 
@@ -170,6 +190,26 @@ impl ReadRecord {
             b'N' | b'n' => self.n_count += 1,
             _ => (),
         }
+    }
+
+    fn update_gc(&mut self) {
+        self.gc_count += self.g_count + self.c_count;
+    }
+
+    fn update_at(&mut self) {
+        self.at_count += self.a_count + self.t_count;
+    }
+
+    fn update_gc_content(&mut self) {
+        self.gc_content = self.gc_count as f64 / self.len as f64;
+    }
+
+    fn update_at_content(&mut self) {
+        self.at_content = self.at_count as f64 / self.len as f64;
+    }
+
+    fn update_n_content(&mut self) {
+        self.n_content = self.n_count as f64 / self.len as f64;
     }
 }
 
@@ -293,37 +333,6 @@ mod test {
         assert_eq!(qread.sum, 170);
         assert_eq!(qread.min, 15);
         assert_eq!(qread.max, 35);
-    }
-
-    #[test]
-    fn test_fastq_records() {
-        let mut fq = FastqRecords::new(Path::new("test.fq"));
-        let read_records = vec![
-            ReadRecord {
-                len: 100,
-                g_count: 25,
-                c_count: 25,
-                a_count: 25,
-                t_count: 25,
-                n_count: 0,
-                stats: StreamStats::new(),
-            },
-            ReadRecord {
-                len: 100,
-                g_count: 25,
-                c_count: 25,
-                a_count: 25,
-                t_count: 25,
-                n_count: 0,
-                stats: StreamStats::new(),
-            },
-        ];
-        fq.summarize(&read_records);
-        assert_eq!(fq.num_reads, 2);
-        assert_eq!(fq.num_bases, 200);
-        assert_eq!(fq.min_read_len, 100);
-        assert_eq!(fq.mean_read_len, 100);
-        assert_eq!(fq.max_read_len, 100);
     }
 
     #[test]

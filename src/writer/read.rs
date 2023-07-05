@@ -58,22 +58,32 @@ impl<'a> ReadSummaryWriter<'a> {
             writer,
             "File,NumReads,NumBases,\
                     MeanReadLen,MinReadLen,MaxReadLen,\
+                    GCcount,GCcontent,ATcount,ATContent,\
+                    Ncontent,\
                     G,C,A,T,N,\
                     LowQ,Mean,Min,Max\
                     "
         )?;
-        // GCcount,GCcontent,ATcount,ATContent,\
-        // Ncount,Ncontent,\
+
         for rec in records {
             writeln!(
                 writer,
-                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                "{},{},{},\
+                {},{},{},\
+                {},{},{},{},\
+                {},{},{},{},{},{},\
+                {},{},{},{}",
                 rec.path.display(),
                 rec.reads.stats.count,
                 rec.reads.len,
                 rec.reads.stats.mean,
                 rec.reads.stats.min.unwrap_or(0),
                 rec.reads.stats.max.unwrap_or(0),
+                rec.reads.gc_count,
+                rec.reads.gc_content,
+                rec.reads.at_count,
+                rec.reads.at_content,
+                rec.reads.n_content,
                 rec.reads.g_count,
                 rec.reads.c_count,
                 rec.reads.a_count,
