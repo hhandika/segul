@@ -58,7 +58,7 @@ impl<'a> ReadSummaryWriter<'a> {
             writer,
             "File,NumReads,NumBases,\
                     MeanReadLen,MinReadLen,MaxReadLen,\
-                    G,C,A,T,N\
+                    G,C,A,T,N,\
                     LowQ,Mean,Min,Max\
                     "
         )?;
