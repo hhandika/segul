@@ -118,7 +118,12 @@ impl<'a> ReadSummaryHandler<'a> {
     }
 
     fn summarize_minimal(&self, p: &Path, input_fmt: &SeqReadFmt) -> usize {
-        match input_fmt {
+        let fmt = if input_fmt == &SeqReadFmt::Auto {
+            infer_raw_input_auto(p)
+        } else {
+            *input_fmt
+        };
+        match fmt {
             SeqReadFmt::Fastq => {
                 let mut buff = files::open_file(p);
                 fastq::summarize_minimal(&mut buff)
@@ -128,8 +133,7 @@ impl<'a> ReadSummaryHandler<'a> {
                 fastq::summarize_minimal(&mut decoder)
             }
             SeqReadFmt::Auto => {
-                let input_fmt = infer_raw_input_auto(p);
-                self.summarize_minimal(p, &input_fmt)
+                unreachable!("Auto should be inferred before calling this function")
             }
         }
     }
