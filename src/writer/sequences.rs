@@ -1,3 +1,4 @@
+//! Write sequences to file
 use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::path::Path;

@@ -1,8 +1,10 @@
+//! Parser for comma or tab delimited files
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 
+/// Parse a delimited file and return a vector of tuples.
 pub fn parse_delimited_text(fpath: &Path) -> Vec<(String, String)> {
     let file = File::open(fpath).expect("Unable to open file");
     let buff = BufReader::new(file);

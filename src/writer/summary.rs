@@ -1,3 +1,4 @@
+//! Summary writer for alignment files
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::io::Write;

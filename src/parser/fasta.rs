@@ -1,4 +1,4 @@
-//! A simple fasta parser
+//! A simple fasta parser that reads a fasta file and returns a sequence matrix.
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -11,6 +11,8 @@ use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
 use crate::helper::types::{DataType, Header, SeqMatrix};
 
+/// Parse a fasta file sequence IDs.
+/// return a set of sequence IDs.
 pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("Failed opening a fasta file.");
     let buff = BufReader::new(file);
@@ -26,6 +28,8 @@ pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     ids
 }
 
+/// Parse a fasta file and return a sequence matrix.
+/// It does not allow duplicate IDs or spaces in the sequence IDs.
 pub struct Fasta<'a> {
     input: &'a Path,
     datatype: &'a DataType,
@@ -34,6 +38,7 @@ pub struct Fasta<'a> {
 }
 
 impl<'a> Fasta<'a> {
+    /// Create a new Fasta instance.
     pub fn new(input: &'a Path, datatype: &'a DataType) -> Self {
         Self {
             input,
@@ -43,6 +48,7 @@ impl<'a> Fasta<'a> {
         }
     }
 
+    /// Parse a fasta file.
     pub fn parse(&mut self) {
         let file = File::open(self.input).expect("Failed opening a fasta file");
         let buff = BufReader::new(file);

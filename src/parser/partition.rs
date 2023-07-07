@@ -1,3 +1,5 @@
+//! Parse RaXML and Nexus partition files.
+
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -59,6 +61,7 @@ macro_rules! assert_partition {
     };
 }
 
+/// Parse a partition file and return a vector of partitions.
 pub struct PartitionParser<'a> {
     path: &'a Path,
     partition_fmt: &'a PartitionFmt,

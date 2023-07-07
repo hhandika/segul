@@ -1,3 +1,4 @@
+//! Nexus parser, support sequential and interleaved format.
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Read};
@@ -14,6 +15,7 @@ use crate::helper::sequence::SeqCheck;
 use crate::helper::types::{DataType, Header, SeqMatrix};
 use crate::parser;
 
+/// Parse a nexus file and return a sequence matrix.
 pub struct Nexus<'a> {
     input: &'a Path,
     datatype: &'a DataType,

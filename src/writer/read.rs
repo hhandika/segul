@@ -1,3 +1,4 @@
+//! Writer for read summary statistics.
 use std::collections::BTreeMap;
 use std::io::{Result, Write};
 use std::path::Path;

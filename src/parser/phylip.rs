@@ -1,3 +1,4 @@
+//! Phylip parser, supports interleaved and sequential formats.
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, Result};
@@ -13,6 +14,9 @@ use crate::helper::sequence::SeqCheck;
 use crate::helper::types::{DataType, Header, SeqMatrix};
 use crate::parser;
 
+/// Parse a phylip file sequence IDs.
+/// return an instance of `IndexSet<String>` containing sequence IDs
+///  and header information.
 pub struct Phylip<'a> {
     input: &'a Path,
     datatype: &'a DataType,

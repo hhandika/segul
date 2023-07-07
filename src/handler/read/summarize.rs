@@ -1,10 +1,6 @@
-//! A handler for summarizing raw sequence data.
+//! Generate summary statistics for raw-read sequences
 //!
-//! The handler accept input in FASTQ or compressed FASTQ (.gzip)
-//! It provide three mode to generate summary statistics
-//! 1. Minimal: Read count only
-//! 2. Default: Essential statistics,
-//! such as read counts, base counts, gc, at, and n content, and qscore statistics
+//! Support FASTQ and compressed FASTQ in gunzip format.
 
 use std::{
     path::{Path, PathBuf},
@@ -25,19 +21,33 @@ use crate::{
     writer::read::ReadSummaryWriter,
 };
 
-/// Include support for any compressed or uncompressed fastq files.
+/// Generate read summary statistics.
+///
+/// It accept input in FASTQ or compressed FASTQ (.gzip).
+/// The resulting file is in Comma-separated (.csv) format.
+/// It accepts three mode to generate summary statistics:
+/// 1. Minimal: read count only
+/// 2. Default: essential statistics,
+/// such as read counts, base counts, gc, at, and n content, and qscore statistics
+/// 3. Complete: all the essential plus summary
+/// statistics per position in read for each file.
 pub struct ReadSummaryHandler<'a> {
+    /// Input path.
     pub inputs: &'a mut [PathBuf],
+    /// Read sequence format.
+    /// In Auto, it will try to infer the format
+    /// based on the file extension.
+    /// For example, sequence_1.fastq.gz
+    /// will result in SeqReadFmt::Gzip
     pub input_fmt: &'a SeqReadFmt,
-    /// Summary mode
-    /// * `Minimal` - Only write the number of reads in each file
-    /// * `Default` - Write all the essential summary statistics
-    /// * `Complete` - Write all the summary statistics
+    /// Summary statistic mode
     pub mode: &'a SummaryMode,
+    /// Output path. No extension required
     pub output: &'a Path,
 }
 
 impl<'a> ReadSummaryHandler<'a> {
+    /// Create a new ReadSummaryHandler instance.
     pub fn new(
         inputs: &'a mut [PathBuf],
         input_fmt: &'a SeqReadFmt,
@@ -52,6 +62,31 @@ impl<'a> ReadSummaryHandler<'a> {
         }
     }
 
+    /// Generate summary statistics for fastq files.
+    /// # Arguments
+    /// * `path` - A mutable slice of PathBuf that holds the fastq files.
+    /// * `input_fmt` - The fastq input format.
+    /// * `mode` - The summary mode.
+    /// * `output` - The output path.
+    /// # Example
+    /// ```
+    /// use std::path::{Path, PathBuf};
+    /// use segul::handler::read::summarize::ReadSummaryHandler;
+    /// use segul::helper::types::{SeqReadFmt, SummaryMode};
+    ///
+    /// let mut files = vec![
+    ///    PathBuf::from("tests/files/raw/read_1.fastq"),
+    ///    PathBuf::from("tests/files/raw/read_2.fastq"),
+    /// ];
+    /// let spinner = segul::helper::utils::set_spinner();
+    /// let mut handler = ReadSummaryHandler::new(
+    ///     &mut files,
+    ///     &SeqReadFmt::Auto,
+    ///     &SummaryMode::Default,
+    ///     Path::new("tests/files/summary/summary")
+    /// );
+    /// handler.summarize();
+    /// ```
     pub fn summarize(&mut self) {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");

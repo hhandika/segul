@@ -1,3 +1,4 @@
+//! Contig summary writer
 use std::{
     io::{Result, Write},
     path::Path,

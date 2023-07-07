@@ -1,3 +1,4 @@
+//! Partition writer module
 use std::io::prelude::*;
 use std::path::Path;
 

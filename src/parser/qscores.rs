@@ -1,4 +1,4 @@
-/// Parse Illumina 1.8+ and Sanger quality scores
+//! Parse Illumina 1.8+ and Sanger quality scores
 pub struct QScoreParser<'a> {
     /// Quality scores in ASCII format
     pub scores: &'a [u8],
