@@ -17,6 +17,8 @@ use crate::{
     stats::read::{QScoreStream, ReadQScore, ReadRecord},
 };
 
+use super::read::ReadSummary;
+
 macro_rules! update_records {
     ($self: ident, $record: ident, $sequence: ident, $qrecord: ident) => {
         let $sequence = $record.sequence();
@@ -36,6 +38,7 @@ pub struct FastqSummary {
     /// Input file path
     pub path: PathBuf,
     pub reads: ReadRecord,
+    pub read_summary: ReadSummary,
     pub qscores: ReadQScore,
 }
 
@@ -44,12 +47,14 @@ impl FastqSummary {
         Self {
             path: path.to_path_buf(),
             reads: ReadRecord::new(),
+            read_summary: ReadSummary::new(),
             qscores: ReadQScore::new(),
         }
     }
 
     pub fn summarize(&mut self, file_fmt: &SeqReadFmt) {
         self.parse_file(file_fmt);
+        self.read_summary.summarize(&self.reads);
     }
 
     fn parse_file(&mut self, file_fmt: &SeqReadFmt) {
@@ -70,18 +75,6 @@ impl FastqSummary {
     }
 
     fn count<R: BufRead>(&mut self, buff: &mut R) {
-        let mut reader = Reader::new(buff);
-        reader.records().for_each(|r| match r {
-            Ok(record) => {
-                update_records!(self, record, sequence, qrecord);
-            }
-            Err(e) => {
-                log::error!("Error parsing fastq record: {}", e);
-            }
-        });
-    }
-
-    pub fn compute<R: BufRead>(&mut self, buff: &mut R) {
         let mut reader = Reader::new(buff);
         reader.records().for_each(|r| match r {
             Ok(record) => {

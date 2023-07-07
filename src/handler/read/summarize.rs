@@ -2,8 +2,7 @@
 
 use std::{
     collections::BTreeMap,
-    fs::File,
-    io::{BufRead, BufReader, Result, Write},
+    io::{Result, Write},
     path::{Path, PathBuf},
     sync::mpsc::channel,
 };
@@ -137,38 +136,8 @@ impl<'a> ReadSummaryHandler<'a> {
     }
 
     fn parse_fastq(&self, path: &Path) -> FastqSummary {
-        let input_fmt = if self.input_fmt == &SeqReadFmt::Auto {
-            infer_raw_input_auto(path)
-        } else {
-            self.input_fmt.clone()
-        };
-        match input_fmt {
-            SeqReadFmt::Fastq => {
-                let file = File::open(path).expect("Failed opening fastq file");
-                let mut buff = BufReader::new(file);
-                if self.mode == &SummaryMode::Complete {
-                    unimplemented!()
-                    // self.map_record(&mut buff, path)
-                } else {
-                    self.parse_record(&mut buff, path)
-                }
-            }
-            SeqReadFmt::Gzip => {
-                let mut decoder = files::decode_gzip(path);
-                if self.mode == &SummaryMode::Complete {
-                    unimplemented!()
-                    // self.map_record(&mut decoder, path)
-                } else {
-                    self.parse_record(&mut decoder, path)
-                }
-            }
-            _ => unreachable!("Unsupported input format"),
-        }
-    }
-
-    fn parse_record<R: BufRead>(&self, buff: &mut R, path: &Path) -> FastqSummary {
         let mut summary = FastqSummary::new(path);
-        summary.compute(buff);
+        summary.summarize(self.input_fmt);
         summary
     }
 
@@ -178,21 +147,6 @@ impl<'a> ReadSummaryHandler<'a> {
     //     let writer = ReadSummaryWriter::new(self.output);
     //     writer.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
     //     (mapped_records.reads, mapped_records.qscores)
-    // }
-
-    // fn summarize_records(
-    //     &self,
-    //     path: &Path,
-    //     reads: &[ReadRecord],
-    //     qscores: &[ReadQScore],
-    // ) -> (FastqRecords, QScoreRecords) {
-    //     let mut seq_records = FastqRecords::new(path);
-    //     let mut q_records = QScoreRecords::new();
-
-    //     seq_records.summarize(reads);
-    //     q_records.summarize(qscores);
-
-    //     (seq_records, q_records)
     // }
 
     fn print_output_info(&self) {

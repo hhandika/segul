@@ -1,70 +1,5 @@
 //! Data types for all FASTQ records
-
-use std::path::{Path, PathBuf};
-
 use super::stats::StreamStats;
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct FastqRecords {
-    /// File path
-    pub path: PathBuf,
-    /// Number of reads
-    pub num_reads: usize,
-    /// Number of bases
-    pub num_bases: usize,
-    /// Average read length
-    pub min_read_len: usize,
-    /// Average read length
-    pub mean_read_len: usize,
-    /// Maximum read length
-    pub max_read_len: usize,
-    /// GC count in read
-    pub gc_count: usize,
-    /// GC percentage in read
-    pub gc_content: f64,
-    /// AT count in read
-    pub at_count: usize,
-    /// AT percentage in read
-    pub at_content: f64,
-    /// N count in read
-    pub n_count: usize,
-    /// N percentage in read
-    pub n_content: f64,
-}
-
-impl FastqRecords {
-    /// Create a new FastqRecords instance
-    pub fn new(path: &Path) -> Self {
-        Self {
-            path: PathBuf::from(path),
-            num_reads: 0,
-            num_bases: 0,
-            min_read_len: 0,
-            mean_read_len: 0,
-            max_read_len: 0,
-            gc_count: 0,
-            gc_content: 0.0,
-            at_count: 0,
-            at_content: 0.0,
-            n_count: 0,
-            n_content: 0.0,
-        }
-    }
-
-    pub fn summarize(&mut self, read_records: &[ReadRecord]) {
-        self.num_reads = read_records.len();
-        self.num_bases = read_records.iter().map(|x| x.len).sum();
-        self.min_read_len = read_records.iter().map(|x| x.len).min().unwrap();
-        self.mean_read_len = self.num_bases / self.num_reads;
-        self.max_read_len = read_records.iter().map(|x| x.len).max().unwrap();
-        self.gc_count = read_records.iter().map(|x| x.g_count + x.c_count).sum();
-        self.gc_content = self.gc_count as f64 / self.num_bases as f64;
-        self.at_count = read_records.iter().map(|x| x.a_count + x.t_count).sum();
-        self.at_content = self.at_count as f64 / self.num_bases as f64;
-        self.n_count = read_records.iter().map(|x| x.n_count).sum();
-        self.n_content = self.n_count as f64 / self.num_bases as f64;
-    }
-}
 
 /// Data types for all Q-Score records
 #[derive(Debug, Clone, PartialEq)]
@@ -112,11 +47,7 @@ impl QScoreRecords {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ReadRecord {
-    /// read common stats
-    pub stats: StreamStats,
-    /// Read length
-    pub len: usize,
+pub struct ReadSummary {
     /// GC count in read
     pub gc_count: usize,
     /// GC content in read
@@ -127,6 +58,41 @@ pub struct ReadRecord {
     pub at_content: f64,
     /// N content in read
     pub n_content: f64,
+}
+
+impl Default for ReadSummary {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ReadSummary {
+    pub fn new() -> Self {
+        Self {
+            gc_count: 0,
+            gc_content: 0.0,
+            at_count: 0,
+            at_content: 0.0,
+            n_content: 0.0,
+        }
+    }
+
+    pub fn summarize(&mut self, record: &ReadRecord) {
+        self.gc_count = record.g_count + record.c_count;
+        self.gc_content = self.gc_count as f64 / record.len as f64;
+        self.at_count = record.a_count + record.t_count;
+        self.at_content = self.at_count as f64 / record.len as f64;
+        self.n_content = record.n_count as f64 / record.len as f64;
+    }
+}
+
+/// Statistics for a single file read records
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReadRecord {
+    /// read common stats
+    pub stats: StreamStats,
+    /// Read length
+    pub len: usize,
     /// G count in read
     pub g_count: usize,
     /// C count in read
@@ -150,11 +116,6 @@ impl ReadRecord {
         Self {
             stats: StreamStats::new(),
             len: 0,
-            gc_count: 0,
-            gc_content: 0.0,
-            at_count: 0,
-            at_content: 0.0,
-            n_content: 0.0,
             g_count: 0,
             c_count: 0,
             a_count: 0,
@@ -173,11 +134,6 @@ impl ReadRecord {
             b'N' | b'n' => self.n_count += 1,
             _ => (),
         });
-        self.update_gc();
-        self.update_gc_content();
-        self.update_at();
-        self.update_at_content();
-        self.update_n_content();
         self.stats.update(self.len, &read.len());
     }
 
@@ -190,26 +146,6 @@ impl ReadRecord {
             b'N' | b'n' => self.n_count += 1,
             _ => (),
         }
-    }
-
-    fn update_gc(&mut self) {
-        self.gc_count = self.g_count + self.c_count;
-    }
-
-    fn update_at(&mut self) {
-        self.at_count = self.a_count + self.t_count;
-    }
-
-    fn update_gc_content(&mut self) {
-        self.gc_content = self.gc_count as f64 / self.len as f64;
-    }
-
-    fn update_at_content(&mut self) {
-        self.at_content = self.at_count as f64 / self.len as f64;
-    }
-
-    fn update_n_content(&mut self) {
-        self.n_content = self.n_count as f64 / self.len as f64;
     }
 }
 
