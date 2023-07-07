@@ -1,4 +1,5 @@
 //! Multi-Sequence Alignment Module.
+//!
 //! Parse user input and call the appropriate functions
 //! to concatenate sequence alignments.
 

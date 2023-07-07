@@ -21,7 +21,9 @@ impl Default for ReadSummary {
     }
 }
 
+/// Read summary statistics for a single file
 impl ReadSummary {
+    /// Create a new ReadSummary instance
     pub fn new() -> Self {
         Self {
             gc_count: 0,
@@ -31,7 +33,7 @@ impl ReadSummary {
             n_content: 0.0,
         }
     }
-
+    /// Summarize a read record and update the stats
     pub fn summarize(&mut self, record: &ReadRecord) {
         self.gc_count = record.g_count + record.c_count;
         self.gc_content = self.gc_count as f64 / record.len as f64;
