@@ -1,4 +1,10 @@
 //! A handler for summarizing raw sequence data.
+//!
+//! The handler accept input in FASTQ or compressed FASTQ (.gzip)
+//! It provide three mode to generate summary statistics
+//! 1. Minimal: Read count only
+//! 2. Default: Essential statistics,
+//! such as read counts, base counts, gc, at, and n content, and qscore statistics
 
 use std::{
     path::{Path, PathBuf},
@@ -67,22 +73,6 @@ impl<'a> ReadSummaryHandler<'a> {
         self.print_output_info();
     }
 
-    fn write_record_min(&mut self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) {
-        let writer = ReadSummaryWriter::new(self.output);
-        spin.set_message("Writing records\n");
-        writer
-            .write_read_count_only(&records)
-            .expect("Failed writing to file");
-    }
-
-    fn write_records(&mut self, spin: &ProgressBar, records: &mut [FastqSummary]) {
-        // Sort records by file name
-        records.sort_by(|a, b| a.path.cmp(&b.path));
-        spin.set_message("Writing records\n");
-        let writer = ReadSummaryWriter::new(self.output);
-        writer.write(records).expect("Failed writing to file");
-    }
-
     fn par_summarize_default(&self) -> Vec<FastqSummary> {
         let (sender, receiver) = channel();
 
@@ -117,6 +107,22 @@ impl<'a> ReadSummaryHandler<'a> {
         });
 
         receiver.iter().collect()
+    }
+
+    fn write_record_min(&mut self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) {
+        let writer = ReadSummaryWriter::new(self.output);
+        spin.set_message("Writing records\n");
+        writer
+            .write_read_count_only(&records)
+            .expect("Failed writing to file");
+    }
+
+    fn write_records(&mut self, spin: &ProgressBar, records: &mut [FastqSummary]) {
+        // Sort records by file name
+        records.sort_by(|a, b| a.path.cmp(&b.path));
+        spin.set_message("Writing records\n");
+        let writer = ReadSummaryWriter::new(self.output);
+        writer.write(records).expect("Failed writing to file");
     }
 
     fn summarize_minimal(&self, p: &Path, input_fmt: &SeqReadFmt) -> FastqSummaryMin {
