@@ -73,17 +73,19 @@ impl<'a> ReadSummaryHandler<'a> {
     /// use std::path::{Path, PathBuf};
     /// use segul::handler::read::summarize::ReadSummaryHandler;
     /// use segul::helper::types::{SeqReadFmt, SummaryMode};
+    /// use tempdir::TempDir;
     ///
     /// let mut files = vec![
     ///    PathBuf::from("tests/files/raw/read_1.fastq"),
     ///    PathBuf::from("tests/files/raw/read_2.fastq"),
     /// ];
+    /// let output = TempDir::new("tempt").unwrap();
     /// let spinner = segul::helper::utils::set_spinner();
     /// let mut handler = ReadSummaryHandler::new(
     ///     &mut files,
     ///     &SeqReadFmt::Auto,
     ///     &SummaryMode::Default,
-    ///     Path::new("tests/files/summary/summary")
+    ///     Path::new(output.path()),
     /// );
     /// handler.summarize();
     /// ```

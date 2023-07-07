@@ -2,18 +2,20 @@
 //! SEGUL provides fast and memory efficient utilities for alignment manipulation and summary statistics.
 //!
 //! ## Features:
-//! 1. Computing alignment summary statistics.
-//! 2. Concatenating alignments with partition settings.
-//! 3. Converting alignments to different formats.
-//! 4. Converting partition formats.
-//! 5. Extracting sequences from a collection of alignments based on user-defined IDs (include regular expression support).
-//! 6. Filtering alignments based on minimal taxon completeness, alignment length, or numbers of parsimony informative sites.
-//! 7. Getting sample IDs from a collection of alignments.
-//! 8. Mapping sample distribution in a collection of alignments.
-//! 9. Batch removing sequence based user-defined IDs.
-//! 10. Batch renaming sequence IDs (include regular expression support).
-//! 11. Splitting alignments by partitions.
-//! 12. Translating DNA sequences to amino acid sequences
+//! 1. Alignment concatenation
+//! 2. Alignment conversion
+//! 3. Alignment filtering
+//! 4. Alignment partition conversion
+//! 5. Alignment splitting
+//! 6. Alignment summary statistics
+//! 7. Contiguous sequence summary statistics
+//! 8. Raw read summary statistics
+//! 9. Sample distribution mapping
+//! 10. Sequence extraction
+//! 11. Sequence ID renaming
+//! 12. Sequence removal
+//! 13. Sequence translation
+//! 14. Sequence unique ID parsing
 //!
 //! ## Example
 //!

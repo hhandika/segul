@@ -6,7 +6,8 @@ use std::path::Path;
 use super::FileWriter;
 
 use crate::stats::fastq::{FastqSummary, FastqSummaryMin};
-use crate::stats::read::{QScoreStream, ReadRecord};
+use crate::stats::qscores::ReadQScore;
+use crate::stats::read::ReadRecord;
 
 const DEFAULT_OUTPUT: &str = "read-summary.csv";
 
@@ -83,9 +84,9 @@ impl<'a> ReadSummaryWriter<'a> {
                 rec.reads.t_count,
                 rec.reads.n_count,
                 rec.qscores.low_q,
-                rec.qscores.sum,
-                rec.qscores.min,
-                rec.qscores.max,
+                rec.qscores.stats.mean,
+                rec.qscores.stats.min.unwrap_or(0),
+                rec.qscores.stats.max.unwrap_or(0),
             )?;
         }
 
@@ -96,7 +97,7 @@ impl<'a> ReadSummaryWriter<'a> {
         &self,
         fpath: &Path,
         reads: &BTreeMap<i32, ReadRecord>,
-        qscores: &BTreeMap<i32, QScoreStream>,
+        qscores: &BTreeMap<i32, ReadQScore>,
     ) {
         let fname = format!(
             "{}_{}",
@@ -137,9 +138,9 @@ impl<'a> ReadSummaryWriter<'a> {
                 r.c_count as f64 / sum as f64,
                 r.a_count as f64 / sum as f64,
                 r.t_count as f64 / sum as f64,
-                scores.mean,
-                scores.min.unwrap_or(0),
-                scores.max.unwrap_or(0)
+                scores.stats.mean,
+                scores.stats.min.unwrap_or(0),
+                scores.stats.max.unwrap_or(0)
             )
             .expect("Failed writing to file");
         });

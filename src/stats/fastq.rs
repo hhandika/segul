@@ -1,6 +1,7 @@
 //! Fastq parser only for Illumina 1.8+ and Sanger quality scores
 
 use std::{
+    collections::BTreeMap,
     io::BufRead,
     path::{Path, PathBuf},
 };
@@ -13,10 +14,10 @@ use crate::{
         types::{infer_raw_input_auto, SeqReadFmt},
     },
     parser::qscores::QScoreParser,
-    stats::read::{QScoreStream, ReadQScore, ReadRecord},
+    stats::read::ReadRecord,
 };
 
-use super::read::{FastqMappedRead, ReadSummary};
+use super::{qscores::ReadQScore, read::ReadSummary};
 
 macro_rules! summarize_reads {
     ($self: ident, $record: ident, $sequence: ident) => {
@@ -170,7 +171,7 @@ impl FastqSummary {
             if let Some(qscore) = records.qscores.get_mut(&index) {
                 qscore.update(s);
             } else {
-                let mut qscore = QScoreStream::new();
+                let mut qscore = ReadQScore::new();
                 qscore.update(s);
                 records.qscores.insert(index, qscore);
             }
@@ -188,6 +189,28 @@ impl FastqSummary {
         });
 
         qscores
+    }
+}
+
+/// Data structure for storing mapped read records
+pub struct FastqMappedRead {
+    pub reads: BTreeMap<i32, ReadRecord>,
+    pub qscores: BTreeMap<i32, ReadQScore>,
+}
+
+impl Default for FastqMappedRead {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FastqMappedRead {
+    /// Create a new FastqMappedRead instance
+    pub fn new() -> Self {
+        Self {
+            reads: BTreeMap::new(),
+            qscores: BTreeMap::new(),
+        }
     }
 }
 
