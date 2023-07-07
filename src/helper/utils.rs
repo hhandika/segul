@@ -2,6 +2,7 @@
 use std::{iter, time::Duration};
 
 use chrono::NaiveTime;
+use clap::crate_description;
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use num_format::{Locale, ToFormattedString};
@@ -48,8 +49,6 @@ pub fn set_spinner() -> ProgressBar {
 
 #[cfg(not(tarpaulin_include))]
 pub fn print_welcome_text(version: &str) {
-    use clap::crate_description;
-
     log::info!("{}", get_rep_str('=').yellow());
     let text = format!("SEGUL v{}", version);
     log::info!("{}", text.yellow());
