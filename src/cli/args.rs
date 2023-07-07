@@ -113,8 +113,6 @@ pub(crate) struct SeqReadSummaryArgs {
     pub(crate) mode: SummaryMode,
     #[arg(short = 'o', long = "output", help = "Output path", default_value = "Read-Summary")]
     pub(crate) output: PathBuf,
-    #[arg(long = "low-mem", help = "Use low memory mode")]
-    pub(crate) low_mem: bool,
 }
 
 #[derive(Args)]

@@ -35,6 +35,6 @@ impl<'a> ReadSummaryCliParser<'a> {
             &self.args.mode,
             &self.args.output,
         )
-        .summarize(self.args.low_mem);
+        .summarize();
     }
 }

@@ -2,7 +2,6 @@
 
 use std::{
     collections::BTreeMap,
-    io::{Result, Write},
     path::{Path, PathBuf},
     sync::mpsc::channel,
 };
@@ -45,7 +44,7 @@ impl<'a> ReadSummaryHandler<'a> {
         }
     }
 
-    pub fn summarize(&mut self, low_mem: bool) {
+    pub fn summarize(&mut self) {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
 
@@ -57,41 +56,19 @@ impl<'a> ReadSummaryHandler<'a> {
                 .write_read_count_only(&counts)
                 .expect("Failed writing to file");
         } else {
-            self.summarize_other_mode(&spin, low_mem);
+            self.summarize_other_mode(&spin);
         }
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_output_info();
     }
 
-    fn summarize_other_mode(&mut self, spin: &ProgressBar, low_mem: bool) {
-        if low_mem {
-            self.summarize_lowmem()
-                .expect("Failed summarizing fastq files");
-        } else {
-            let mut records = self.par_summarize();
-            // Sort records by file name
-            records.sort_by(|a, b| a.path.cmp(&b.path));
-            spin.set_message("Writing records\n");
-            let writer = ReadSummaryWriter::new(self.output);
-            writer.write(&records).expect("Failed writing to file");
-        }
-    }
-
-    /// Use a single tread and write records to file as they are processed
-    /// to reduce memory usage.
-    pub fn summarize_lowmem(&mut self) -> Result<()> {
-        self.inputs.par_sort();
-        let handler = ReadSummaryWriter::new(self.output);
-        let mut writer = handler.write_append();
-        self.inputs.iter().for_each(|path| {
-            let records = self.parse_fastq(path);
-            handler
-                .write_records(&mut writer, &[records])
-                .expect("Failed writing to file");
-        });
-        writer.flush()?;
-
-        Ok(())
+    fn summarize_other_mode(&mut self, spin: &ProgressBar) {
+        let mut records = self.par_summarize();
+        // Sort records by file name
+        records.sort_by(|a, b| a.path.cmp(&b.path));
+        spin.set_message("Writing records\n");
+        let writer = ReadSummaryWriter::new(self.output);
+        writer.write(&records).expect("Failed writing to file");
     }
 
     fn count_read(&self) -> BTreeMap<String, usize> {
