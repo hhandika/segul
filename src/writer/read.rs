@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::{BufWriter, Result, Write};
+use std::io::{Result, Write};
 use std::path::Path;
 
 use super::FileWriter;
@@ -32,13 +31,6 @@ impl<'a> ReadSummaryWriter<'a> {
         Ok(())
     }
 
-    /// Return a buffered writer for appending to the output file.
-    pub fn write_append(&self) -> BufWriter<File> {
-        let output_path = self.output.join(DEFAULT_OUTPUT);
-        self.append_output_file(&output_path)
-            .expect("Failed writing to file")
-    }
-
     pub fn write_read_count_only(&self, records: &BTreeMap<String, usize>) -> Result<()> {
         let output_path = self.output.join(DEFAULT_OUTPUT);
         let mut writer = self
@@ -53,7 +45,7 @@ impl<'a> ReadSummaryWriter<'a> {
     }
 
     /// Write the summary records to a file.
-    pub fn write_records<W: Write>(&self, writer: &mut W, records: &[FastqSummary]) -> Result<()> {
+    fn write_records<W: Write>(&self, writer: &mut W, records: &[FastqSummary]) -> Result<()> {
         writeln!(
             writer,
             "File,NumReads,NumBases,\
