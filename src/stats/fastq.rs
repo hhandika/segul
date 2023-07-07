@@ -50,9 +50,40 @@ macro_rules! compute_stats {
     };
 }
 
-pub fn summarize_minimal<R: BufRead>(buff: &mut R) -> usize {
-    let mut reader = Reader::new(buff);
-    reader.records().count()
+trait SeqRead {
+    fn parse_input_fmt(&self, path: &Path, file_fmt: &SeqReadFmt) -> SeqReadFmt {
+        if file_fmt == &SeqReadFmt::Auto {
+            infer_raw_input_auto(path)
+        } else {
+            *file_fmt
+        }
+    }
+}
+
+pub struct FastqSummaryMin {
+    pub path: PathBuf,
+    pub read_count: usize,
+}
+
+impl SeqRead for FastqSummaryMin {}
+
+impl FastqSummaryMin {
+    pub fn new(path: &Path) -> Self {
+        Self {
+            read_count: 0,
+            path: path.to_path_buf(),
+        }
+    }
+
+    pub fn summarize(&mut self, file_fmt: &SeqReadFmt) {
+        let input_fmt = self.parse_input_fmt(&self.path, file_fmt);
+        compute_stats!(self, input_fmt, count_reads);
+    }
+
+    fn count_reads<R: BufRead>(&mut self, buff: &mut R) {
+        let mut reader = Reader::new(buff);
+        self.read_count = reader.records().count()
+    }
 }
 
 pub struct FastqSummary {
@@ -62,6 +93,8 @@ pub struct FastqSummary {
     pub read_summary: ReadSummary,
     pub qscores: ReadQScore,
 }
+
+impl SeqRead for FastqSummary {}
 
 impl FastqSummary {
     pub fn new(path: &Path) -> Self {
@@ -74,21 +107,26 @@ impl FastqSummary {
     }
 
     pub fn summarize(&mut self, file_fmt: &SeqReadFmt) {
-        let input_fmt = self.parse_input_fmt(file_fmt);
-        compute_stats!(self, input_fmt, count);
+        let input_fmt = self.parse_input_fmt(&self.path, file_fmt);
+        compute_stats!(self, input_fmt, compute_default);
     }
 
     pub fn summarize_map(&mut self, file_fmt: &SeqReadFmt) -> FastqMappedRead {
-        let input_fmt = self.parse_input_fmt(file_fmt);
+        let input_fmt = self.parse_input_fmt(&self.path, file_fmt);
         compute_stats!(self, input_fmt, compute_mapped)
     }
 
-    fn parse_input_fmt(&self, file_fmt: &SeqReadFmt) -> SeqReadFmt {
-        if file_fmt == &SeqReadFmt::Auto {
-            infer_raw_input_auto(&self.path)
-        } else {
-            *file_fmt
-        }
+    fn compute_default<R: BufRead>(&mut self, buff: &mut R) {
+        let mut reader = Reader::new(buff);
+        reader.records().for_each(|r| match r {
+            Ok(record) => {
+                summarize_reads!(self, record, sequence);
+                summarize_qscores!(self, record, qrecord);
+            }
+            Err(e) => {
+                log::error!("Error parsing fastq record: {}", e);
+            }
+        });
     }
 
     fn compute_mapped<R: BufRead>(&mut self, buff: &mut R) -> FastqMappedRead {
@@ -110,19 +148,6 @@ impl FastqSummary {
         });
 
         map_records
-    }
-
-    fn count<R: BufRead>(&mut self, buff: &mut R) {
-        let mut reader = Reader::new(buff);
-        reader.records().for_each(|r| match r {
-            Ok(record) => {
-                summarize_reads!(self, record, sequence);
-                summarize_qscores!(self, record, qrecord);
-            }
-            Err(e) => {
-                log::error!("Error parsing fastq record: {}", e);
-            }
-        });
     }
 
     fn map_reads(&self, records: &mut FastqMappedRead, sequence: &[u8]) {
@@ -170,15 +195,15 @@ impl FastqSummary {
 mod test {
     use std::path::Path;
 
-    use crate::helper::files;
-
     use super::*;
 
     #[test]
     fn test_read_count() {
         let path = Path::new("tests/files/raw/read_1.fastq");
-        let mut buff = files::open_file(path);
-        let count = summarize_minimal(&mut buff);
-        assert_eq!(count, 2);
+        let file_fmt = SeqReadFmt::Fastq;
+        let mut summary = FastqSummaryMin::new(path);
+        summary.summarize(&file_fmt);
+        assert_eq!(summary.path, PathBuf::from(path));
+        assert_eq!(summary.read_count, 2);
     }
 }

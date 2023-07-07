@@ -1,7 +1,6 @@
 //! A handler for summarizing raw sequence data.
 
 use std::{
-    collections::BTreeMap,
     path::{Path, PathBuf},
     sync::mpsc::channel,
 };
@@ -13,11 +12,10 @@ use rayon::prelude::*;
 
 use crate::{
     helper::{
-        files,
-        types::{infer_raw_input_auto, SeqReadFmt, SummaryMode},
+        types::{SeqReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    stats::fastq::{self, FastqSummary},
+    stats::fastq::{FastqSummary, FastqSummaryMin},
     writer::read::ReadSummaryWriter,
 };
 
@@ -53,12 +51,8 @@ impl<'a> ReadSummaryHandler<'a> {
         spin.set_message("Calculating summary of fastq files");
         match self.mode {
             SummaryMode::Minimal => {
-                let counts = self.par_summarize_minimal();
-                let writer = ReadSummaryWriter::new(self.output);
-                spin.set_message("Writing records\n");
-                writer
-                    .write_read_count_only(&counts)
-                    .expect("Failed writing to file");
+                let mut records = self.par_summarize_minimal();
+                self.write_record_min(&spin, &mut records);
             }
             SummaryMode::Default => {
                 let mut records = self.par_summarize_default();
@@ -71,6 +65,14 @@ impl<'a> ReadSummaryHandler<'a> {
         }
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_output_info();
+    }
+
+    fn write_record_min(&mut self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) {
+        let writer = ReadSummaryWriter::new(self.output);
+        spin.set_message("Writing records\n");
+        writer
+            .write_read_count_only(&records)
+            .expect("Failed writing to file");
     }
 
     fn write_records(&mut self, spin: &ProgressBar, records: &mut [FastqSummary]) {
@@ -105,37 +107,22 @@ impl<'a> ReadSummaryHandler<'a> {
         receiver.iter().collect()
     }
 
-    fn par_summarize_minimal(&self) -> BTreeMap<String, usize> {
+    fn par_summarize_minimal(&self) -> Vec<FastqSummaryMin> {
         let (sender, receiver) = channel();
 
         self.inputs.par_iter().for_each_with(sender, |s, p| {
-            let count = self.summarize_minimal(p, self.input_fmt);
-            s.send((p.display().to_string(), count))
+            let summary = self.summarize_minimal(p, self.input_fmt);
+            s.send(summary)
                 .expect("Failed parallel processing fastq files");
         });
 
         receiver.iter().collect()
     }
 
-    fn summarize_minimal(&self, p: &Path, input_fmt: &SeqReadFmt) -> usize {
-        let fmt = if input_fmt == &SeqReadFmt::Auto {
-            infer_raw_input_auto(p)
-        } else {
-            *input_fmt
-        };
-        match fmt {
-            SeqReadFmt::Fastq => {
-                let mut buff = files::open_file(p);
-                fastq::summarize_minimal(&mut buff)
-            }
-            SeqReadFmt::Gzip => {
-                let mut decoder = files::decode_gzip(p);
-                fastq::summarize_minimal(&mut decoder)
-            }
-            SeqReadFmt::Auto => {
-                unreachable!("Auto should be inferred before calling this function")
-            }
-        }
+    fn summarize_minimal(&self, p: &Path, input_fmt: &SeqReadFmt) -> FastqSummaryMin {
+        let mut summary = FastqSummaryMin::new(p);
+        summary.summarize(input_fmt);
+        summary
     }
 
     fn summarize_default(&self, path: &Path) -> FastqSummary {

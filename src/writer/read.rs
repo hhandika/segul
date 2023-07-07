@@ -4,7 +4,7 @@ use std::path::Path;
 
 use super::FileWriter;
 
-use crate::stats::fastq::FastqSummary;
+use crate::stats::fastq::{FastqSummary, FastqSummaryMin};
 use crate::stats::read::{QScoreStream, ReadRecord};
 
 const DEFAULT_OUTPUT: &str = "read-summary.csv";
@@ -31,14 +31,14 @@ impl<'a> ReadSummaryWriter<'a> {
         Ok(())
     }
 
-    pub fn write_read_count_only(&self, records: &BTreeMap<String, usize>) -> Result<()> {
+    pub fn write_read_count_only(&self, records: &[FastqSummaryMin]) -> Result<()> {
         let output_path = self.output.join(DEFAULT_OUTPUT);
         let mut writer = self
             .create_output_file(&output_path)
             .expect("Failed writing to file");
         writeln!(writer, "File,NumReads")?;
-        for (path, count) in records {
-            writeln!(writer, "{},{}", path, count)?;
+        for rec in records {
+            writeln!(writer, "{},{}", rec.path.display(), rec.read_count)?;
         }
         writer.flush()?;
         Ok(())
