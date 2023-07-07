@@ -8,7 +8,7 @@ use std::cmp::Reverse;
 /// ```
 /// use assert_approx_eq::assert_approx_eq;
 ///
-/// use segul::stats::stats::CommonStats;
+/// use segul::stats::common::CommonStats;
 ///
 /// let values = vec![1, 2, 3, 4, 5];
 /// let mut stats = CommonStats::new();
@@ -181,7 +181,7 @@ impl StreamStats {
 ///
 /// # Example
 /// ```
-/// use segul::stats::stats::NStats;
+/// use segul::stats::common::NStats;
 ///
 /// // Contig lengths stored in a vector
 /// let contigs = vec![2, 3, 4, 5, 6, 7, 8, 9, 10];

@@ -87,7 +87,7 @@ impl FastqSummary {
         if file_fmt == &SeqReadFmt::Auto {
             infer_raw_input_auto(&self.path)
         } else {
-            file_fmt.to_owned()
+            *file_fmt
         }
     }
 
