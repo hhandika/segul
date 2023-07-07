@@ -409,9 +409,9 @@ impl TaxonRecords {
 pub enum SummaryMode {
     /// Only write/print minimal summary information
     Minimal,
-    /// Print write/print all essential summary information
+    /// Write all essential summary information
     Default,
-    /// Print all summary information
+    /// Write all summary information
     Complete,
 }
 

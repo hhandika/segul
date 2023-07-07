@@ -19,17 +19,39 @@ use crate::{
 
 use super::read::ReadSummary;
 
-macro_rules! update_records {
-    ($self: ident, $record: ident, $sequence: ident, $qrecord: ident) => {
+macro_rules! summarize_reads {
+    ($self: ident, $record: ident, $sequence: ident) => {
         let $sequence = $record.sequence();
-        let $qrecord = $record.quality_scores();
         $self.reads.summarize($sequence);
+        $self.read_summary.summarize(&$self.reads);
+    };
+}
+
+macro_rules! summarize_qscores {
+    ($self: ident, $record: ident, $qrecord: ident) => {
+        let $qrecord = $record.quality_scores();
         let qscores = $self.parse_qscores($qrecord);
         $self.qscores.summarize(&qscores);
     };
 }
 
-pub fn count_reads<R: BufRead>(buff: &mut R) -> usize {
+macro_rules! compute_stats {
+    ($self: ident, $fmt: ident, $compute: ident) => {
+        match $fmt {
+            SeqReadFmt::Fastq => {
+                let mut buff = files::open_file(&$self.path);
+                $self.$compute(&mut buff)
+            }
+            SeqReadFmt::Gzip => {
+                let mut decoder = files::decode_gzip(&$self.path);
+                $self.$compute(&mut decoder)
+            }
+            _ => unreachable!("Unsupported input format"),
+        }
+    };
+}
+
+pub fn summarize_minimal<R: BufRead>(buff: &mut R) -> usize {
     let mut reader = Reader::new(buff);
     reader.records().count()
 }
@@ -53,49 +75,34 @@ impl FastqSummary {
     }
 
     pub fn summarize(&mut self, file_fmt: &SeqReadFmt) {
-        self.parse_file(file_fmt);
-        self.read_summary.summarize(&self.reads);
+        let input_fmt = self.parse_input_fmt(file_fmt);
+        compute_stats!(self, input_fmt, count);
     }
 
-    fn parse_file(&mut self, file_fmt: &SeqReadFmt) {
-        match file_fmt {
-            SeqReadFmt::Fastq => {
-                let mut buff = files::open_file(&self.path);
-                self.count(&mut buff)
-            }
-            SeqReadFmt::Gzip => {
-                let mut decoder = files::decode_gzip(&self.path);
-                self.count(&mut decoder)
-            }
-            SeqReadFmt::Auto => {
-                let file_fmt = infer_raw_input_auto(&self.path);
-                self.parse_file(&file_fmt)
-            }
+    pub fn summarize_map(&mut self, file_fmt: &SeqReadFmt) -> FastqMappedRead {
+        let input_fmt = self.parse_input_fmt(file_fmt);
+        compute_stats!(self, input_fmt, compute_mapped)
+    }
+
+    fn parse_input_fmt(&self, file_fmt: &SeqReadFmt) -> SeqReadFmt {
+        if file_fmt == &SeqReadFmt::Auto {
+            infer_raw_input_auto(&self.path)
+        } else {
+            file_fmt.to_owned()
         }
     }
 
-    fn count<R: BufRead>(&mut self, buff: &mut R) {
-        let mut reader = Reader::new(buff);
-        reader.records().for_each(|r| match r {
-            Ok(record) => {
-                update_records!(self, record, sequence, qrecord);
-            }
-            Err(e) => {
-                log::error!("Error parsing fastq record: {}", e);
-            }
-        });
-    }
-
-    pub fn compute_mapped<R: BufRead>(&mut self, buff: &mut R) -> FastqMappedRead {
+    fn compute_mapped<R: BufRead>(&mut self, buff: &mut R) -> FastqMappedRead {
         let mut reader = Reader::new(buff);
         let mut map_records = FastqMappedRead::new();
 
         reader.records().for_each(|r| match r {
             Ok(record) => {
-                update_records!(self, record, sequence, qrecord);
+                summarize_reads!(self, record, sequence);
                 // Map reads to their index
                 self.map_reads(&mut map_records, sequence);
                 // Map quality scores to their index
+                summarize_qscores!(self, record, qrecord);
                 self.map_qscores(&mut map_records, qrecord);
             }
             Err(e) => {
@@ -104,6 +111,19 @@ impl FastqSummary {
         });
 
         map_records
+    }
+
+    fn count<R: BufRead>(&mut self, buff: &mut R) {
+        let mut reader = Reader::new(buff);
+        reader.records().for_each(|r| match r {
+            Ok(record) => {
+                summarize_reads!(self, record, sequence);
+                summarize_qscores!(self, record, qrecord);
+            }
+            Err(e) => {
+                log::error!("Error parsing fastq record: {}", e);
+            }
+        });
     }
 
     fn map_reads(&self, records: &mut FastqMappedRead, sequence: &[u8]) {
@@ -173,7 +193,7 @@ mod test {
     fn test_read_count() {
         let path = Path::new("tests/files/raw/read_1.fastq");
         let mut buff = files::open_file(path);
-        let count = count_reads(&mut buff);
+        let count = summarize_minimal(&mut buff);
         assert_eq!(count, 2);
     }
 }
