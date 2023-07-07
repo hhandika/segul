@@ -33,7 +33,7 @@ pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
 fn match_contig_subcommand(subcommand: &ContigSubcommand) {
     match subcommand {
         ContigSubcommand::ContigSummary(summary_args) => {
-            ContigCliParser::new(&summary_args).summarize();
+            ContigCliParser::new(summary_args).summarize();
         }
     };
 }
@@ -41,7 +41,7 @@ fn match_contig_subcommand(subcommand: &ContigSubcommand) {
 fn match_raw_read_subcommand(subcommand: &SeqReadSubcommand) {
     match subcommand {
         SeqReadSubcommand::RawSummary(raw_args) => {
-            ReadSummaryCliParser::new(&raw_args).summarize();
+            ReadSummaryCliParser::new(raw_args).summarize();
         }
     };
 }
@@ -49,7 +49,7 @@ fn match_raw_read_subcommand(subcommand: &SeqReadSubcommand) {
 fn match_partition_subcommand(subcommand: &PartitionSubcommand) {
     match subcommand {
         PartitionSubcommand::Convert(part_args) => {
-            PartParser::new(&part_args).convert();
+            PartParser::new(part_args).convert();
         }
     };
 }
@@ -57,17 +57,17 @@ fn match_partition_subcommand(subcommand: &PartitionSubcommand) {
 fn match_alignment_subcommand(subcommand: &AlignmentSubcommand) {
     match subcommand {
         AlignmentSubcommand::Concat(concat_args) => {
-            ConcatParser::new(&concat_args).concat();
+            ConcatParser::new(concat_args).concat();
         }
         AlignmentSubcommand::Convert(convert_args) => {
-            ConvertParser::new(&convert_args).convert();
+            ConvertParser::new(convert_args).convert();
         }
         AlignmentSubcommand::Filter(filter_args) => {
-            FilterParser::new(&filter_args).filter();
+            FilterParser::new(filter_args).filter();
         }
-        AlignmentSubcommand::Split(split_args) => SplitParser::new(&split_args).split(),
+        AlignmentSubcommand::Split(split_args) => SplitParser::new(split_args).split(),
         AlignmentSubcommand::AlignSummary(summary_args) => {
-            SummaryParser::new(&summary_args).summarize();
+            SummaryParser::new(summary_args).summarize();
         }
     };
 }
@@ -75,19 +75,19 @@ fn match_alignment_subcommand(subcommand: &AlignmentSubcommand) {
 fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
     match subcommand {
         SequenceSubcommand::Extract(extract_args) => {
-            ExtractParser::new(&extract_args).extract();
+            ExtractParser::new(extract_args).extract();
         }
         SequenceSubcommand::Id(id_args) => {
-            IdParser::new(&id_args).find();
+            IdParser::new(id_args).find();
         }
         SequenceSubcommand::Remove(remove_args) => {
-            RemoveParser::new(&remove_args).remove();
+            RemoveParser::new(remove_args).remove();
         }
         SequenceSubcommand::Rename(rename_args) => {
-            RenameParser::new(&rename_args).rename();
+            RenameParser::new(rename_args).rename();
         }
         SequenceSubcommand::Translate(translate_args) => {
-            TranslateParser::new(&translate_args).translate();
+            TranslateParser::new(translate_args).translate();
         }
     };
 }

@@ -6,7 +6,7 @@ use crate::{
         files,
         types::{infer_contig_fmt_auto, ContigFmt},
     },
-    stats::stats::{CommonStats, NStats},
+    stats::common::{CommonStats, NStats},
 };
 
 use crate::parser::fasta::FastaReader;
@@ -50,6 +50,12 @@ pub struct ContigSummary {
     pub contig1000: usize,
     /// Number of contigs > 1500 bp
     pub contig1500: usize,
+}
+
+impl Default for ContigSummary {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ContigSummary {

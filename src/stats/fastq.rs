@@ -1,7 +1,6 @@
 //! Fastq parser only for Illumina 1.8+ and Sanger quality scores
 
 use std::{
-    collections::BTreeMap,
     io::BufRead,
     path::{Path, PathBuf},
 };
@@ -17,7 +16,7 @@ use crate::{
     stats::read::{QScoreStream, ReadQScore, ReadRecord},
 };
 
-use super::read::ReadSummary;
+use super::read::{FastqMappedRead, ReadSummary};
 
 macro_rules! summarize_reads {
     ($self: ident, $record: ident, $sequence: ident) => {
@@ -164,20 +163,6 @@ impl FastqSummary {
         });
 
         qscores
-    }
-}
-
-pub struct FastqMappedRead {
-    pub reads: BTreeMap<i32, ReadRecord>,
-    pub qscores: BTreeMap<i32, QScoreStream>,
-}
-
-impl FastqMappedRead {
-    pub fn new() -> Self {
-        Self {
-            reads: BTreeMap::new(),
-            qscores: BTreeMap::new(),
-        }
     }
 }
 

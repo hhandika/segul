@@ -1,6 +1,6 @@
 //! Command line interface for parsing and executing commands.
 mod args;
-mod cli;
+mod commands;
 mod concat;
 mod contigs;
 mod convert;
@@ -39,7 +39,7 @@ pub fn parse_cli() {
     let args = Cli::parse();
     logger::init_logger(&args.log).expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
-    cli::match_cli_subcommand(&args.subcommand);
+    commands::match_cli_subcommand(&args.subcommand);
     log::info!("{:18}: {}", "Log file", &args.log.display());
     let duration = time.elapsed();
     println!();

@@ -26,10 +26,8 @@ pub const LOG_FILE: &str = "segul.log";
 ///
 /// use segul::helper::logger;
 ///
-/// fn main() {
-///    let log_path = Path::new("segul.log");
-///    logger::init_logger(log_path).expect("Failed setting up logger");
-/// }
+/// let log_path = Path::new("segul.log");
+/// logger::init_logger(log_path).expect("Failed setting up logger");
 /// ```
 pub fn init_logger(file_path: &Path) -> Result<()> {
     create_dir(file_path)?;
@@ -66,10 +64,8 @@ pub fn init_logger(file_path: &Path) -> Result<()> {
 /// use std::path::Path;
 /// use segul::helper::logger;
 ///
-/// fn main() {
-///   let output_dir = Path::new("output");
-///   logger::init_file_logger(output_dir);
-/// }
+/// let output_dir = Path::new("output");
+/// logger::init_file_logger(output_dir);
 pub fn init_file_logger(output_dir: &Path) -> Result<()> {
     create_dir(output_dir)?;
     let target = output_dir.join(LOG_FILE);
@@ -122,16 +118,14 @@ impl InputLogger for ReadLogger<'_> {
 /// use segul::helper::logger::{self, ReadLogger};
 /// use segul::helper::types::SeqReadFmt;
 ///
-/// fn main() {
-///     let log_path = Path::new("segul.log");
-///     logger::init_logger(log_path).expect("Failed setting up logger");
-///     let input = Some(PathBuf::from("input"));
-///     let input_fmt = SeqReadFmt::Fastq;
-///     let task_desc = "Counting reads";
-///     let fcounts = 2;
-///     let logger = ReadLogger::new(&input, &input_fmt, &task_desc, fcounts);
-///     logger.log();
-/// }
+/// let log_path = Path::new("segul.log");
+/// logger::init_logger(log_path).expect("Failed setting up logger");
+/// let input = Some(PathBuf::from("input"));
+/// let input_fmt = SeqReadFmt::Fastq;
+/// let task_desc = "Counting reads";
+/// let fcounts = 2;
+/// let logger = ReadLogger::new(&input, &input_fmt, &task_desc, fcounts);
+/// logger.log();
 /// ```
 pub struct ReadLogger<'a> {
     pub input: &'a Option<PathBuf>,
@@ -181,16 +175,14 @@ impl InputLogger for ContigLogger<'_> {
 /// use segul::helper::logger::{self, ContigLogger};
 /// use segul::helper::types::ContigFmt;
 ///
-/// fn main() {
-///     let log_path = Path::new("segul.log");
-///     logger::init_logger(log_path).expect("Failed setting up logger");
-///     let input = Some(PathBuf::from("input"));
-///     let input_fmt = ContigFmt::Fasta;
-///     let task_desc = "Counting contigs";
-///     let fcounts = 2;
-///     let logger = ContigLogger::new(&input, &input_fmt, &task_desc, fcounts);
-///     logger.log();
-/// }
+/// let log_path = Path::new("segul.log");
+/// logger::init_logger(log_path).expect("Failed setting up logger");
+/// let input = Some(PathBuf::from("input"));
+/// let input_fmt = ContigFmt::Fasta;
+/// let task_desc = "Counting contigs";
+/// let fcounts = 2;
+/// let logger = ContigLogger::new(&input, &input_fmt, &task_desc, fcounts);
+/// logger.log();
 /// ```
 pub struct ContigLogger<'a> {
     pub input: &'a Option<PathBuf>,
@@ -240,17 +232,15 @@ impl InputLogger for AlignSeqLogger<'_> {
 /// use segul::helper::logger::{self, AlignSeqLogger};
 /// use segul::helper::types::{InputFmt, DataType};
 ///
-/// fn main() {
-///     let log_path = Path::new("segul.log");
-///     logger::init_logger(log_path).expect("Failed setting up logger");
-///     let input = Some(PathBuf::from("input"));
-///     let input_fmt = InputFmt::Fasta;
-///     let datatype = DataType::Dna;
-///     let task_desc = "Counting aligned sequences";
-///     let fcounts = 2;
-///     let logger = AlignSeqLogger::new(&input, &input_fmt, &datatype, &task_desc, fcounts);
-///     logger.log();
-/// }
+/// let log_path = Path::new("segul.log");
+/// logger::init_logger(log_path).expect("Failed setting up logger");
+/// let input = Some(PathBuf::from("input"));
+/// let input_fmt = InputFmt::Fasta;
+/// let datatype = DataType::Dna;
+/// let task_desc = "Counting aligned sequences";
+/// let fcounts = 2;
+/// let logger = AlignSeqLogger::new(&input, &input_fmt, &datatype, &task_desc, fcounts);
+/// logger.log();
 /// ```
 
 pub struct AlignSeqLogger<'a> {
@@ -311,13 +301,12 @@ impl<'a> AlignSeqLogger<'a> {
 /// use segul::helper::logger;
 /// use segul::helper::utils;
 ///
-/// fn main() {
-///     let log_path = Path::new("segul.log");
-///     logger::init_logger(log_path).expect("Failed setting up logger");
-///     let input = Path::new("input");
-///     let input_counts = 2;
-///     logger::log_input_partition(input, input_counts);
-/// }
+/// let log_path = Path::new("segul.log");
+/// logger::init_logger(log_path).expect("Failed setting up logger");
+/// let input = Path::new("input");
+/// let input_counts = 2;
+/// logger::log_input_partition(input, input_counts);
+/// ```
 pub fn log_input_partition(input: &Path, input_counts: usize) {
     log::info!("{:18}: {}", "Input dir", input.display());
     log::info!("{:18}: {}", "File counts", utils::fmt_num(&input_counts));

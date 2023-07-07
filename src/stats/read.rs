@@ -1,5 +1,7 @@
 //! Data types for all FASTQ records
-use super::stats::StreamStats;
+use std::collections::BTreeMap;
+
+use super::common::StreamStats;
 
 /// Data types for all Q-Score records
 #[derive(Debug, Clone, PartialEq)]
@@ -145,6 +147,26 @@ impl ReadRecord {
             b'T' | b't' => self.t_count += 1,
             b'N' | b'n' => self.n_count += 1,
             _ => (),
+        }
+    }
+}
+
+pub struct FastqMappedRead {
+    pub reads: BTreeMap<i32, ReadRecord>,
+    pub qscores: BTreeMap<i32, QScoreStream>,
+}
+
+impl Default for FastqMappedRead {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FastqMappedRead {
+    pub fn new() -> Self {
+        Self {
+            reads: BTreeMap::new(),
+            qscores: BTreeMap::new(),
         }
     }
 }

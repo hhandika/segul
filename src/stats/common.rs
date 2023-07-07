@@ -200,6 +200,12 @@ pub struct NStats {
     sum: usize,
 }
 
+impl Default for NStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NStats {
     pub fn new() -> Self {
         Self {
