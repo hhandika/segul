@@ -112,7 +112,7 @@ impl<'a> ReadSummaryWriter<'a> {
                 .expect("Failed getting file name")
                 .to_str()
                 .expect("Failed converting file name to string"),
-            "read_summary.tsv"
+            "read_summary.csv"
         );
         let output_dir = self.output.join("reads").join(fname);
         let mut writer = self
