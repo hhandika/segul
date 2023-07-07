@@ -16,7 +16,7 @@ pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let buff = BufReader::new(file);
     let mut ids = IndexSet::new();
     buff.lines()
-        .filter_map(|ok| ok.ok())
+        .map_while(Result::ok)
         .filter(|line| line.starts_with('>'))
         .for_each(|line| {
             if let Some(id) = line.strip_prefix('>') {
@@ -183,7 +183,7 @@ mod test {
         let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
-        assert_eq!(true, fasta.header.aligned);
+        assert!(fasta.header.aligned);
     }
 
     #[test]
@@ -192,7 +192,7 @@ mod test {
         let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
-        assert_eq!(false, fasta.header.aligned);
+        assert!(!fasta.header.aligned);
     }
 
     #[test]

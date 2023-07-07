@@ -13,23 +13,20 @@ pub fn parse_delimited_text(fpath: &Path) -> Vec<(String, String)> {
         .expect("Failed parsing extension");
     assert!(ext == "tsv" || ext == "csv");
 
-    buff.lines()
-        .filter_map(|ok| ok.ok())
-        .skip(1)
-        .for_each(|line| {
-            let parts: Vec<&str> = match ext {
-                "csv" => line.split(',').map(|e| e.trim()).collect(),
-                "tsv" => line.split_whitespace().map(|e| e.trim()).collect(),
-                _ => panic!("Unsupported file extension"),
-            };
-            assert_eq!(
-                parts.len(),
-                2,
-                "Failed parsing delimited file. Expected 2 columns, found {}",
-                parts.len()
-            );
-            result.push((parts[0].to_string(), parts[1].to_string()));
-        });
+    buff.lines().map_while(Result::ok).skip(1).for_each(|line| {
+        let parts: Vec<&str> = match ext {
+            "csv" => line.split(',').map(|e| e.trim()).collect(),
+            "tsv" => line.split_whitespace().map(|e| e.trim()).collect(),
+            _ => panic!("Unsupported file extension"),
+        };
+        assert_eq!(
+            parts.len(),
+            2,
+            "Failed parsing delimited file. Expected 2 columns, found {}",
+            parts.len()
+        );
+        result.push((parts[0].to_string(), parts[1].to_string()));
+    });
 
     result
 }

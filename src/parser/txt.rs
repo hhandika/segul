@@ -8,7 +8,7 @@ pub fn parse_text_file(input: &Path) -> Vec<String> {
     let buff = BufReader::new(file);
     let mut contents = Vec::new();
     buff.lines()
-        .filter_map(|ok| ok.ok())
+        .map_while(Result::ok)
         .for_each(|line| contents.push(line));
     contents
 }

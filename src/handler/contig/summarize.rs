@@ -41,7 +41,7 @@ impl<'a> ContigSummaryHandler<'a> {
 
         self.files.par_iter().for_each_with(sender, |s, p| {
             let mut summary = ContigSummary::new();
-            summary.summarize(p, &self.input_fmt);
+            summary.summarize(p, self.input_fmt);
             s.send(summary).expect("Failed sending data");
         });
 

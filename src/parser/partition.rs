@@ -111,7 +111,7 @@ impl<'a> PartitionParser<'a> {
         let mut partitions = Vec::new();
         let mut current_start_pos = 1;
         let mut current_end_pos = 0;
-        reader.lines().filter_map(|ok| ok.ok()).for_each(|line| {
+        reader.lines().map_while(Result::ok).for_each(|line| {
             let parts = line.trim().split('=').collect::<Vec<&str>>();
             let mut gene_name = parts[0].to_string();
             let pos: &str = parts[1].trim();
@@ -141,12 +141,12 @@ impl<'a> PartitionParser<'a> {
         let mut partitions = Vec::new();
         let mut current_start_pos = 1;
         let mut current_end_pos = 0;
-        reader.lines().filter_map(|ok| ok.ok()).for_each(|line| {
+        reader.lines().map_while(Result::ok).for_each(|line| {
             let nex_line = line.trim();
             if nex_line.to_lowercase().starts_with("charset") {
                 let parts = line.split('=').collect::<Vec<&str>>();
                 // We will split the gene part of the partition.
-                // and exlude the first element, which is the "charset".
+                // and exclude the first element, which is the "charset".
                 let gene_parts = parts[0].split_whitespace().collect::<Vec<&str>>();
                 let gene_name = gene_parts[1];
                 let pos = parts[1].trim().replace(';', "");

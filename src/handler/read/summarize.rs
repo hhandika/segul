@@ -78,7 +78,7 @@ impl<'a> ReadSummaryHandler<'a> {
         records.sort_by(|a, b| a.path.cmp(&b.path));
         spin.set_message("Writing records\n");
         let writer = ReadSummaryWriter::new(self.output);
-        writer.write(&records).expect("Failed writing to file");
+        writer.write(records).expect("Failed writing to file");
     }
 
     fn par_summarize_default(&self) -> Vec<FastqSummary> {
