@@ -22,6 +22,21 @@ It is designed to handle operations on large genomic datasets, while using minim
 
 ## Features
 
+### New to version 0.19.0
+
+- New summary statistics for raw reads and contigs.
+- New command line structure to make the app more intuitive and easier to use.
+- Auto detect input format based on file extension.
+- Beta GUI version.
+
+Bug fixes:
+
+- Fix translation table errors.
+- Update deprecated dependencies.
+- Fix extract output issues.
+
+### Full feature list
+
 | Feature                        | Quick Link                                                                                                                                |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Alignment concatenation        | [CLI](https://docs.page/hhandika/segul-docs/usage_concat) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_concat)                 |
