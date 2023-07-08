@@ -1,10 +1,9 @@
 name: Release
 
 on:
-  push
-  # push:
-  #   tags:
-  #     - "*"
+  push:
+    tags:
+      - "*"
 
 jobs:
   linux:
@@ -118,7 +117,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout sources
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions/checkout@v3
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
