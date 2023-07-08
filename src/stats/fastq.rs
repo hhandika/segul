@@ -165,8 +165,9 @@ impl FastqSummary {
         });
     }
 
-    fn map_qscores(&self, records: &mut FastqMappedRead, qscores: &[u8]) {
+    fn map_qscores(&self, records: &mut FastqMappedRead, values: &[u8]) {
         let mut index = 1;
+        let qscores = self.parse_qscores(values);
         qscores.iter().for_each(|s| {
             if let Some(qscore) = records.qscores.get_mut(&index) {
                 qscore.update(s);
