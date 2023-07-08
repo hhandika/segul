@@ -1,9 +1,10 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "*"
+  push
+  # push:
+  #   tags:
+  #     - "*"
 
 jobs:
   linux:
