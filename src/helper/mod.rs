@@ -4,6 +4,7 @@ pub mod concat;
 pub mod files;
 pub mod finder;
 pub mod logger;
+pub mod partition;
 pub mod sequence;
 pub mod translation;
 pub mod types;
