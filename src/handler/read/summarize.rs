@@ -150,7 +150,7 @@ impl<'a> ReadSummaryHandler<'a> {
         let writer = ReadSummaryWriter::new(self.output);
         spin.set_message("Writing records\n");
         writer
-            .write_read_count_only(&records)
+            .write_read_count_only(records)
             .expect("Failed writing to file");
     }
 
