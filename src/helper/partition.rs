@@ -5,7 +5,7 @@ use std::{
 
 use super::types::PartitionFmt;
 
-pub fn construct_output_path(input: &Path, out_part_fmt: &PartitionFmt) -> PathBuf {
+pub fn construct_partition_path(input: &Path, out_part_fmt: &PartitionFmt) -> PathBuf {
     let file_stem = input
         .file_stem()
         .and_then(OsStr::to_str)
