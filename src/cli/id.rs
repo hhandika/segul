@@ -54,10 +54,12 @@ impl<'a> IdParser<'a> {
 
     fn create_map_fname(&self, output: &Path) -> PathBuf {
         let parent = output.parent().expect("Failed getting parent dir");
-        let fstem = output
+        let file_stem = output
             .file_stem()
             .and_then(OsStr::to_str)
             .expect("Failed getting file stem for mapping IDs");
-        parent.join(format!("{}_map", fstem)).with_extension("csv")
+        parent
+            .join(format!("{}_map", file_stem))
+            .with_extension("csv")
     }
 }

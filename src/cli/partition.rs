@@ -1,7 +1,5 @@
-use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
-
 use crate::handler::sequence::partition::PartConverter;
+use crate::helper::partition::construct_output_path;
 use crate::helper::types::PartitionFmt;
 use crate::helper::{logger, utils};
 
@@ -35,7 +33,7 @@ impl<'a> PartParser<'a> {
 
         inputs.iter().for_each(|input| {
             logger::log_input_partition(input, input_counts);
-            let output = self.construct_output_path(input, &out_part_fmt);
+            let output = construct_output_path(input, &out_part_fmt);
             self.check_output_file_exist(&output, self.args.force);
             let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
             converter.convert(&datatype, self.args.skip_checking);
@@ -43,24 +41,5 @@ impl<'a> PartParser<'a> {
                 utils::print_divider();
             }
         });
-    }
-
-    fn construct_output_path(&self, input: &Path, out_part_fmt: &PartitionFmt) -> PathBuf {
-        let file_stem = input
-            .file_stem()
-            .and_then(OsStr::to_str)
-            .expect("Failed to parse input file stem");
-        let mut fname = PathBuf::from(format!("{}_partition", file_stem));
-        match *out_part_fmt {
-            PartitionFmt::Nexus | PartitionFmt::NexusCodon => {
-                fname.set_extension("nex");
-            }
-            PartitionFmt::Raxml | PartitionFmt::RaxmlCodon => {
-                fname.set_extension("txt");
-            }
-            _ => unreachable!("Failed to parse partition format"),
-        }
-        let parent_path = input.parent().expect("Failed to parse input parent path");
-        parent_path.join(fname)
     }
 }
