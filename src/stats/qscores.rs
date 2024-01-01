@@ -7,7 +7,7 @@ const LOW_QSCORE: u8 = 20;
 pub struct ReadQScore {
     /// Q-Score length
     pub len: usize,
-    pub low_q: u8,
+    pub low_q: usize,
     pub q_sum: usize,
     pub stats: StreamStats,
 }
