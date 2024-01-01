@@ -1,3 +1,4 @@
+//! Helper functions for converting alignment partition.
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
