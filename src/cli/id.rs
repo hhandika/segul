@@ -27,27 +27,21 @@ impl<'a> IdParser<'a> {
     pub(in crate::cli) fn find(&mut self) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
-        let task_desc = "IDs finding";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-
-        AlignSeqLogger::new(
-            &self.input_dir,
-            &input_fmt,
-            &datatype,
-            task_desc,
-            files.len(),
-        )
-        .log();
-
+        let log = AlignSeqLogger::new(&self.input_dir, &input_fmt, &datatype, files.len());
         let output = self.args.output.with_extension("txt");
-        self.check_output_file_exist(&output, self.args.io.force);
         let id = Id::new(&output, &input_fmt, &datatype);
         if self.args.map {
+            let task = "Sequence ID Mapping";
+            log.log(task);
             let map_fname = self.create_map_fname(&output);
             self.check_output_file_exist(&map_fname, self.args.io.force);
             id.map_id(&files, &map_fname);
         } else {
+            let task = "Sequence ID Generation";
+            log.log(task);
+            self.check_output_file_exist(&output, self.args.io.force);
             id.generate_id(&files);
         }
     }

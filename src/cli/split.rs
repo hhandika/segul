@@ -34,8 +34,8 @@ impl<'a> SplitParser<'a> {
         };
 
         let part_fmt = self.parse_part_fmt(partitions);
-        let task_desc = "Alignment splitting";
-        AlignSeqLogger::new(&None::<PathBuf>, &input_fmt, &datatype, task_desc, 1).log();
+        let task = "Alignment splitting";
+        AlignSeqLogger::new(&None::<PathBuf>, &input_fmt, &datatype, 1).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.force);
         let split = Splitter::new(
             &self.args.input,

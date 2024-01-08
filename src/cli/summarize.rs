@@ -26,22 +26,13 @@ impl<'a> SummaryParser<'a> {
     pub(in crate::cli) fn summarize(&mut self) {
         let input_fmt = self.parse_input_fmt(&self.args.fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.fmt.datatype);
-        let task_desc = "Sequence summary statistics";
+        let task = "Sequence summary statistics";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        AlignSeqLogger::new(
-            &self.input_dir,
-            &input_fmt,
-            &datatype,
-            task_desc,
-            files.len(),
-        )
-        .log();
-
+        AlignSeqLogger::new(&self.input_dir, &input_fmt, &datatype, files.len()).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut summary =
             SeqStats::new(&input_fmt, &self.args.output, self.args.interval, &datatype);
-
         if self.args.per_locus {
             summary.summarize_locus(&files, &self.args.prefix);
         } else {

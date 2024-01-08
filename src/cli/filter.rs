@@ -48,18 +48,11 @@ impl<'a> FilterParser<'a> {
     pub(in crate::cli) fn filter(&mut self) {
         self.input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         self.datatype = self.parse_datatype(&self.args.in_fmt.datatype);
-        let task_desc = "Alignment filtering";
+        let task = "Alignment filtering";
         let dir = &self.args.io.dir;
         let input_fmt = &self.input_fmt; // Binding to satisfy the macro
         self.files = collect_paths!(self, dir, input_fmt);
-        AlignSeqLogger::new(
-            &self.input_dir,
-            input_fmt,
-            &self.datatype,
-            task_desc,
-            self.files.len(),
-        )
-        .log();
+        AlignSeqLogger::new(&self.input_dir, input_fmt, &self.datatype, self.files.len()).log(task);
 
         if let Some(npercent) = &self.args.npercent {
             self.filter_min_taxa_npercent(npercent);

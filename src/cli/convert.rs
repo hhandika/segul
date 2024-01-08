@@ -27,17 +27,10 @@ impl<'a> ConvertParser<'a> {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
-        let task_desc = "Sequence format conversion";
+        let task = "Sequence format conversion";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        AlignSeqLogger::new(
-            &self.input_dir,
-            &input_fmt,
-            &datatype,
-            task_desc,
-            files.len(),
-        )
-        .log();
+        AlignSeqLogger::new(&self.input_dir, &input_fmt, &datatype, files.len()).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut convert = Converter::new(&input_fmt, &output_fmt, &datatype, self.args.sort);
         convert.convert(&files, &self.args.output);

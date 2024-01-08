@@ -31,17 +31,10 @@ impl<'a> RenameParser<'a> {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
-        let task_desc = "Sequence Renaming";
+        let task = "Sequence Renaming";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        AlignSeqLogger::new(
-            &self.input_dir,
-            &input_fmt,
-            &datatype,
-            task_desc,
-            files.len(),
-        )
-        .log();
+        AlignSeqLogger::new(&self.input_dir, &input_fmt, &datatype, files.len()).log(task);
         let opts = self.parse_rename_opts();
         if self.args.dry_run {
             RenameDry::new(&input_fmt, &datatype, &opts).dry_run(&files);

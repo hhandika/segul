@@ -32,18 +32,10 @@ impl<'a> ConcatParser<'a> {
         let output = files::create_output_fname(&self.args.output, &prefix, &output_fmt);
         let part_fmt = self.parse_partition_fmt(&self.args.concat.part_fmt, self.args.concat.codon);
         self.check_partition_format(&output_fmt, &part_fmt);
-        let task_desc = "Alignment concatenation";
+        let task = "Alignment concatenation";
         let dir = &self.args.io.dir;
         let mut files = collect_paths!(self, dir, input_fmt);
-        AlignSeqLogger::new(
-            &self.input_dir,
-            &input_fmt,
-            &datatype,
-            task_desc,
-            files.len(),
-        )
-        .log();
-
+        AlignSeqLogger::new(&self.input_dir, &input_fmt, &datatype, files.len()).log(task);
         let is_overwrite = self.args.io.force;
         self.check_output_dir_exist(&self.args.output, is_overwrite);
 
