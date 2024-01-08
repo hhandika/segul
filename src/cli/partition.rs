@@ -32,7 +32,7 @@ impl<'a> PartParser<'a> {
         let out_part_fmt = self.parse_partition_fmt(&self.args.out_part, self.args.codon);
 
         inputs.iter().for_each(|input| {
-            logger::log_input_partition(input, input_counts);
+            logger::log_input_partition(Some(input), input_counts);
             let output = construct_partition_path(input, &out_part_fmt);
             self.check_output_file_exist(&output, self.args.force);
             let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);

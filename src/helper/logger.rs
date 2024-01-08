@@ -289,8 +289,11 @@ impl<'a> AlignSeqLogger<'a> {
 /// let input_counts = 2;
 /// logger::log_input_partition(input, input_counts);
 /// ```
-pub fn log_input_partition(input: &Path, input_counts: usize) {
-    log::info!("{:18}: {}", "Input dir", input.display());
+pub fn log_input_partition(input: Option<&Path>, input_counts: usize) {
+    match input {
+        Some(input) => log::info!("{:18}: {}", "Input dir", &input.display()),
+        None => log::info!("{:18}: {}", "Input path", "STDIN"),
+    }
     log::info!("{:18}: {}", "File counts", utils::fmt_num(&input_counts));
     log::info!("{:18}: {}\n", "Task", "Converting partitions");
 }
