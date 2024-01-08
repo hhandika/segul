@@ -52,7 +52,13 @@ impl<'a> FilterParser<'a> {
         let dir = &self.args.io.dir;
         let input_fmt = &self.input_fmt; // Binding to satisfy the macro
         self.files = collect_paths!(self, dir, input_fmt);
-        AlignSeqLogger::new(&self.input_dir, input_fmt, &self.datatype, self.files.len()).log(task);
+        AlignSeqLogger::new(
+            self.input_dir.as_deref(),
+            input_fmt,
+            &self.datatype,
+            self.files.len(),
+        )
+        .log(task);
 
         if let Some(npercent) = &self.args.npercent {
             self.filter_min_taxa_npercent(npercent);

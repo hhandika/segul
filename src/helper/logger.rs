@@ -1,6 +1,6 @@
 //! Functions to setup the logger
 use std::io::Result;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
@@ -128,13 +128,13 @@ impl InputLogger for ReadLogger<'_> {
 /// logger.log();
 /// ```
 pub struct ReadLogger<'a> {
-    pub input: &'a Option<PathBuf>,
+    pub input: Option<&'a Path>,
     pub input_fmt: &'a SeqReadFmt,
     pub fcounts: usize,
 }
 
 impl<'a> ReadLogger<'a> {
-    pub fn new(input: &'a Option<PathBuf>, input_fmt: &'a SeqReadFmt, fcounts: usize) -> Self {
+    pub fn new(input: Option<&'a Path>, input_fmt: &'a SeqReadFmt, fcounts: usize) -> Self {
         Self {
             input,
             input_fmt,
@@ -178,13 +178,13 @@ impl InputLogger for ContigLogger<'_> {
 /// logger.log();
 /// ```
 pub struct ContigLogger<'a> {
-    pub input: &'a Option<PathBuf>,
+    pub input: Option<&'a Path>,
     pub input_fmt: &'a ContigFmt,
     pub fcounts: usize,
 }
 
 impl<'a> ContigLogger<'a> {
-    pub fn new(input: &'a Option<PathBuf>, input_fmt: &'a ContigFmt, fcounts: usize) -> Self {
+    pub fn new(input: Option<&'a Path>, input_fmt: &'a ContigFmt, fcounts: usize) -> Self {
         Self {
             input,
             input_fmt,
@@ -229,7 +229,7 @@ impl InputLogger for AlignSeqLogger<'_> {
 /// logger.log();
 /// ```
 pub struct AlignSeqLogger<'a> {
-    pub input: &'a Option<PathBuf>,
+    pub input: Option<&'a Path>,
     pub input_fmt: &'a InputFmt,
     pub datatype: &'a DataType,
     pub fcounts: usize,
@@ -237,7 +237,7 @@ pub struct AlignSeqLogger<'a> {
 
 impl<'a> AlignSeqLogger<'a> {
     pub fn new(
-        input: &'a Option<PathBuf>,
+        input: Option<&'a Path>,
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
         fcounts: usize,

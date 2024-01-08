@@ -33,7 +33,13 @@ impl<'a> RemoveParser<'a> {
         let task = "Sequence Renaming";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        AlignSeqLogger::new(&self.input_dir, &input_fmt, &datatype, files.len()).log(task);
+        AlignSeqLogger::new(
+            self.input_dir.as_deref(),
+            &input_fmt,
+            &datatype,
+            files.len(),
+        )
+        .log(task);
         let opts = self.parse_remove_opts();
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         Remove::new(&input_fmt, &datatype, &self.args.output, &output_fmt, &opts).remove(&files);

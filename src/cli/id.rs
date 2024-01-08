@@ -29,7 +29,12 @@ impl<'a> IdParser<'a> {
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        let log = AlignSeqLogger::new(&self.input_dir, &input_fmt, &datatype, files.len());
+        let log = AlignSeqLogger::new(
+            self.input_dir.as_deref(),
+            &input_fmt,
+            &datatype,
+            files.len(),
+        );
         let output = self.args.output.with_extension("txt");
         let id = Id::new(&output, &input_fmt, &datatype);
         if self.args.map {

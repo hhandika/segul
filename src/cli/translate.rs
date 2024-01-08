@@ -41,7 +41,13 @@ impl<'a> TranslateParser<'a> {
         let task = "Sequence Translation";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        AlignSeqLogger::new(&self.input_dir, &input_fmt, &datatype, files.len()).log(task);
+        AlignSeqLogger::new(
+            self.input_dir.as_deref(),
+            &input_fmt,
+            &datatype,
+            files.len(),
+        )
+        .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "Params".yellow());
         self.show_trans_table();
