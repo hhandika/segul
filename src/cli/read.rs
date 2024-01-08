@@ -27,7 +27,7 @@ impl<'a> ReadSummaryCliParser<'a> {
         let mut files = collect_paths!(self, dir, input_fmt);
         let fcounts = files.len();
         let task = "Summarize raw read sequences";
-        ReadLogger::new(&self.input_dir, input_fmt, task, fcounts).log();
+        ReadLogger::new(&self.input_dir, input_fmt, fcounts).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         ReadSummaryHandler::new(
             &mut files,

@@ -130,29 +130,22 @@ impl InputLogger for ReadLogger<'_> {
 pub struct ReadLogger<'a> {
     pub input: &'a Option<PathBuf>,
     pub input_fmt: &'a SeqReadFmt,
-    pub task_desc: &'a str,
     pub fcounts: usize,
 }
 
 impl<'a> ReadLogger<'a> {
-    pub fn new(
-        input: &'a Option<PathBuf>,
-        input_fmt: &'a SeqReadFmt,
-        task_desc: &'a str,
-        fcounts: usize,
-    ) -> Self {
+    pub fn new(input: &'a Option<PathBuf>, input_fmt: &'a SeqReadFmt, fcounts: usize) -> Self {
         Self {
             input,
             input_fmt,
-            task_desc,
             fcounts,
         }
     }
 
-    pub fn log(&self) {
+    pub fn log(&self, task: &str) {
         self.log_input_info();
         log::info!("{:18}: {}\n", "Input format:", self.input_fmt);
-        log::info!("{:18}: {}\n", "Task", self.task_desc);
+        log::info!("{:18}: {}\n", "Task", task);
     }
 }
 
@@ -187,29 +180,22 @@ impl InputLogger for ContigLogger<'_> {
 pub struct ContigLogger<'a> {
     pub input: &'a Option<PathBuf>,
     pub input_fmt: &'a ContigFmt,
-    pub task_desc: &'a str,
     pub fcounts: usize,
 }
 
 impl<'a> ContigLogger<'a> {
-    pub fn new(
-        input: &'a Option<PathBuf>,
-        input_fmt: &'a ContigFmt,
-        task_desc: &'a str,
-        fcounts: usize,
-    ) -> Self {
+    pub fn new(input: &'a Option<PathBuf>, input_fmt: &'a ContigFmt, fcounts: usize) -> Self {
         Self {
             input,
             input_fmt,
-            task_desc,
             fcounts,
         }
     }
 
-    pub fn log(&self) {
+    pub fn log(&self, task: &str) {
         self.log_input_info();
         log::info!("{:18}: {}\n", "Input format:", self.input_fmt);
-        log::info!("{:18}: {}\n", "Task", self.task_desc);
+        log::info!("{:18}: {}\n", "Task", task);
     }
 }
 
