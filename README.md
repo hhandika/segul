@@ -22,6 +22,21 @@ It is designed to handle operations on large genomic datasets, while using minim
 
 ## Features
 
+### Big changes in the version 0.19.0+ 💪🏼
+
+- New command structure. Check [quick start](https://docs.page/hhandika/segul-docs/quick_start#cli-command-list) instruction to see the most up to date commands. We are working on updating the documentation throughout the website.
+- New command to calculate summary statistics for raw reads and contigs.
+- Input dir `-d` or `--dir` now can infer input format based on the file extension. No need to specify the input format anymore.
+- Beta GUI version coming soon. We are cleaning up some bugs. Test alpha version [here](https://docs.page/hhandika/segul-docs/gui_install).
+
+Bug fixes:
+
+- Fix translation table errors.
+- Update deprecated dependencies.
+- Fix extract output issues.
+
+### Full feature list
+
 | Feature                        | Quick Link                                                                                                                                |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Alignment concatenation        | [CLI](https://docs.page/hhandika/segul-docs/usage_concat) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_concat)                 |

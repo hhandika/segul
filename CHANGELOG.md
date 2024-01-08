@@ -1,11 +1,16 @@
 # Release Notes
 
+## v0.19.1
+
+- Fix CI issue when building windows binary.
+
 ## v0.19.0
 
 New features:
 
-- New command line structure.
+- Directory input auto detect sequence format based on the file extension.
 - New summary statistics for raw reads and contigs.
+- New command line structure.
 
 Bug fixes:
 
