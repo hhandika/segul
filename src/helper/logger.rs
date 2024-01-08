@@ -242,7 +242,6 @@ impl InputLogger for AlignSeqLogger<'_> {
 /// let logger = AlignSeqLogger::new(&input, &input_fmt, &datatype, &task_desc, fcounts);
 /// logger.log();
 /// ```
-
 pub struct AlignSeqLogger<'a> {
     pub input: &'a Option<PathBuf>,
     pub input_fmt: &'a InputFmt,
