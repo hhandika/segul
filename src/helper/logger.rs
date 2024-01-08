@@ -291,7 +291,7 @@ impl<'a> AlignSeqLogger<'a> {
 /// ```
 pub fn log_input_partition(input: Option<&Path>, input_counts: usize) {
     match input {
-        Some(input) => log::info!("{:18}: {}", "Input dir", &input.display()),
+        Some(input) => log::info!("{:18}: {}", "Input dir", input.display()),
         None => log::info!("{:18}: {}", "Input path", "STDIN"),
     }
     log::info!("{:18}: {}", "File counts", utils::fmt_num(&input_counts));
