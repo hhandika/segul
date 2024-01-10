@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.20.0
+
+- ID parsing result is now in a directory consistent with other subcommands.
+
+## v0.19.2
+
+- Fix CI issues.
+
 ## v0.19.1
 
 - Fix CI issue when building windows binary.
