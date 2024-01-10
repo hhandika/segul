@@ -25,7 +25,7 @@ impl<'a> IdParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn find(&mut self) {
+    pub(in crate::cli) fn extract(&mut self) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let dir = &self.args.io.dir;
@@ -36,18 +36,17 @@ impl<'a> IdParser<'a> {
             &datatype,
             files.len(),
         );
+        self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let output = create_output_fname_for_text(&self.args.output, &self.args.prefix);
         let id = Id::new(&input_fmt, &datatype, &output);
         if self.args.map {
             let task = "Sequence ID Mapping";
             log.log(task);
             let map_fname = self.create_map_fname(&output);
-            self.check_output_file_exist(&map_fname, self.args.io.force);
             id.map_id(&files, &map_fname);
         } else {
             let task = "Sequence ID Generation";
             log.log(task);
-            self.check_output_file_exist(&output, self.args.io.force);
             id.generate_id(&files);
         }
     }

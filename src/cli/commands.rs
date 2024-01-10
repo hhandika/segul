@@ -78,7 +78,7 @@ fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
             ExtractParser::new(extract_args).extract();
         }
         SequenceSubcommand::Id(id_args) => {
-            IdParser::new(id_args).find();
+            IdParser::new(id_args).extract();
         }
         SequenceSubcommand::Remove(remove_args) => {
             RemoveParser::new(remove_args).remove();
