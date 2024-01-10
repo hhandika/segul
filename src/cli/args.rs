@@ -324,8 +324,10 @@ pub(crate) struct SequenceIdArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "id")]
+    #[arg(short, long, help = "Output path", default_value = "SEGUL-ID")]
     pub(crate) output: PathBuf,
+    #[arg(short, long, help = "Prefix for filename", default_value = "id")]
+    pub(crate) prefix: PathBuf,
     #[arg(long = "map", help = "Map ID across all alignments")]
     pub(crate) map: bool,
 }

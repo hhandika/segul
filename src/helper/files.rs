@@ -47,6 +47,10 @@ pub fn create_output_fname(dir: &Path, file: &Path, output_fmt: &OutputFmt) -> P
     create_output_fname_from_path(&path, output_fmt)
 }
 
+pub fn create_output_fname_for_text(dir: &Path, prefix: &Path) -> PathBuf {
+    dir.join(prefix.with_extension("txt"))
+}
+
 /// Create output filename from input filename
 /// Returns a PathBuf of the output filename
 /// # Arguments

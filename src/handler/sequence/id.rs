@@ -16,17 +16,17 @@ use crate::helper::types::{DataType, InputFmt};
 use crate::helper::utils;
 
 pub struct Id<'a> {
-    pub output: &'a Path,
     pub input_fmt: &'a InputFmt,
     pub datatype: &'a DataType,
+    pub output: &'a Path,
 }
 
 impl<'a> Id<'a> {
-    pub fn new(output: &'a Path, input_fmt: &'a InputFmt, datatype: &'a DataType) -> Self {
+    pub fn new(input_fmt: &'a InputFmt, datatype: &'a DataType, output: &'a Path) -> Self {
         Self {
-            output,
             input_fmt,
             datatype,
+            output,
         }
     }
 

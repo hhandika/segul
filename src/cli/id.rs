@@ -2,6 +2,7 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 use crate::handler::sequence::id::Id;
+use crate::helper::files::create_output_fname_for_text;
 use crate::helper::logger::AlignSeqLogger;
 
 use super::args::SequenceIdArgs;
@@ -35,8 +36,8 @@ impl<'a> IdParser<'a> {
             &datatype,
             files.len(),
         );
-        let output = self.args.output.with_extension("txt");
-        let id = Id::new(&output, &input_fmt, &datatype);
+        let output = create_output_fname_for_text(&self.args.output, &self.args.prefix);
+        let id = Id::new(&input_fmt, &datatype, &output);
         if self.args.map {
             let task = "Sequence ID Mapping";
             log.log(task);
