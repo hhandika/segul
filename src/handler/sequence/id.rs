@@ -1,5 +1,5 @@
 use std::ffi::OsStr;
-use std::fs::{File, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::io::prelude::*;
 use std::io::{BufWriter, Result};
 use std::path::{Path, PathBuf};
@@ -31,6 +31,8 @@ impl<'a> Id<'a> {
     }
 
     pub fn generate_id(&self, files: &[PathBuf]) {
+        fs::create_dir_all(self.output.parent().expect("Failed getting parent path"))
+            .expect("Failed creating output dir");
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
         let ids = self.get_unique_id(files);
