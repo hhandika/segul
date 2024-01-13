@@ -31,7 +31,10 @@ pub const LOG_FILE: &str = "segul.log";
 /// logger::init_logger(log_path).expect("Failed setting up logger");
 /// ```
 pub fn init_logger(file_path: &Path) -> Result<()> {
-    create_dir_all(file_path)?;
+    match file_path.parent() {
+        Some(dir) => create_dir_all(dir)?,
+        None => (),
+    }
     let target = file_path.with_extension("log");
     let tofile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
@@ -123,10 +126,10 @@ impl InputLogger for ReadLogger<'_> {
 /// logger::init_logger(log_path).expect("Failed setting up logger");
 /// let input = Some(PathBuf::from("input"));
 /// let input_fmt = SeqReadFmt::Fastq;
-/// let task_desc = "Counting reads";
+/// let task = "Counting reads";
 /// let fcounts = 2;
-/// let logger = ReadLogger::new(&input, &input_fmt, &task_desc, fcounts);
-/// logger.log();
+/// let logger = ReadLogger::new(input.as_deref(), &input_fmt, fcounts);
+/// logger.log(task);
 /// ```
 pub struct ReadLogger<'a> {
     pub input: Option<&'a Path>,
@@ -171,12 +174,12 @@ impl InputLogger for ContigLogger<'_> {
 ///
 /// let log_path = Path::new("segul.log");
 /// logger::init_logger(log_path).expect("Failed setting up logger");
-/// let input = Some(PathBuf::from("input"));
+/// let input = Some(Path::new("input"));
 /// let input_fmt = ContigFmt::Fasta;
-/// let task_desc = "Counting contigs";
+/// let task = "Counting contigs";
 /// let fcounts = 2;
-/// let logger = ContigLogger::new(&input, &input_fmt, &task_desc, fcounts);
-/// logger.log();
+/// let logger = ContigLogger::new(input, &input_fmt,  fcounts);
+/// logger.log(task);
 /// ```
 pub struct ContigLogger<'a> {
     pub input: Option<&'a Path>,
@@ -221,13 +224,13 @@ impl InputLogger for AlignSeqLogger<'_> {
 ///
 /// let log_path = Path::new("segul.log");
 /// logger::init_logger(log_path).expect("Failed setting up logger");
-/// let input = Some(PathBuf::from("input"));
+/// let input = Some(Path::new("input"));
 /// let input_fmt = InputFmt::Fasta;
 /// let datatype = DataType::Dna;
-/// let task_desc = "Counting aligned sequences";
+/// let task = "Counting aligned sequences";
 /// let fcounts = 2;
-/// let logger = AlignSeqLogger::new(&input, &input_fmt, &datatype, &task_desc, fcounts);
-/// logger.log();
+/// let logger = AlignSeqLogger::new(input, &input_fmt, &datatype, fcounts);
+/// logger.log(task);
 /// ```
 pub struct AlignSeqLogger<'a> {
     pub input: Option<&'a Path>,
@@ -288,7 +291,7 @@ impl<'a> AlignSeqLogger<'a> {
 /// logger::init_logger(log_path).expect("Failed setting up logger");
 /// let input = Path::new("input");
 /// let input_counts = 2;
-/// logger::log_input_partition(input, input_counts);
+/// logger::log_input_partition(Some(input), input_counts);
 /// ```
 pub fn log_input_partition(input: Option<&Path>, input_counts: usize) {
     match input {
