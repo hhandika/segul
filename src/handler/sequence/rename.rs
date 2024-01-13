@@ -34,11 +34,17 @@ macro_rules! rm_id {
 }
 
 pub enum RenameOpts {
-    RnId(Vec<(String, String)>),   // Rename ID using tabulated file
-    RmStr(String),                 // Remove characters in seq id using string input
-    RmRegex(String, bool),         // Similar to RmStr but using regex as input
-    RpStr(String, String),         // Replace characters in seq id using string input
-    RpRegex(String, String, bool), // Similar to ReplaceStr but using regex as input
+    RnId(Vec<(String, String)>),
+    /// Rename ID using tabulated file
+    RmStr(String),
+    /// Remove characters in seq id using string input
+    RmRegex(String, bool),
+    /// Similar to RmStr but using regex as input
+    RpStr(String, String),
+    /// Replace characters in seq id using string input
+    RpRegex(String, String, bool),
+    /// Similar to ReplaceStr but using regex as input
+    None,
 }
 
 pub struct RenameDry<'a> {
@@ -68,6 +74,7 @@ impl<'a> RenameDry<'a> {
             }
             RenameOpts::RpStr(from, to) => self.replace_str(&mut ids, from, to),
             RenameOpts::RpRegex(from, to, is_all) => self.replace_re(&mut ids, from, to, is_all),
+            RenameOpts::None => unreachable!("Missing rename parameters"),
         };
         spin.finish_with_message("Finished processing (DRY-RUN)!\n");
 
@@ -194,6 +201,7 @@ impl<'a> Rename<'a> {
             RenameOpts::RpRegex(from, to, is_all) => {
                 process_files!(self, files, replace_re, from, to, is_all);
             }
+            RenameOpts::None => unreachable!("Missing rename parameters"),
         }
         spin.finish_with_message("Finished batch renaming dna sequence IDs!\n");
         self.print_output_info();
