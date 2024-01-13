@@ -1,4 +1,5 @@
 //! Functions to setup the logger
+use std::fs::create_dir_all;
 use std::io::Result;
 use std::path::Path;
 
@@ -30,7 +31,7 @@ pub const LOG_FILE: &str = "segul.log";
 /// logger::init_logger(log_path).expect("Failed setting up logger");
 /// ```
 pub fn init_logger(file_path: &Path) -> Result<()> {
-    create_dir(file_path)?;
+    create_dir_all(file_path)?;
     let target = file_path.with_extension("log");
     let tofile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
