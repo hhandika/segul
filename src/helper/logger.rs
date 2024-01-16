@@ -93,6 +93,12 @@ pub fn init_file_logger(file_path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Regex function to strip the terminal color text from file logger
+pub fn strip_color(text: &str) -> String {
+    let re = regex::Regex::new(r"\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]").expect("Failed regex");
+    re.replace_all(text, "").to_string()
+}
+
 trait InputLogger {
     fn log_input_info(&self) {}
 }
