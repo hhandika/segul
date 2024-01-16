@@ -70,9 +70,12 @@ pub fn init_logger(file_path: &Path) -> Result<()> {
 ///
 /// let output_dir = Path::new("output");
 /// logger::init_file_logger(output_dir);
-pub fn init_file_logger(output_dir: &Path) -> Result<()> {
-    create_dir(output_dir)?;
-    let target = output_dir.join(LOG_FILE);
+pub fn init_file_logger(file_path: &Path) -> Result<()> {
+    match file_path.parent() {
+        Some(dir) => create_dir_all(dir)?,
+        None => (),
+    }
+    let target = file_path.with_extension("log");
     let tofile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S %Z)} - {l} - {m}\n",
@@ -87,14 +90,6 @@ pub fn init_file_logger(output_dir: &Path) -> Result<()> {
 
     log4rs::init_config(config).expect("Cannot initiate log configuration");
 
-    Ok(())
-}
-
-fn create_dir(file_path: &Path) -> Result<()> {
-    let dir = file_path.parent().expect("Failed getting parent directory");
-    if !dir.exists() {
-        std::fs::create_dir_all(dir)?;
-    }
     Ok(())
 }
 
