@@ -1,5 +1,6 @@
 //! Helper functions for the SEGUL features.
 pub mod alphabet;
+pub mod archive;
 pub mod concat;
 pub mod files;
 pub mod finder;
