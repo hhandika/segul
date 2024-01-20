@@ -15,7 +15,7 @@ It is designed to handle operations on large genomic datasets, while using minim
 
 ## Links
 
-- App Documentation: [[EN]](https://docs.page/hhandika/segul-docs/)
+- App Documentation: [[EN]](https://segul.app/)
 - API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
 - GUI source code: [[Repository]](https://github.com/hhandika/segui)
 - Citation: [[Pre-print]](https://www.authorea.com/doi/full/10.22541/au.165167823.30911834/v1)
