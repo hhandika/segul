@@ -1,13 +1,20 @@
-use std::{io::BufReader, path::Path};
+use std::{
+    io::BufReader,
+    path::{Path, PathBuf},
+};
 
-pub struct Archive {
-    pub output_path: String,
-    pub input_directory: String,
-    pub input_files: Vec<String>,
+pub struct Archive<'a> {
+    pub output_path: &'a Path,
+    pub input_directory: &'a str,
+    pub input_files: &'a [PathBuf],
 }
 
-impl Archive {
-    pub fn new(output_path: String, input_directory: String, input_files: Vec<String>) -> Self {
+impl<'a> Archive<'a> {
+    pub fn new(
+        output_path: &'a Path,
+        input_directory: &'a str,
+        input_files: &'a [PathBuf],
+    ) -> Self {
         Self {
             output_path,
             input_directory,
@@ -15,16 +22,13 @@ impl Archive {
         }
     }
 
-    pub fn zip(&self) {
+    pub fn zip(&self) -> Result<(), Box<dyn std::error::Error>> {
         let mut archive = zip::ZipWriter::new(std::fs::File::create(&self.output_path)?);
         let options =
             zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-        archive
-            .add_directory(self.input_directory, options)
-            .expect("Failed adding directory");
+        archive.add_directory(self.input_directory, options)?;
 
-        for input in &self.input_files {
-            let file = Path::new(input);
+        for file in self.input_files {
             archive.start_file(
                 file.file_name()
                     .expect("Failed getting file name")
@@ -32,11 +36,13 @@ impl Archive {
                     .expect("Failed converting file name to string"),
                 options,
             )?;
-            let mut input_file = std::fs::File::open(file).expect("Failed opening file");
+            let input_file = std::fs::File::open(file)?;
             let mut buff = BufReader::new(input_file);
-            std::io::copy(&mut buff, &mut archive).expect("Failed copying file");
+            std::io::copy(&mut buff, &mut archive)?;
         }
 
-        archive.finish().expect("Failed finishing archive");
+        archive.finish()?;
+
+        Ok(())
     }
 }
