@@ -5,19 +5,13 @@ use std::{
 
 pub struct Archive<'a> {
     pub output_path: &'a Path,
-    pub input_directory: &'a str,
     pub input_files: &'a [PathBuf],
 }
 
 impl<'a> Archive<'a> {
-    pub fn new(
-        output_path: &'a Path,
-        input_directory: &'a str,
-        input_files: &'a [PathBuf],
-    ) -> Self {
+    pub fn new(output_path: &'a Path, input_files: &'a [PathBuf]) -> Self {
         Self {
             output_path,
-            input_directory,
             input_files,
         }
     }
@@ -26,7 +20,6 @@ impl<'a> Archive<'a> {
         let mut archive = zip::ZipWriter::new(std::fs::File::create(&self.output_path)?);
         let options =
             zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-        archive.add_directory(self.input_directory, options)?;
 
         for file in self.input_files {
             archive.start_file(
