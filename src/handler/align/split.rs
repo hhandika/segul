@@ -55,7 +55,7 @@ impl<'a> Splitter<'a> {
         let aln_matrix = self.parse_sequence();
         spin.set_message("Splitting alignment...");
         let file_counts = AtomicUsize::new(0);
-        partitions.iter().for_each(|part| {
+        partitions.par_iter().for_each(|part| {
             let start_pos = part.start - 1;
             let end_pos = part.end;
             let matrix = self.generate_new_matrix(&aln_matrix, start_pos, end_pos);
