@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicUsize, Ordering};
+// use std::sync::atomic::{AtomicUsize, Ordering};
 
 use colored::Colorize;
 use indexmap::IndexMap;
-use rayon::prelude::*;
+// use rayon::prelude::*;
 
 use crate::handler::{OutputPrint, PartitionPrint};
 use crate::helper::files;
@@ -54,8 +54,9 @@ impl<'a> Splitter<'a> {
         spin.set_message("Parsing input sequence file...");
         let aln_matrix = self.parse_sequence();
         spin.set_message("Splitting alignment...");
-        let file_counts = AtomicUsize::new(0);
-        partitions.par_iter().for_each(|part| {
+        // let file_counts = AtomicUsize::new(0);\
+        let mut file_counts = 0;
+        partitions.iter().for_each(|part| {
             let start_pos = part.start - 1;
             let end_pos = part.end;
             let matrix = self.generate_new_matrix(&aln_matrix, start_pos, end_pos);
@@ -71,11 +72,13 @@ impl<'a> Splitter<'a> {
             let mut out = SeqWriter::new(&output_path, &matrix, &header);
             out.write_sequence(self.output_fmt)
                 .expect("Failed writing the output file");
-            file_counts.fetch_add(1, Ordering::Relaxed);
+            file_counts += 1;
+            // file_counts.fetch_add(1, Ordering::Relaxed);
         });
 
         spin.finish_with_message("Finished splitting alignment!\n");
-        self.print_output_info(file_counts.load(Ordering::Relaxed));
+        // self.print_output_info(file_counts.load(Ordering::Relaxed));
+        self.print_output_info(file_counts);
     }
 
     // Generate a filename for each locus based on the locus name
