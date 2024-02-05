@@ -20,39 +20,49 @@ It is designed to handle operations on large genomic datasets, while using minim
 - GUI source code: [[Repository]](https://github.com/hhandika/segui)
 - Citation: [[Pre-print]](https://www.authorea.com/doi/full/10.22541/au.165167823.30911834/v1)
 
+## Installation
+
+### GUI Version
+
+- Windows: [[Try Beta]](https://github.com/hhandika/segui/releases/)
+- Android: [[Try Beta]](https://github.com/hhandika/segui/releases/)
+- iOS/iPadOS/macOS: [[Try Beta]](https://testflight.apple.com/join/LSJD5D0i)
+
+Learn more about device requirements and GUI app installation in the [official documentation](https://www.segul.app/docs/installation/install_gui).
+
+### CLI Installation
+
+The CLI app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). However, we only tested and officially support the following platforms:
+
+- Linux
+- MacOS
+- Windows
+- Windows Subsystem for Linux (WSL)
+
+#### CLI Installation Methods
+
+- Pre-compiled binaries: [[Releases]](https://github.com/hhandika/segul/releases) [[Docs]](https://www.segul.app/docs/installation/install_binary)
+- Package manager: [[Docs]](https://www.segul.app/docs/installation/install_cargo)
+- From source: [[Docs]](https://www.segul.app/docs/installation/install_source)
+- Beta version: [[Docs]](https://www.segul.app/docs/installation/install_dev)
+
 ## Features
 
-### Big changes in the version 0.19.0+ 💪🏼
-
-- New command structure. Check [quick start](https://docs.page/hhandika/segul-docs/quick_start#cli-command-list) instruction to see the most up to date commands. We are working on updating the documentation throughout the website.
-- New command to calculate summary statistics for raw reads and contigs.
-- Input dir `-d` or `--dir` now can infer input format based on the file extension. No need to specify the input format anymore.
-- Beta GUI version coming soon. We are cleaning up some bugs. Test alpha version [here](https://docs.page/hhandika/segul-docs/gui_install).
-
-Bug fixes:
-
-- Fix translation table errors.
-- Update deprecated dependencies.
-- Fix extract output issues.
-
-### Full feature list
-
-| Feature                        | Quick Link                                                                                                                                |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Alignment concatenation        | [CLI](https://docs.page/hhandika/segul-docs/usage_concat) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_concat)                 |
-| Alignment conversion           | [CLI](https://docs.page/hhandika/segul-docs/usage_convert) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_convert)               |
-| Alignment filtering            | [CLI](https://docs.page/hhandika/segul-docs/usage_filter) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_filter)                 |
-| Alignment splitting            | [CLI](https://docs.page/hhandika/segul-docs/usage_split) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_split)                   |
-| Alignment partition conversion | [CLI](https://docs.page/hhandika/segul-docs/usage_part) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_part)                     |
-| Alignment summary statistics   | [CLI](https://docs.page/hhandika/segul-docs/usage_summary) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_summary)               |
-| Contig summary statistics      | [CLI](https://docs.page/hhandika/segul-docs/usage_contig_summary) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_contig_summary) |
-| Raw read summary statistics    | [CLI](https://docs.page/hhandika/segul-docs/usage_raw_summary) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_raw_summary)       |
-| Sample distribution mapping    | [CLI](https://docs.page/hhandika/segul-docs/usage_map) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_map)                       |
-| Sequence extraction            | [CLI](https://docs.page/hhandika/segul-docs/usage_extract) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_extract)               |
-| Sequence ID parsing            | [CLI](https://docs.page/hhandika/segul-docs/usage_id) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_id)                         |
-| Sequence ID renaming           | [CLI](https://docs.page/hhandika/segul-docs/usage_rename) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_rename)                 |
-| Sequence removal               | [CLI](https://docs.page/hhandika/segul-docs/usage_remove) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_remove)                 |
-| Sequence translation           | [CLI](https://docs.page/hhandika/segul-docs/usage_translate) / [GUI](https://docs.page/hhandika/segul-docs/gui_usage_translate)           |
+| Feature                        | Quick Link                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Alignment concatenation        | [CLI](https://www.segul.app/docs/cli-usage/concat) / [GUI](https://www.segul.app/docs/gui-usage/concat)       |
+| Alignment conversion           | [CLI](https://www.segul.app/docs/cli-usage/convert) / [GUI](https://www.segul.app/docs/gui-usage/convert)     |
+| Alignment filtering            | [CLI](https://www.segul.app/docs/cli-usage/filter) / [GUI](https://www.segul.app/docs/gui-usage/filter)       |
+| Alignment splitting            | [CLI](https://www.segul.app/docs/cli-usage/split) / [GUI](https://www.segul.app/docs/gui-usage/split)         |
+| Alignment partition conversion | [CLI](https://www.segul.app/docs/cli-usage/part) / [GUI](https://www.segul.app/docs/gui-usage/part)           |
+| Alignment summary statistics   | [CLI](https://www.segul.app/docs/cli-usage/summary) / [GUI](https://www.segul.app/docs/gui-usage/summary)     |
+| Genomic summary statistics     | [CLI](https://www.segul.app/docs/cli-usage/genomic) / [GUI](https://www.segul.app/docs/gui-usage/genomic)     |
+| Sample distribution mapping    | [CLI](https://www.segul.app/docs/cli-usage/map) / [GUI](https://www.segul.app/docs/gui-usage/map)             |
+| Sequence extraction            | [CLI](https://www.segul.app/docs/cli-usage/extract) / [GUI](https://www.segul.app/docs/gui-usage/extract)     |
+| Sequence ID parsing            | [CLI](https://www.segul.app/docs/cli-usage/id) / [GUI](https://www.segul.app/docs/gui-usage/id)               |
+| Sequence ID renaming           | [CLI](https://www.segul.app/docs/cli-usage/rename) / [GUI](https://www.segul.app/docs/gui-usage/rename)       |
+| Sequence removal               | [CLI](https://www.segul.app/docs/cli-usage/remove) / [GUI](https://www.segul.app/docs/gui-usage/remove)       |
+| Sequence translation           | [CLI](https://www.segul.app/docs/cli-usage/translate) / [GUI](https://www.segul.app/docs/gui-usage/translate) |
 
 Supported sequence formats:
 
@@ -69,20 +79,6 @@ Supported partition formats:
 2. NEXUS
 
 The NEXUS partition can be written as a charset block embedded in NEXUS formatted sequences or a separate file.
-
-## Supported Platforms
-
-The CLI app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). For both CLI and GUI, below is a list of operating system that we tested and is guaranteed to work:
-
-- Linux (CLI)
-- MacOS (GUI and CLI)
-- Windows (GUI and CLI)
-- Windows Subsystem for Linux (WSL) (CLI)
-- iOS (GUI)
-- iPadOS (GUI)
-- Android (GUI and CLI using [Termux](https://termux.com/))
-
-> For Windows (including WSL) users, we recommend using [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab) to ensure consistent terminal output. Windows Terminal requires separate installation for Windows 10. It should come pre-installed on Windows 11.
 
 ## Contribution
 
