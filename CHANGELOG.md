@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.20.1
+
+- Fix empty result when summarizing a single contig file.
+- Fix CI issues.
+
 ## v0.20.0
 
 - ID parsing result is now in a directory consistent with other subcommands.
