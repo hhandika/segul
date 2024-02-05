@@ -41,7 +41,7 @@ impl<'a> ContigSummaryHandler<'a> {
             panic!("No contig files found")
         }
 
-        if files.len() == 1 {
+        if self.files.len() == 1 {
             return vec![self.process_contigs(&self.files[0])];
         }
 
@@ -59,11 +59,6 @@ impl<'a> ContigSummaryHandler<'a> {
         let mut summary = ContigSummary::new();
         summary.summarize(input, self.input_fmt);
         summary
-    }
-
-    fn print_input_info(&self) {
-        log::info!("{}", "Output".yellow());
-        log::info!("{:18}: {}", "Dir", self.output.display());
     }
 
     fn print_input_info(&self) {
