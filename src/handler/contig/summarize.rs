@@ -37,15 +37,33 @@ impl<'a> ContigSummaryHandler<'a> {
     }
 
     fn summarize_contigs(&self) -> Vec<ContigSummary> {
+        if self.files.is_empty() {
+            panic!("No contig files found")
+        }
+
+        if files.len() == 1 {
+            return vec![self.process_contigs(&self.files[0])];
+        }
+
         let (sender, receiver) = channel();
 
         self.files.par_iter().for_each_with(sender, |s, p| {
-            let mut summary = ContigSummary::new();
-            summary.summarize(p, self.input_fmt);
+            let summary = self.process_contigs(p);
             s.send(summary).expect("Failed sending data");
         });
 
         receiver.iter().collect()
+    }
+
+    fn process_contigs(&self, input: &Path) -> ContigSummary {
+        let mut summary = ContigSummary::new();
+        summary.summarize(input, self.input_fmt);
+        summary
+    }
+
+    fn print_input_info(&self) {
+        log::info!("{}", "Output".yellow());
+        log::info!("{:18}: {}", "Dir", self.output.display());
     }
 
     fn print_input_info(&self) {
