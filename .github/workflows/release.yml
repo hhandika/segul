@@ -46,7 +46,9 @@ jobs:
 
       - name: Build
         uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release --target x86_64-unknown-linux-musl
+      - run: |
+          sudo apt install musl-tools
+          cargo release --target x86_64-unknown-linux-musl
 
       - name: Compress release
         run: tar czvf segul.tar.gz -C target/x86_64-unknown-linux-musl/release segul
