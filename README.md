@@ -30,7 +30,7 @@ It is designed to handle operations on large genomic datasets, while using minim
 
 Learn more about device requirements and GUI app installation in the [official documentation](https://www.segul.app/docs/installation/install_gui).
 
-### CLI Installation
+### CLI Version
 
 The CLI app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). However, we only tested and officially support the following platforms:
 
