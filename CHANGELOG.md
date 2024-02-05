@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.20.2
+
+- Fix CI issues.
+
 ## v0.20.1
 
 - Fix empty result when summarizing a single contig file.

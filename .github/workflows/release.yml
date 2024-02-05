@@ -48,7 +48,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - run: |
           sudo apt install musl-tools
-          cargo release --target x86_64-unknown-linux-musl
+          cargo build --release --target x86_64-unknown-linux-musl
 
       - name: Compress release
         run: tar czvf segul.tar.gz -C target/x86_64-unknown-linux-musl/release segul
