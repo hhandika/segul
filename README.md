@@ -54,7 +54,7 @@ The CLI app may work in any Rust supported [platform](https://doc.rust-lang.org/
 | Alignment conversion           | [CLI](https://www.segul.app/docs/cli-usage/convert) / [GUI](https://www.segul.app/docs/gui-usage/align-convert)        |
 | Alignment filtering            | [CLI](https://www.segul.app/docs/cli-usage/filter) / [GUI](https://www.segul.app/docs/gui-usage/align-filter)          |
 | Alignment splitting            | [CLI](https://www.segul.app/docs/cli-usage/split) / [GUI](https://www.segul.app/docs/gui-usage/align-split)            |
-| Alignment partition conversion | [CLI](https://www.segul.app/docs/cli-usage/part) / [GUI](https://www.segul.app/docs/gui-usage/align-part)              |
+| Alignment partition conversion | [CLI](https://www.segul.app/docs/cli-usage/part) / [GUI](https://www.segul.app/docs/gui-usage/align-partition)              |
 | Alignment summary statistics   | [CLI](https://www.segul.app/docs/cli-usage/summary) / [GUI](https://www.segul.app/docs/gui-usage/align-summary)        |
 | Genomic summary statistics     | [CLI](https://www.segul.app/docs/cli-usage/genomic) / [GUI](https://www.segul.app/docs/gui-usage/genomic)              |
 | Sequence extraction            | [CLI](https://www.segul.app/docs/cli-usage/extract) / [GUI](https://www.segul.app/docs/gui-usage/sequence-extract)     |
