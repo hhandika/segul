@@ -394,7 +394,7 @@ impl<'s> SummaryWriter<'s> {
             "Characters",
             utils::fmt_num(&self.chars.total_chars)
         );
-        writeln!(writer, "\n{}", characters)?;
+        writeln!(writer, "{}", characters)?;
 
         Ok(())
     }
