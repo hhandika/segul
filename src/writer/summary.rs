@@ -348,7 +348,7 @@ impl<'s> SummaryWriter<'s> {
             "Total taxa",
             utils::fmt_num(&self.complete.total_tax)
         );
-        write!(writer, "{}", total_taxa)?;
+        writeln!(writer, "{}", total_taxa)?;
 
         let total_loci = format!(
             "{:18}: {}",
