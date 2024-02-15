@@ -38,7 +38,7 @@ impl<'a> SeqStats<'a> {
         }
     }
 
-    pub fn summarize_all(&mut self, files: &[PathBuf], prefix: &Option<String>) {
+    pub fn summarize_all(&mut self, files: &[PathBuf], prefix: Option<&str>) {
         self.check_datatype();
         let spin = utils::set_spinner();
         spin.set_message("Indexing alignments...");
@@ -51,7 +51,8 @@ impl<'a> SeqStats<'a> {
         let taxon_records = self.summarize_taxa(&ids, &stats);
         spin.finish_with_message("Finished computing summary stats!\n");
         let sum = SummaryWriter::new(&sites, &dna, &complete, self.datatype);
-        sum.print_summary().expect("Failed writing to stdout");
+        sum.write(self.output, prefix)
+            .expect("Failed writing to stdout");
         let csv = CsvWriter::new(self.output, prefix, self.datatype);
         csv.write_taxon_summary(&taxon_records)
             .expect("Failed writing to csv");
@@ -59,7 +60,7 @@ impl<'a> SeqStats<'a> {
             .expect("Failed writing a per locus csv file");
     }
 
-    pub fn summarize_locus(&mut self, files: &[PathBuf], prefix: &Option<String>) {
+    pub fn summarize_locus(&mut self, files: &[PathBuf], prefix: Option<&str>) {
         self.check_datatype();
         let spin = utils::set_spinner();
         spin.set_message("Computing per locus summary...");

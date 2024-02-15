@@ -40,9 +40,9 @@ impl<'a> SummaryParser<'a> {
         let mut summary =
             SeqStats::new(&input_fmt, &self.args.output, self.args.interval, &datatype);
         if self.args.per_locus {
-            summary.summarize_locus(&files, &self.args.prefix);
+            summary.summarize_locus(&files, self.args.prefix.as_deref());
         } else {
-            summary.summarize_all(&files, &self.args.prefix);
+            summary.summarize_all(&files, self.args.prefix.as_deref());
         }
     }
 }

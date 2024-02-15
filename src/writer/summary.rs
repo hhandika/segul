@@ -28,12 +28,12 @@ impl FileWriter for CsvWriter<'_> {}
 
 pub struct CsvWriter<'a> {
     output: &'a Path,
-    prefix: &'a Option<String>,
+    prefix: Option<&'a str>,
     datatype: &'a DataType,
 }
 
 impl<'a> CsvWriter<'a> {
-    pub fn new(output: &'a Path, prefix: &'a Option<String>, datatype: &'a DataType) -> Self {
+    pub fn new(output: &'a Path, prefix: Option<&'a str>, datatype: &'a DataType) -> Self {
         Self {
             output,
             prefix,
@@ -296,6 +296,8 @@ pub struct SummaryWriter<'s> {
     datatype: &'s DataType,
 }
 
+impl FileWriter for SummaryWriter<'_> {}
+
 impl<'s> SummaryWriter<'s> {
     pub fn new(
         site: &'s SiteSummary,
@@ -311,16 +313,27 @@ impl<'s> SummaryWriter<'s> {
         }
     }
 
-    pub fn print_summary(&self) -> Result<()> {
-        log::info!("\n{}", "General Summary".yellow());
-        self.write_gen_sum();
-        log::info!("{}", "Alignment Summary".yellow());
-        self.write_aln_sum();
-        log::info!("{}", "Taxon Summary".yellow());
-        self.write_tax_sum();
+    pub fn write(&self, output_path: &Path, prefix: Option<&str>) -> Result<()> {
+        let default_prefix = "alignment_summary";
+        let output = match prefix {
+            Some(fname) => {
+                let out_name = format!("{}_{}", fname, default_prefix);
+                output_path.join(out_name).with_extension("txt")
+            }
+            None => output_path.join(default_prefix).with_extension("txt"),
+        };
+        let mut writer = self.create_output_file(&output)?;
+        self.write_to_file(&mut writer)?;
+        writer.flush()?;
+        Ok(())
+    }
 
-        log::info!("{}", "Character Count".yellow());
-        self.write_char_count();
+    fn write_to_file<W: Write>(&self, writer: &mut W) -> Result<()> {
+        self.write_gen_sum(writer)?;
+        self.write_aln_sum(writer)?;
+        self.write_tax_sum(writer)?;
+
+        self.write_char_count(writer)?;
 
         log::info!("{}", "Data Matrix Completeness".yellow());
         self.write_matrix_comp();
@@ -336,87 +349,160 @@ impl<'s> SummaryWriter<'s> {
         Ok(())
     }
 
-    fn write_gen_sum(&self) {
-        log::info!(
+    fn write_gen_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let summary = "General Summary";
+        log::info!("\n{}", summary.yellow());
+        writeln!(writer, "{}", summary)?;
+        let total_taxa = format!(
             "{:18}: {}",
             "Total taxa",
             utils::fmt_num(&self.complete.total_tax)
         );
-        log::info!(
+        log::info!("{}\n", &total_taxa);
+        write!(writer, "{}\n", total_taxa)?;
+
+        let total_loci = format!(
             "{:18}: {}",
             "Total loci",
             utils::fmt_num(&self.site.total_loci)
         );
-        log::info!(
+        log::info!("{}\n", &total_loci);
+        writeln!(writer, "{}", total_loci)?;
+
+        let total_sites = format!(
             "{:18}: {}",
             "Total sites",
             utils::fmt_num(&self.site.total_sites)
         );
-        log::info!(
+        log::info!("{}\n", &total_sites);
+        writeln!(writer, "{}", total_sites)?;
+
+        let total_chars = format!(
+            "{:18}: {}",
+            "Total characters",
+            utils::fmt_num(&self.chars.total_chars)
+        );
+        log::info!("{}\n", &total_chars);
+        writeln!(writer, "{}", total_chars)?;
+
+        let missing_data = format!(
             "{:18}: {}",
             "Missing data",
             utils::fmt_num(&self.chars.missing_data)
         );
-        log::info!(
-            "{:18}: {:.2}%",
-            "%Missing data",
-            &self.chars.prop_missing_data * 100.0
-        );
+        log::info!("{}\n", &missing_data);
+        writeln!(writer, "{}", missing_data)?;
 
         match self.datatype {
-            DataType::Dna => self.write_dna_sum(),
-            DataType::Aa => log::info!(
-                "{:18}: {}\n",
-                "Characters",
-                utils::fmt_num(&self.chars.total_chars)
-            ),
-            _ => panic!("Please specify datatype"),
-        }
+            DataType::Dna => self.write_dna_sum(writer)?,
+            DataType::Aa => self.write_aa_sum(writer)?,
+            _ => unreachable!("Invalid data types! Use dna or aa only"),
+        };
+
+        Ok(())
     }
 
-    fn write_dna_sum(&self) {
-        log::info!("{:18}: {:.2}", "GC content", self.chars.gc_content);
-        log::info!("{:18}: {:.2}", "AT content", self.chars.at_content);
-        log::info!(
+    fn write_aa_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let characters = format!(
             "{:18}: {}",
             "Characters",
             utils::fmt_num(&self.chars.total_chars)
         );
-        log::info!(
-            "{:18}: {}\n",
+        log::info!("{}\n", &characters);
+        writeln!(writer, "{}", characters)?;
+
+        Ok(())
+    }
+
+    fn write_dna_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let gc_content = format!("{:18}: {:.2}", "GC content", self.chars.gc_content);
+        log::info!("{}\n", &gc_content);
+        writeln!(writer, "{}", gc_content)?;
+
+        let at_content = format!("{:18}: {:.2}", "AT content", self.chars.at_content);
+        log::info!("{}\n", &at_content);
+        writeln!(writer, "{}", at_content)?;
+
+        let characters = format!(
+            "{:18}: {}",
+            "Characters",
+            utils::fmt_num(&self.chars.total_chars)
+        );
+        log::info!("{}\n", &characters);
+        writeln!(writer, "{}", characters)?;
+
+        let nucleotides = format!(
+            "{:18}: {}",
             "Nucleotides",
             utils::fmt_num(&self.chars.total_nucleotides)
         );
+        log::info!("{}\n", &nucleotides);
+        writeln!(writer, "{}", nucleotides)?;
+
+        Ok(())
     }
 
-    fn write_aln_sum(&self) {
-        log::info!(
+    fn write_aln_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let aln_summary = "Alignment Summary";
+        log::info!("\n{}", aln_summary.yellow());
+        writeln!(writer, "\n{}", aln_summary)?;
+
+        let min_site = format!(
             "{:18}: {} bp",
             "Min length",
             utils::fmt_num(&self.site.min_sites)
         );
-        log::info!(
+        log::info!("{}", &min_site);
+        writeln!(writer, "{}", min_site)?;
+
+        let max_site = format!(
             "{:18}: {} bp",
             "Max length",
             utils::fmt_num(&self.site.max_sites)
         );
-        log::info!("{:18}: {:.2} bp\n", "Mean length", &self.site.mean_sites);
+        log::info!("{}", &max_site);
+        writeln!(writer, "{}", max_site)?;
+
+        let mean_site = format!("{:18}: {:.2} bp", "Mean length", &self.site.mean_sites);
+        log::info!("{}", &mean_site);
+        writeln!(writer, "{}", mean_site)?;
+
+        Ok(())
     }
 
-    fn write_tax_sum(&self) {
-        log::info!("{:18}: {}", "Min taxa", utils::fmt_num(&self.chars.min_tax));
-        log::info!("{:18}: {}", "Max taxa", utils::fmt_num(&self.chars.max_tax));
-        log::info!("{:18}: {:.2}\n", "Mean taxa", self.chars.mean_tax);
+    fn write_tax_sum<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let taxon_summary = "Taxon Summary";
+        log::info!("\n{}", taxon_summary.yellow());
+        writeln!(writer, "\n{}", taxon_summary)?;
+
+        let min_tax = format!("{:18}: {}", "Min taxa", utils::fmt_num(&self.chars.min_tax));
+        log::info!("{}", &min_tax);
+        writeln!(writer, "{}", min_tax)?;
+
+        let max_tax = format!("{:18}: {}", "Max taxa", utils::fmt_num(&self.chars.max_tax));
+        log::info!("{}", &max_tax);
+        writeln!(writer, "{}", max_tax)?;
+
+        let mean_tax = format!("{:18}: {:.2}", "Mean taxa", self.chars.mean_tax);
+        log::info!("{}", &mean_tax);
+
+        Ok(())
     }
 
-    fn write_char_count(&self) {
+    fn write_char_count<W: Write>(&self, writer: &mut W) -> Result<()> {
+        log::info!("{}", "Character Count".yellow());
         let alphabet = self.match_alphabet(self.datatype);
-        alphabet.chars().for_each(|ch| {
+
+        for ch in alphabet.chars() {
             if let Some(count) = self.chars.chars.get(&ch) {
-                log::info!("{:18}: {}", ch, utils::fmt_num(count));
+                let count = format!("{:18}: {}", ch, utils::fmt_num(count));
+                log::info!("{}", count);
+                write!(writer, "{},", count)?;
             }
-        });
+        }
         log::info!("");
+        writeln!(writer)?;
+        Ok(())
     }
 
     fn write_matrix_comp(&self) {
