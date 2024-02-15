@@ -4,7 +4,7 @@ use std::ffi::OsStr;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use colored::Colorize;
 
 use crate::helper::alphabet;
@@ -332,20 +332,11 @@ impl<'s> SummaryWriter<'s> {
         self.write_gen_sum(writer)?;
         self.write_aln_sum(writer)?;
         self.write_tax_sum(writer)?;
-
         self.write_char_count(writer)?;
-
-        log::info!("{}", "Data Matrix Completeness".yellow());
-        self.write_matrix_comp();
-
-        log::info!("{}", "Conserved Sequences".yellow());
-        self.write_cons_seq();
-
-        log::info!("{}", "Variable Sequences".yellow());
-        self.write_var_seq();
-
-        log::info!("{}", "Parsimony Informative".yellow());
-        self.write_pars_inf();
+        self.write_matrix_comp(writer)?;
+        self.write_cons_seq(writer)?;
+        self.write_var_seq(writer)?;
+        self.write_pars_inf(writer)?;
         Ok(())
     }
 
@@ -505,116 +496,201 @@ impl<'s> SummaryWriter<'s> {
         Ok(())
     }
 
-    fn write_matrix_comp(&self) {
+    fn write_matrix_comp<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let matrix_summary = "Matrix Completeness";
+        log::info!("\n{}", matrix_summary.yellow());
+        writeln!(writer, "\n{}", matrix_summary)?;
         self.complete
             .completeness
             .iter()
             .for_each(|(percent, ntax)| {
                 let percent_str = format!("{}% taxa", percent);
-                log::info!("{:18}: {}", percent_str, utils::fmt_num(ntax))
+                let percent_str = format!("{:18}: {}", percent_str, utils::fmt_num(ntax));
+                log::info!("{}", percent_str);
+                write!(writer, "{},", percent_str).expect("Failed to write matrix completeness");
             });
         log::info!("");
+        writeln!(writer)?;
+        Ok(())
     }
 
-    fn write_cons_seq(&self) {
-        log::info!(
+    fn write_cons_seq<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let conserved_seq = "Conserved Sequences";
+        log::info!("\n{}", conserved_seq.yellow());
+        writeln!(writer, "\n{}", conserved_seq)?;
+
+        let conserved_loci = format!(
             "{:18}: {}",
-            "Con. loci",
+            "Conserved loci",
             utils::fmt_num(&self.site.cons_loci)
         );
-        log::info!(
+        log::info!("{}", &conserved_loci);
+        writeln!(writer, "{}", conserved_loci)?;
+
+        let prop_cons_loci = format!(
             "{:18}: {:.2}%",
             "%Con. loci",
             self.site.prop_cons_loci * 100.0
         );
-        log::info!(
+        log::info!("{}", &prop_cons_loci);
+        writeln!(writer, "{}", prop_cons_loci)?;
+
+        let conserved_sites = format!(
             "{:18}: {}",
-            "Con. sites",
+            "Conserved sites",
             utils::fmt_num(&self.site.total_cons_site)
         );
-        log::info!("{:18}: {:.2}%", "%Con. sites", &self.site.prop_cons_site);
-        log::info!(
+        log::info!("{}", &conserved_sites);
+        writeln!(writer, "{}", conserved_sites)?;
+
+        let prop_cons_sites = format!(
+            "{:18}: {:.2}%",
+            "%Con. sites",
+            &self.site.prop_cons_site * 100.0
+        );
+        log::info!("{}", &prop_cons_sites);
+        writeln!(writer, "{}", prop_cons_sites)?;
+
+        let min_cons_site = format!(
             "{:18}: {}",
             "Min con. sites",
             utils::fmt_num(&self.site.min_cons_site)
         );
-        log::info!(
+        log::info!("{}", &min_cons_site);
+        writeln!(writer, "{}", min_cons_site)?;
+
+        let max_cons_site = format!(
             "{:18}: {}",
             "Max con. sites",
             utils::fmt_num(&self.site.max_cons_site)
         );
-        log::info!(
-            "{:18}: {:.2}\n",
-            "Mean con. sites",
-            &self.site.mean_cons_site
-        );
+        log::info!("{}", &max_cons_site);
+        writeln!(writer, "{}", max_cons_site)?;
+
+        let mean_cons_site = format!("{:18}: {:.2}", "Mean con. sites", &self.site.mean_cons_site);
+        log::info!("{}", &mean_cons_site);
+        writeln!(writer, "{}", mean_cons_site)?;
+
+        Ok(())
     }
 
-    fn write_var_seq(&self) {
-        log::info!(
+    fn write_var_seq<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let var_seq = "Variable Sequences";
+        log::info!("\n{}", var_seq.yellow());
+        writeln!(writer, "\n{}", var_seq)?;
+
+        let var_loci = format!(
             "{:18}: {}",
             "Var. loci",
             utils::fmt_num(&self.site.var_loci)
         );
-        log::info!(
+        log::info!("{}", &var_loci);
+        writeln!(writer, "{}", var_loci)?;
+
+        let prop_var_loci = format!(
             "{:18}: {:.2}%",
             "%Var. loci",
             self.site.prop_var_loci * 100.0
         );
-        log::info!(
+        log::info!("{}", &prop_var_loci);
+        writeln!(writer, "{}", prop_var_loci)?;
+
+        let var_sites = format!(
             "{:18}: {}",
             "Var. sites",
             utils::fmt_num(&self.site.total_var_site)
         );
-        log::info!("{:18}: {:.2}%", "%Var. sites", &self.site.prop_var_site);
-        log::info!(
+        log::info!("{}", &var_sites);
+        writeln!(writer, "{}", var_sites)?;
+
+        let prop_var_sites = format!(
+            "{:18}: {:.2}%",
+            "%Var. sites",
+            &self.site.prop_var_site * 100.0
+        );
+        log::info!("{}", &prop_var_sites);
+        writeln!(writer, "{}", prop_var_sites)?;
+
+        let min_var_site = format!(
             "{:18}: {}",
             "Min var. sites",
             utils::fmt_num(&self.site.min_var_site)
         );
-        log::info!(
+        log::info!("{}", &min_var_site);
+        writeln!(writer, "{}", min_var_site)?;
+
+        let max_var_site = format!(
             "{:18}: {}",
             "Max var. sites",
             utils::fmt_num(&self.site.max_var_site)
         );
-        log::info!(
-            "{:18}: {:.2}\n",
-            "Mean var. sites",
-            &self.site.mean_var_site
-        );
+        log::info!("{}", &max_var_site);
+        writeln!(writer, "{}", max_var_site)?;
+
+        let mean_var_site = format!("{:18}: {:.2}", "Mean var. sites", &self.site.mean_var_site);
+        log::info!("{}", &mean_var_site);
+        writeln!(writer, "{}", mean_var_site)?;
+
+        Ok(())
     }
 
-    fn write_pars_inf(&self) {
-        log::info!(
+    fn write_pars_inf<W: Write>(&self, writer: &mut W) -> Result<()> {
+        let pars_inf = "Parsimony Informative";
+        log::info!("\n{}", pars_inf.yellow());
+        writeln!(writer, "\n{}", pars_inf)?;
+
+        let inf_loci = format!(
             "{:18}: {}",
             "Inf. loci",
             utils::fmt_num(&self.site.inf_loci)
         );
-        log::info!(
+        log::info!("{}", &inf_loci);
+        writeln!(writer, "{}", inf_loci)?;
+
+        let prop_inf_loci = format!(
             "{:18}: {:.2}%",
             "%Inf. loci",
             self.site.prop_inf_loci * 100.0
         );
-        log::info!(
+        log::info!("{}", &prop_inf_loci);
+        writeln!(writer, "{}", prop_inf_loci)?;
+
+        let inf_sites = format!(
             "{:18}: {}",
             "Inf. sites",
             utils::fmt_num(&self.site.total_inf_site)
         );
-        log::info!("{:18}: {:.2}%", "%Inf. sites", &self.site.prop_inf_site);
-        log::info!(
+        log::info!("{}", &inf_sites);
+        writeln!(writer, "{}", inf_sites)?;
+
+        let prop_inf_sites = format!(
+            "{:18}: {:.2}%",
+            "%Inf. sites",
+            self.site.prop_inf_site * 100.0
+        );
+        log::info!("{}", &prop_inf_sites);
+        writeln!(writer, "{}", prop_inf_sites)?;
+
+        let min_inf_site = format!(
             "{:18}: {}",
             "Min inf. sites",
             utils::fmt_num(&self.site.min_inf_site)
         );
-        log::info!(
+        log::info!("{}", &min_inf_site);
+        writeln!(writer, "{}", min_inf_site)?;
+
+        let max_inf_site = format!(
             "{:18}: {}",
             "Max inf. sites",
             utils::fmt_num(&self.site.max_inf_site)
         );
-        log::info!(
-            "{:18}: {:.2}\n",
-            "Mean inf. sites",
-            &self.site.mean_inf_site
-        );
+        log::info!("{}", &max_inf_site);
+        writeln!(writer, "{}", max_inf_site)?;
+
+        let mean_inf_site = format!("{:18}: {:.2}", "Mean inf. sites", &self.site.mean_inf_site);
+        log::info!("{}", &mean_inf_site);
+        writeln!(writer, "{}", mean_inf_site)?;
+
+        Ok(())
     }
 }
