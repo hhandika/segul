@@ -1,5 +1,11 @@
 # Release Notes
 
+## Upcoming
+
+### New Features
+
+- Alignment summary now is written to file.
+
 ## v0.20.2
 
 - Fix CI issues.
