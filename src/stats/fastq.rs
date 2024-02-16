@@ -63,6 +63,7 @@ trait SeqRead {
 
 pub struct FastqSummaryMin {
     pub path: PathBuf,
+    pub file_name: String,
     pub read_count: usize,
 }
 
@@ -72,6 +73,12 @@ impl FastqSummaryMin {
     pub fn new(path: &Path) -> Self {
         Self {
             read_count: 0,
+            file_name: path
+                .file_name()
+                .expect("No file name")
+                .to_str()
+                .expect("File name not valid UTF-8")
+                .to_string(),
             path: path.to_path_buf(),
         }
     }
@@ -90,6 +97,8 @@ impl FastqSummaryMin {
 pub struct FastqSummary {
     /// Input file path
     pub path: PathBuf,
+    /// File name with extension
+    pub file_name: String,
     pub reads: ReadRecord,
     pub read_summary: ReadSummary,
     pub qscores: ReadQScore,
@@ -101,6 +110,12 @@ impl FastqSummary {
     pub fn new(path: &Path) -> Self {
         Self {
             path: path.to_path_buf(),
+            file_name: path
+                .file_name()
+                .expect("No file name")
+                .to_str()
+                .expect("File name not valid UTF-8")
+                .to_string(),
             reads: ReadRecord::new(),
             read_summary: ReadSummary::new(),
             qscores: ReadQScore::new(),

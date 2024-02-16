@@ -35,12 +35,12 @@ impl<'a> ContigSummaryWriter<'a> {
     fn write_records<W: Write>(&self, writer: &mut W) -> Result<()> {
         writeln!(
             writer,
-            "FilePath,FileName,\
-            ContigCount,BaseCount,Nucleotide,\
-            GC_Content,AT_Content,\
-            Sum,Min,Max,Mean,Median,\
+            "file_path,contig_name,\
+            contig_count,base_count,nucleotide,\
+            GC_content,AT_content,\
+            sum,min,max,mean,median,\
             N50,N75,N90,\
-            Contig750,Contig1000,Contig1500,\
+            contig_750,contig_1000,contig_1500,\
             G_Count,C_Count,A_Count,T_Count"
         )?;
         for summary in self.summary {

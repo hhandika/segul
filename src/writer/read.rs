@@ -38,9 +38,15 @@ impl<'a> ReadSummaryWriter<'a> {
         let mut writer = self
             .create_output_file(&output_path)
             .expect("Failed writing to file");
-        writeln!(writer, "File,NumReads")?;
+        writeln!(writer, "file_path,file_name,read_count")?;
         for rec in records {
-            writeln!(writer, "{},{}", rec.path.display(), rec.read_count)?;
+            writeln!(
+                writer,
+                "{},{},{}",
+                rec.path.display(),
+                rec.file_name,
+                rec.read_count
+            )?;
         }
         writer.flush()?;
         Ok(())
@@ -50,24 +56,25 @@ impl<'a> ReadSummaryWriter<'a> {
     fn write_records<W: Write>(&self, writer: &mut W, records: &[FastqSummary]) -> Result<()> {
         writeln!(
             writer,
-            "File,NumReads,NumBases,\
-                    MeanReadLen,MinReadLen,MaxReadLen,\
-                    GCcount,GCcontent,ATcount,ATContent,\
-                    Ncontent,\
+            "file_path,file_name,read_count,base_count,\
+                    mean_read_length,min_read_length,max_read_length,\
+                    GC_count,GC_content,AT_count,AT_content,\
+                    N_content,\
                     G,C,A,T,N,\
-                    LowQ,Mean,Min,Max\
+                    low_QScore,mean_QScore,min_QScore,max_QScore\
                     "
         )?;
 
         for rec in records {
             writeln!(
                 writer,
-                "{},{},{},\
+                "{},{},{},{},\
                 {},{},{},\
                 {},{},{},{},\
                 {},{},{},{},{},{},\
                 {},{},{},{}",
                 rec.path.display(),
+                rec.file_name,
                 rec.reads.stats.count,
                 rec.reads.len,
                 rec.reads.stats.mean,

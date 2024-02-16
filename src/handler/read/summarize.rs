@@ -122,6 +122,12 @@ impl<'a> ReadSummaryHandler<'a> {
         receiver.iter().collect()
     }
 
+    fn summarize_default(&self, path: &Path) -> FastqSummary {
+        let mut summary = FastqSummary::new(path);
+        summary.summarize(self.input_fmt);
+        summary
+    }
+
     fn par_summarize_complete(&self) -> Vec<FastqSummary> {
         let (sender, receiver) = channel();
 
@@ -134,6 +140,14 @@ impl<'a> ReadSummaryHandler<'a> {
         receiver.iter().collect()
     }
 
+    fn summarize_complete(&self, path: &Path) -> FastqSummary {
+        let mut summary = FastqSummary::new(path);
+        let mapped_records = summary.summarize_map(self.input_fmt);
+        let writer = ReadSummaryWriter::new(self.output);
+        writer.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
+        summary
+    }
+
     fn par_summarize_minimal(&self) -> Vec<FastqSummaryMin> {
         let (sender, receiver) = channel();
 
@@ -144,6 +158,12 @@ impl<'a> ReadSummaryHandler<'a> {
         });
 
         receiver.iter().collect()
+    }
+
+    fn summarize_minimal(&self, p: &Path, input_fmt: &SeqReadFmt) -> FastqSummaryMin {
+        let mut summary = FastqSummaryMin::new(p);
+        summary.summarize(input_fmt);
+        summary
     }
 
     fn write_record_min(&mut self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) {
@@ -160,26 +180,6 @@ impl<'a> ReadSummaryHandler<'a> {
         spin.set_message("Writing records\n");
         let writer = ReadSummaryWriter::new(self.output);
         writer.write(records).expect("Failed writing to file");
-    }
-
-    fn summarize_minimal(&self, p: &Path, input_fmt: &SeqReadFmt) -> FastqSummaryMin {
-        let mut summary = FastqSummaryMin::new(p);
-        summary.summarize(input_fmt);
-        summary
-    }
-
-    fn summarize_default(&self, path: &Path) -> FastqSummary {
-        let mut summary = FastqSummary::new(path);
-        summary.summarize(self.input_fmt);
-        summary
-    }
-
-    fn summarize_complete(&self, path: &Path) -> FastqSummary {
-        let mut summary = FastqSummary::new(path);
-        let mapped_records = summary.summarize_map(self.input_fmt);
-        let writer = ReadSummaryWriter::new(self.output);
-        writer.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
-        summary
     }
 
     fn print_output_info(&self) {
