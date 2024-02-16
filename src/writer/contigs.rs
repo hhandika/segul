@@ -1,35 +1,56 @@
 //! Contig summary writer
 use std::{
     io::{Result, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use crate::stats::contigs::ContigSummary;
 
 use super::FileWriter;
 
-const OUTPUT_FILENAME: &str = "contig-summary.csv";
+const OUTPUT_SUFFIX: &str = "contig-summary";
+const DEFAULT_EXTENSION: &str = "csv";
 
 pub struct ContigSummaryWriter<'a> {
     summary: &'a [ContigSummary],
     output: &'a Path,
+    prefix: Option<&'a str>,
 }
 
 impl FileWriter for ContigSummaryWriter<'_> {}
 
 impl<'a> ContigSummaryWriter<'a> {
-    pub fn new(summary: &'a [ContigSummary], output: &'a Path) -> Self {
-        Self { summary, output }
+    pub fn new(summary: &'a [ContigSummary], output: &'a Path, prefix: Option<&'a str>) -> Self {
+        Self {
+            summary,
+            output,
+            prefix,
+        }
     }
 
     pub fn write(&self) -> Result<()> {
-        let output_path = self.output.join(OUTPUT_FILENAME);
+        let output_path = self.create_final_output_path();
         let mut writer = self
             .create_output_file(&output_path)
             .expect("Failed writing to file");
         self.write_records(&mut writer)?;
         writer.flush()?;
         Ok(())
+    }
+
+    fn create_final_output_path(&self) -> PathBuf {
+        match self.prefix {
+            Some(prefix) => {
+                let file_name = format!("{}_{}", prefix, OUTPUT_SUFFIX);
+                self.output
+                    .join(file_name)
+                    .with_extension(DEFAULT_EXTENSION)
+            }
+            None => self
+                .output
+                .join(OUTPUT_SUFFIX)
+                .with_extension(DEFAULT_EXTENSION),
+        }
     }
 
     fn write_records<W: Write>(&self, writer: &mut W) -> Result<()> {

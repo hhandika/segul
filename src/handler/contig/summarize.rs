@@ -1,3 +1,4 @@
+//! Handler for summarizing contig files
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
@@ -11,17 +12,28 @@ use crate::{
 };
 
 pub struct ContigSummaryHandler<'a> {
+    /// Contig files
     files: &'a [PathBuf],
+    /// Contig sequence format
     input_fmt: &'a ContigFmt,
+    /// Output path
     output: &'a Path,
+    /// Output file prefix
+    prefix: Option<&'a str>,
 }
 
 impl<'a> ContigSummaryHandler<'a> {
-    pub fn new(files: &'a [PathBuf], input_fmt: &'a ContigFmt, output: &'a Path) -> Self {
+    pub fn new(
+        files: &'a [PathBuf],
+        input_fmt: &'a ContigFmt,
+        output: &'a Path,
+        prefix: Option<&'a str>,
+    ) -> Self {
         Self {
             files,
             input_fmt,
             output,
+            prefix,
         }
     }
 
@@ -29,7 +41,7 @@ impl<'a> ContigSummaryHandler<'a> {
         let spin = set_spinner();
         spin.set_message("Calculating summary of contig files");
         let contig_summary = self.summarize_contigs();
-        let writer = ContigSummaryWriter::new(&contig_summary, self.output);
+        let writer = ContigSummaryWriter::new(&contig_summary, self.output, self.prefix);
         spin.set_message("Writing records\n");
         writer.write().expect("Failed writing to file");
         spin.finish_with_message("Finished processing contig files\n");

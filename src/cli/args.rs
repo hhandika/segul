@@ -133,6 +133,8 @@ pub(crate) struct ContigSummaryArgs {
     pub(crate) input_format: ContigFmt,
     #[arg(short = 'o', long = "output", help = "Output path", default_value = "Contig-Summary")]
     pub(crate) output: PathBuf,
+    #[arg(long = "prefix", help = "Specify prefix for output files")]
+    pub(crate) prefix: Option<String>,
 }
 
 #[derive(Args)]

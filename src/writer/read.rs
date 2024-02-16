@@ -137,8 +137,8 @@ impl<'a> ReadSummaryWriter<'a> {
         writeln!(
             writer,
             "index,G,C,A,T\
-        ,ProportionG,ProportionC,ProportionA,ProportionT\
-        ,MeanQ,MinQ,MaxQ",
+        ,proportion_G,proportion_C,proportion_A,proportion_T\
+        ,mean_QScore,min_QScore,max_QScore",
         )
         .expect("Failed writing to file");
         reads.iter().for_each(|(i, r)| {

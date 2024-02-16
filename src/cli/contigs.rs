@@ -29,6 +29,12 @@ impl<'a> ContigCliParser<'a> {
         let task = "Summarize contig sequences";
         ContigLogger::new(self.input_dir.as_deref(), input_fmt, fcounts).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        ContigSummaryHandler::new(&files, input_fmt, &self.args.output).summarize();
+        ContigSummaryHandler::new(
+            &files,
+            input_fmt,
+            &self.args.output,
+            self.args.prefix.as_deref(),
+        )
+        .summarize();
     }
 }
