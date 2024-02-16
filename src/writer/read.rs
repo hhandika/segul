@@ -11,6 +11,7 @@ use crate::stats::read::ReadRecord;
 
 const DEFAULT_READ_SUFFIX: &str = "default-read-summary";
 const MINIMAL_READ_SUFFIX: &str = "minimal-read-summary";
+// const PER_READ_SUFFIX: &str = "pos-read-summary";
 const DEFAULT_EXTENSION: &str = "csv";
 
 pub struct ReadSummaryWriter<'a> {
