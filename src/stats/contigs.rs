@@ -15,8 +15,8 @@ use crate::parser::fasta::FastaReader;
 pub struct ContigSummary {
     /// Path to the file
     pub file_path: String,
-    /// Name of the file
-    pub file_name: String,
+    /// Name of the contig file
+    pub contig_name: String,
     /// Contig count
     pub contig_count: usize,
     /// Total number of bases
@@ -62,7 +62,7 @@ impl ContigSummary {
     pub fn new() -> Self {
         Self {
             file_path: String::new(),
-            file_name: String::new(),
+            contig_name: String::new(),
             contig_count: 0,
             base_count: 0,
             nucleotide: 0,
@@ -84,8 +84,8 @@ impl ContigSummary {
 
     pub fn summarize(&mut self, path: &Path, file_fmt: &ContigFmt) {
         self.file_path = path.display().to_string();
-        self.file_name = path
-            .file_name()
+        self.contig_name = path
+            .file_stem()
             .expect("No file name")
             .to_str()
             .expect("File name not valid UTF-8")
@@ -192,7 +192,7 @@ mod test {
         let path = Path::new("tests/files/contigs/contigs1.fa");
         let file_fmt = ContigFmt::Fasta;
         parser.summarize(path, &file_fmt);
-        assert_eq!(parser.file_name, "contigs1.fa");
+        assert_eq!(parser.contig_name, "contigs1");
         assert_eq!(parser.file_path, "tests/files/contigs/contigs1.fa");
         assert_eq!(parser.g_count, 53);
         assert_eq!(parser.c_count, 121);

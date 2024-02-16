@@ -48,7 +48,7 @@ impl<'a> ContigSummaryWriter<'a> {
                 writer,
                 "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
                 summary.file_path,
-                summary.file_name,
+                summary.contig_name,
                 summary.contig_count,
                 summary.base_count,
                 summary.nucleotide,
