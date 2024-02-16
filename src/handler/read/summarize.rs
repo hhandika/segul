@@ -44,6 +44,8 @@ pub struct ReadSummaryHandler<'a> {
     pub mode: &'a SummaryMode,
     /// Output path. No extension required
     pub output: &'a Path,
+    /// Output file prefix
+    pub prefix: Option<&'a str>,
 }
 
 impl<'a> ReadSummaryHandler<'a> {
@@ -53,12 +55,14 @@ impl<'a> ReadSummaryHandler<'a> {
         input_fmt: &'a SeqReadFmt,
         mode: &'a SummaryMode,
         output: &'a Path,
+        prefix: Option<&'a str>,
     ) -> Self {
         Self {
             inputs,
             input_fmt,
             mode,
             output,
+            prefix,
         }
     }
 
@@ -143,7 +147,7 @@ impl<'a> ReadSummaryHandler<'a> {
     fn summarize_complete(&self, path: &Path) -> FastqSummary {
         let mut summary = FastqSummary::new(path);
         let mapped_records = summary.summarize_map(self.input_fmt);
-        let writer = ReadSummaryWriter::new(self.output);
+        let writer = ReadSummaryWriter::new(self.output, self.prefix);
         writer.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
         summary
     }
@@ -167,7 +171,7 @@ impl<'a> ReadSummaryHandler<'a> {
     }
 
     fn write_record_min(&mut self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) {
-        let writer = ReadSummaryWriter::new(self.output);
+        let writer = ReadSummaryWriter::new(self.output, self.prefix);
         spin.set_message("Writing records\n");
         writer
             .write_read_count_only(records)
@@ -178,7 +182,7 @@ impl<'a> ReadSummaryHandler<'a> {
         // Sort records by file name
         records.sort_by(|a, b| a.path.cmp(&b.path));
         spin.set_message("Writing records\n");
-        let writer = ReadSummaryWriter::new(self.output);
+        let writer = ReadSummaryWriter::new(self.output, self.prefix);
         writer.write(records).expect("Failed writing to file");
     }
 

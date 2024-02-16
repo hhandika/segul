@@ -113,6 +113,8 @@ pub(crate) struct SeqReadSummaryArgs {
     pub(crate) mode: SummaryMode,
     #[arg(short = 'o', long = "output", help = "Output path", default_value = "Read-Summary")]
     pub(crate) output: PathBuf,
+    #[arg(long = "prefix", help = "Specify prefix for output files")]
+    pub(crate) prefix: Option<String>,
 }
 
 #[derive(Args)]

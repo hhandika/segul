@@ -1,7 +1,7 @@
 //! Writer for read summary statistics.
 use std::collections::BTreeMap;
 use std::io::{Result, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::FileWriter;
 
@@ -9,23 +9,26 @@ use crate::stats::fastq::{FastqSummary, FastqSummaryMin};
 use crate::stats::qscores::ReadQScore;
 use crate::stats::read::ReadRecord;
 
-const DEFAULT_OUTPUT: &str = "read-summary.csv";
+const DEFAULT_READ_SUFFIX: &str = "default-read-summary";
+const MINIMAL_READ_SUFFIX: &str = "minimal-read-summary";
+const DEFAULT_EXTENSION: &str = "csv";
 
 pub struct ReadSummaryWriter<'a> {
     output: &'a Path,
+    prefix: Option<&'a str>,
 }
 
 impl FileWriter for ReadSummaryWriter<'_> {}
 
 impl<'a> ReadSummaryWriter<'a> {
-    pub fn new(output: &'a Path) -> Self {
-        Self { output }
+    pub fn new(output: &'a Path, prefix: Option<&'a str>) -> Self {
+        Self { output, prefix }
     }
 
     pub fn write(&self, records: &[FastqSummary]) -> Result<()> {
-        let output_path = self.output.join(DEFAULT_OUTPUT);
+        let final_path = self.create_final_output_path(DEFAULT_READ_SUFFIX);
         let mut writer = self
-            .create_output_file(&output_path)
+            .create_output_file(&final_path)
             .expect("Failed writing to file");
         self.write_records(&mut writer, records)?;
         writer.flush()?;
@@ -34,7 +37,7 @@ impl<'a> ReadSummaryWriter<'a> {
     }
 
     pub fn write_read_count_only(&self, records: &[FastqSummaryMin]) -> Result<()> {
-        let output_path = self.output.join(DEFAULT_OUTPUT);
+        let output_path = self.create_final_output_path(MINIMAL_READ_SUFFIX);
         let mut writer = self
             .create_output_file(&output_path)
             .expect("Failed writing to file");
@@ -50,6 +53,18 @@ impl<'a> ReadSummaryWriter<'a> {
         }
         writer.flush()?;
         Ok(())
+    }
+
+    fn create_final_output_path(&self, suffix: &str) -> PathBuf {
+        match self.prefix {
+            Some(prefix) => {
+                let file_name = format!("{}_{}", prefix, suffix);
+                self.output
+                    .join(file_name)
+                    .with_extension(DEFAULT_EXTENSION)
+            }
+            None => self.output.join(suffix).with_extension(DEFAULT_EXTENSION),
+        }
     }
 
     /// Write the summary records to a file.

@@ -34,6 +34,7 @@ impl<'a> ReadSummaryCliParser<'a> {
             &self.args.input_format,
             &self.args.mode,
             &self.args.output,
+            self.args.prefix.as_deref(),
         )
         .summarize();
     }
