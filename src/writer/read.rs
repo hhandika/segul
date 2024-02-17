@@ -167,6 +167,8 @@ impl<'a> ReadPosSummaryWriter<'a> {
         qscores: &BTreeMap<i32, ReadQScore>,
     ) -> Vec<u8> {
         let mut all_content: Vec<u8> = PER_READ_HEADER.as_bytes().to_vec();
+        // Add new line after header
+        all_content.push(b'\n');
         reads.iter().for_each(|(i, r)| {
             let scores = if let Some(q) = qscores.get(i) {
                 q
@@ -176,6 +178,8 @@ impl<'a> ReadPosSummaryWriter<'a> {
 
             let content = self.format_content(i, r, scores);
             all_content.extend_from_slice(&content);
+            // Add new line after each record
+            all_content.push(b'\n');
         });
         all_content
     }
