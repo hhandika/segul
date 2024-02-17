@@ -17,6 +17,8 @@ const PER_READ_SUFFIX: &str = "read-pos-summary";
 const DEFAULT_EXTENSION: &str = "csv";
 const ZIP_EXTENSION: &str = "zip";
 
+const LINE_ENDING: u8 = b'\n';
+
 const READ_HEADER: &str = "file_path,file_name,read_count,base_count,\
 mean_read_length,min_read_length,max_read_length,\
 GC_count,GC_content,AT_count,AT_content,\
@@ -153,22 +155,24 @@ impl<'a> ReadPosSummaryWriter<'a> {
 
             zip.start_file(file_name, options)
                 .expect("Failed writing to file");
-            let content = self.parse_content(&r.reads, &r.qscores);
-            zip.write(&content).expect("Failed writing to file");
+            self.write_content(&mut zip, &r.reads, &r.qscores)
+                .expect("Failed writing to file");
         });
 
         zip.finish().expect("Failed writing to file");
         Ok(())
     }
 
-    fn parse_content(
+    fn write_content<W: Write>(
         &self,
+        zip: &mut W,
         reads: &BTreeMap<i32, ReadRecord>,
         qscores: &BTreeMap<i32, ReadQScore>,
-    ) -> Vec<u8> {
-        let mut all_content: Vec<u8> = PER_READ_HEADER.as_bytes().to_vec();
+    ) -> Result<()> {
+        let mut header: Vec<u8> = PER_READ_HEADER.as_bytes().to_vec();
         // Add new line after header
-        all_content.push(b'\n');
+        header.push(LINE_ENDING);
+        zip.write_all(&header)?;
         reads.iter().for_each(|(i, r)| {
             let scores = if let Some(q) = qscores.get(i) {
                 q
@@ -176,15 +180,14 @@ impl<'a> ReadPosSummaryWriter<'a> {
                 panic!("Failed getting quality scores for index {}", i);
             };
 
-            let content = self.format_content(i, r, scores);
-            all_content.extend_from_slice(&content);
-            // Add new line after each record
-            all_content.push(b'\n');
+            let mut content = self.parse_content(i, r, scores);
+            content.push(LINE_ENDING);
+            zip.write_all(&content).expect("Failed writing to file");
         });
-        all_content
+        Ok(())
     }
 
-    fn format_content(&self, index: &i32, read: &ReadRecord, qscores: &ReadQScore) -> Vec<u8> {
+    fn parse_content(&self, index: &i32, read: &ReadRecord, qscores: &ReadQScore) -> Vec<u8> {
         let sum = read.g_count + read.c_count + read.a_count + read.t_count;
         let data = format!(
             "{},{},{},{},{},{},{},{},{},{},{},{}",

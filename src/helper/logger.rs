@@ -31,9 +31,8 @@ pub const LOG_FILE: &str = "segul.log";
 /// logger::init_logger(log_path).expect("Failed setting up logger");
 /// ```
 pub fn init_logger(file_path: &Path) -> Result<()> {
-    match file_path.parent() {
-        Some(dir) => create_dir_all(dir)?,
-        None => (),
+    if let Some(dir) = file_path.parent() {
+        create_dir_all(dir)?;
     }
     let target = file_path.with_extension("log");
     let tofile = FileAppender::builder()
@@ -71,9 +70,8 @@ pub fn init_logger(file_path: &Path) -> Result<()> {
 /// let output_dir = Path::new("output");
 /// logger::init_file_logger(output_dir);
 pub fn init_file_logger(file_path: &Path) -> Result<()> {
-    match file_path.parent() {
-        Some(dir) => create_dir_all(dir)?,
-        None => (),
+    if let Some(dir) = file_path.parent() {
+        create_dir_all(dir)?;
     }
     let target = file_path.with_extension("log");
     let tofile = FileAppender::builder()
