@@ -17,8 +17,8 @@ use crate::{
         types::{SeqReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    stats::fastq::{FastqSummary, FastqSummaryMin},
-    writer::read::ReadSummaryWriter,
+    stats::fastq::{FastqMappedRead, FastqSummary, FastqSummaryMin},
+    writer::read::{ReadPosSummaryWriter, ReadSummaryWriter},
 };
 
 /// Generate read summary statistics.
@@ -103,11 +103,13 @@ impl<'a> ReadSummaryHandler<'a> {
             }
             SummaryMode::Default => {
                 let mut records = self.par_summarize_default();
-                self.write_records(&spin, &mut records);
+                self.write_record_default(&spin, &mut records);
             }
             SummaryMode::Complete => {
-                let mut records = self.par_summarize_complete();
-                self.write_records(&spin, &mut records);
+                let all_records = self.par_summarize_complete();
+                let (mut records, read_records): (Vec<FastqSummary>, Vec<FastqMappedRead>) =
+                    all_records.into_iter().unzip();
+                self.write_record_complete(&spin, &mut records, &read_records);
             }
         }
         spin.finish_with_message("Finished processing fastq files\n");
@@ -132,7 +134,7 @@ impl<'a> ReadSummaryHandler<'a> {
         summary
     }
 
-    fn par_summarize_complete(&self) -> Vec<FastqSummary> {
+    fn par_summarize_complete(&self) -> Vec<(FastqSummary, FastqMappedRead)> {
         let (sender, receiver) = channel();
 
         self.inputs.par_iter().for_each_with(sender, |s, p| {
@@ -144,12 +146,10 @@ impl<'a> ReadSummaryHandler<'a> {
         receiver.iter().collect()
     }
 
-    fn summarize_complete(&self, path: &Path) -> FastqSummary {
+    fn summarize_complete(&self, path: &Path) -> (FastqSummary, FastqMappedRead) {
         let mut summary = FastqSummary::new(path);
         let mapped_records = summary.summarize_map(self.input_fmt);
-        let writer = ReadSummaryWriter::new(self.output, self.prefix);
-        writer.write_per_read_records(path, &mapped_records.reads, &mapped_records.qscores);
-        summary
+        (summary, mapped_records)
     }
 
     fn par_summarize_minimal(&self) -> Vec<FastqSummaryMin> {
@@ -178,12 +178,30 @@ impl<'a> ReadSummaryHandler<'a> {
             .expect("Failed writing to file");
     }
 
-    fn write_records(&mut self, spin: &ProgressBar, records: &mut [FastqSummary]) {
+    fn write_record_default(&mut self, spin: &ProgressBar, records: &mut [FastqSummary]) {
         // Sort records by file name
         records.sort_by(|a, b| a.path.cmp(&b.path));
         spin.set_message("Writing records\n");
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
         writer.write(records).expect("Failed writing to file");
+    }
+
+    fn write_record_complete(
+        &self,
+        spin: &ProgressBar,
+        records: &mut [FastqSummary],
+        read_records: &[FastqMappedRead],
+    ) {
+        // Sort records by file name
+        records.sort_by(|a, b| a.path.cmp(&b.path));
+        let writer = ReadSummaryWriter::new(self.output, self.prefix);
+        writer.write(records).expect("Failed writing to file");
+
+        spin.set_message("Writing records\n");
+        let pos_writer = ReadPosSummaryWriter::new(self.output, self.prefix);
+        pos_writer
+            .write(read_records)
+            .expect("Failed writing to file");
     }
 
     fn print_output_info(&self) {

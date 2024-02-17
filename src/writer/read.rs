@@ -2,17 +2,31 @@
 use std::collections::BTreeMap;
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
+use zip::write::FileOptions;
 
 use super::FileWriter;
 
-use crate::stats::fastq::{FastqSummary, FastqSummaryMin};
+use crate::stats::fastq::{FastqMappedRead, FastqSummary, FastqSummaryMin};
 use crate::stats::qscores::ReadQScore;
 use crate::stats::read::ReadRecord;
 
 const DEFAULT_READ_SUFFIX: &str = "default-read-summary";
 const MINIMAL_READ_SUFFIX: &str = "minimal-read-summary";
-// const PER_READ_SUFFIX: &str = "pos-read-summary";
+const PER_READ_SUFFIX: &str = "read-pos-summary";
+
 const DEFAULT_EXTENSION: &str = "csv";
+const ZIP_EXTENSION: &str = "zip";
+
+const READ_HEADER: &str = "file_path,file_name,read_count,base_count,\
+mean_read_length,min_read_length,max_read_length,\
+GC_count,GC_content,AT_count,AT_content,\
+N_content,\
+G,C,A,T,N,\
+low_QScore,mean_QScore,min_QScore,max_QScore";
+
+const PER_READ_HEADER: &str = "index,G,C,A,T\
+,proportion_G,proportion_C,proportion_A,proportion_T\
+,mean_QScore,min_QScore,max_QScore";
 
 pub struct ReadSummaryWriter<'a> {
     output: &'a Path,
@@ -70,16 +84,7 @@ impl<'a> ReadSummaryWriter<'a> {
 
     /// Write the summary records to a file.
     fn write_records<W: Write>(&self, writer: &mut W, records: &[FastqSummary]) -> Result<()> {
-        writeln!(
-            writer,
-            "file_path,file_name,read_count,base_count,\
-                    mean_read_length,min_read_length,max_read_length,\
-                    GC_count,GC_content,AT_count,AT_content,\
-                    N_content,\
-                    G,C,A,T,N,\
-                    low_QScore,mean_QScore,min_QScore,max_QScore\
-                    "
-        )?;
+        writeln!(writer, "{}", READ_HEADER)?;
 
         for rec in records {
             writeln!(
@@ -115,57 +120,97 @@ impl<'a> ReadSummaryWriter<'a> {
 
         Ok(())
     }
+}
 
-    pub fn write_per_read_records(
+pub struct ReadPosSummaryWriter<'a> {
+    output: &'a Path,
+    prefix: Option<&'a str>,
+}
+
+impl FileWriter for ReadPosSummaryWriter<'_> {}
+
+impl<'a> ReadPosSummaryWriter<'a> {
+    pub fn new(output: &'a Path, prefix: Option<&'a str>) -> Self {
+        Self { output, prefix }
+    }
+
+    pub fn write(&self, reads: &[FastqMappedRead]) -> Result<()> {
+        let zip_path = self.create_final_output_path();
+        let mut zip = self
+            .create_zip_writer(&zip_path)
+            .expect("Failed writing to file");
+        let options = FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        reads.iter().for_each(|r| {
+            let file_name = format!(
+                "{}.{}",
+                r.file_path
+                    .file_stem()
+                    .expect("Failed getting file name")
+                    .to_str()
+                    .expect("Failed converting file name to string"),
+                DEFAULT_EXTENSION
+            );
+
+            zip.start_file(file_name, options)
+                .expect("Failed writing to file");
+            self.write_read_records(&mut zip, &r.reads, &r.qscores)
+                .expect("Failed writing to file");
+        });
+
+        zip.finish().expect("Failed writing to file");
+        Ok(())
+    }
+
+    fn write_read_records<W: Write>(
         &self,
-        fpath: &Path,
+        zip: &mut W,
         reads: &BTreeMap<i32, ReadRecord>,
         qscores: &BTreeMap<i32, ReadQScore>,
-    ) {
-        let fname = format!(
-            "{}_{}",
-            fpath
-                .file_stem()
-                .expect("Failed getting file name")
-                .to_str()
-                .expect("Failed converting file name to string"),
-            "read_summary.csv"
-        );
-        let output_dir = self.output.join("reads").join(fname);
-        let mut writer = self
-            .create_output_file(&output_dir)
-            .expect("Failed writing to file");
-        writeln!(
-            writer,
-            "index,G,C,A,T\
-        ,proportion_G,proportion_C,proportion_A,proportion_T\
-        ,mean_QScore,min_QScore,max_QScore",
-        )
-        .expect("Failed writing to file");
+    ) -> Result<()> {
+        zip.write(PER_READ_HEADER.as_bytes())?;
         reads.iter().for_each(|(i, r)| {
             let scores = if let Some(q) = qscores.get(i) {
                 q
             } else {
                 panic!("Failed getting quality scores for index {}", i);
             };
-            let sum = r.g_count + r.c_count + r.a_count + r.t_count;
-            writeln!(
-                writer,
-                "{},{},{},{},{},{},{},{},{},{},{},{}",
-                i,
-                r.g_count,
-                r.c_count,
-                r.a_count,
-                r.t_count,
-                r.g_count as f64 / sum as f64,
-                r.c_count as f64 / sum as f64,
-                r.a_count as f64 / sum as f64,
-                r.t_count as f64 / sum as f64,
-                scores.stats.mean,
-                scores.stats.min.unwrap_or(0),
-                scores.stats.max.unwrap_or(0)
-            )
-            .expect("Failed writing to file");
+
+            let content = self.format_content(i, r, scores);
+            zip.write(content.as_bytes())
+                .expect("Failed writing to file");
         });
+        Ok(())
+    }
+
+    fn format_content(&self, index: &i32, read: &ReadRecord, qscores: &ReadQScore) -> String {
+        let sum = read.g_count + read.c_count + read.a_count + read.t_count;
+        format!(
+            "{},{},{},{},{},{},{},{},{},{},{},{}",
+            index,
+            read.g_count,
+            read.c_count,
+            read.a_count,
+            read.t_count,
+            read.g_count as f64 / sum as f64,
+            read.c_count as f64 / sum as f64,
+            read.a_count as f64 / sum as f64,
+            read.t_count as f64 / sum as f64,
+            qscores.stats.mean,
+            qscores.stats.min.unwrap_or(0),
+            qscores.stats.max.unwrap_or(0)
+        )
+    }
+
+    fn create_final_output_path(&self) -> PathBuf {
+        match self.prefix {
+            Some(prefix) => {
+                let file_name = format!("{}_{}", prefix, PER_READ_SUFFIX);
+                self.output.join(file_name).with_extension(ZIP_EXTENSION)
+            }
+            None => self
+                .output
+                .join(PER_READ_SUFFIX)
+                .with_extension(ZIP_EXTENSION),
+        }
     }
 }
