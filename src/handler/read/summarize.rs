@@ -210,3 +210,56 @@ impl<'a> ReadSummaryHandler<'a> {
         log::info!("{:18}: {}", "Dir", self.output.display());
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::path::PathBuf;
+
+    use tempdir::TempDir;
+
+    use crate::handler::read::summarize::ReadSummaryHandler;
+    use crate::helper::types::{SeqReadFmt, SummaryMode};
+    use crate::stats::fastq::{FastqMappedRead, FastqSummary};
+
+    #[test]
+    fn test_summarize() {
+        let mut files = vec![
+            PathBuf::from("tests/files/raw/read_1.fastq"),
+            PathBuf::from("tests/files/raw/read_2.fastq"),
+        ];
+        let output = TempDir::new("tempt").unwrap();
+        let mut handler = ReadSummaryHandler::new(
+            &mut files,
+            &SeqReadFmt::Auto,
+            &SummaryMode::Default,
+            output.path(),
+            None,
+        );
+        handler.summarize();
+        assert!(output.path().exists());
+    }
+
+    #[test]
+    fn test_read_count_only() {
+        let mut files = vec![
+            PathBuf::from("tests/files/raw/read_1.fastq"),
+            PathBuf::from("tests/files/raw/read_2.fastq"),
+        ];
+        let output = TempDir::new("tempt").unwrap();
+        let handler = ReadSummaryHandler::new(
+            &mut files,
+            &SeqReadFmt::Auto,
+            &SummaryMode::Minimal,
+            output.path(),
+            None,
+        );
+        let records = handler.par_summarize_complete();
+        let (_, pos): (Vec<FastqSummary>, Vec<FastqMappedRead>) = records.into_iter().unzip();
+        pos.iter().for_each(|p| {
+            assert_eq!(p.reads.len(), 36);
+            assert_eq!(p.qscores.len(), 36);
+        });
+
+        assert_eq!(pos.len(), 2);
+    }
+}

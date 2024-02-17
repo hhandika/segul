@@ -153,22 +153,20 @@ impl<'a> ReadPosSummaryWriter<'a> {
 
             zip.start_file(file_name, options)
                 .expect("Failed writing to file");
-            self.write_read_records(&mut zip, &r.reads, &r.qscores)
-                .expect("Failed writing to file");
+            let content = self.parse_content(&r.reads, &r.qscores);
+            zip.write(&content).expect("Failed writing to file");
         });
 
         zip.finish().expect("Failed writing to file");
         Ok(())
     }
 
-    fn write_read_records<W: Write>(
+    fn parse_content(
         &self,
-        zip: &mut W,
         reads: &BTreeMap<i32, ReadRecord>,
         qscores: &BTreeMap<i32, ReadQScore>,
-    ) -> Result<()> {
+    ) -> Vec<u8> {
         let mut all_content: Vec<u8> = PER_READ_HEADER.as_bytes().to_vec();
-
         reads.iter().for_each(|(i, r)| {
             let scores = if let Some(q) = qscores.get(i) {
                 q
@@ -179,8 +177,7 @@ impl<'a> ReadPosSummaryWriter<'a> {
             let content = self.format_content(i, r, scores);
             all_content.extend_from_slice(&content);
         });
-        zip.write_all(&all_content).expect("Failed writing to file");
-        Ok(())
+        all_content
     }
 
     fn format_content(&self, index: &i32, read: &ReadRecord, qscores: &ReadQScore) -> Vec<u8> {
