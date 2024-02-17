@@ -90,6 +90,7 @@ impl<'a> ReadSummaryHandler<'a> {
     ///     &SeqReadFmt::Auto,
     ///     &SummaryMode::Default,
     ///     Path::new(output.path()),
+    ///     None,
     /// );
     /// handler.summarize();
     /// ```
