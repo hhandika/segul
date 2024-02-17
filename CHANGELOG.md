@@ -5,6 +5,7 @@
 ### New Features
 
 - Alignment summary now is written to file.
+- Read summary with `complete` option now writes per read position results to compressed zip file.
 
 ## v0.20.2
 

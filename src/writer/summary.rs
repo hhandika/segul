@@ -205,8 +205,8 @@ impl<'a> CsvWriter<'a> {
         if DataType::Dna == *self.datatype {
             write!(
                 writer,
-                ",gc_content\
-                ,at_content\
+                ",GC_content\
+                ,AT_content\
                 ,nucleotides"
             )?;
         }
