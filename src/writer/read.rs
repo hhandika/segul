@@ -167,7 +167,8 @@ impl<'a> ReadPosSummaryWriter<'a> {
         reads: &BTreeMap<i32, ReadRecord>,
         qscores: &BTreeMap<i32, ReadQScore>,
     ) -> Result<()> {
-        zip.write(PER_READ_HEADER.as_bytes())?;
+        let mut all_content: Vec<u8> = PER_READ_HEADER.as_bytes().to_vec();
+
         reads.iter().for_each(|(i, r)| {
             let scores = if let Some(q) = qscores.get(i) {
                 q
@@ -176,15 +177,15 @@ impl<'a> ReadPosSummaryWriter<'a> {
             };
 
             let content = self.format_content(i, r, scores);
-            zip.write(content.as_bytes())
-                .expect("Failed writing to file");
+            all_content.extend_from_slice(&content);
         });
+        zip.write_all(&all_content).expect("Failed writing to file");
         Ok(())
     }
 
-    fn format_content(&self, index: &i32, read: &ReadRecord, qscores: &ReadQScore) -> String {
+    fn format_content(&self, index: &i32, read: &ReadRecord, qscores: &ReadQScore) -> Vec<u8> {
         let sum = read.g_count + read.c_count + read.a_count + read.t_count;
-        format!(
+        let data = format!(
             "{},{},{},{},{},{},{},{},{},{},{},{}",
             index,
             read.g_count,
@@ -198,7 +199,8 @@ impl<'a> ReadPosSummaryWriter<'a> {
             qscores.stats.mean,
             qscores.stats.min.unwrap_or(0),
             qscores.stats.max.unwrap_or(0)
-        )
+        );
+        data.as_bytes().to_vec()
     }
 
     fn create_final_output_path(&self) -> PathBuf {
