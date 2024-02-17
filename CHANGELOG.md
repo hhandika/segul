@@ -6,6 +6,8 @@
 
 - Alignment summary now is written to file.
 - Read summary with `complete` option now writes per read position results to compressed zip file.
+- Prefix option for read and contig summary.
+- More consistent CSV header names for all summary statistics.
 
 ## v0.20.2
 
