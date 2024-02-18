@@ -13,6 +13,10 @@ pub fn fmt_num(num: &usize) -> String {
     num.to_formatted_string(&Locale::en)
 }
 
+pub fn get_crate_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
 pub fn print_execution_time(duration: Duration) {
     if duration.as_secs() < 60 {
         log::info!("{:18}: {:?}", "Execution time", duration);
