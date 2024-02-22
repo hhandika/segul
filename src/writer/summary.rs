@@ -473,7 +473,7 @@ impl<'s> SummaryWriter<'s> {
         for ch in alphabet.chars() {
             if let Some(count) = self.chars.chars.get(&ch) {
                 let count = format!("{:18}: {}", ch, utils::fmt_num(count));
-                writeln!(writer, "{},", count)?;
+                writeln!(writer, "{}", count)?;
             }
         }
         Ok(())
@@ -488,7 +488,7 @@ impl<'s> SummaryWriter<'s> {
             .for_each(|(percent, ntax)| {
                 let percent_str = format!("{}% taxa", percent);
                 let percent_str = format!("{:18}: {}", percent_str, utils::fmt_num(ntax));
-                writeln!(writer, "{},", percent_str).expect("Failed to write matrix completeness");
+                writeln!(writer, "{}", percent_str).expect("Failed to write matrix completeness");
             });
         Ok(())
     }

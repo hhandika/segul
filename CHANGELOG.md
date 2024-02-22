@@ -2,6 +2,8 @@
 
 ## Upcoming
 
+- Fix extra commas in the alignment summary CSV output.
+
 ### v0.21.0
 
 - Alignment summary now is written to file.
