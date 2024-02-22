@@ -73,7 +73,7 @@ impl<'a> ReadSummaryHandler<'a> {
     /// * `mode` - The summary mode.
     /// * `output` - The output path.
     /// # Example
-    /// ```
+    /// ```rust
     /// use std::path::{Path, PathBuf};
     /// use segul::handler::read::summarize::ReadSummaryHandler;
     /// use segul::helper::types::{SeqReadFmt, SummaryMode};

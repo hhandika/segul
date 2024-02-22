@@ -1,3 +1,4 @@
+// ! Convert sequence format from one to another.
 use std::path::{Path, PathBuf};
 
 use colored::Colorize;

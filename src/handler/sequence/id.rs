@@ -1,10 +1,8 @@
+//! Create unique IDs from sequence alignment files and map them to the alignment files.
 use std::ffi::OsStr;
-use std::fs::{self, File, OpenOptions};
-use std::io::prelude::*;
-use std::io::{BufWriter, Result};
+use std::fs::{self};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
-// use std::sync::{Arc, Mutex};
 
 use colored::Colorize;
 use indexmap::IndexSet;
@@ -14,45 +12,88 @@ use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, InputFmt};
 use crate::helper::utils;
+use crate::writer::text::IdWriter;
 
+/// The `Id` struct is used to generate unique IDs
+/// from sequence alignment files and map them to the alignment files.
 pub struct Id<'a> {
+    /// The sequence alignment files.
+    files: &'a [PathBuf],
+    /// The input format of the sequence alignment files.
     pub input_fmt: &'a InputFmt,
+    /// The data type of the sequence alignment files.
     pub datatype: &'a DataType,
+    /// The output path for the unique IDs.
     pub output: &'a Path,
+    /// The prefix for the output file (optional)
+    /// If provided, the output file will be named as `prefix_id.txt`.
+    /// If not provided, the output file will use the default name `id.txt`.
+    /// or `prefix_map.csv` if mapping is enabled.
+    pub prefix: Option<&'a str>,
 }
 
 impl<'a> Id<'a> {
-    pub fn new(input_fmt: &'a InputFmt, datatype: &'a DataType, output: &'a Path) -> Self {
+    pub fn new(
+        files: &'a [PathBuf],
+        input_fmt: &'a InputFmt,
+        datatype: &'a DataType,
+        output: &'a Path,
+        prefix: Option<&'a str>,
+    ) -> Self {
         Self {
+            files,
             input_fmt,
             datatype,
             output,
+            prefix: prefix,
         }
     }
 
-    pub fn generate_id(&self, files: &[PathBuf]) {
+    /// Generate unique IDs from sequence alignment files.
+    /// The unique IDs are written to a file as a text file.
+    /// The file will be named as `id.txt` or `prefix_id.txt` if prefix is provided.
+    /// Example:
+    /// ```rust
+    /// use std::path::{Path, PathBuf};
+    /// use segul::handler::sequence::id::Id;
+    /// use segul::helper::types::{DataType, InputFmt};
+    /// use tempdir::TempDir;
+    ///
+    /// let alignment_2 = PathBuf::from("tests/files/concat/gene_2.nex");
+    /// let alignment_1 = PathBuf::from("tests/files/concat/gene_1.nex");
+    /// let files = vec![alignment_1, alignment_2];
+    /// let output = TempDir::new("tempt").unwrap();
+    /// let id = Id::new(&files, &InputFmt::Auto, &DataType::Dna, Path::new(output.path()), None);
+    /// id.generate_id();
+    /// assert!(output.path().join("id.txt").exists());
+    /// ```
+
+    pub fn generate_id(&self) {
         fs::create_dir_all(self.output.parent().expect("Failed getting parent path"))
             .expect("Failed creating output dir");
         let spin = utils::set_spinner();
         spin.set_message("Indexing IDs..");
-        let ids = self.get_unique_id(files);
+        let ids = self.get_unique_id(self.files);
         spin.finish_with_message("DONE!\n");
-        self.write_unique_id(&ids).expect("Failed writing results");
+        let writer = IdWriter::new(self.output, &ids, self.prefix);
+        writer.write_unique_id().expect("Failed writing results");
         self.print_output(ids.len());
     }
 
-    pub fn map_id(&self, files: &[PathBuf], output_id: &Path) {
+    pub fn map_id(&self) {
         let spin = utils::set_spinner();
         spin.set_message("Mapping IDs..");
-        let ids = self.get_unique_id(files);
-        let mapped_ids = self.par_map_id(files, &ids);
-        self.write_unique_id(&ids)
+        let ids = self.get_unique_id(self.files);
+        let mapped_ids = self.par_map_id(self.files, &ids);
+        let writer = IdWriter::new(self.output, &ids, self.prefix);
+        writer
+            .write_unique_id()
             .expect("Failed writing unique IDs to file");
-        self.write_mapped_id(&ids, &mapped_ids, output_id)
+        writer
+            .write_mapped_id(&mapped_ids)
             .expect("Failed writing mapped ID to file");
         spin.finish_with_message("DONE!\n");
         self.print_output(ids.len());
-        log::info!("{:18}: {}", "Record file", output_id.display());
     }
 
     fn get_unique_id(&self, files: &[PathBuf]) -> IndexSet<String> {
@@ -90,57 +131,16 @@ impl<'a> Id<'a> {
             .to_string()
     }
 
-    fn write_unique_id(&self, ids: &IndexSet<String>) -> Result<()> {
-        let mut writer = self.write_file(self.output);
-        ids.iter().for_each(|id| {
-            writeln!(writer, "{}", id).unwrap();
-        });
-        writer.flush()?;
-        Ok(())
-    }
-
-    fn write_mapped_id(
-        &self,
-        ids: &IndexSet<String>,
-        mapped_ids: &[IdRecords],
-        output: &Path,
-    ) -> Result<()> {
-        let mut writer = self.write_file(output);
-        write!(writer, "Alignments")?;
-        ids.iter().for_each(|id| {
-            write!(writer, ",{}", id).expect("Failed writing a csv header");
-        });
-        writeln!(writer)?;
-        mapped_ids.iter().for_each(|rec| {
-            write!(writer, "{}", rec.name).expect("Failed writing a csv header");
-            rec.records.iter().for_each(|is_id| {
-                write!(writer, ",{}", is_id).expect("Failed writing id map");
-            });
-            writeln!(writer).expect("Failed writing id map");
-        });
-        writer.flush()?;
-        Ok(())
-    }
-
-    fn write_file(&self, output: &Path) -> BufWriter<File> {
-        let file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(output)
-            .expect("Failed writing id results");
-        BufWriter::new(file)
-    }
-
     fn print_output(&self, ids: usize) {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Total unique IDs", ids);
-        log::info!("{:18}: {}", "ID file", self.output.display());
+        log::info!("{:18}: {}", "Output dir", self.output.display());
     }
 }
 
-struct IdRecords {
-    name: String,
-    records: Vec<bool>,
+pub struct IdRecords {
+    pub name: String,
+    pub records: Vec<bool>,
 }
 
 impl IdRecords {

@@ -14,6 +14,7 @@ pub mod partition;
 pub mod read;
 pub mod sequences;
 pub mod summary;
+pub mod text;
 
 use std::fs::{self, File, OpenOptions};
 use std::io::BufWriter;
