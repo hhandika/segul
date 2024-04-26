@@ -1,0 +1,68 @@
+General Summary
+Total taxa        : 101
+Total loci        : 7
+Total sites       : 9,292
+Total characters  : 611,280
+Missing data      : 275,672
+GC content        : 0.22
+AT content        : 0.33
+Characters        : 611,280
+Nucleotides       : 335,608
+
+Alignment Summary
+Min length        : 813 bp
+Max length        : 1,544 bp
+Mean length       : 1327.43 bp
+
+Taxon Summary
+Min taxa          : 49
+Max taxa          : 82
+Mean taxa         : 65.29
+
+Character Count
+-                 : 275,672,
+A                 : 103,437,
+C                 : 63,926,
+G                 : 69,758,
+T                 : 98,487,
+
+Matrix Completeness
+100% taxa         : 0,
+95% taxa          : 0,
+90% taxa          : 0,
+85% taxa          : 0,
+80% taxa          : 1,
+75% taxa          : 3,
+70% taxa          : 3,
+65% taxa          : 3,
+60% taxa          : 4,
+55% taxa          : 5,
+50% taxa          : 6,
+45% taxa          : 7,
+
+Conserved Sequences
+Conserved loci    : 0
+%Con. loci        : 0.00%
+Conserved sites   : 8,165
+%Con. sites       : 87.87%
+Min con. sites    : 688
+Max con. sites    : 1,405
+Mean con. sites   : 0.88
+
+Variable Sequences
+Var. loci         : 7
+%Var. loci        : 100.00%
+Var. sites        : 1,127
+%Var. sites       : 12.13%
+Min var. sites    : 122
+Max var. sites    : 245
+Mean var. sites   : 0.12
+
+Parsimony Informative
+Inf. loci         : 7
+%Inf. loci        : 100.00%
+Inf. sites        : 279
+%Inf. sites       : 3.00%
+Min inf. sites    : 13
+Max inf. sites    : 82
+Mean inf. sites   : 0.03
