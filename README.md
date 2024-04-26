@@ -13,12 +13,15 @@ SEGUL is an ultra-fast, memory-efficient application for working with phylogenom
 
 It is designed to handle operations on large genomic datasets, while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a variety of sequence alignment manipulations ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
 
+## Citation
+
+> Heru Handika, Jacob Esselstyn. SEGUL: An ultrafast, memory-efficient alignment manipulation and summary tool for phylogenomics. _Authorea_. May 04, 2022. DOI: [10.22541/au.165167823.30911834/v1](https://www.authorea.com/doi/full/10.22541/au.165167823.30911834/v1).
+
 ## Links
 
 - App Documentation: [[EN]](https://segul.app/)
 - API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
 - GUI source code: [[Repository]](https://github.com/hhandika/segui)
-- Citation: [[Pre-print]](https://www.authorea.com/doi/full/10.22541/au.165167823.30911834/v1)
 
 ## Installation
 
