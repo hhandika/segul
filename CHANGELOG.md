@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.21.1
 
 - Fix extra commas in the alignment summary CSV output.
 - Fix missing proportion of missing data in alignment summary.
