@@ -205,8 +205,8 @@ impl<'a> CsvWriter<'a> {
         if DataType::Dna == *self.datatype {
             write!(
                 writer,
-                ",gc_content\
-                ,at_content\
+                ",GC_content\
+                ,AT_content\
                 ,nucleotides"
             )?;
         }
@@ -378,6 +378,12 @@ impl<'s> SummaryWriter<'s> {
             utils::fmt_num(&self.chars.missing_data)
         );
         writeln!(writer, "{}", missing_data)?;
+        let prop_missing_data = format!(
+            "{:18}: {:.2}%",
+            "%Missing data",
+            self.chars.prop_missing_data * 100.0
+        );
+        writeln!(writer, "{}", prop_missing_data)?;
 
         match self.datatype {
             DataType::Dna => self.write_dna_sum(writer)?,
@@ -473,7 +479,7 @@ impl<'s> SummaryWriter<'s> {
         for ch in alphabet.chars() {
             if let Some(count) = self.chars.chars.get(&ch) {
                 let count = format!("{:18}: {}", ch, utils::fmt_num(count));
-                writeln!(writer, "{},", count)?;
+                writeln!(writer, "{}", count)?;
             }
         }
         Ok(())
@@ -488,7 +494,7 @@ impl<'s> SummaryWriter<'s> {
             .for_each(|(percent, ntax)| {
                 let percent_str = format!("{}% taxa", percent);
                 let percent_str = format!("{:18}: {}", percent_str, utils::fmt_num(ntax));
-                writeln!(writer, "{},", percent_str).expect("Failed to write matrix completeness");
+                writeln!(writer, "{}", percent_str).expect("Failed to write matrix completeness");
             });
         Ok(())
     }

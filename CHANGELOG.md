@@ -2,9 +2,15 @@
 
 ## Upcoming
 
-### New Features
+- Fix extra commas in the alignment summary CSV output.
+- Fix missing proportion of missing data in alignment summary.
+
+### v0.21.0
 
 - Alignment summary now is written to file.
+- Read summary with `complete` option now writes per read position results to compressed zip file.
+- Prefix option for read, contig summary, and ID extraction.
+- More consistent CSV header names for all summary statistics, and sequence ID map.
 
 ## v0.20.2
 

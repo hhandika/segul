@@ -147,7 +147,7 @@ impl FastqSummary {
 
     fn compute_mapped<R: BufRead>(&mut self, buff: &mut R) -> FastqMappedRead {
         let mut reader = Reader::new(buff);
-        let mut map_records = FastqMappedRead::new();
+        let mut map_records = FastqMappedRead::new(&self.path);
 
         reader.records().for_each(|r| match r {
             Ok(record) => {
@@ -210,20 +210,16 @@ impl FastqSummary {
 
 /// Data structure for storing mapped read records
 pub struct FastqMappedRead {
+    pub file_path: PathBuf,
     pub reads: BTreeMap<i32, ReadRecord>,
     pub qscores: BTreeMap<i32, ReadQScore>,
 }
 
-impl Default for FastqMappedRead {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl FastqMappedRead {
     /// Create a new FastqMappedRead instance
-    pub fn new() -> Self {
+    pub fn new(file_path: &Path) -> Self {
         Self {
+            file_path: file_path.to_path_buf(),
             reads: BTreeMap::new(),
             qscores: BTreeMap::new(),
         }

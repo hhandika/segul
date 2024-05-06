@@ -14,12 +14,14 @@ pub mod partition;
 pub mod read;
 pub mod sequences;
 pub mod summary;
+pub mod text;
 
 use std::fs::{self, File, OpenOptions};
 use std::io::BufWriter;
 use std::path::Path;
 
 use anyhow::{Context, Result};
+use zip::ZipWriter;
 
 trait FileWriter {
     fn create_output_file(&self, path: &Path) -> Result<BufWriter<File>> {
@@ -29,6 +31,18 @@ trait FileWriter {
             Ok(writer) => Ok(BufWriter::new(writer)),
             Err(error) => panic!("Failed writing to {}: {}", path.display(), error),
         }
+    }
+
+    /// File trait to write zip files.
+    fn create_zip_writer(&self, output: &Path) -> Result<ZipWriter<File>> {
+        create_parent_directory(output)?;
+        let file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(output)?;
+        let zip: ZipWriter<File> = ZipWriter::new(file);
+
+        Ok(zip)
     }
 
     fn append_output_file(&self, path: &Path) -> Result<BufWriter<File>> {

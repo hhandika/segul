@@ -1,14 +1,19 @@
+//! An archive writer module.
 use std::{
     io::BufReader,
     path::{Path, PathBuf},
 };
 
+/// Archive multiple files into a single zip file.
 pub struct Archive<'a> {
+    /// The output path for the archive.
     pub output_path: &'a Path,
+    /// The input files to be archived.
     pub input_files: &'a [PathBuf],
 }
 
 impl<'a> Archive<'a> {
+    /// Create a new Archive instance.
     pub fn new(output_path: &'a Path, input_files: &'a [PathBuf]) -> Self {
         Self {
             output_path,
@@ -16,8 +21,9 @@ impl<'a> Archive<'a> {
         }
     }
 
+    /// Archive the input files into a single zip file.
     pub fn zip(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut archive = zip::ZipWriter::new(std::fs::File::create(&self.output_path)?);
+        let mut archive = zip::ZipWriter::new(std::fs::File::create(self.output_path)?);
         let options =
             zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
