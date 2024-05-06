@@ -348,16 +348,17 @@ pub(crate) struct SequenceRemoveArgs {
     pub(crate) output: PathBuf,
     #[arg(
         long = "re",
-        help = "Specify regular expression for removing sequences",
+        help = "Input regular expression for removing sequences",
         require_equals = true
     )]
     pub(crate) re: Option<String>,
     #[arg(
         long = "id",
-        help = "Specify sequence ID for removing sequences",
-        required_unless_present("re")
+        help = "Input sequence ID separated by semicolon",
+        required_unless_present("re"),
+        require_equals = true
     )]
-    pub(crate) id: Option<Vec<String>>,
+    pub(crate) id: Option<String>,
 }
 
 #[derive(Args)]
@@ -374,17 +375,7 @@ pub(crate) struct SequenceRenameArgs {
     pub(crate) dry_run: bool,
     #[arg(
         long = "replace-id", 
-        help = "Rename using input IDs in a file", 
-        // required_unless_present_any([
-        //     "remove",
-        //     "remove-re", 
-        //     "replace-from", 
-        //     "replace-from-re", 
-        //     "remove-re-all", 
-        //     "replace_from_re_all",
-        //     "replace-to",
-        // ])
-        
+        help = "Rename using input IDs in a file",         
     )]
     pub(crate) replace_id: Option<PathBuf>,
     #[arg(long = "remove", help = "Remove matching input string")]
