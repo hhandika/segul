@@ -3,6 +3,7 @@
 ## Upcoming
 
 - Fix extra commas in the alignment summary CSV output.
+- Fix missing proportion of missing data in alignment summary.
 
 ### v0.21.0
 
