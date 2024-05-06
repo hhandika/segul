@@ -378,6 +378,12 @@ impl<'s> SummaryWriter<'s> {
             utils::fmt_num(&self.chars.missing_data)
         );
         writeln!(writer, "{}", missing_data)?;
+        let prop_missing_data = format!(
+            "{:18}: {:.2}%",
+            "%Missing data",
+            self.chars.prop_missing_data * 100.0
+        );
+        writeln!(writer, "{}", prop_missing_data)?;
 
         match self.datatype {
             DataType::Dna => self.write_dna_sum(writer)?,
