@@ -10,7 +10,7 @@ use segul::helper::types::InputFmt;
 #[test]
 fn test_extract() {
     initiate_cmd!(cmd, "sequence", "extract", "tests/files/concat/", tmp_dir);
-    cmd.arg("--id").arg("ABCD").assert().success();
+    cmd.arg("--id=ABCD").assert().success();
     test_results!(4, tmp_dir, "Sequence-Extract", Nexus);
 }
 

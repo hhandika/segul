@@ -308,10 +308,11 @@ pub(crate) struct SequenceExtractArgs {
     pub(crate) re: Option<String>,
     #[arg(
         long = "id", 
-        help = "Specify sequence ID for extracting sequences",
+        help = "Input sequence IDa separated by semicolon",
         required_unless_present_any(["re", "file"]),
+        require_equals = true,
     )]
-    pub(crate) id: Option<Vec<String>>,
+    pub(crate) id: Option<String>,
     #[arg(
         long = "file", 
         help = "Specify file for extracting sequences", 

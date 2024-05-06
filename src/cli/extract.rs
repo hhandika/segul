@@ -56,8 +56,9 @@ impl<'a> ExtractParser<'a> {
         }
 
         if let Some(id) = &self.args.id {
-            log::info!("{:18}: {:?}\n", "IDs", id);
-            self.params = ExtractOpts::Id(id.clone());
+            let id_list = self.parse_id_opts(id);
+            log::info!("{:18}: {:?}\n", "IDs", &id_list);
+            self.params = ExtractOpts::Id(id_list);
         }
 
         if let Some(file) = &self.args.file {
@@ -78,5 +79,14 @@ impl<'a> ExtractParser<'a> {
     fn parse_file(&self, file: &Path) -> Vec<String> {
         assert!(file.is_file(), "File does not exist: {}", file.display());
         txt::parse_text_file(file)
+    }
+
+    fn parse_id_opts(&self, id_input: &str) -> Vec<String> {
+        let id_list: Vec<String> = id_input.split(';').map(|s| s.trim().to_string()).collect();
+        if id_list.is_empty() {
+            panic!("Failed parsing the ID input. Make sure you use semicolon to separate the IDs");
+        }
+
+        id_list
     }
 }
