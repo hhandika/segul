@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: Please cite the following works when using this software.
+preferred-citation:
+  abstract: >-
+    <jats:title>Abstract</jats:title><jats:p>Phylogenetic studies now routinely
+    require manipulating and summarizing thousands of data files. For most of
+    these tasks, currently available software requires considerable computing
+    resources and substantial knowledge of command‐line applications. We develop
+    an ultrafast and memory‐efficient software, SEGUL, that performs common
+    phylogenomic dataset manipulations and calculates statistics summarizing
+    essential data features. Our software is available as standalone
+    command‐line interface (CLI) and graphical user interface (GUI)
+    applications, and as a library for Rust, R and Python, with possible support
+    of other languages. The CLI and library versions run native on Windows,
+    Linux and macOS, including Apple ARM Macs. The GUI version extends support
+    to include mobile iOS, iPadOS and Android operating systems. SEGUL leverages
+    the high performance of the Rust programming language to offer fast
+    execution times and low memory footprints regardless of dataset size and
+    platform choice. The inclusion of a GUI minimizes bioinformatics barriers to
+    phylogenomics while SEGUL's efficiency reduces economic barriers by allowing
+    analysis on inexpensive hardware. Our support for mobile operating systems
+    further enables teaching phylogenomics where access to computing power is
+    limited.</jats:p>
+  authors:
+    - family-names: Handika
+      given-names: Heru
+    - family-names: Esselstyn
+      given-names: Jacob A.
+  doi: 10.1111/1755-0998.13964
+  identifiers:
+    - type: doi
+      value: 10.1111/1755-0998.13964
+    - type: url
+      value: http://dx.doi.org/10.1111/1755-0998.13964
+    - type: other
+      value: urn:issn:1755-098X
+  title: >-
+    SEGUL: Ultrafast, memory‐efficient and mobile‐friendly software for
+    manipulating and summarizing phylogenomic datasets
+  url: http://dx.doi.org/10.1111/1755-0998.13964
+  database: Crossref
+  date-published: 2024-04-26
+  year: 2024
+  month: 4
+  issn: 1755-098X
+  journal: Molecular Ecology Resources
+  languages:
+    - en
+  publisher:
+    name: Wiley
+  type: article
