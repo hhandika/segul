@@ -52,11 +52,21 @@ impl<'a> RemoveParser<'a> {
             log::info!("{:18}, {}\n", "Values", re);
             RemoveOpts::Regex(re.clone())
         } else if let Some(ids) = &self.args.id {
+            let id_list = self.parse_id_opts(ids);
             log::info!("{:18}: id", "Options");
-            log::info!("{:18}, {:?}", "Values", ids);
-            RemoveOpts::Id(ids.clone())
+            log::info!("{:18}: {:?}", "Values", &id_list);
+            RemoveOpts::Id(id_list)
         } else {
             unimplemented!("RemoveOpts::None is not implemented yet")
         }
+    }
+
+    fn parse_id_opts(&self, id_input: &str) -> Vec<String> {
+        let id_list: Vec<String> = id_input.split(';').map(|s| s.trim().to_string()).collect();
+        if id_list.is_empty() {
+            panic!("Failed parsing the ID input. Make sure you use semicolon to separate the IDs");
+        }
+
+        id_list
     }
 }

@@ -170,7 +170,7 @@ trait OutputCli {
         if overwrite {
             if path.is_dir() {
                 log::warn!(
-                    "{} Removing existing directory: {}\n",
+                    "\n{} Removing existing directory: {}\n",
                     "WARNING!".red(),
                     path.display()
                 );
