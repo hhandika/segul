@@ -27,9 +27,14 @@ It is designed to handle operations on large genomic datasets, while using minim
 
 ### GUI Version
 
-- Windows: [[Try Beta]](https://github.com/hhandika/segui/releases/)
-- Android: [[Try Beta]](https://github.com/hhandika/segui/releases/)
-- iOS/iPadOS/macOS: [[Try Beta]](https://testflight.apple.com/join/LSJD5D0i)
+[<img alt="Microsoft Store download" src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" />](https://apps.microsoft.com/detail/SEGUI/9NP1BQ6FW9PW?mode=direct)
+[<img
+    alt="Get it on Google Play"
+    src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+    height="80"
+  />](https://play.google.com/store/apps/details?id=com.hhandika.segui&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1)
+
+Apple Devices: [[Try Beta]](https://testflight.apple.com/join/LSJD5D0i)
 
 Learn more about device requirements and GUI app installation in the [official documentation](https://www.segul.app/docs/installation/install_gui).
 
