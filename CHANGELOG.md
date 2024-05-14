@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.21.2
+
+- Fix auto detect sequence format issue when support with GUI input.
+
 ## v0.21.1
 
 - Fix extra commas in the alignment summary CSV output.

@@ -60,6 +60,34 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-Linux-musl-x86_64.tar.gz
           tag: ${{ github.ref }}
+  
+  linux_arm:
+    name: Linux arm64 GNU
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: aarch64-unknown-linux-gnu
+
+      - name: Build
+        uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --target aarch64-unknown-linux-gnu
+
+      - name: Compress release
+        run: tar czvf segul.tar.gz -C target/aarch64-unknown-linux-gnu/release segul
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: segul.tar.gz
+          asset_name: segul-Linux-arm64.tar.gz
+          tag: ${{ github.ref }}
 
   macos:
     name: macOS x86_64
@@ -139,4 +167,31 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: segul.zip
           asset_name: segul-Windows-x86_64.zip
+          tag: ${{ github.ref }}
+
+  windows_arm:
+    name: Windows arm64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Build
+        uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --target aarch64-pc-windows-msvc
+
+      - name: Compress release
+        run: powershell Compress-Archive target/aarch64-pc-windows-msvc/release/segul.exe segul.zip
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: segul.zip
+          asset_name: segul-Windows-arm64.zip
           tag: ${{ github.ref }}
