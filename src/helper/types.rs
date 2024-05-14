@@ -49,8 +49,7 @@ pub fn infer_raw_input_auto(input: &Path) -> SeqReadFmt {
         "gz" | "gzip" => SeqReadFmt::Gzip,
         _ => panic!(
             "The program cannot recognize the file extension. \
-        Maybe try to specify the input format using the -f or \
-        --input-format option."
+        Try to specify the input format."
         ),
     }
 }
@@ -82,12 +81,11 @@ pub fn infer_contig_fmt_auto(input: &Path) -> ContigFmt {
         .and_then(OsStr::to_str)
         .expect("Failed parsing extension");
     match ext {
-        "fa" | "fasta" => ContigFmt::Fasta,
+        "fa" | "fasta" | "fna" | "fsa" | "fas" => ContigFmt::Fasta,
         "gz" | "gzip" => ContigFmt::Gzip,
         _ => panic!(
             "The program cannot recognize the file extension. \
-        Maybe try to specify the input format using the -f or \
-        --input-format option."
+        Try to specify the input format."
         ),
     }
 }
@@ -161,13 +159,12 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
         .and_then(OsStr::to_str)
         .expect("Failed parsing extension");
     match ext {
-        "fas" | "fa" | "fasta" => InputFmt::Fasta,
-        "nex" | "nexus" => InputFmt::Nexus,
-        "phy" | "phylip" => InputFmt::Phylip,
+        "fa" | "fasta" | "fna" | "fsa" | "fas" => InputFmt::Fasta,
+        "nex" | "nxs" | "nexus" => InputFmt::Nexus,
+        "phy" | "phylip" | "ph" => InputFmt::Phylip,
         _ => panic!(
             "The program cannot recognize the file extension. \
-        Maybe try to specify the input format using the -f or \
-        --input-format option."
+        Try to specify the input format."
         ),
     }
 }
