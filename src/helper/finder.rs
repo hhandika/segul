@@ -299,7 +299,7 @@ fn re_matches_fasta_lazy(fname: &str) -> bool {
 
 fn re_match_sequence_lazy(fname: &str) -> bool {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?i)(.nex*|.phy*|.fa*)(?:.*)").unwrap();
+        static ref RE: Regex = Regex::new(r"(?i)(.nex*|.nxs|.phy*|.fna|.fa*)(?:.*)").unwrap();
     }
 
     RE.is_match(fname)
