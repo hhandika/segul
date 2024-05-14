@@ -168,11 +168,11 @@ jobs:
 
   windows_arm:
     name: Windows arm64
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
-
+      
       - name: Build
         uses: houseabsolute/actions-rust-cross@v0
         with:
@@ -181,7 +181,7 @@ jobs:
           args: --release
 
       - name: Compress release
-        run: powershell Compress-Archive target/aarch64-pc-windows-msvc/release/segul.exe segul.zip
+        run: tar czvf segul.tar.gz -C target/aarch64-pc-windows-msvc/release/segul.exe segul.zip
 
       - name: Upload release
         uses: svenstaro/upload-release-action@v2
