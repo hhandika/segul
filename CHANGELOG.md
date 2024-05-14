@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.21.3
+
+- Try to fix ARM CI issues.
+
 ## v0.21.2
 
 - Fix auto detect sequence format issue when support with GUI input.

@@ -68,15 +68,12 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
 
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          target: aarch64-unknown-linux-gnu
-
       - name: Build
-        uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release --target aarch64-unknown-linux-gnu
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: aarch64-unknown-linux-gnu
+          args: --release
 
       - name: Compress release
         run: tar czvf segul.tar.gz -C target/aarch64-unknown-linux-gnu/release segul
@@ -176,14 +173,12 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
 
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-
       - name: Build
-        uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release --target aarch64-pc-windows-msvc
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: aarch64-pc-windows-msvc
+          args: --release
 
       - name: Compress release
         run: powershell Compress-Archive target/aarch64-pc-windows-msvc/release/segul.exe segul.zip
