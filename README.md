@@ -36,7 +36,7 @@ It is designed to handle operations on large genomic datasets, while using minim
 
 Apple Devices: [[Try Beta]](https://testflight.apple.com/join/LSJD5D0i)
 
-Learn more about device requirements and GUI app installation in the [official documentation](https://www.segul.app/docs/installation/install_gui).
+Learn more about device requirements and other installation options in the [documentation](https://www.segul.app/docs/installation/install_gui).
 
 ### CLI Version
 
