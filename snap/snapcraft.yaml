@@ -1,0 +1,23 @@
+name: segul
+base: core20 # the base snap is the execution environment for this snap
+version: '0.21.3'
+summary: A phylogenomic data manipulation and summary statistic tool # 79 char long summary
+description: |
+  SEGUL is an ultrafast, memory efficient, 
+  cross-platform tool for phylogenomic data manipulation and summary statistics calculation.
+
+grade: stable
+confinement: classic
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+apps:
+  segui:
+    command: bin/segui
+
+parts:
+  segul:
+    # See 'snapcraft plugins'
+    source: .
+    plugin: rust
