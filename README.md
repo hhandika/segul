@@ -38,6 +38,8 @@ It is designed to handle operations on large genomic datasets, while using minim
     width="220"
   />](https://apps.apple.com/us/app/segui/id6447999874?mt=12&amp;itsct=apps_box_badge&amp;itscg=30200)
 
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/segui)
+
 ### Mobile
 
 [<img style="padding-left: 15" src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1716076800" alt="Download on the App Store" width="180">](https://apps.apple.com/us/app/segui/id6447999874?itsct=apps_box_badge&amp;itscg=30200)
