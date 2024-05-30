@@ -14,7 +14,7 @@ architectures:
 
 apps:
   segui:
-    command: segui
+    command: segul
 
 parts:
   segul:
