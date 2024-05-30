@@ -13,8 +13,8 @@ architectures:
   - build-on: arm64
 
 apps:
-  segui:
-    command: segul
+  segul:
+    command: bin/segul
 
 parts:
   segul:
