@@ -7,10 +7,7 @@ description: |
   cross-platform tool for phylogenomic data manipulation and summary statistics calculation.
 
 grade: stable
-confinement: classic
-architectures:
-  - build-on: amd64
-  - build-on: arm64
+confinement: strict
 
 apps:
   segul:
