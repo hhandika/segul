@@ -9,9 +9,19 @@ description: |
 grade: stable
 confinement: strict
 
+slots:
+  segul:
+    interface: dbus
+    bus: session
+    name: com.hhandika.segul
+
 apps:
   segul:
     command: bin/segul
+    plugs:
+      - home
+      - removable-media
+      - cifs-mount
 
 parts:
   segul:
