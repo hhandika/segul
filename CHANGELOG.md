@@ -6,13 +6,13 @@
 
 ## v0.21.2
 
-- Fix auto detect sequence format issue when support with GUI input.
+- Fix auto detect sequence format issue does not match the GUI input.
 
 ## v0.21.1
 
 - Fix extra commas in the alignment summary CSV output.
 - Fix missing proportion of missing data in alignment summary.
-- Fix issues when inputing list of IDs for sequence extraction and removal. Now, require equal sign and semi-colon to separate the IDs.
+- Fix issues when inputting list of IDs for sequence extraction and removal. Now, require equal sign and semi-colon to separate the IDs.
 - Fix spacing and incorrect symbol issues in the terminal output.
 
 ### v0.21.0
