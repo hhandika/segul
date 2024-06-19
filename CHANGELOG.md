@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.21.4
+
+- Remove unnecessary mutability.
+
 ## v0.21.3
 
 - Try to fix ARM CI issues.
