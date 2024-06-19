@@ -38,7 +38,7 @@ impl<'a> ConvertParser<'a> {
         )
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        let mut convert = Converter::new(&input_fmt, &output_fmt, &datatype, self.args.sort);
+        let convert = Converter::new(&input_fmt, &output_fmt, &datatype, self.args.sort);
         convert.convert(&files, &self.args.output);
     }
 }

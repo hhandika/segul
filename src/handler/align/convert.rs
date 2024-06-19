@@ -34,7 +34,7 @@ impl<'a> Converter<'a> {
         }
     }
 
-    pub fn convert(&mut self, files: &[PathBuf], output: &Path) {
+    pub fn convert(&self, files: &[PathBuf], output: &Path) {
         let spin = utils::set_spinner();
         spin.set_message("Converting sequence format...");
         files.par_iter().for_each(|file| {
