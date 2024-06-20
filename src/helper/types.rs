@@ -170,6 +170,7 @@ pub fn infer_input_auto(input: &Path) -> InputFmt {
 }
 
 /// Data types for output sequences
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum OutputFmt {
     /// Fastq format
     Fasta,
@@ -215,6 +216,7 @@ impl std::str::FromStr for OutputFmt {
 }
 
 /// Data types for alignment partitions
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum PartitionFmt {
     /// Nexus charset format embedded in a nexus alignment file
     Charset,

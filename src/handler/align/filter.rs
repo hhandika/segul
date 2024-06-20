@@ -10,7 +10,7 @@ use rayon::prelude::*;
 use super::concat::ConcatHandler;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
-use crate::helper::utils;
+use crate::helper::{files, utils};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
@@ -30,7 +30,7 @@ pub struct SeqFilter<'a> {
     datatype: &'a DataType,
     output: &'a Path,
     params: &'a Params,
-    concat: Option<(&'a OutputFmt, &'a PartitionFmt)>,
+    concat: Option<ConcatParams>,
 }
 
 impl<'a> SeqFilter<'a> {
@@ -60,8 +60,13 @@ impl<'a> SeqFilter<'a> {
 
         assert!(!ftr_aln.is_empty(), "No alignments left after filtering!");
 
-        match self.concat {
-            Some((output_fmt, part_fmt)) => self.concat_results(&mut ftr_aln, output_fmt, part_fmt),
+        match &self.concat {
+            Some(concat) => self.concat_results(
+                &mut ftr_aln,
+                &concat.part_fmt,
+                &concat.output_fmt,
+                &concat.prefix,
+            ),
             None => {
                 let spin = utils::set_spinner();
                 fs::create_dir_all(self.output).expect("CANNOT CREATE A TARGET DIRECTORY");
@@ -75,12 +80,11 @@ impl<'a> SeqFilter<'a> {
 
     pub fn set_concat(
         &mut self,
-        output: &'a Path,
         output_fmt: &'a OutputFmt,
         part_fmt: &'a PartitionFmt,
+        prefix: &'a Path,
     ) {
-        self.output = output;
-        self.concat = Some((output_fmt, part_fmt))
+        self.concat = Some(ConcatParams::new(output_fmt, part_fmt, prefix));
     }
 
     fn par_ftr_perc_inf(&self, perc_inf: &f64) -> Vec<PathBuf> {
@@ -164,10 +168,13 @@ impl<'a> SeqFilter<'a> {
     fn concat_results(
         &self,
         ftr_files: &mut [PathBuf],
-        output_fmt: &OutputFmt,
         part_fmt: &PartitionFmt,
+        output_fmt: &OutputFmt,
+        prefix: &Path,
     ) {
-        let mut concat = ConcatHandler::new(self.input_fmt, self.output, output_fmt, part_fmt);
+        let output_dir = files::create_output_fname(&self.output, &prefix, &output_fmt);
+        let mut concat =
+            ConcatHandler::new(self.input_fmt, &output_dir, output_fmt, part_fmt, prefix);
         concat.concat_alignment(ftr_files, self.datatype);
     }
 
@@ -208,6 +215,22 @@ impl<'a> SeqFilter<'a> {
     fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
         let aln = SeqParser::new(file, self.datatype);
         aln.get_alignment(self.input_fmt)
+    }
+}
+
+struct ConcatParams {
+    output_fmt: OutputFmt,
+    part_fmt: PartitionFmt,
+    prefix: PathBuf,
+}
+
+impl ConcatParams {
+    fn new(output_fmt: &OutputFmt, part_fmt: &PartitionFmt, prefix: &Path) -> Self {
+        Self {
+            prefix: prefix.to_path_buf(),
+            part_fmt: *part_fmt,
+            output_fmt: *output_fmt,
+        }
     }
 }
 

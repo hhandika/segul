@@ -7,7 +7,7 @@ use crate::handler::align::filter::{Params, SeqFilter};
 use crate::helper::finder::IDs;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::{DataType, InputFmt, PartitionFmt};
-use crate::helper::{files, utils};
+use crate::helper::utils;
 use crate::parser::txt;
 
 use super::args::AlignFilterArgs;
@@ -95,8 +95,7 @@ impl<'a> FilterParser<'a> {
             Some(part_fmt) => {
                 let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
                 let prefix = self.parse_prefix(&self.args.partition.prefix, &self.output_dir);
-                let output = files::create_output_fname(&self.output_dir, &prefix, &output_fmt);
-                filter.set_concat(&output, &output_fmt, &part_fmt);
+                filter.set_concat(&output_fmt, &part_fmt, &prefix);
                 filter.filter_aln();
             }
             None => filter.filter_aln(),

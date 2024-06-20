@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use super::{collect_paths, AlignSeqInput, ConcatCli, InputCli, OutputCli};
 use crate::cli::args::AlignConcatArgs;
 use crate::handler::align::concat::ConcatHandler;
-use crate::helper::files;
 use crate::helper::logger::AlignSeqLogger;
 
 impl ConcatCli for ConcatParser<'_> {}
@@ -29,7 +28,6 @@ impl<'a> ConcatParser<'a> {
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
         let prefix = self.parse_prefix(&self.args.concat.prefix, &self.args.output);
-        let output = files::create_output_fname(&self.args.output, &prefix, &output_fmt);
         let part_fmt = self.parse_partition_fmt(&self.args.concat.part_fmt, self.args.concat.codon);
         self.check_partition_format(&output_fmt, &part_fmt);
         let task = "Alignment concatenation";
@@ -45,7 +43,13 @@ impl<'a> ConcatParser<'a> {
         let is_overwrite = self.args.io.force;
         self.check_output_dir_exist(&self.args.output, is_overwrite);
 
-        let mut concat = ConcatHandler::new(&input_fmt, &output, &output_fmt, &part_fmt);
+        let mut concat = ConcatHandler::new(
+            &input_fmt,
+            &self.args.output,
+            &output_fmt,
+            &part_fmt,
+            &prefix,
+        );
         concat.concat_alignment(&mut files, &datatype);
     }
 }
