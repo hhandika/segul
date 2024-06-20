@@ -94,7 +94,7 @@ impl<'a> ReadSummaryHandler<'a> {
     /// );
     /// handler.summarize();
     /// ```
-    pub fn summarize(&mut self) {
+    pub fn summarize(&self) {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
         match self.mode {
@@ -171,7 +171,7 @@ impl<'a> ReadSummaryHandler<'a> {
         summary
     }
 
-    fn write_record_min(&mut self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) {
+    fn write_record_min(&self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) {
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
         spin.set_message("Writing records\n");
         writer
@@ -179,7 +179,7 @@ impl<'a> ReadSummaryHandler<'a> {
             .expect("Failed writing to file");
     }
 
-    fn write_record_default(&mut self, spin: &ProgressBar, records: &mut [FastqSummary]) {
+    fn write_record_default(&self, spin: &ProgressBar, records: &mut [FastqSummary]) {
         // Sort records by file name
         records.sort_by(|a, b| a.path.cmp(&b.path));
         spin.set_message("Writing records\n");
@@ -228,7 +228,7 @@ mod test {
             PathBuf::from("tests/files/raw/read_2.fastq"),
         ];
         let output = TempDir::new("tempt").unwrap();
-        let mut handler = ReadSummaryHandler::new(
+        let handler = ReadSummaryHandler::new(
             &mut files,
             &SeqReadFmt::Auto,
             &SummaryMode::Default,
