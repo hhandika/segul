@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::handler::align::split::Splitter;
+use crate::handler::align::split::AlignmentSplitting;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::PartitionFmt;
 
@@ -37,14 +37,14 @@ impl<'a> SplitParser<'a> {
         let task = "Alignment splitting";
         AlignSeqLogger::new(None, &input_fmt, &datatype, 1).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.force);
-        let split = Splitter::new(
+        let split = AlignmentSplitting::new(
             &self.args.input,
             &datatype,
             &input_fmt,
             &self.args.output,
             &output_fmt,
         );
-        split.split_alignment(
+        split.split(
             partitions,
             &part_fmt,
             &self.args.prefix,

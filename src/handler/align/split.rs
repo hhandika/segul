@@ -13,10 +13,10 @@ use crate::helper::utils;
 use crate::parser::partition::PartitionParser;
 use crate::writer::sequences::SeqWriter;
 
-impl OutputPrint for Splitter<'_> {}
-impl PartitionPrint for Splitter<'_> {}
+impl OutputPrint for AlignmentSplitting<'_> {}
+impl PartitionPrint for AlignmentSplitting<'_> {}
 
-pub struct Splitter<'a> {
+pub struct AlignmentSplitting<'a> {
     input: &'a Path,
     datatype: &'a DataType,
     input_fmt: &'a InputFmt,
@@ -24,7 +24,7 @@ pub struct Splitter<'a> {
     output_fmt: &'a OutputFmt,
 }
 
-impl<'a> Splitter<'a> {
+impl<'a> AlignmentSplitting<'a> {
     pub fn new(
         input: &'a Path,
         datatype: &'a DataType,
@@ -41,7 +41,7 @@ impl<'a> Splitter<'a> {
         }
     }
 
-    pub fn split_alignment(
+    pub fn split(
         &self,
         part_path: &Path,
         partition_fmt: &PartitionFmt,
@@ -137,7 +137,7 @@ mod test {
 
     macro_rules! input_split {
         ($var:ident, $input:expr) => {
-            let $var = Splitter::new(
+            let $var = AlignmentSplitting::new(
                 &Path::new($input),
                 &DataType::Dna,
                 &InputFmt::Fasta,
