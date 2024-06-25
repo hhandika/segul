@@ -20,7 +20,7 @@ It is designed to handle operations on large genomic datasets, while using minim
 ## Links
 
 - App Documentation: [[EN]](https://segul.app/)
-- Rust API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
+- API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
 - GUI: [[Source code]](https://github.com/hhandika/segui)
 - Python API: [[Source code]](https://github.com/hhandika/pysegul) [[PyPI]](https://pypi.org/project/pysegul/)
 
@@ -85,7 +85,7 @@ We provide binding for Python (called [pysegul](https://pypi.org/project/pysegul
 pip install pysegul
 ```
 
-Learn more about interfacing SEGUL with other programming languages in the [documentation](https://www.segul.app/docs/category/api-usages).
+Learn more about interfacing SEGUL with other programming languages in the [documentation](https://www.segul.app/docs/api-usage/python/intro).
 
 ## Features
 
