@@ -45,8 +45,14 @@ impl<'a> ExtractParser<'a> {
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "ExtractOpts".yellow());
         self.parse_params();
-        let extract = Extract::new(&self.params, &input_fmt, &datatype);
-        extract.extract_sequences(&files, &self.args.output, &output_fmt);
+        let extract = Extract::new(
+            &input_fmt,
+            &datatype,
+            &self.params,
+            &self.args.output,
+            &output_fmt,
+        );
+        extract.extract_sequences(&files);
     }
 
     fn parse_params(&mut self) {
