@@ -1,4 +1,4 @@
-use crate::handler::sequence::partition::PartConverter;
+use crate::handler::align::partition::PartConverter;
 use crate::helper::partition::construct_partition_path;
 use crate::helper::types::PartitionFmt;
 use crate::helper::{logger, utils};

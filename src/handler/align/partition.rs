@@ -50,7 +50,7 @@ impl<'a> PartConverter<'a> {
     /// # Example
     /// ```
     /// use std::path::{Path, PathBuf};
-    /// use segul::handler::sequence::partition::PartConverter;
+    /// use segul::handler::align::partition::PartConverter;
     /// use segul::helper::partition::construct_partition_path;
     /// use segul::helper::types::{DataType, PartitionFmt};
     /// use tempdir::TempDir;

@@ -1,8 +1,11 @@
 # Release Notes
 
-## v0.21.4
+## v0.22.0
 
-- Remove unnecessary mutability.
+### API Breaking Changes
+
+- Remove unnecessary mutability for conversion modules.
+- Partition handle moved to align module.
 
 ## v0.21.3
 
