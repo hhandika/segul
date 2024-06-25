@@ -20,8 +20,9 @@ It is designed to handle operations on large genomic datasets, while using minim
 ## Links
 
 - App Documentation: [[EN]](https://segul.app/)
-- API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
-- GUI source code: [[Repository]](https://github.com/hhandika/segui)
+- Rust API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
+- GUI: [[Source code]](https://github.com/hhandika/segui)
+- Python API: [[Source code]](https://github.com/hhandika/pysegul) [[PyPI]](https://pypi.org/project/pysegul/)
 
 ## Installation
 
@@ -67,6 +68,24 @@ The CLI app may work in any Rust supported [platform](https://doc.rust-lang.org/
 - Package manager: [[Docs]](https://www.segul.app/docs/installation/install_cargo)
 - From source: [[Docs]](https://www.segul.app/docs/installation/install_source)
 - Beta version: [[Docs]](https://www.segul.app/docs/installation/install_dev)
+
+### API version
+
+The API version is available for Rust and other programming languages. For Rust users, you can install it via Cargo:
+
+```bash
+cargo install segul
+```
+
+#### Python
+
+We provide binding for Python (called [pysegul](https://pypi.org/project/pysegul/)). Use SEGUL just like any other Python package:
+
+```python
+pip install pysegul
+```
+
+Learn more about interfacing SEGUL with other programming languages in the [documentation](https://www.segul.app/docs/category/api-usages).
 
 ## Features
 
