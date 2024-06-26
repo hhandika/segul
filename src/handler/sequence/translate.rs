@@ -24,8 +24,8 @@ pub struct Translate<'a> {
 
 impl<'a> Translate<'a> {
     pub fn new(
-        trans_table: &'a GeneticCodes,
         input_fmt: &'a InputFmt,
+        trans_table: &'a GeneticCodes,
         datatype: &'a DataType,
         output_fmt: &'a OutputFmt,
     ) -> Self {
@@ -44,8 +44,8 @@ impl<'a> Translate<'a> {
         files.par_iter().for_each(|file| {
             let (mut seq, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
             let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
-            let outname = files::create_output_fname(output, file, self.output_fmt);
-            let mut writer = SeqWriter::new(&outname, &trans_mat, &header);
+            let output_fname = files::create_output_fname(output, file, self.output_fmt);
+            let mut writer = SeqWriter::new(&output_fname, &trans_mat, &header);
             writer
                 .write_sequence(self.output_fmt)
                 .expect("Failed writing the output files");
@@ -179,8 +179,8 @@ mod tests {
     macro_rules! test_translate {
         ($input:expr, $frame:expr, $result:expr, $code:ident) => {
             let trans = Translate::new(
-                &GeneticCodes::$code,
                 &InputFmt::Fasta,
+                &GeneticCodes::$code,
                 &DataType::Dna,
                 &OutputFmt::Fasta,
             );

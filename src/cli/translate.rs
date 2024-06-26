@@ -52,7 +52,7 @@ impl<'a> TranslateParser<'a> {
         log::info!("{}", "Params".yellow());
         self.show_trans_table();
         let table = self.parse_table_num();
-        let translate = Translate::new(&table, &input_fmt, &datatype, &output_fmt);
+        let translate = Translate::new(&input_fmt, &table, &datatype, &output_fmt);
         match frame {
             Some(num) => {
                 log::info!("{:18}: {}\n", "Reading frame", &num);
