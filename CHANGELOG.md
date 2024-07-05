@@ -4,8 +4,9 @@
 
 ### API Breaking Changes
 
+- Rename methods and structs for improved clarity and consistency.
 - Remove unnecessary mutability for conversion modules.
-- Partition handle moved to align module.
+- Partition conversion moved to align module.
 - Output directory and output format arguments for extraction now requires in the new instance of the extraction struct.
 
 ## v0.21.3
