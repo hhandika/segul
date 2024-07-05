@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use colored::Colorize;
 
-use crate::handler::sequence::rename::{Rename, RenameDry, RenameOpts};
+use crate::core::sequence::rename::{SeqRenamingParameters, SequenceRenaming, SequenceRenamingDry};
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::utils;
 use crate::parser::delimited;
@@ -43,37 +43,37 @@ impl<'a> RenameParser<'a> {
         .log(task);
         let opts = self.parse_rename_opts();
         if self.args.dry_run {
-            RenameDry::new(&input_fmt, &datatype, &opts).dry_run(&files);
+            SequenceRenamingDry::new(&input_fmt, &datatype, &opts).dry_run(&files);
         } else {
             self.check_output_dir_exist(&self.args.output, self.args.io.force);
-            Rename::new(&input_fmt, &datatype, &self.args.output, &output_fmt, &opts)
+            SequenceRenaming::new(&input_fmt, &datatype, &self.args.output, &output_fmt, &opts)
                 .rename(&files);
         }
     }
 
-    fn parse_rename_opts(&self) -> RenameOpts {
+    fn parse_rename_opts(&self) -> SeqRenamingParameters {
         log::info!("{}", "Params".yellow());
 
         if let Some(path) = &self.args.replace_id {
             let id_path = Path::new(&path);
             let names = self.parse_names(id_path);
             self.print_rename_id_info(id_path, &names.len());
-            RenameOpts::RnId(names)
+            SeqRenamingParameters::RnId(names)
         } else if let Some(input_str) = &self.args.remove {
             self.print_remove_str_info(input_str);
-            RenameOpts::RmStr(input_str.to_string())
+            SeqRenamingParameters::RmStr(input_str.to_string())
         } else if let Some(re) = &self.args.remove_re {
             self.print_remove_re_info(re, "--remove-re");
-            RenameOpts::RmRegex(re.to_string(), false)
+            SeqRenamingParameters::RmRegex(re.to_string(), false)
         } else if let Some(re) = &self.args.remove_re_all {
             let is_all = true;
             self.print_remove_re_info(re, "--remove-re-all");
-            RenameOpts::RmRegex(re.to_string(), is_all)
+            SeqRenamingParameters::RmRegex(re.to_string(), is_all)
         } else if let Some(id) = &self.args.replace_from {
             match &self.args.replace_to {
                 Some(to) => {
                     self.print_replace_str_info(id, to);
-                    RenameOpts::RpStr(id.to_string(), to.to_string())
+                    SeqRenamingParameters::RpStr(id.to_string(), to.to_string())
                 }
                 None => unreachable!("Missing replace-to"),
             }
@@ -81,7 +81,7 @@ impl<'a> RenameParser<'a> {
             match &self.args.replace_to {
                 Some(to) => {
                     self.print_replace_re_info(re, to, "--replace-from-re");
-                    RenameOpts::RpRegex(re.to_string(), to.to_string(), false)
+                    SeqRenamingParameters::RpRegex(re.to_string(), to.to_string(), false)
                 }
                 None => unreachable!("Missing replace-to"),
             }
@@ -89,7 +89,7 @@ impl<'a> RenameParser<'a> {
             match &self.args.replace_to {
                 Some(to) => {
                     self.print_replace_re_info(re, to, "--replace-from-re-all");
-                    RenameOpts::RpRegex(re.to_string(), to.to_string(), true)
+                    SeqRenamingParameters::RpRegex(re.to_string(), to.to_string(), true)
                 }
                 None => unreachable!("Missing replace-to"),
             }

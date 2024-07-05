@@ -7,7 +7,7 @@ use std::{
 
 use indexmap::IndexSet;
 
-use crate::handler::sequence::id::IdRecords;
+use crate::core::sequence::id::IdRecords;
 
 use super::FileWriter;
 

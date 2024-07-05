@@ -4,22 +4,22 @@ use std::path::{Path, PathBuf};
 use colored::Colorize;
 use rayon::prelude::*;
 
-use crate::handler::OutputPrint;
+use crate::core::OutputPrint;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{files, utils};
 use crate::writer::sequences::SeqWriter;
 
-impl OutputPrint for Converter<'_> {}
+impl OutputPrint for AlignmentConversion<'_> {}
 
-pub struct Converter<'a> {
+pub struct AlignmentConversion<'a> {
     input_fmt: &'a InputFmt,
     output_fmt: &'a OutputFmt,
     datatype: &'a DataType,
     sort: bool,
 }
 
-impl<'a> Converter<'a> {
+impl<'a> AlignmentConversion<'a> {
     pub fn new(
         input_fmt: &'a InputFmt,
         output_fmt: &'a OutputFmt,

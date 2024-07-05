@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use colored::Colorize;
 
-use crate::handler::sequence::extract::{Extract, ExtractOpts};
+use crate::core::sequence::extract::{SeqExtractionParameters, SequenceExtraction};
 use crate::helper::logger::AlignSeqLogger;
 use crate::parser::txt;
 
@@ -16,7 +16,7 @@ impl AlignSeqInput for ExtractParser<'_> {}
 pub(in crate::cli) struct ExtractParser<'a> {
     args: &'a SequenceExtractArgs,
     input_dir: Option<PathBuf>,
-    params: ExtractOpts,
+    params: SeqExtractionParameters,
 }
 
 impl<'a> ExtractParser<'a> {
@@ -24,7 +24,7 @@ impl<'a> ExtractParser<'a> {
         Self {
             args,
             input_dir: None,
-            params: ExtractOpts::None,
+            params: SeqExtractionParameters::None,
         }
     }
 
@@ -45,26 +45,26 @@ impl<'a> ExtractParser<'a> {
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "ExtractOpts".yellow());
         self.parse_params();
-        let extract = Extract::new(
+        let extract = SequenceExtraction::new(
             &input_fmt,
             &datatype,
             &self.params,
             &self.args.output,
             &output_fmt,
         );
-        extract.extract_sequences(&files);
+        extract.extract(&files);
     }
 
     fn parse_params(&mut self) {
         if let Some(re) = &self.args.re {
             log::info!("{:18}: {}\n", "Regex", re);
-            self.params = ExtractOpts::Regex(re.clone());
+            self.params = SeqExtractionParameters::Regex(re.clone());
         }
 
         if let Some(id) = &self.args.id {
             let id_list = self.parse_id_opts(id);
             log::info!("{:18}: {:?}\n", "IDs", &id_list);
-            self.params = ExtractOpts::Id(id_list);
+            self.params = SeqExtractionParameters::Id(id_list);
         }
 
         if let Some(file) = &self.args.file {
@@ -78,7 +78,7 @@ impl<'a> ExtractParser<'a> {
                     .expect("Failed parsing file path")
                     .display()
             );
-            self.params = ExtractOpts::Id(ids);
+            self.params = SeqExtractionParameters::Id(ids);
         }
     }
 

@@ -37,7 +37,7 @@
 //! writer.write_sequence(&output_fmt).unwrap()
 //! ```
 pub mod cli;
-pub mod handler;
+pub mod core;
 pub mod helper;
 pub mod parser;
 pub mod stats;

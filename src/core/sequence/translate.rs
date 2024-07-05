@@ -6,23 +6,23 @@ use colored::Colorize;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::handler::OutputPrint;
+use crate::core::OutputPrint;
 use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::translation::NcbiTables;
 use crate::helper::types::{DataType, GeneticCodes, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{files, utils};
 use crate::writer::sequences::SeqWriter;
 
-impl OutputPrint for Translate<'_> {}
+impl OutputPrint for SequenceTranslation<'_> {}
 
-pub struct Translate<'a> {
+pub struct SequenceTranslation<'a> {
     input_fmt: &'a InputFmt,
     trans_table: &'a GeneticCodes,
     datatype: &'a DataType,
     output_fmt: &'a OutputFmt,
 }
 
-impl<'a> Translate<'a> {
+impl<'a> SequenceTranslation<'a> {
     pub fn new(
         input_fmt: &'a InputFmt,
         trans_table: &'a GeneticCodes,
@@ -37,7 +37,7 @@ impl<'a> Translate<'a> {
         }
     }
 
-    pub fn translate_all(&self, files: &[PathBuf], frame: usize, output: &Path) {
+    pub fn translate(&self, files: &[PathBuf], frame: usize, output: &Path) {
         let spin = utils::set_spinner();
         spin.set_message("Translating dna sequences...");
         fs::create_dir_all(output).expect("Failed creating an output directory");
@@ -178,7 +178,7 @@ mod tests {
 
     macro_rules! test_translate {
         ($input:expr, $frame:expr, $result:expr, $code:ident) => {
-            let trans = Translate::new(
+            let trans = SequenceTranslation::new(
                 &InputFmt::Fasta,
                 &GeneticCodes::$code,
                 &DataType::Dna,

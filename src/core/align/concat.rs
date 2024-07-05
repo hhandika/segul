@@ -12,7 +12,7 @@ use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::{files, utils};
 use crate::writer::{partition::PartWriter, sequences::SeqWriter};
 
-pub struct ConcatHandler<'a> {
+pub struct AlignmentConcatenation<'a> {
     input_fmt: &'a InputFmt,
     output_dir: &'a Path,
     output_fmt: &'a OutputFmt,
@@ -20,7 +20,7 @@ pub struct ConcatHandler<'a> {
     output_prefix: &'a Path,
 }
 
-impl<'a> ConcatHandler<'a> {
+impl<'a> AlignmentConcatenation<'a> {
     pub fn new(
         input_fmt: &'a InputFmt,
         output_dir: &'a Path,
@@ -37,7 +37,7 @@ impl<'a> ConcatHandler<'a> {
         }
     }
 
-    pub fn concat_alignment(&mut self, files: &mut [PathBuf], datatype: &DataType) {
+    pub fn concat(&mut self, files: &mut [PathBuf], datatype: &DataType) {
         let mut concat = Concat::new(files, self.input_fmt, datatype);
         let output_path =
             files::create_output_fname(&self.output_dir, &self.output_prefix, &self.output_fmt);

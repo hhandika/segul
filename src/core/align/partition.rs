@@ -3,18 +3,18 @@ use std::path::Path;
 
 use colored::Colorize;
 
-use crate::handler::PartitionPrint;
+use crate::core::PartitionPrint;
 use crate::helper::types::{DataType, PartitionFmt};
 use crate::helper::utils;
 use crate::parser::partition::PartitionParser;
 use crate::writer::partition::PartWriter;
 
-impl PartitionPrint for PartConverter<'_> {}
+impl PartitionPrint for PartitionConverter<'_> {}
 
 /// Convert partitioned sequence file to another format.
 ///
 /// It accepts input in in-file NEXUS, NEXUS, and RaXML format.
-pub struct PartConverter<'a> {
+pub struct PartitionConverter<'a> {
     /// Input path in in-file NEXUS, NEXUS, or RaXML format.
     input: &'a Path,
     input_partition_fmt: &'a PartitionFmt,
@@ -23,7 +23,7 @@ pub struct PartConverter<'a> {
     output_partition_fmt: &'a PartitionFmt,
 }
 
-impl<'a> PartConverter<'a> {
+impl<'a> PartitionConverter<'a> {
     /// Create a new PartConverter instance.
     pub fn new(
         input: &'a Path,
@@ -50,7 +50,7 @@ impl<'a> PartConverter<'a> {
     /// # Example
     /// ```
     /// use std::path::{Path, PathBuf};
-    /// use segul::handler::align::partition::PartConverter;
+    /// use segul::core::align::partition::PartitionConverter;
     /// use segul::helper::partition::construct_partition_path;
     /// use segul::helper::types::{DataType, PartitionFmt};
     /// use tempdir::TempDir;
@@ -59,13 +59,13 @@ impl<'a> PartConverter<'a> {
     /// let output_dir = TempDir::new("temp").unwrap();
     /// let output_file = output_dir.path().join("partition");
     /// let final_output = construct_partition_path(&output_file, &PartitionFmt::Raxml);
-    /// let mut converter = PartConverter::new(
+    /// let mut handle = PartitionConverter::new(
     ///    &input,
     ///    &PartitionFmt::Charset,
     ///    &final_output,
     ///    &PartitionFmt::Raxml,
     /// );
-    /// converter.convert(&DataType::Dna, false);
+    /// handle.convert(&DataType::Dna, false);
     /// ```
     pub fn convert(&self, datatype: &DataType, is_uncheck: bool) {
         let partitions =

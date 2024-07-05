@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::handler::sequence::id::Id;
+use crate::core::sequence::id::SequenceID;
 use crate::helper::logger::AlignSeqLogger;
 
 use super::args::SequenceIdArgs;
@@ -35,7 +35,7 @@ impl<'a> IdParser<'a> {
             files.len(),
         );
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        let id = Id::new(
+        let id = SequenceID::new(
             &files,
             &input_fmt,
             &datatype,
@@ -49,7 +49,7 @@ impl<'a> IdParser<'a> {
         } else {
             let task = "Sequence ID Generation";
             log.log(task);
-            id.generate_id();
+            id.get_unique();
         }
     }
 }

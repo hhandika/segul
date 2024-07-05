@@ -7,7 +7,7 @@ use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
 use rayon::prelude::*;
 
-use super::concat::ConcatHandler;
+use crate::core::align::concat::AlignmentConcatenation;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::{files, utils};
@@ -16,7 +16,7 @@ use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
 use crate::stats::sequence;
 
-pub enum Params {
+pub enum FilteringParameters {
     MinTax(usize),
     AlnLen(usize),
     ParsInf(usize),
@@ -24,22 +24,22 @@ pub enum Params {
     TaxonAll(Vec<String>),
 }
 
-pub struct SeqFilter<'a> {
+pub struct AlignmentFiltering<'a> {
     files: &'a [PathBuf],
     input_fmt: &'a InputFmt,
     datatype: &'a DataType,
     output: &'a Path,
-    params: &'a Params,
+    params: &'a FilteringParameters,
     concat: Option<ConcatParams>,
 }
 
-impl<'a> SeqFilter<'a> {
+impl<'a> AlignmentFiltering<'a> {
     pub fn new(
         files: &'a [PathBuf],
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
         output: &'a Path,
-        params: &'a Params,
+        params: &'a FilteringParameters,
     ) -> Self {
         Self {
             files,
@@ -51,8 +51,9 @@ impl<'a> SeqFilter<'a> {
         }
     }
 
-    pub fn filter_aln(&mut self) {
-        let mut ftr_aln: Vec<PathBuf> = if let Params::PercInf(perc_inf) = self.params {
+    pub fn filter(&mut self) {
+        let mut ftr_aln: Vec<PathBuf> = if let FilteringParameters::PercInf(perc_inf) = self.params
+        {
             self.par_ftr_perc_inf(perc_inf)
         } else {
             self.par_ftr_aln()
@@ -123,25 +124,25 @@ impl<'a> SeqFilter<'a> {
         self.files
             .par_iter()
             .for_each_with(send, |s, file| match self.params {
-                Params::MinTax(min_taxa) => {
+                FilteringParameters::MinTax(min_taxa) => {
                     let header = self.get_header(file);
                     if header.ntax >= *min_taxa {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
-                Params::AlnLen(nchar) => {
+                FilteringParameters::AlnLen(nchar) => {
                     let header = self.get_header(file);
                     if header.nchar >= *nchar {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
-                Params::ParsInf(pars_inf) => {
+                FilteringParameters::ParsInf(pars_inf) => {
                     let pars = self.get_pars_inf(file);
                     if pars >= *pars_inf {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
-                Params::TaxonAll(taxon_id) => {
+                FilteringParameters::TaxonAll(taxon_id) => {
                     let ids = self.parse_id(file);
                     if taxon_id.iter().all(|id| ids.contains(id)) {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
@@ -174,8 +175,8 @@ impl<'a> SeqFilter<'a> {
     ) {
         let output_dir = files::create_output_fname(&self.output, &prefix, &output_fmt);
         let mut concat =
-            ConcatHandler::new(self.input_fmt, &output_dir, output_fmt, part_fmt, prefix);
-        concat.concat_alignment(ftr_files, self.datatype);
+            AlignmentConcatenation::new(self.input_fmt, &output_dir, output_fmt, part_fmt, prefix);
+        concat.concat(ftr_files, self.datatype);
     }
 
     fn copy_files(&self, origin: &Path) -> Result<()> {
@@ -246,12 +247,12 @@ mod test {
     fn test_min_pinf() {
         let path = Path::new(PATH);
         let files = SeqFileFinder::new(path).find(&INPUT_FMT);
-        let ftr = SeqFilter::new(
+        let ftr = AlignmentFiltering::new(
             &files,
             &INPUT_FMT,
             &DataType::Dna,
             Path::new("test"),
-            &Params::PercInf(0.9),
+            &FilteringParameters::PercInf(0.9),
         );
 
         let pinf = 4;

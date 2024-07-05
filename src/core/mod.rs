@@ -12,8 +12,8 @@ use crate::helper::types::OutputFmt;
 use crate::helper::utils;
 
 macro_rules! log_output_fmt {
-    ($ftype: expr) => {
-        log::info!("{:18}: {}", "Output format", $ftype)
+    ($filetype: expr) => {
+        log::info!("{:18}: {}", "Output format", $filetype)
     };
 }
 

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::handler::align::split::AlignmentSplitting;
+use crate::core::align::split::AlignmentSplitting;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::PartitionFmt;
 

@@ -9,16 +9,16 @@ use indexmap::IndexMap;
 use rayon::prelude::*;
 use regex::Regex;
 
-use crate::handler::OutputPrint;
+use crate::core::OutputPrint;
 use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{files, utils};
 use crate::writer::sequences::SeqWriter;
 
-impl OutputPrint for Extract<'_> {}
+impl OutputPrint for SequenceExtraction<'_> {}
 
 /// Extraction options
-pub enum ExtractOpts {
+pub enum SeqExtractionParameters {
     /// Use regular expression to match sequence IDs
     Regex(String),
     /// Match sequence IDs from a list of IDs
@@ -28,11 +28,11 @@ pub enum ExtractOpts {
 
 /// Extract sequences from a collection of sequence files.
 /// See each type for available options.
-pub struct Extract<'a> {
+pub struct SequenceExtraction<'a> {
     /// Input format of the sequence files
     input_fmt: &'a InputFmt,
     /// Extraction options
-    opts: &'a ExtractOpts,
+    opts: &'a SeqExtractionParameters,
     /// Data type of the sequences
     datatype: &'a DataType,
     /// Output directory
@@ -41,12 +41,12 @@ pub struct Extract<'a> {
     output_fmt: &'a OutputFmt,
 }
 
-impl<'a> Extract<'a> {
+impl<'a> SequenceExtraction<'a> {
     /// Create a new `Extract` instance
     pub fn new(
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
-        opts: &'a ExtractOpts,
+        opts: &'a SeqExtractionParameters,
         output_dir: &'a Path,
         output_fmt: &'a OutputFmt,
     ) -> Self {
@@ -60,7 +60,7 @@ impl<'a> Extract<'a> {
     }
 
     /// Extract sequences with matching IDs or regular expressions
-    pub fn extract_sequences(&self, files: &[PathBuf]) {
+    pub fn extract(&self, files: &[PathBuf]) {
         let file_counts = AtomicUsize::new(0);
         let spin = utils::set_spinner();
         spin.set_message("Extracting sequences with matching IDs...");
@@ -87,20 +87,20 @@ impl<'a> Extract<'a> {
     fn get_matrix(&self, matrix: SeqMatrix) -> SeqMatrix {
         let mut new_matrix: SeqMatrix = IndexMap::new();
         match self.opts {
-            ExtractOpts::Regex(re) => matrix.iter().for_each(|(id, seq)| {
+            SeqExtractionParameters::Regex(re) => matrix.iter().for_each(|(id, seq)| {
                 let matched_id = self.match_id(id, re);
                 if matched_id {
                     new_matrix.insert(id.to_string(), seq.to_string());
                 }
             }),
-            ExtractOpts::Id(ids) => matrix.iter().for_each(|(id, seq)| {
+            SeqExtractionParameters::Id(ids) => matrix.iter().for_each(|(id, seq)| {
                 ids.iter().for_each(|match_id| {
                     if match_id == id {
                         new_matrix.insert(id.to_string(), seq.to_string());
                     }
                 })
             }),
-            ExtractOpts::None => panic!("Please, specify a matching parameter!"),
+            SeqExtractionParameters::None => panic!("Please, specify a matching parameter!"),
         };
         new_matrix
     }
@@ -139,10 +139,10 @@ mod tests {
         let re = "(?i)(Penitus)$";
         let output_dir = Path::new("tests/files");
         let output_fmt = OutputFmt::Fasta;
-        let extract = Extract::new(
+        let extract = SequenceExtraction::new(
             &InputFmt::Fasta,
             &DataType::Dna,
-            &ExtractOpts::None,
+            &SeqExtractionParameters::None,
             &output_dir,
             &output_fmt,
         );
@@ -151,11 +151,11 @@ mod tests {
 
     #[test]
     fn test_get_matrix_re() {
-        let re = ExtractOpts::Regex(String::from("(?i)(celebensis)"));
+        let re = SeqExtractionParameters::Regex(String::from("(?i)(celebensis)"));
         let file = Path::new("tests/files/complete.nex");
         let output_dir = Path::new("tests/files");
         let output_fmt = OutputFmt::Fasta;
-        let extract = Extract::new(
+        let extract = SequenceExtraction::new(
             &InputFmt::Nexus,
             &DataType::Dna,
             &re,
@@ -169,11 +169,11 @@ mod tests {
 
     #[test]
     fn test_get_matrix_id() {
-        let re = ExtractOpts::Id(vec![String::from("Taeromys_calitrichus_NMVZ27408")]);
+        let re = SeqExtractionParameters::Id(vec![String::from("Taeromys_calitrichus_NMVZ27408")]);
         let file = Path::new("tests/files/complete.nex");
         let output_dir = Path::new("tests/files");
         let output_fmt = OutputFmt::Fasta;
-        let extract = Extract::new(
+        let extract = SequenceExtraction::new(
             &InputFmt::Nexus,
             &DataType::Dna,
             &re,

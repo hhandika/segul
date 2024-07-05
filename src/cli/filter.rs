@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use colored::Colorize;
 
 use crate::cli::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
-use crate::handler::align::filter::{Params, SeqFilter};
+use crate::core::align::filter::{AlignmentFiltering, FilteringParameters};
 use crate::helper::finder::IDs;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::{DataType, InputFmt, PartitionFmt};
@@ -24,7 +24,7 @@ pub(in crate::cli) struct FilterParser<'a> {
     input_fmt: InputFmt,
     output_dir: PathBuf,
     files: Vec<PathBuf>,
-    params: Params,
+    params: FilteringParameters,
     ntax: usize,
     percent: f64,
     datatype: DataType,
@@ -38,7 +38,7 @@ impl<'a> FilterParser<'a> {
             input_dir: None,
             output_dir: PathBuf::new(),
             files: Vec::new(),
-            params: Params::MinTax(0),
+            params: FilteringParameters::MinTax(0),
             ntax: 0,
             percent: 0.0,
             datatype: DataType::Dna,
@@ -74,7 +74,7 @@ impl<'a> FilterParser<'a> {
         npercent.iter().for_each(|np| {
             self.percent = *np;
             let min_taxa = self.count_min_tax();
-            self.params = Params::MinTax(min_taxa);
+            self.params = FilteringParameters::MinTax(min_taxa);
             self.fmt_output_path();
             self.filter_aln();
             utils::print_divider();
@@ -84,7 +84,7 @@ impl<'a> FilterParser<'a> {
     fn filter_aln(&self) {
         self.check_output_dir_exist(&self.output_dir, self.args.io.force);
         self.print_params();
-        let mut filter = SeqFilter::new(
+        let mut filter = AlignmentFiltering::new(
             &self.files,
             &self.input_fmt,
             &self.datatype,
@@ -96,30 +96,30 @@ impl<'a> FilterParser<'a> {
                 let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
                 let prefix = self.parse_prefix(&self.args.partition.prefix, &self.output_dir);
                 filter.set_concat(&output_fmt, &part_fmt, &prefix);
-                filter.filter_aln();
+                filter.filter();
             }
-            None => filter.filter_aln(),
+            None => filter.filter(),
         }
     }
 
     fn parse_params(&mut self) {
         self.params = match self.args {
             m if m.percent.is_some() => self.parse_percent(),
-            m if m.len.is_some() => Params::AlnLen(self.parse_aln_len()),
-            m if m.pinf.is_some() => Params::ParsInf(self.parse_pars_inf()),
-            m if m.percent_inf.is_some() => Params::PercInf(self.count_percent_inf()),
-            m if m.ids.is_some() => Params::TaxonAll(self.parse_taxon_id()),
+            m if m.len.is_some() => FilteringParameters::AlnLen(self.parse_aln_len()),
+            m if m.pinf.is_some() => FilteringParameters::ParsInf(self.parse_pars_inf()),
+            m if m.percent_inf.is_some() => FilteringParameters::PercInf(self.count_percent_inf()),
+            m if m.ids.is_some() => FilteringParameters::TaxonAll(self.parse_taxon_id()),
             _ => unreachable!("Invalid parameters!"),
         }
     }
 
-    fn parse_percent(&mut self) -> Params {
+    fn parse_percent(&mut self) -> FilteringParameters {
         match self.args.percent {
             Some(percent) => {
                 self.percent = percent;
                 self.count_ntax();
                 let min_taxa = self.count_min_tax();
-                Params::MinTax(min_taxa)
+                FilteringParameters::MinTax(min_taxa)
             }
             None => unreachable!("Invalid parameters!"),
         }
@@ -180,15 +180,15 @@ impl<'a> FilterParser<'a> {
 
     fn fmt_output_path(&mut self) {
         let output_dir = match self.params {
-            Params::MinTax(_) => {
+            FilteringParameters::MinTax(_) => {
                 format!("{}_{}p", self.args.output, self.percent * 100.0)
             }
-            Params::AlnLen(len) => format!("{}_{}bp", self.args.output, len),
-            Params::ParsInf(inf) => format!("{}_{}inf", self.args.output, inf),
-            Params::PercInf(perc_inf) => {
+            FilteringParameters::AlnLen(len) => format!("{}_{}bp", self.args.output, len),
+            FilteringParameters::ParsInf(inf) => format!("{}_{}inf", self.args.output, inf),
+            FilteringParameters::PercInf(perc_inf) => {
                 format!("{}_{}percent_inf", self.args.output, perc_inf * 100.0)
             }
-            Params::TaxonAll(_) => format!("{}_taxonID", self.args.output),
+            FilteringParameters::TaxonAll(_) => format!("{}_taxonID", self.args.output),
         };
 
         self.output_dir = PathBuf::from(output_dir);
@@ -197,17 +197,17 @@ impl<'a> FilterParser<'a> {
     fn print_params(&self) {
         log::info!("{}", "Params".yellow());
         match &self.params {
-            Params::MinTax(min_taxa) => {
+            &FilteringParameters::MinTax(min_taxa) => {
                 log::info!("{:18}: {}", "Taxon count", self.ntax);
                 log::info!("{:18}: {}%", "Percent", self.percent * 100.0);
                 log::info!("{:18}: {}\n", "Min tax", min_taxa);
             }
-            Params::AlnLen(len) => log::info!("{:18}: {} bp\n", "Min aln len", len),
-            Params::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
-            Params::PercInf(perc_inf) => {
+            FilteringParameters::AlnLen(len) => log::info!("{:18}: {} bp\n", "Min aln len", len),
+            FilteringParameters::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
+            FilteringParameters::PercInf(perc_inf) => {
                 log::info!("{:18}: {}%\n", "% pars. inf", perc_inf * 100.0)
             }
-            Params::TaxonAll(taxon_id) => {
+            FilteringParameters::TaxonAll(taxon_id) => {
                 log::info!("{:18}: {} taxa\n", "Taxon id", taxon_id.len())
             }
         }

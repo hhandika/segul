@@ -1,4 +1,4 @@
-use crate::handler::align::partition::PartConverter;
+use crate::core::align::partition::PartitionConverter;
 use crate::helper::partition::construct_partition_path;
 use crate::helper::types::PartitionFmt;
 use crate::helper::{logger, utils};
@@ -35,7 +35,7 @@ impl<'a> PartParser<'a> {
             logger::log_input_partition(Some(input), input_counts);
             let output = construct_partition_path(input, &out_part_fmt);
             self.check_output_file_exist(&output, self.args.force);
-            let converter = PartConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
+            let converter = PartitionConverter::new(input, &in_part_fmt, &output, &out_part_fmt);
             converter.convert(&datatype, self.args.skip_checking);
             if input_counts > 1 {
                 utils::print_divider();

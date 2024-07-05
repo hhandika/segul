@@ -14,7 +14,7 @@ use crate::helper::utils;
 use crate::stats::sequence::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::writer::summary::{CsvWriter, SummaryWriter};
 
-pub struct SeqStats<'a> {
+pub struct AlignmentSummary<'a> {
     input_fmt: &'a InputFmt,
     output: &'a Path,
     datatype: &'a DataType,
@@ -22,7 +22,7 @@ pub struct SeqStats<'a> {
     interval: usize,
 }
 
-impl<'a> SeqStats<'a> {
+impl<'a> AlignmentSummary<'a> {
     pub fn new(
         input_fmt: &'a InputFmt,
         output: &'a Path,

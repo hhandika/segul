@@ -4,7 +4,7 @@ use colored::Colorize;
 use rayon::prelude::*;
 use regex::Regex;
 
-use crate::handler::OutputPrint;
+use crate::core::OutputPrint;
 use crate::helper::files;
 use crate::helper::finder::IDs;
 use crate::helper::sequence::{SeqCheck, SeqParser};
@@ -12,33 +12,33 @@ use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
 use crate::writer::sequences::SeqWriter;
 
-impl OutputPrint for Remove<'_> {}
+impl OutputPrint for SequenceRemoval<'_> {}
 
-pub enum RemoveOpts {
+pub enum SeqRemovalParameters {
     Id(Vec<String>),
     Regex(String),
 }
 
-pub struct Remove<'a> {
+pub struct SequenceRemoval<'a> {
     input_fmt: &'a InputFmt,
     datatype: &'a DataType,
-    outdir: &'a Path,
+    output_dir: &'a Path,
     output_fmt: &'a OutputFmt,
-    opts: &'a RemoveOpts,
+    opts: &'a SeqRemovalParameters,
 }
 
-impl<'a> Remove<'a> {
+impl<'a> SequenceRemoval<'a> {
     pub fn new(
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
-        outdir: &'a Path,
+        output_dir: &'a Path,
         output_fmt: &'a OutputFmt,
-        opts: &'a RemoveOpts,
+        opts: &'a SeqRemovalParameters,
     ) -> Self {
         Self {
             input_fmt,
             datatype,
-            outdir,
+            output_dir,
             output_fmt,
             opts,
         }
@@ -48,8 +48,8 @@ impl<'a> Remove<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Removing sequences...");
         match self.opts {
-            RemoveOpts::Id(ids) => self.par_remove(files, ids),
-            RemoveOpts::Regex(re) => {
+            SeqRemovalParameters::Id(ids) => self.par_remove(files, ids),
+            SeqRemovalParameters::Regex(re) => {
                 let ids = self.find_matching_ids(files, re);
                 self.par_remove(files, &ids);
             }
@@ -81,8 +81,8 @@ impl<'a> Remove<'a> {
     }
 
     fn write_output(&self, matrix: &SeqMatrix, header: &Header, file: &Path) {
-        let outpath = files::create_output_fname(self.outdir, file, self.output_fmt);
-        let mut writer = SeqWriter::new(&outpath, matrix, header);
+        let output_path = files::create_output_fname(self.output_dir, file, self.output_fmt);
+        let mut writer = SeqWriter::new(&output_path, matrix, header);
         writer
             .write_sequence(self.output_fmt)
             .expect("Failed writing output sequence");
@@ -113,7 +113,7 @@ impl<'a> Remove<'a> {
 
     fn print_output_info(&self) {
         log::info!("{}", "Output".yellow());
-        log::info!("{:18}: {}", "Output dir", self.outdir.display());
+        log::info!("{:18}: {}", "Output dir", self.output_dir.display());
         self.print_output_fmt(self.output_fmt);
     }
 }
@@ -127,10 +127,11 @@ mod test {
             let input_fmt = InputFmt::Fasta;
             let datatype = DataType::Dna;
 
-            let opts = RemoveOpts::Regex(String::from("^abc"));
-            let outdir = Path::new(".");
+            let opts = SeqRemovalParameters::Regex(String::from("^abc"));
+            let output_dir = Path::new(".");
             let output_fmt = OutputFmt::Fasta;
-            let $remove = Remove::new(&input_fmt, &datatype, outdir, &output_fmt, &opts);
+            let $remove =
+                SequenceRemoval::new(&input_fmt, &datatype, output_dir, &output_fmt, &opts);
         };
     }
 

@@ -16,7 +16,7 @@ use crate::writer::text::IdWriter;
 
 /// The `Id` struct is used to generate unique IDs
 /// from sequence alignment files and map them to the alignment files.
-pub struct Id<'a> {
+pub struct SequenceID<'a> {
     /// The sequence alignment files.
     files: &'a [PathBuf],
     /// The input format of the sequence alignment files.
@@ -32,7 +32,7 @@ pub struct Id<'a> {
     pub prefix: Option<&'a str>,
 }
 
-impl<'a> Id<'a> {
+impl<'a> SequenceID<'a> {
     pub fn new(
         files: &'a [PathBuf],
         input_fmt: &'a InputFmt,
@@ -55,7 +55,7 @@ impl<'a> Id<'a> {
     /// Example:
     /// ```rust
     /// use std::path::{Path, PathBuf};
-    /// use segul::handler::sequence::id::Id;
+    /// use segul::core::sequence::id::SequenceID;
     /// use segul::helper::types::{DataType, InputFmt};
     /// use tempdir::TempDir;
     ///
@@ -63,12 +63,12 @@ impl<'a> Id<'a> {
     /// let alignment_1 = PathBuf::from("tests/files/concat/gene_1.nex");
     /// let files = vec![alignment_1, alignment_2];
     /// let output = TempDir::new("tempt").unwrap();
-    /// let id = Id::new(&files, &InputFmt::Auto, &DataType::Dna, Path::new(output.path()), None);
-    /// id.generate_id();
+    /// let handle = SequenceID::new(&files, &InputFmt::Auto, &DataType::Dna, Path::new(output.path()), None);
+    /// handle.get_unique();
     /// assert!(output.path().join("id.txt").exists());
     /// ```
 
-    pub fn generate_id(&self) {
+    pub fn get_unique(&self) {
         fs::create_dir_all(self.output.parent().expect("Failed getting parent path"))
             .expect("Failed creating output dir");
         let spin = utils::set_spinner();

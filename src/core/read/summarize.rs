@@ -31,7 +31,7 @@ use crate::{
 /// such as read counts, base counts, gc, at, and n content, and qscore statistics
 /// 3. Complete: all the essential plus summary
 /// statistics per position in read for each file.
-pub struct ReadSummaryHandler<'a> {
+pub struct GenomicReadSummary<'a> {
     /// Input path.
     pub inputs: &'a mut [PathBuf],
     /// Read sequence format.
@@ -48,7 +48,7 @@ pub struct ReadSummaryHandler<'a> {
     pub prefix: Option<&'a str>,
 }
 
-impl<'a> ReadSummaryHandler<'a> {
+impl<'a> GenomicReadSummary<'a> {
     /// Create a new ReadSummaryHandler instance.
     pub fn new(
         inputs: &'a mut [PathBuf],
@@ -75,7 +75,7 @@ impl<'a> ReadSummaryHandler<'a> {
     /// # Example
     /// ```rust
     /// use std::path::{Path, PathBuf};
-    /// use segul::handler::read::summarize::ReadSummaryHandler;
+    /// use segul::core::read::summarize::GenomicReadSummary;
     /// use segul::helper::types::{SeqReadFmt, SummaryMode};
     /// use tempdir::TempDir;
     ///
@@ -85,14 +85,14 @@ impl<'a> ReadSummaryHandler<'a> {
     /// ];
     /// let output = TempDir::new("tempt").unwrap();
     /// let spinner = segul::helper::utils::set_spinner();
-    /// let mut handler = ReadSummaryHandler::new(
+    /// let mut handle = GenomicReadSummary::new(
     ///     &mut files,
     ///     &SeqReadFmt::Auto,
     ///     &SummaryMode::Default,
     ///     Path::new(output.path()),
     ///     None,
     /// );
-    /// handler.summarize();
+    /// handle.summarize();
     /// ```
     pub fn summarize(&self) {
         let spin = set_spinner();
@@ -217,7 +217,7 @@ mod test {
 
     use tempdir::TempDir;
 
-    use crate::handler::read::summarize::ReadSummaryHandler;
+    use crate::core::read::summarize::GenomicReadSummary;
     use crate::helper::types::{SeqReadFmt, SummaryMode};
     use crate::stats::fastq::{FastqMappedRead, FastqSummary};
 
@@ -228,7 +228,7 @@ mod test {
             PathBuf::from("tests/files/raw/read_2.fastq"),
         ];
         let output = TempDir::new("tempt").unwrap();
-        let handler = ReadSummaryHandler::new(
+        let handler = GenomicReadSummary::new(
             &mut files,
             &SeqReadFmt::Auto,
             &SummaryMode::Default,
@@ -246,7 +246,7 @@ mod test {
             PathBuf::from("tests/files/raw/read_2.fastq"),
         ];
         let output = TempDir::new("tempt").unwrap();
-        let handler = ReadSummaryHandler::new(
+        let handler = GenomicReadSummary::new(
             &mut files,
             &SeqReadFmt::Auto,
             &SummaryMode::Minimal,

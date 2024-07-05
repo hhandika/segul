@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::handler::align::summarize::SeqStats;
+use crate::core::align::summarize::AlignmentSummary;
 use crate::helper::logger::AlignSeqLogger;
 
 use super::args::AlignSummaryArgs;
@@ -38,7 +38,7 @@ impl<'a> SummaryParser<'a> {
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut summary =
-            SeqStats::new(&input_fmt, &self.args.output, self.args.interval, &datatype);
+            AlignmentSummary::new(&input_fmt, &self.args.output, self.args.interval, &datatype);
         if self.args.per_locus {
             summary.summarize_locus(&files, self.args.prefix.as_deref());
         } else {

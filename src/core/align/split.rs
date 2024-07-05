@@ -5,7 +5,7 @@ use colored::Colorize;
 use indexmap::IndexMap;
 use rayon::prelude::*;
 
-use crate::handler::{OutputPrint, PartitionPrint};
+use crate::core::{OutputPrint, PartitionPrint};
 use crate::helper::files;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};

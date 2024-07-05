@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{handler::read::summarize::ReadSummaryHandler, helper::logger::ReadLogger};
+use crate::{core::read::summarize::GenomicReadSummary, helper::logger::ReadLogger};
 
 use super::{args::SeqReadSummaryArgs, collect_paths, InputCli, OutputCli, RawInputCli};
 
@@ -29,7 +29,7 @@ impl<'a> ReadSummaryCliParser<'a> {
         let task = "Summarize raw read sequences";
         ReadLogger::new(self.input_dir.as_deref(), input_fmt, fcounts).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        ReadSummaryHandler::new(
+        GenomicReadSummary::new(
             &mut files,
             &self.args.input_format,
             &self.args.mode,
