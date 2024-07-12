@@ -5,9 +5,10 @@
 ![Crates-Download](https://img.shields.io/crates/d/segul?color=orange&label=crates.io-downloads)
 ![GH-Release](https://img.shields.io/github/v/tag/hhandika/segul?label=gh-releases)
 ![GH-Downloads](https://img.shields.io/github/downloads/hhandika/segul/total?color=blue&label=gh-release-downloads)
-[![LoC](https://tokei.rs/b1/github/hhandika/segul?category=code)](https://github.com/XAMPPRocky/tokei)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/segul/README.html)
 ![last-commit](https://img.shields.io/github/last-commit/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
+[![LoC](https://tokei.rs/b1/github/hhandika/segul?category=code)](https://github.com/XAMPPRocky/tokei)
 
 SEGUL is an ultra-fast, memory-efficient application for working with phylogenomic datasets. It is available as standalone, zero dependency command line, GUI applications (called SEGUI), and library/packages for Rust and other programming languages. It runs from your smartphone to High Performance Computers (see platform support below). It is safe, multi threaded, and easy to use.
 
@@ -65,6 +66,7 @@ The CLI app may work in any Rust supported [platform](https://doc.rust-lang.org/
 #### CLI Installation Methods
 
 - Pre-compiled binaries: [[Releases]](https://github.com/hhandika/segul/releases) [[Docs]](https://www.segul.app/docs/installation/install_binary)
+- Conda: [[Package]](https://anaconda.org/bioconda/segul) [[Docs]](https://www.segul.app/docs/installation/install_conda)
 - Package manager: [[Docs]](https://www.segul.app/docs/installation/install_cargo)
 - From source: [[Docs]](https://www.segul.app/docs/installation/install_source)
 - Beta version: [[Docs]](https://www.segul.app/docs/installation/install_dev)
@@ -74,7 +76,7 @@ The CLI app may work in any Rust supported [platform](https://doc.rust-lang.org/
 The API version is available for Rust and other programming languages. For Rust users, you can install it via Cargo:
 
 ```bash
-cargo install segul
+cargo add segul
 ```
 
 #### Python
@@ -85,7 +87,7 @@ We provide binding for Python (called [pysegul](https://pypi.org/project/pysegul
 pip install pysegul
 ```
 
-Learn more about interfacing SEGUL with other programming languages in the [documentation](https://www.segul.app/docs/api-usage/python/intro).
+Learn more about using SEGUL API in the [documentation](https://www.segul.app/docs/api-usage/python/intro).
 
 ## Features
 
