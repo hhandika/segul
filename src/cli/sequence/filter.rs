@@ -42,7 +42,7 @@ impl<'a> SequenceFilterParser<'a> {
         )
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        log::info!("{}", "Filtering Params".yellow());
+        log::info!("{}", "Filtering Parameters".yellow());
         self.parse_params();
         let filter = SequenceFiltering::new(
             &files,
@@ -60,8 +60,9 @@ impl<'a> SequenceFilterParser<'a> {
             log::info!("{:18}: {}\n", "Minimum length", min_len);
             self.params = SeqFilteringParameters::MinSequenceLength(min_len);
         }
-        if let Some(percent_max_gap) = self.args.max_gap {
-            log::info!("{:18}: {}\n", "Percent max gaps", percent_max_gap);
+        if let Some(max_gap) = self.args.max_gap {
+            let percent_max_gap = max_gap * 100.0;
+            log::info!("{:18}: {}\n", "Max gaps", format!("{}%", percent_max_gap));
             self.params = SeqFilteringParameters::PercentMaxGap(percent_max_gap);
         }
     }
