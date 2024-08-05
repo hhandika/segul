@@ -28,7 +28,7 @@ use crate::{
 };
 
 /// Available sequence filtering options.
-pub enum SequenceFilteringOptions {
+pub enum SeqFilteringParameters {
     /// Filtered sequences based the percentage of gaps in a sequence.
     /// Remove sequences that have a percentage
     /// of gaps higher than the threshold.
@@ -41,10 +41,11 @@ pub enum SequenceFilteringOptions {
     /// If the threshold calculation results in a float,
     /// the float will be floored.
     /// For example, 5.1, 5.5, or 5.9, will be 5.
-    GapThreshold(f64),
+    PercentMaxGap(f64),
     /// Filter sequences based on the minimum sequence length.
     /// Remove sequences that have a length less than the specified number.
     MinSequenceLength(usize),
+    None,
 }
 
 pub struct SequenceFiltering<'a> {
@@ -59,7 +60,7 @@ pub struct SequenceFiltering<'a> {
     /// Output format.
     output_fmt: &'a OutputFmt,
     /// Choice of filtering options.
-    params: &'a SequenceFilteringOptions,
+    params: &'a SeqFilteringParameters,
     /// Concatenation parameters.
     concat: Option<ConcatParams>,
 }
@@ -71,7 +72,7 @@ impl<'a> SequenceFiltering<'a> {
         datatype: &'a DataType,
         output: &'a Path,
         output_fmt: &'a OutputFmt,
-        params: &'a SequenceFilteringOptions,
+        params: &'a SeqFilteringParameters,
     ) -> Self {
         Self {
             files,
@@ -91,7 +92,7 @@ impl<'a> SequenceFiltering<'a> {
     /// use std::path::{Path, PathBuf};
     /// use tempdir::TempDir;
     /// use segul::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
-    /// use segul::core::sequence::filter::{SequenceFiltering, SequenceFilteringOptions};
+    /// use segul::core::sequence::filter::{SequenceFiltering, SeqFilteringParameters};
     /// use segul::helper::finder::SeqFileFinder;
     ///
     ///
@@ -102,18 +103,22 @@ impl<'a> SequenceFiltering<'a> {
     /// // Replace the temp directory with your own directory.
     /// let output = TempDir::new("tempt").unwrap();
     /// let output_fmt = OutputFmt::Nexus;
-    /// let params = SequenceFilteringOptions::MinSequenceLength(7);
+    /// let params = SeqFilteringParameters::MinSequenceLength(7);
     /// let handle = SequenceFiltering::new(&files, &input_fmt, &datatype, &output.path(), &output_fmt,  &params);
     /// handle.filter();
     pub fn filter(&self) {
         let spinner = utils::set_spinner();
         spinner.set_message("Filtering sequences...");
         let filtered_aln = match self.params {
-            SequenceFilteringOptions::GapThreshold(threshold) => {
+            SeqFilteringParameters::PercentMaxGap(threshold) => {
                 self.filter_gappy_sequences(threshold)
             }
-            SequenceFilteringOptions::MinSequenceLength(min_length) => {
+            SeqFilteringParameters::MinSequenceLength(min_length) => {
                 self.filter_sequences_by_length(min_length)
+            }
+            SeqFilteringParameters::None => {
+                log::warn!("No filtering parameters were provided!");
+                0
             }
         };
         spinner.finish_with_message("Finished filtering sequences!\n");
@@ -229,7 +234,7 @@ mod tests {
     #[test]
     fn test_filter_sequences_by_length() {
         let dir = Path::new("tests/files/concat");
-        let params = SequenceFilteringOptions::MinSequenceLength(7);
+        let params = SeqFilteringParameters::MinSequenceLength(7);
         setup!(dir, handle, params, output);
         handle.filter();
         let output_files = SeqFileFinder::new(output.path()).find(&InputFmt::Nexus);
@@ -239,7 +244,7 @@ mod tests {
     #[test]
     fn test_gap_calculation() {
         let input_dir = Path::new("tests/files/gappy");
-        let params = SequenceFilteringOptions::MinSequenceLength(7);
+        let params = SeqFilteringParameters::MinSequenceLength(7);
         setup!(input_dir, handle, params, output);
         let threshold = 0.5;
         let test_file = input_dir.join("gene_1.nex");
@@ -251,7 +256,7 @@ mod tests {
     #[test]
     fn test_threshold_calculation() {
         let input_dir = Path::new("tests/files/gappy");
-        let params = SequenceFilteringOptions::GapThreshold(0.5);
+        let params = SeqFilteringParameters::PercentMaxGap(0.5);
         setup!(input_dir, handle, params, output);
         let threshold = 0.5;
         let alignment_len = 11;

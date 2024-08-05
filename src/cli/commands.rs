@@ -16,6 +16,7 @@ use super::args::genomics::{ContigSubcommand, SeqReadSubcommand};
 use super::args::sequence::SequenceSubcommand;
 use super::args::MainSubcommand;
 use super::contig::summarize::ContigCliParser;
+use super::sequence::filter::SequenceFilterParser;
 
 pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
     match subcommand {
@@ -75,7 +76,7 @@ fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
             ExtractParser::new(extract_args).extract();
         }
         SequenceSubcommand::Filter(filter_args) => {
-            // FilterParser::new(filter_args).filter();
+            SequenceFilterParser::new(filter_args).filter();
         }
         SequenceSubcommand::Id(id_args) => {
             IdParser::new(id_args).extract();

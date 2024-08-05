@@ -70,8 +70,8 @@ pub(crate) struct SequenceFilterArgs {
     pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "Sequence-Filter")]
     pub(crate) output: PathBuf,
-    #[arg(long = "len", help = "Filter by sequence length")]
-    pub(crate) len: Option<usize>,
+    #[arg(long = "min-length", help = "Filter by minimal sequence length")]
+    pub(crate) min_len: Option<usize>,
     #[arg(
         long = "percent-max-gap",
         help = "Filter by maximum gap percentage",
