@@ -28,7 +28,7 @@ macro_rules! process_files {
 macro_rules! rm_id {
     ($new_ids: ident, $ids: ident) => {
         $new_ids.iter().for_each(|(old, _)| {
-            $ids.remove(old);
+            $ids.shift_remove(old);
         });
     };
 }
@@ -110,7 +110,7 @@ impl<'a> SequenceRenamingDry<'a> {
     ) -> Vec<(String, String)> {
         let mut new_ids: Vec<(String, String)> = Vec::new();
         names.iter().for_each(|(old, new)| {
-            let is_id = ids.remove(old);
+            let is_id = ids.shift_remove(old);
             if is_id {
                 new_ids.push((old.to_string(), new.to_string()));
             }
@@ -226,7 +226,7 @@ impl<'a> SequenceRenaming<'a> {
         let (mut matrix, header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
         let original_size = matrix.len();
         names.iter().for_each(|(origin, destination)| {
-            let values = matrix.remove(origin);
+            let values = matrix.shift_remove(origin);
             if let Some(value) = values {
                 matrix.insert(destination.to_string(), value);
             }

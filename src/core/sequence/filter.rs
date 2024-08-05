@@ -13,6 +13,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
+use colored::Colorize;
 use rayon::prelude::*;
 
 use crate::{
@@ -28,7 +29,7 @@ use crate::{
 
 /// Available sequence filtering options.
 pub enum SequenceFilteringOptions {
-    /// Total percentage of gaps in a sequence.
+    /// Filtered sequences based the percentage of gaps in a sequence.
     /// Remove sequences that have a percentage
     /// of gaps higher than the threshold.
     /// The threshold is calculated as the number
@@ -41,7 +42,8 @@ pub enum SequenceFilteringOptions {
     /// the float will be floored.
     /// For example, 5.1, 5.5, or 5.9, will be 5.
     GapThreshold(f64),
-    /// Minimum sequence length.
+    /// Filter sequences based on the minimum sequence length.
+    /// Remove sequences that have a length less than the specified number.
     MinSequenceLength(usize),
 }
 
@@ -114,8 +116,12 @@ impl<'a> SequenceFiltering<'a> {
                 self.filter_sequences_by_length(min_length)
             }
         };
-        assert!(filtered_aln > 0, "No alignments left after filtering!");
         spinner.finish_with_message("Finished filtering sequences!\n");
+        if filtered_aln == 0 {
+            log::warn!("No matching sequences were found!!");
+        } else {
+            self.print_output_info(filtered_aln);
+        }
     }
 
     /// Setter for the concatenation parameters.
@@ -145,6 +151,13 @@ impl<'a> SequenceFiltering<'a> {
             .expect("Failed writing the output file");
     }
 
+    fn print_output_info(&self, counter: usize) {
+        log::info!("{}", "Output".yellow());
+        log::info!("Directory: {}", self.output.display());
+        log::info!("Format: {:?}", self.output_fmt);
+        log::info!("Total files: {}", counter);
+    }
+
     fn filter_sequences_by_length(&self, length: &usize) -> usize {
         let counter = AtomicUsize::new(0);
         self.files.par_iter().for_each(|file| {
@@ -172,13 +185,13 @@ impl<'a> SequenceFiltering<'a> {
         // Find sequences with gaps higher than the threshold.
         matrix.iter().for_each(|(name, seq)| {
             let gaps = seq.bytes().filter(|&c| c == b'-' || c == b'?').count();
-            if gaps > max_gaps {
+            if gaps <= max_gaps {
                 to_remove.push(String::from(name));
             }
         });
 
         to_remove.iter().for_each(|name| {
-            matrix.remove(name);
+            matrix.retain(|n, _| n == name);
         });
 
         header.ntax = matrix.len();
