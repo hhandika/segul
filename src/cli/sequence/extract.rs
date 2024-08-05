@@ -43,7 +43,7 @@ impl<'a> ExtractParser<'a> {
         )
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        log::info!("{}", "Extracting Params".yellow());
+        log::info!("{}", "Extracting Parameters".yellow());
         self.parse_params();
         let extract = SequenceExtraction::new(
             &input_fmt,

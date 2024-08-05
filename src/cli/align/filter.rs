@@ -194,7 +194,7 @@ impl<'a> FilterParser<'a> {
     }
 
     fn print_params(&self) {
-        log::info!("{}", "Params".yellow());
+        log::info!("{}", "Filtering Parameters".yellow());
         match &self.params {
             &FilteringParameters::MinTax(min_taxa) => {
                 log::info!("{:18}: {}", "Taxon count", self.ntax);

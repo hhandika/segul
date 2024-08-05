@@ -49,7 +49,7 @@ impl<'a> RemoveParser<'a> {
     }
 
     fn parse_remove_opts(&self) -> SeqRemovalParameters {
-        log::info!("{}", "Params".yellow());
+        log::info!("{}", "Removing Parameters".yellow());
         if let Some(re) = &self.args.re {
             log::info!("{:18}: {}\n", "Regex", "Options");
             log::info!("{:18}, {}\n", "Values", re);

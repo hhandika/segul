@@ -52,7 +52,7 @@ impl<'a> RenameParser<'a> {
     }
 
     fn parse_rename_opts(&self) -> SeqRenamingParameters {
-        log::info!("{}", "Params".yellow());
+        log::info!("{}", "Renaming Parameters".yellow());
 
         if let Some(path) = &self.args.replace_id {
             let id_path = Path::new(&path);
