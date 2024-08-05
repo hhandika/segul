@@ -1,5 +1,6 @@
 //! Sequence handler module.
 pub mod extract;
+pub mod filter;
 pub mod id;
 pub mod remove;
 pub mod rename;

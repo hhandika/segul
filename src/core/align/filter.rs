@@ -1,3 +1,13 @@
+//! Filtering alignment based on selected criteria.
+//!
+//! The alignment filtering work on the alignment level.
+//! Currently available options are:
+//! 1. Minimum number of taxa. Filter alignment that has an equal or more number of taxa than the specified number.
+//! 2. Minimum alignment length. Filter alignment that has an equal or more alignment length than the specified number.
+//! 3. Minimum parsimony informative sites. Filter alignment that has an equal or more parsimony informative sites than the specified number.
+//! 4. Percentage of parsimony informative sites. Filter alignment that has an equal or more percentage of parsimony informative sites than the specified number.
+//! 4. Taxon all. Filter alignment that contains all specified taxa.
+//!
 use std::fs;
 use std::io::Result;
 use std::path::{Path, PathBuf};
@@ -8,6 +18,7 @@ use indexmap::{IndexMap, IndexSet};
 use rayon::prelude::*;
 
 use crate::core::align::concat::AlignmentConcatenation;
+use crate::helper::concat::ConcatParams;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
 use crate::helper::{files, utils};
@@ -34,6 +45,7 @@ pub struct AlignmentFiltering<'a> {
 }
 
 impl<'a> AlignmentFiltering<'a> {
+    /// Create a new alignment filtering instance.
     pub fn new(
         files: &'a [PathBuf],
         input_fmt: &'a InputFmt,
@@ -51,6 +63,7 @@ impl<'a> AlignmentFiltering<'a> {
         }
     }
 
+    /// Filter the alignment based on the selected criteria.
     pub fn filter(&mut self) {
         let mut ftr_aln: Vec<PathBuf> = if let FilteringParameters::PercInf(perc_inf) = self.params
         {
@@ -79,6 +92,7 @@ impl<'a> AlignmentFiltering<'a> {
         }
     }
 
+    /// Set the concatenation parameters. The resulting alignment will be concatenated.
     pub fn set_concat(
         &mut self,
         output_fmt: &'a OutputFmt,
@@ -216,22 +230,6 @@ impl<'a> AlignmentFiltering<'a> {
     fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
         let aln = SeqParser::new(file, self.datatype);
         aln.get_alignment(self.input_fmt)
-    }
-}
-
-struct ConcatParams {
-    output_fmt: OutputFmt,
-    part_fmt: PartitionFmt,
-    prefix: PathBuf,
-}
-
-impl ConcatParams {
-    fn new(output_fmt: &OutputFmt, part_fmt: &PartitionFmt, prefix: &Path) -> Self {
-        Self {
-            prefix: prefix.to_path_buf(),
-            part_fmt: *part_fmt,
-            output_fmt: *output_fmt,
-        }
     }
 }
 

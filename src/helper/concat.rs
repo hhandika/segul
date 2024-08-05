@@ -9,6 +9,27 @@ use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, Partition, SeqMatrix};
 
+use super::types::{OutputFmt, PartitionFmt};
+
+/// Concatenation parameters.
+/// Used by features that support concatenation,
+/// such as `AlignmentFiltering` and `SequenceFiltering`.
+pub struct ConcatParams {
+    pub output_fmt: OutputFmt,
+    pub part_fmt: PartitionFmt,
+    pub prefix: PathBuf,
+}
+
+impl ConcatParams {
+    pub fn new(output_fmt: &OutputFmt, part_fmt: &PartitionFmt, prefix: &Path) -> Self {
+        Self {
+            prefix: prefix.to_path_buf(),
+            part_fmt: *part_fmt,
+            output_fmt: *output_fmt,
+        }
+    }
+}
+
 /// Concatenate multiple alignments into a single alignment.
 /// # Arguments
 /// * `files` - A mutable slice of PathBuf that holds the alignment files.
