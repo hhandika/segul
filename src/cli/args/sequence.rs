@@ -68,15 +68,15 @@ pub(crate) struct SequenceFilterArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "Sequence-Filter")]
+    #[arg(short, long, help = "Output directory", default_value = "Sequence-Filter")]
     pub(crate) output: PathBuf,
     #[arg(long = "min-length", help = "Filter by minimal sequence length")]
     pub(crate) min_len: Option<usize>,
     #[arg(
-        long = "percent-max-gap",
+        long = "max-gap",
         help = "Filter by maximum gap percentage",
     )]
-    pub(crate) percent_max_gap: Option<f64>,
+    pub(crate) max_gap: Option<f64>,
 }
 
 #[derive(Args)]

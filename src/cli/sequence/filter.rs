@@ -60,7 +60,7 @@ impl<'a> SequenceFilterParser<'a> {
             log::info!("{:18}: {}\n", "Minimum length", min_len);
             self.params = SeqFilteringParameters::MinSequenceLength(min_len);
         }
-        if let Some(percent_max_gap) = self.args.percent_max_gap {
+        if let Some(percent_max_gap) = self.args.max_gap {
             log::info!("{:18}: {}\n", "Percent max gaps", percent_max_gap);
             self.params = SeqFilteringParameters::PercentMaxGap(percent_max_gap);
         }

@@ -148,21 +148,6 @@ impl<'a> SequenceFiltering<'a> {
         counter.into_inner()
     }
 
-    fn write_sequence(&self, file: &Path, matrix: &SeqMatrix, header: &Header) {
-        let output_path = files::create_output_fname(&self.output, file, &self.output_fmt);
-        let mut seq_writer = SeqWriter::new(&output_path, matrix, header);
-        seq_writer
-            .write_sequence(self.output_fmt)
-            .expect("Failed writing the output file");
-    }
-
-    fn print_output_info(&self, counter: usize) {
-        log::info!("{}", "Output".yellow());
-        log::info!("Directory: {}", self.output.display());
-        log::info!("Format: {:?}", self.output_fmt);
-        log::info!("Total files: {}", counter);
-    }
-
     fn filter_sequences_by_length(&self, length: &usize) -> usize {
         let counter = AtomicUsize::new(0);
         self.files.par_iter().for_each(|file| {
@@ -178,6 +163,21 @@ impl<'a> SequenceFiltering<'a> {
         counter.into_inner()
     }
 
+    fn write_sequence(&self, file: &Path, matrix: &SeqMatrix, header: &Header) {
+        let output_path = files::create_output_fname(&self.output, file, &self.output_fmt);
+        let mut seq_writer = SeqWriter::new(&output_path, matrix, header);
+        seq_writer
+            .write_sequence(self.output_fmt)
+            .expect("Failed writing the output file");
+    }
+
+    fn print_output_info(&self, counter: usize) {
+        log::info!("{}", "Output".yellow());
+        log::info!("{:18}: {}", "Directory", self.output.display());
+        log::info!("{:18}: {:?}", "Format", self.output_fmt);
+        log::info!("{:18}: {}", "Total files", counter);
+    }
+
     fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
         let alignment = SeqParser::new(file, &self.datatype);
         alignment.get_alignment(self.input_fmt)
@@ -186,20 +186,13 @@ impl<'a> SequenceFiltering<'a> {
     fn remove_gappy_sequences(&self, matrix: &mut SeqMatrix, header: &mut Header, threshold: &f64) {
         let alignment_len = header.nchar;
         let max_gaps = self.count_max_gaps(alignment_len, *threshold);
-        let mut to_remove = Vec::new();
-        // Find sequences with gaps higher than the threshold.
-        matrix.iter().for_each(|(name, seq)| {
-            let gaps = seq.bytes().filter(|&c| c == b'-' || c == b'?').count();
-            if gaps <= max_gaps {
-                to_remove.push(String::from(name));
-            }
-        });
-
-        to_remove.iter().for_each(|name| {
-            matrix.retain(|n, _| n == name);
-        });
+        matrix.retain(|_, seq| self.count_gaps(seq) <= max_gaps);
 
         header.ntax = matrix.len();
+    }
+
+    fn count_gaps(&self, seq: &str) -> usize {
+        seq.bytes().filter(|&c| c == b'-' || c == b'?').count()
     }
 
     fn count_max_gaps(&self, length: usize, threshold: f64) -> usize {
@@ -239,6 +232,16 @@ mod tests {
         handle.filter();
         let output_files = SeqFileFinder::new(output.path()).find(&InputFmt::Nexus);
         assert_eq!(output_files.len(), 1);
+    }
+
+    #[test]
+    fn test_filter_sequences_by_gaps() {
+        let dir = Path::new("tests/files/gappy");
+        let params = SeqFilteringParameters::PercentMaxGap(0.5);
+        setup!(dir, handle, params, output);
+        handle.filter();
+        let output_files = SeqFileFinder::new(output.path()).find(&InputFmt::Nexus);
+        assert_eq!(output_files.len(), 4);
     }
 
     #[test]
