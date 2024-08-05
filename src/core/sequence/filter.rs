@@ -1,9 +1,12 @@
-//! Filter sequence based on user-defined criteria.
+//! Filter sequence based on selected criteria.
 //!
 //! Unlike the `alignment filter` that works on the alignment level,
 //! the `sequence filter` will filter sequences within the alignment.
-//! This is useful when you want to remove sequences that are too short
-//! or have too many gaps.
+//! The filtering criteria are:
+//! - Total percentage of gaps in a sequence. The sequence will be removed
+//! if the percentage of gaps is higher than the threshold.
+//! - Minimum sequence length. Filter sequence that has an equal or more sequence length
+//! than the specified number.
 
 use std::{
     path::{Path, PathBuf},
@@ -26,23 +29,36 @@ use crate::{
 /// Available sequence filtering options.
 pub enum SequenceFilteringOptions {
     /// Total percentage of gaps in a sequence.
-    /// The sequence will be removed
-    /// if the percentage of gaps is higher than the threshold.
-    /// Calculated as the number of gaps divided by the sequence length.
+    /// Remove sequences that have a percentage
+    /// of gaps higher than the threshold.
+    /// The threshold is calculated as the number
+    /// of gaps times the sequence length.
+    /// For example, if the threshold is 0.5
+    /// and the sequence length is 10,
+    /// the sequence will be removed
+    /// if it has more than five gaps.
+    /// If the threshold calculation results in a float,
+    /// the float will be floored.
+    /// For example, 5.1, 5.5, or 5.9, will be 5.
     GapThreshold(f64),
     /// Minimum sequence length.
-    /// Filter sequence that has an equal or more sequence length
-    /// than the specified number.
     MinSequenceLength(usize),
 }
 
 pub struct SequenceFiltering<'a> {
+    /// List of input files.
     files: &'a [PathBuf],
+    /// Input format.
     input_fmt: &'a InputFmt,
+    /// Data type.
     datatype: &'a DataType,
+    /// Output directory.
     output: &'a Path,
+    /// Output format.
     output_fmt: &'a OutputFmt,
+    /// Choice of filtering options.
     params: &'a SequenceFilteringOptions,
+    /// Concatenation parameters.
     concat: Option<ConcatParams>,
 }
 
@@ -149,13 +165,6 @@ impl<'a> SequenceFiltering<'a> {
         alignment.get_alignment(self.input_fmt)
     }
 
-    // Remove sequences that have a percentage of gaps higher than the threshold.
-    // The threshold is calculated as the number of gaps times the sequence length.
-    // For example, if the threshold is 0.5, and the sequence length is 10,
-    // the sequence will be removed if it has more than 5 gaps.
-    // When the result is in decimal, it will be floor to the nearest integer.
-    // For example, if the threshold is 0.5 and the sequence length is 11,
-    // the threshold will be 5.5, and the sequence will be removed if it has more than 5 gaps.
     fn remove_gappy_sequences(&self, matrix: &mut SeqMatrix, header: &mut Header, threshold: &f64) {
         let alignment_len = header.nchar;
         let max_gaps = self.count_max_gaps(alignment_len, *threshold);
@@ -187,24 +196,70 @@ mod tests {
     use super::*;
     use tempdir::TempDir;
 
+    macro_rules! setup {
+        ($input_dir: ident, $handle: ident, $params: ident, $output: ident) => {
+            let files = SeqFileFinder::new($input_dir).find(&InputFmt::Nexus);
+            let input_fmt = InputFmt::Nexus;
+            let datatype = DataType::Dna;
+            let $output = TempDir::new("output").unwrap();
+            let $handle = SequenceFiltering::new(
+                &files,
+                &input_fmt,
+                &datatype,
+                $output.path(),
+                &OutputFmt::Nexus,
+                &$params,
+            );
+        };
+    }
+
     #[test]
     fn test_filter_sequences_by_length() {
-        let dir = "tests/files/concat";
-        let files = SeqFileFinder::new(Path::new(dir)).find(&InputFmt::Nexus);
-        let input_fmt = InputFmt::Nexus;
-        let datatype = DataType::Dna;
-        let output = TempDir::new("output").unwrap();
+        let dir = Path::new("tests/files/concat");
         let params = SequenceFilteringOptions::MinSequenceLength(7);
-        let handle = SequenceFiltering::new(
-            &files,
-            &input_fmt,
-            &datatype,
-            output.path(),
-            &OutputFmt::Nexus,
-            &params,
-        );
+        setup!(dir, handle, params, output);
         handle.filter();
-        let files = SeqFileFinder::new(output.path()).find(&InputFmt::Nexus);
-        assert_eq!(files.len(), 1);
+        let output_files = SeqFileFinder::new(output.path()).find(&InputFmt::Nexus);
+        assert_eq!(output_files.len(), 1);
+    }
+
+    #[test]
+    fn test_gap_calculation() {
+        let input_dir = Path::new("tests/files/gappy");
+        let params = SequenceFilteringOptions::MinSequenceLength(7);
+        setup!(input_dir, handle, params, output);
+        let threshold = 0.5;
+        let test_file = input_dir.join("gene_1.nex");
+        let (mut matrix, mut header) = handle.get_alignment(&test_file);
+        handle.remove_gappy_sequences(&mut matrix, &mut header, &threshold);
+        assert_eq!(matrix.len(), 1);
+    }
+
+    #[test]
+    fn test_threshold_calculation() {
+        let input_dir = Path::new("tests/files/gappy");
+        let params = SequenceFilteringOptions::GapThreshold(0.5);
+        setup!(input_dir, handle, params, output);
+        let threshold = 0.5;
+        let alignment_len = 11;
+        let max_gaps = handle.count_max_gaps(alignment_len, threshold);
+        assert_eq!(max_gaps, 5);
+        let threshold = 0.5;
+        let alignment_len = 10;
+        let max_gaps = handle.count_max_gaps(alignment_len, threshold);
+        assert_eq!(max_gaps, 5);
+    }
+
+    #[test]
+    fn test_floor_calculation() {
+        let float_1: f64 = 5.1;
+        let float_2: f64 = 5.5;
+        let float_3: f64 = 5.9;
+        let res_1 = float_1.floor() as usize;
+        let res_2 = float_2.floor() as usize;
+        let res_3 = float_3.floor() as usize;
+        assert_eq!(res_1, 5);
+        assert_eq!(res_2, 5);
+        assert_eq!(res_3, 5);
     }
 }

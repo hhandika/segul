@@ -2,12 +2,16 @@
 
 ## v0.22.0
 
+### New Features
+
+- Filter sequences based on gaps or sequence length.
+
 ### API Breaking Changes
 
-- Rename methods and structs for improved clarity and consistency.
+- Rename classes and methods to improve clarity and consistency.
 - Remove unnecessary mutability for conversion modules.
 - Partition conversion moved to align module.
-- Output directory and output format arguments for extraction now requires in the new instance of the extraction struct.
+- Output directory and output format arguments for extraction are now required in the new instance of the extraction struct.
 
 ## v0.21.3
 
