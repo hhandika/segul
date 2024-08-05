@@ -6,7 +6,7 @@ use crate::core::sequence::extract::{SeqExtractionParameters, SequenceExtraction
 use crate::helper::logger::AlignSeqLogger;
 use crate::parser::txt;
 
-use crate::cli::args::SequenceExtractArgs;
+use crate::cli::args::sequence::SequenceExtractArgs;
 use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for ExtractParser<'_> {}

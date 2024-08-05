@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::core::sequence::id::SequenceID;
 use crate::helper::logger::AlignSeqLogger;
 
-use crate::cli::args::SequenceIdArgs;
+use crate::cli::args::sequence::SequenceIdArgs;
 use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for IdParser<'_> {}

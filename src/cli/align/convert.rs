@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{core::align::convert::AlignmentConversion, helper::logger::AlignSeqLogger};
 
-use crate::cli::args::AlignConvertArgs;
+use crate::cli::args::align::AlignConvertArgs;
 
 use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 

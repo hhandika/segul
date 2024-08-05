@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::core::align::summarize::AlignmentSummary;
 use crate::helper::logger::AlignSeqLogger;
 
-use crate::cli::args::AlignSummaryArgs;
+use crate::cli::args::align::AlignSummaryArgs;
 use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for SummaryParser<'_> {}

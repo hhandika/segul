@@ -1,10 +1,8 @@
-use crate::cli::align::concat::ConcatParser;
 use crate::cli::align::convert::ConvertParser;
 use crate::cli::align::filter::FilterParser;
 use crate::cli::align::partition::PartParser;
 use crate::cli::align::split::SplitParser;
 use crate::cli::align::summarize::SummaryParser;
-use crate::cli::args::MainSubcommand;
 use crate::cli::read::summarize::ReadSummaryCliParser;
 use crate::cli::sequence::extract::ExtractParser;
 use crate::cli::sequence::id::IdParser;
@@ -12,13 +10,12 @@ use crate::cli::sequence::remove::RemoveParser;
 use crate::cli::sequence::rename::RenameParser;
 use crate::cli::sequence::translate::TranslateParser;
 
-use super::{
-    args::{
-        AlignmentSubcommand, ContigSubcommand, PartitionSubcommand, SeqReadSubcommand,
-        SequenceSubcommand,
-    },
-    contig::summarize::ContigCliParser,
-};
+use super::align::concat::ConcatParser;
+use super::args::align::{AlignmentSubcommand, PartitionSubcommand};
+use super::args::genomics::{ContigSubcommand, SeqReadSubcommand};
+use super::args::sequence::SequenceSubcommand;
+use super::args::MainSubcommand;
+use super::contig::summarize::ContigCliParser;
 
 pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
     match subcommand {
@@ -76,6 +73,9 @@ fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
     match subcommand {
         SequenceSubcommand::Extract(extract_args) => {
             ExtractParser::new(extract_args).extract();
+        }
+        SequenceSubcommand::Filter(filter_args) => {
+            // FilterParser::new(filter_args).filter();
         }
         SequenceSubcommand::Id(id_args) => {
             IdParser::new(id_args).extract();

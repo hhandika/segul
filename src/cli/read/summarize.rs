@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use crate::{core::read::summarize::GenomicReadSummary, helper::logger::ReadLogger};
 
-use crate::cli::{args::SeqReadSummaryArgs, collect_paths, InputCli, OutputCli, RawInputCli};
+use crate::cli::{
+    args::genomics::SeqReadSummaryArgs, collect_paths, InputCli, OutputCli, RawInputCli,
+};
 
 impl InputCli for ReadSummaryCliParser<'_> {}
 impl OutputCli for ReadSummaryCliParser<'_> {}

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 
-use crate::cli::args::AlignFilterArgs;
+use crate::cli::args::align::AlignFilterArgs;
 use crate::cli::collect_paths;
 use crate::cli::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
 use crate::core::align::filter::{AlignmentFiltering, FilteringParameters};

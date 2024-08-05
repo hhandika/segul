@@ -4,7 +4,7 @@ use crate::core::align::split::AlignmentSplitting;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::PartitionFmt;
 
-use crate::cli::args::AlignSplitArgs;
+use crate::cli::args::align::AlignSplitArgs;
 use crate::cli::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
 
 impl OutputCli for SplitParser<'_> {}

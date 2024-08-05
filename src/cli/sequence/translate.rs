@@ -5,7 +5,7 @@ use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::GeneticCodes;
 use colored::Colorize;
 
-use crate::cli::args::SequenceTranslateArgs;
+use crate::cli::args::sequence::SequenceTranslateArgs;
 use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for TranslateParser<'_> {}

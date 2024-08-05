@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use crate::cli::{args::ContigSummaryArgs, collect_paths, ContigInputCli, InputCli, OutputCli};
+use crate::cli::args::genomics::ContigSummaryArgs;
+use crate::cli::{collect_paths, ContigInputCli, InputCli, OutputCli};
 use crate::core::contig::summarize::ContigSummaryHandler;
 use crate::helper::logger::ContigLogger;
 
