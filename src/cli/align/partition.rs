@@ -3,8 +3,8 @@ use crate::helper::partition::construct_partition_path;
 use crate::helper::types::PartitionFmt;
 use crate::helper::{logger, utils};
 
-use super::args::PartitionArgs;
-use super::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
+use crate::cli::args::PartitionArgs;
+use crate::cli::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
 
 impl InputCli for PartParser<'_> {}
 impl ConcatCli for PartParser<'_> {}

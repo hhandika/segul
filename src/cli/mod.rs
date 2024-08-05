@@ -1,19 +1,10 @@
 //! Command line interface for parsing and executing commands.
+mod align;
 mod args;
 mod commands;
-mod concat;
-mod contigs;
-mod convert;
-mod extract;
-mod filter;
-mod id;
-mod partition;
+mod contig;
 mod read;
-mod remove;
-mod rename;
-mod split;
-mod summarize;
-mod translate;
+mod sequence;
 
 #[cfg(target_os = "windows")]
 use glob::glob;

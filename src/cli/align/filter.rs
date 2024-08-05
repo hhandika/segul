@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 
+use crate::cli::args::AlignFilterArgs;
+use crate::cli::collect_paths;
 use crate::cli::{AlignSeqInput, ConcatCli, InputCli, OutputCli};
 use crate::core::align::filter::{AlignmentFiltering, FilteringParameters};
 use crate::helper::finder::IDs;
@@ -9,9 +11,6 @@ use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::{DataType, InputFmt, PartitionFmt};
 use crate::helper::utils;
 use crate::parser::txt;
-
-use super::args::AlignFilterArgs;
-use super::collect_paths;
 
 impl InputCli for FilterParser<'_> {}
 impl OutputCli for FilterParser<'_> {}

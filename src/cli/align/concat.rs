@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use super::{collect_paths, AlignSeqInput, ConcatCli, InputCli, OutputCli};
 use crate::cli::args::AlignConcatArgs;
+use crate::cli::{collect_paths, AlignSeqInput, ConcatCli, InputCli, OutputCli};
 use crate::core::align::concat::AlignmentConcatenation;
 use crate::helper::logger::AlignSeqLogger;
 

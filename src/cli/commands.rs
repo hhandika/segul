@@ -1,23 +1,23 @@
+use crate::cli::align::concat::ConcatParser;
+use crate::cli::align::convert::ConvertParser;
+use crate::cli::align::filter::FilterParser;
+use crate::cli::align::partition::PartParser;
+use crate::cli::align::split::SplitParser;
+use crate::cli::align::summarize::SummaryParser;
 use crate::cli::args::MainSubcommand;
-use crate::cli::concat::ConcatParser;
-use crate::cli::convert::ConvertParser;
-use crate::cli::extract::ExtractParser;
-use crate::cli::filter::FilterParser;
-use crate::cli::id::IdParser;
-use crate::cli::partition::PartParser;
-use crate::cli::read::ReadSummaryCliParser;
-use crate::cli::remove::RemoveParser;
-use crate::cli::rename::RenameParser;
-use crate::cli::split::SplitParser;
-use crate::cli::summarize::SummaryParser;
-use crate::cli::translate::TranslateParser;
+use crate::cli::read::summarize::ReadSummaryCliParser;
+use crate::cli::sequence::extract::ExtractParser;
+use crate::cli::sequence::id::IdParser;
+use crate::cli::sequence::remove::RemoveParser;
+use crate::cli::sequence::rename::RenameParser;
+use crate::cli::sequence::translate::TranslateParser;
 
 use super::{
     args::{
         AlignmentSubcommand, ContigSubcommand, PartitionSubcommand, SeqReadSubcommand,
         SequenceSubcommand,
     },
-    contigs::ContigCliParser,
+    contig::summarize::ContigCliParser,
 };
 
 pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {

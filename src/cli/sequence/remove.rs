@@ -7,7 +7,7 @@ use crate::{
     helper::logger::AlignSeqLogger,
 };
 
-use super::{args::SequenceRemoveArgs, collect_paths, AlignSeqInput, InputCli, OutputCli};
+use crate::cli::{args::SequenceRemoveArgs, collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for RemoveParser<'_> {}
 impl OutputCli for RemoveParser<'_> {}

@@ -7,8 +7,8 @@ use crate::helper::logger::AlignSeqLogger;
 use crate::helper::utils;
 use crate::parser::delimited;
 
-use super::args::SequenceRenameArgs;
-use super::{collect_paths, AlignSeqInput, InputCli, OutputCli};
+use crate::cli::args::SequenceRenameArgs;
+use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
 
 impl InputCli for RenameParser<'_> {}
 impl OutputCli for RenameParser<'_> {}
