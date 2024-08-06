@@ -127,9 +127,9 @@ mod test {
 
     #[test]
     fn test_multi_read_stats() {
-        let reads = vec![b"ATGCN", b"ATGCC"];
+        let reads = [b"ATGCN", b"ATGCC"];
         let mut read = ReadRecord::new();
-        reads.iter().for_each(|r| read.summarize(*r));
+        reads.iter().for_each(|&r| read.summarize(r));
         let mut summary = ReadSummary::new();
         summary.summarize(&read);
         assert_eq!(read.len, 10);

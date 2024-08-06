@@ -164,7 +164,7 @@ impl<'a> SequenceFiltering<'a> {
     }
 
     fn write_sequence(&self, file: &Path, matrix: &SeqMatrix, header: &Header) {
-        let output_path = files::create_output_fname(&self.output, file, &self.output_fmt);
+        let output_path = files::create_output_fname(self.output, file, self.output_fmt);
         let mut seq_writer = SeqWriter::new(&output_path, matrix, header);
         seq_writer
             .write_sequence(self.output_fmt)
@@ -179,7 +179,7 @@ impl<'a> SequenceFiltering<'a> {
     }
 
     fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
-        let alignment = SeqParser::new(file, &self.datatype);
+        let alignment = SeqParser::new(file, self.datatype);
         alignment.get_alignment(self.input_fmt)
     }
 

@@ -62,7 +62,7 @@ mod test {
 
     #[test]
     fn test_multi_read_qscore_count() {
-        let read_qscores = vec![
+        let read_qscores = [
             vec![31, 34, 35, 35, 15, 25],
             vec![31, 34, 35, 35, 15, 25],
             vec![31, 34, 35, 35, 15, 25],

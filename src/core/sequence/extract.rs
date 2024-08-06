@@ -143,7 +143,7 @@ mod tests {
             &InputFmt::Fasta,
             &DataType::Dna,
             &SeqExtractionParameters::None,
-            &output_dir,
+            output_dir,
             &output_fmt,
         );
         assert!(extract.match_id(id, re));

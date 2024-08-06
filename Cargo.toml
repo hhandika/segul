@@ -47,3 +47,6 @@ tempdir = "0.3.7"
 debug = false
 lto = "fat"
 panic = "abort"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }

@@ -295,9 +295,9 @@ mod test {
 
     #[test]
     fn test_all_id() {
-        let ids = vec!["1", "2", "3", "4"];
-        let id_2 = vec!["1", "2", "3"];
-        let id_3 = vec!["1", "2", "3", "4"];
+        let ids = ["1", "2", "3", "4"];
+        let id_2 = ["1", "2", "3"];
+        let id_3 = ["1", "2", "3", "4"];
         assert!(!ids.iter().all(|id| id_2.contains(id)));
         assert!(ids.iter().all(|id| id_3.contains(id)));
     }
@@ -311,7 +311,7 @@ mod test {
             &files,
             &input_fmt,
             &DataType::Dna,
-            &Path::new("test"),
+            Path::new("test"),
             &FilteringParameters::MissingData(0.5),
         );
         let file = path.join("gene_1.nex");
