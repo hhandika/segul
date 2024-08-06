@@ -42,8 +42,8 @@ pub enum SeqFilteringParameters {
     /// the float will be floored.
     /// For example, 5.1, 5.5, or 5.9, will be 5.
     PercentMaxGap(f64),
-    /// Filter sequences based on the minimum sequence length.
-    /// Remove sequences that have a length less than the specified number.
+    /// Filter sequences based on the minimum sequence length without gaps.
+    /// Remove sequences that have a sequence length less than the specified number.
     MinSequenceLength(usize),
     None,
 }
@@ -152,7 +152,7 @@ impl<'a> SequenceFiltering<'a> {
         let counter = AtomicUsize::new(0);
         self.files.par_iter().for_each(|file| {
             let (mut matrix, mut header) = self.get_alignment(file);
-            matrix.retain(|_, seq| seq.len() >= *length);
+            matrix.retain(|_, seq| self.count_non_gaps(seq) >= *length);
             header.ntax = matrix.len();
             if header.ntax > 0 {
                 self.write_sequence(file, &matrix, &header);
@@ -189,6 +189,10 @@ impl<'a> SequenceFiltering<'a> {
         matrix.retain(|_, seq| self.count_gaps(seq) <= max_gaps);
 
         header.ntax = matrix.len();
+    }
+
+    fn count_non_gaps(&self, seq: &str) -> usize {
+        seq.bytes().filter(|&c| c != b'-' && c != b'?').count()
     }
 
     fn count_gaps(&self, seq: &str) -> usize {
@@ -269,6 +273,14 @@ mod tests {
         let alignment_len = 10;
         let max_gaps = handle.count_max_gaps(alignment_len, threshold);
         assert_eq!(max_gaps, 5);
+        let seq = "ataggata--??nn";
+        let gaps = handle.count_gaps(seq);
+        assert_eq!(gaps, 4);
+        let non_gaps = handle.count_non_gaps(seq);
+        assert_eq!(non_gaps, 10);
+        let seq_2 = "ataggata--";
+        let non_gap_2 = handle.count_non_gaps(seq_2);
+        assert_eq!(non_gap_2, 8);
     }
 
     #[test]
