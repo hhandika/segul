@@ -72,6 +72,8 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) concat: bool,
     #[arg(long = "len", help = "Filter by sequence length")]
     pub(crate) len: Option<usize>,
+    #[arg(long = "missing-data", help = "Filter by proportion of missing data")]
+    pub(crate) missing: Option<f64>,
     #[arg(
         long = "npercent",
         help = "Filter by multiple minimal taxon percentage"

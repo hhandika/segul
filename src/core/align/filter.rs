@@ -20,7 +20,7 @@ use rayon::prelude::*;
 use crate::core::align::concat::AlignmentConcatenation;
 use crate::helper::concat::ConcatParams;
 use crate::helper::sequence::SeqParser;
-use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt};
+use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
 use crate::helper::{files, utils};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
@@ -28,10 +28,18 @@ use crate::parser::phylip::Phylip;
 use crate::stats::sequence;
 
 pub enum FilteringParameters {
+    /// Filtered by minimum number of taxa.
     MinTax(usize),
+    /// Filtered by minimum alignment length.
     AlnLen(usize),
+    /// Filtered by minimum parsimony informative sites.
     ParsInf(usize),
+    /// Filtered by percentage of parsimony informative sites.
     PercInf(f64),
+    /// Filtered by taxa proportion of missing data. The value is in percentage.
+    /// Missing data is defined as a gap "-" or missing data "?"
+    MissingData(f64),
+    /// Filtered by taxa that contains all specified taxa.
     TaxonAll(Vec<String>),
 }
 
@@ -162,6 +170,12 @@ impl<'a> AlignmentFiltering<'a> {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
+                FilteringParameters::MissingData(perc) => {
+                    let missing_data = self.calculate_prop_missing_data(file);
+                    if missing_data <= *perc {
+                        s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
+                    }
+                }
                 _ => (),
             });
 
@@ -208,6 +222,20 @@ impl<'a> AlignmentFiltering<'a> {
         log::info!("{:18}: {}", "Dir", self.output.display());
     }
 
+    fn calculate_prop_missing_data(&self, file: &Path) -> f64 {
+        let (matrix, header) = self.get_alignment(file);
+        let total_chars = header.nchar * header.ntax;
+        let missing_data = self.count_missing_data(&matrix);
+        missing_data as f64 / total_chars as f64
+    }
+
+    fn count_missing_data(&self, matrix: &SeqMatrix) -> usize {
+        matrix
+            .iter()
+            .map(|(_, seq)| seq.bytes().filter(|&c| c == b'-' || c == b'?').count())
+            .sum()
+    }
+
     fn get_pars_inf(&self, file: &Path) -> usize {
         let (matrix, _) = self.get_alignment(file);
         sequence::get_pars_inf(&matrix, self.datatype)
@@ -235,6 +263,8 @@ impl<'a> AlignmentFiltering<'a> {
 
 #[cfg(test)]
 mod test {
+    use assert_approx_eq::assert_approx_eq;
+
     use super::*;
     use crate::helper::finder::SeqFileFinder;
 
@@ -270,5 +300,22 @@ mod test {
         let id_3 = vec!["1", "2", "3", "4"];
         assert!(!ids.iter().all(|id| id_2.contains(id)));
         assert!(ids.iter().all(|id| id_3.contains(id)));
+    }
+
+    #[test]
+    fn test_missing_data() {
+        let path = Path::new("tests/files/gappy/");
+        let input_fmt = InputFmt::Nexus;
+        let files = SeqFileFinder::new(path).find(&input_fmt);
+        let ftr = AlignmentFiltering::new(
+            &files,
+            &input_fmt,
+            &DataType::Dna,
+            &Path::new("test"),
+            &FilteringParameters::MissingData(0.5),
+        );
+        let file = path.join("gene_1.nex");
+        let missing_data = ftr.calculate_prop_missing_data(&file);
+        assert_approx_eq!(0.27, missing_data, 2f64);
     }
 }

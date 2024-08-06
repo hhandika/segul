@@ -108,6 +108,7 @@ impl<'a> FilterParser<'a> {
             m if m.pinf.is_some() => FilteringParameters::ParsInf(self.parse_pars_inf()),
             m if m.percent_inf.is_some() => FilteringParameters::PercInf(self.count_percent_inf()),
             m if m.ids.is_some() => FilteringParameters::TaxonAll(self.parse_taxon_id()),
+            m if m.missing.is_some() => FilteringParameters::MissingData(self.parse_missing_data()),
             _ => unreachable!("Invalid parameters!"),
         }
     }
@@ -134,6 +135,13 @@ impl<'a> FilterParser<'a> {
     fn count_percent_inf(&self) -> f64 {
         match self.args.percent_inf {
             Some(p) => p,
+            None => unreachable!("Invalid parameters!"),
+        }
+    }
+
+    fn parse_missing_data(&self) -> f64 {
+        match self.args.missing {
+            Some(perc) => perc,
             None => unreachable!("Invalid parameters!"),
         }
     }
@@ -188,6 +196,9 @@ impl<'a> FilterParser<'a> {
                 format!("{}_{}percent_inf", self.args.output, perc_inf * 100.0)
             }
             FilteringParameters::TaxonAll(_) => format!("{}_taxonID", self.args.output),
+            FilteringParameters::MissingData(perc) => {
+                format!("{}_{}percent_missing", self.args.output, perc * 100.0)
+            }
         };
 
         self.output_dir = PathBuf::from(output_dir);
@@ -208,6 +219,9 @@ impl<'a> FilterParser<'a> {
             }
             FilteringParameters::TaxonAll(taxon_id) => {
                 log::info!("{:18}: {} taxa\n", "Taxon id", taxon_id.len())
+            }
+            FilteringParameters::MissingData(perc) => {
+                log::info!("{:18}: {}%\n", "% missing data", perc * 100.0)
             }
         }
     }
@@ -234,6 +248,7 @@ mod test {
                 percent_inf: None,
                 ids: None,
                 concat: false,
+                missing: None,
                 partition: CommonConcatArgs {
                     part_fmt: "raxml".to_string(),
                     codon: false,
