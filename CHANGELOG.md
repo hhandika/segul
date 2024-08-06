@@ -5,6 +5,7 @@
 ### New Features
 
 - Filter sequences based on gaps or sequence length.
+- Add a proportion of missing data parameter to the alignment filtering.
 
 ### API Breaking Changes
 
