@@ -4,9 +4,9 @@
 //! the `sequence filter` will filter sequences within the alignment.
 //! The filtering criteria are:
 //! - Total percentage of gaps in a sequence. The sequence will be removed
-//! if the percentage of gaps is higher than the threshold.
+//!     if the percentage of gaps is higher than the threshold.
 //! - Minimum sequence length. Filter sequence that has an equal or more sequence length
-//! than the specified number.
+//!     than the specified number.
 
 use std::{
     path::{Path, PathBuf},

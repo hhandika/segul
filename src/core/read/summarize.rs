@@ -29,7 +29,7 @@ use crate::{
 /// 1. Minimal: read count only
 /// 2. Default: essential statistics, such as read counts, base counts, gc, at, and n content, and qscore statistics
 /// 3. Complete: all the essential plus summary
-/// statistics per position in read for each file.
+///     statistics per position in read for each file.
 pub struct GenomicReadSummary<'a> {
     /// Input path.
     pub inputs: &'a mut [PathBuf],
