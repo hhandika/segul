@@ -101,6 +101,7 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 | Alignment summary statistics   | [CLI](https://www.segul.app/docs/cli-usage/summary) / [GUI](https://www.segul.app/docs/gui-usage/align-summary)        |
 | Genomic summary statistics     | [CLI](https://www.segul.app/docs/cli-usage/genomic) / [GUI](https://www.segul.app/docs/gui-usage/genomic)              |
 | Sequence extraction            | [CLI](https://www.segul.app/docs/cli-usage/extract) / [GUI](https://www.segul.app/docs/gui-usage/sequence-extract)     |
+| Sequence filtering             | [CLI](https://www.segul.app/docs/cli-usage/seq_filter) / GUI feature in development       |
 | Sequence ID extraction         | [CLI](https://www.segul.app/docs/cli-usage/id) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id)               |
 | Sequence ID mapping            | [CLI](https://www.segul.app/docs/cli-usage/map) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id-map)          |
 | Sequence ID renaming           | [CLI](https://www.segul.app/docs/cli-usage/rename) / [GUI](https://www.segul.app/docs/gui-usage/sequence-rename)       |
