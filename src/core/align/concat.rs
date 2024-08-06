@@ -40,7 +40,7 @@ impl<'a> AlignmentConcatenation<'a> {
     pub fn concat(&mut self, files: &mut [PathBuf], datatype: &DataType) {
         let mut concat = Concat::new(files, self.input_fmt, datatype);
         let output_path =
-            files::create_output_fname(&self.output_dir, &self.output_prefix, &self.output_fmt);
+            files::create_output_fname(self.output_dir, self.output_prefix, self.output_fmt);
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
         let mut seq_writer = SeqWriter::new(&output_path, &concat.alignment, &concat.header);

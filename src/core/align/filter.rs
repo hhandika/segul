@@ -201,7 +201,7 @@ impl<'a> AlignmentFiltering<'a> {
         output_fmt: &OutputFmt,
         prefix: &Path,
     ) {
-        let output_dir = files::create_output_fname(&self.output, &prefix, &output_fmt);
+        let output_dir = files::create_output_fname(self.output, prefix, output_fmt);
         let mut concat =
             AlignmentConcatenation::new(self.input_fmt, &output_dir, output_fmt, part_fmt, prefix);
         concat.concat(ftr_files, self.datatype);

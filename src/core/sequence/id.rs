@@ -45,7 +45,7 @@ impl<'a> SequenceID<'a> {
             input_fmt,
             datatype,
             output,
-            prefix: prefix,
+            prefix,
         }
     }
 
