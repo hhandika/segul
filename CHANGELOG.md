@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.22.1
+
+### Bug Fixes
+
+- Sequence filtering now does not enforce input is an alignment.
+
 ## v0.22.0
 
 ### New Features
