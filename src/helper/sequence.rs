@@ -49,6 +49,7 @@ impl<'a> SeqParser<'a> {
     /// ```
     pub fn get_alignment(&self, input_fmt: &'a InputFmt) -> (SeqMatrix, Header) {
         let (matrix, header) = self.parse(input_fmt);
+
         assert!(
             header.aligned,
             "Found an invalid alignment file. \
@@ -56,6 +57,7 @@ impl<'a> SeqParser<'a> {
             SEGUL assumes the sequences are aligned if they are the same length.",
             self.file.display()
         );
+
         (matrix, header)
     }
 

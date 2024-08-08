@@ -18,10 +18,9 @@ use rayon::prelude::*;
 
 use crate::{
     helper::{
-        concat::ConcatParams,
         files,
         sequence::SeqParser,
-        types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix},
+        types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix},
         utils,
     },
     writer::sequences::SeqWriter,
@@ -61,8 +60,6 @@ pub struct SequenceFiltering<'a> {
     output_fmt: &'a OutputFmt,
     /// Choice of filtering options.
     params: &'a SeqFilteringParameters,
-    /// Concatenation parameters.
-    concat: Option<ConcatParams>,
 }
 
 impl<'a> SequenceFiltering<'a> {
@@ -81,7 +78,6 @@ impl<'a> SequenceFiltering<'a> {
             output,
             output_fmt,
             params,
-            concat: None,
         }
     }
 
@@ -129,11 +125,6 @@ impl<'a> SequenceFiltering<'a> {
         }
     }
 
-    /// Setter for the concatenation parameters.
-    pub fn set_concat(&mut self, partition_fmt: &PartitionFmt, prefix: &Path) {
-        self.concat = Some(ConcatParams::new(self.output_fmt, partition_fmt, prefix));
-    }
-
     fn filter_gappy_sequences(&self, threshold: &f64) -> usize {
         let counter = AtomicUsize::new(0);
         self.files.par_iter().for_each(|file| {
@@ -179,8 +170,8 @@ impl<'a> SequenceFiltering<'a> {
     }
 
     fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
-        let alignment = SeqParser::new(file, self.datatype);
-        alignment.get_alignment(self.input_fmt)
+        let sequence = SeqParser::new(file, self.datatype);
+        sequence.parse(self.input_fmt)
     }
 
     fn remove_gappy_sequences(&self, matrix: &mut SeqMatrix, header: &mut Header, threshold: &f64) {
