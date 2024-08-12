@@ -17,7 +17,9 @@ pub(crate) enum AlignmentSubcommand {
     #[command(about = "Split alignment by partitions", name = "split")]
     Split(AlignSplitArgs),
     #[command(about = "Compute Alignment Statistics", name = "summary")]
-    AlignSummary(AlignSummaryArgs),
+    Summary(AlignSummaryArgs),
+    #[command(about = "Convert alignment to unaligned sequences", name = "unalign")]
+    Unalign(UnalignArgs),
 }
 
 #[derive(Subcommand)]
@@ -178,4 +180,16 @@ pub(crate) struct PartitionArgs {
     pub(crate) force: bool,
     #[arg(long = "skip-checking", help = "Skip checking partition formats")]
     pub(crate) skip_checking: bool,
+}
+
+#[derive(Args)]
+pub(crate) struct UnalignArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
+    pub(crate) out_fmt: CommonSeqOutput,
+    #[arg(short, long, help = "Output path", default_value = "Align-Convert")]
+    pub(crate) output: PathBuf,
 }

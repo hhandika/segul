@@ -11,6 +11,7 @@ use crate::cli::sequence::rename::RenameParser;
 use crate::cli::sequence::translate::TranslateParser;
 
 use super::align::concat::ConcatParser;
+use super::align::unalign::UnalignParser;
 use super::args::align::{AlignmentSubcommand, PartitionSubcommand};
 use super::args::genomics::{ContigSubcommand, SeqReadSubcommand};
 use super::args::sequence::SequenceSubcommand;
@@ -54,19 +55,12 @@ fn match_partition_subcommand(subcommand: &PartitionSubcommand) {
 
 fn match_alignment_subcommand(subcommand: &AlignmentSubcommand) {
     match subcommand {
-        AlignmentSubcommand::Concat(concat_args) => {
-            ConcatParser::new(concat_args).concat();
-        }
-        AlignmentSubcommand::Convert(convert_args) => {
-            ConvertParser::new(convert_args).convert();
-        }
-        AlignmentSubcommand::Filter(filter_args) => {
-            FilterParser::new(filter_args).filter();
-        }
+        AlignmentSubcommand::Concat(concat_args) => ConcatParser::new(concat_args).concat(),
+        AlignmentSubcommand::Convert(convert_args) => ConvertParser::new(convert_args).convert(),
+        AlignmentSubcommand::Filter(filter_args) => FilterParser::new(filter_args).filter(),
         AlignmentSubcommand::Split(split_args) => SplitParser::new(split_args).split(),
-        AlignmentSubcommand::AlignSummary(summary_args) => {
-            SummaryParser::new(summary_args).summarize();
-        }
+        AlignmentSubcommand::Summary(summary_args) => SummaryParser::new(summary_args).summarize(),
+        AlignmentSubcommand::Unalign(unalign_args) => UnalignParser::new(unalign_args).unalign(),
     };
 }
 

@@ -24,6 +24,18 @@ pub struct UnalignAlignment<'a> {
     output_fmt: &'a OutputFmt,
 }
 
+impl Default for UnalignAlignment<'_> {
+    fn default() -> Self {
+        Self {
+            input_files: &[],
+            input_fmt: &InputFmt::Fasta,
+            datatype: &DataType::Dna,
+            output_dir: Path::new(""),
+            output_fmt: &OutputFmt::Fasta,
+        }
+    }
+}
+
 impl<'a> UnalignAlignment<'a> {
     pub fn new(
         input_files: &'a [PathBuf],
@@ -54,16 +66,16 @@ impl<'a> UnalignAlignment<'a> {
     fn get_unalign(&self, input: &Path) -> (SeqMatrix, Header) {
         let (mut matrix, header) =
             SeqParser::new(input, self.datatype).get_alignment(self.input_fmt);
-        self.remove_gaps(&mut matrix);
+        matrix.values_mut().for_each(|seq| {
+            *seq = self.remove_gaps(seq);
+        });
 
         (matrix, header)
     }
 
     // Iterate over map and replace '?' with '-' of each values
-    fn remove_gaps(&self, matrix: &mut SeqMatrix) {
-        matrix.values_mut().for_each(|seq| {
-            *seq = seq.replace(&['?', '-'], "-");
-        });
+    fn remove_gaps(&self, seq: &str) -> String {
+        seq.replace(&['?', '-'], "")
     }
 
     fn write_results(&self, input: &Path, matrix: &SeqMatrix, header: &Header) {
@@ -72,5 +84,18 @@ impl<'a> UnalignAlignment<'a> {
         writer
             .write_sequence(&self.output_fmt)
             .expect("Failed to write unaligned sequences");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unalign() {
+        let seq = "ATG-?C";
+        let unalign = UnalignAlignment::default();
+        let res = unalign.remove_gaps(seq);
+        assert!(res == String::from("ATGC"));
     }
 }
