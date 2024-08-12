@@ -261,6 +261,17 @@ impl<'a> SeqFileFinder<'a> {
         walk_dir!(self, re_match_sequence_lazy)
     }
 
+    pub fn find_recursive_only(&self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
+        let files = match input_fmt {
+            InputFmt::Fasta => walk_dir!(self, re_matches_fasta_lazy),
+            InputFmt::Nexus => walk_dir!(self, re_match_nexus_lazy),
+            InputFmt::Phylip => walk_dir!(self, re_match_phylip_lazy),
+            _ => unreachable!(),
+        };
+
+        files
+    }
+
     fn check_results(&self, files: &[PathBuf]) {
         if files.is_empty() {
             panic!(
@@ -300,6 +311,22 @@ fn re_matches_fasta_lazy(fname: &str) -> bool {
 fn re_match_sequence_lazy(fname: &str) -> bool {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?i)(.nex*|.nxs|.phy*|.fna|.fa*)(?:.*)").unwrap();
+    }
+
+    RE.is_match(fname)
+}
+
+fn re_match_nexus_lazy(fname: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?i)(.nex*|.nxs)(?:.*)").unwrap();
+    }
+
+    RE.is_match(fname)
+}
+
+fn re_match_phylip_lazy(fname: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?i)(.phy*|.fna|.fa*)(?:.*)").unwrap();
     }
 
     RE.is_match(fname)
