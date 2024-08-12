@@ -93,10 +93,6 @@ impl<'a> UnalignAlignment<'a> {
     ///     );
     /// handle.unalign();
     pub fn unalign(&self) {
-        if self.output_fmt != &OutputFmt::Fasta || self.output_fmt != &OutputFmt::FastaInt {
-            log::warn!("Unalign feature only supports fasta or fasta-int output format");
-            return;
-        }
         let spin = utils::set_spinner();
         spin.set_message("Converting un-aligned sequence files...");
         self.input_files.par_iter().for_each(|file| {
