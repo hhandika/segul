@@ -17,6 +17,7 @@ use colored::Colorize;
 use rayon::prelude::*;
 
 use crate::{
+    core::OutputPrint,
     helper::{
         files,
         sequence::SeqParser,
@@ -61,6 +62,8 @@ pub struct SequenceFiltering<'a> {
     /// Choice of filtering options.
     params: &'a SeqFilteringParameters,
 }
+
+impl OutputPrint for SequenceFiltering<'_> {}
 
 impl<'a> SequenceFiltering<'a> {
     pub fn new(
@@ -119,7 +122,7 @@ impl<'a> SequenceFiltering<'a> {
         };
         spinner.finish_with_message("Finished filtering sequences!\n");
         if filtered_aln == 0 {
-            log::warn!("No matching sequences were found!!");
+            log::warn!("No matching sequences were found!");
         } else {
             self.print_output_info(filtered_aln);
         }
@@ -165,7 +168,7 @@ impl<'a> SequenceFiltering<'a> {
     fn print_output_info(&self, counter: usize) {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Directory", self.output.display());
-        log::info!("{:18}: {:?}", "Format", self.output_fmt);
+        self.print_output_fmt(self.output_fmt);
         log::info!("{:18}: {}", "Total files", counter);
     }
 

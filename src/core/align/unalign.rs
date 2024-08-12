@@ -4,9 +4,11 @@
 
 use std::path::{Path, PathBuf};
 
+use colored::Colorize;
 use rayon::prelude::*;
 
 use crate::{
+    core::OutputPrint,
     helper::{
         files,
         sequence::SeqParser,
@@ -23,6 +25,8 @@ pub struct UnalignAlignment<'a> {
     output_dir: &'a Path,
     output_fmt: &'a OutputFmt,
 }
+
+impl OutputPrint for UnalignAlignment<'_> {}
 
 impl Default for UnalignAlignment<'_> {
     fn default() -> Self {
@@ -61,6 +65,7 @@ impl<'a> UnalignAlignment<'a> {
             self.write_results(file, &matrix, &header);
         });
         spin.finish_with_message("Finished un-aligning alignments!\n");
+        self.print_output_info();
     }
 
     fn get_unalign(&self, input: &Path) -> (SeqMatrix, Header) {
@@ -75,15 +80,21 @@ impl<'a> UnalignAlignment<'a> {
 
     // Iterate over map and replace '?' with '-' of each values
     fn remove_gaps(&self, seq: &str) -> String {
-        seq.replace(&['?', '-'], "")
+        seq.replace(['?', '-'], "")
     }
 
     fn write_results(&self, input: &Path, matrix: &SeqMatrix, header: &Header) {
         let output_path = files::create_output_fname(self.output_dir, input, self.output_fmt);
         let mut writer = SeqWriter::new(&output_path, matrix, header);
         writer
-            .write_sequence(&self.output_fmt)
+            .write_sequence(self.output_fmt)
             .expect("Failed to write unaligned sequences");
+    }
+
+    fn print_output_info(&self) {
+        log::info!("{}", "Output".yellow());
+        log::info!("{:18}: {}", "Directory", self.output_dir.display());
+        self.print_output_fmt(self.output_fmt);
     }
 }
 
