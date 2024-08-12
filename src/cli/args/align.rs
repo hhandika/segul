@@ -190,6 +190,11 @@ pub(crate) struct UnalignArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "Align-Convert")]
+    #[arg(
+        short,
+        long,
+        help = "Output directory path",
+        default_value = "Align-Unalign"
+    )]
     pub(crate) output: PathBuf,
 }
