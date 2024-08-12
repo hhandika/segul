@@ -128,7 +128,7 @@ impl<'a> SequenceFiltering<'a> {
     fn filter_gappy_sequences(&self, threshold: &f64) -> usize {
         let counter = AtomicUsize::new(0);
         self.files.par_iter().for_each(|file| {
-            let (mut matrix, mut header) = self.get_alignment(file);
+            let (mut matrix, mut header) = self.get_sequence_matrix(file);
             self.remove_gappy_sequences(&mut matrix, &mut header, threshold);
             if header.ntax > 0 {
                 self.write_sequence(file, &matrix, &header);
@@ -142,7 +142,7 @@ impl<'a> SequenceFiltering<'a> {
     fn filter_sequences_by_length(&self, length: &usize) -> usize {
         let counter = AtomicUsize::new(0);
         self.files.par_iter().for_each(|file| {
-            let (mut matrix, mut header) = self.get_alignment(file);
+            let (mut matrix, mut header) = self.get_sequence_matrix(file);
             matrix.retain(|_, seq| self.count_non_gaps(seq) >= *length);
             header.ntax = matrix.len();
             if header.ntax > 0 {
@@ -169,7 +169,7 @@ impl<'a> SequenceFiltering<'a> {
         log::info!("{:18}: {}", "Total files", counter);
     }
 
-    fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
+    fn get_sequence_matrix(&self, file: &Path) -> (SeqMatrix, Header) {
         let sequence = SeqParser::new(file, self.datatype);
         sequence.parse(self.input_fmt)
     }
@@ -246,7 +246,7 @@ mod tests {
         setup!(input_dir, handle, params, output);
         let threshold = 0.5;
         let test_file = input_dir.join("gene_1.nex");
-        let (mut matrix, mut header) = handle.get_alignment(&test_file);
+        let (mut matrix, mut header) = handle.get_sequence_matrix(&test_file);
         handle.remove_gappy_sequences(&mut matrix, &mut header, &threshold);
         assert_eq!(matrix.len(), 1);
     }
