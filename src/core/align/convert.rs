@@ -1,4 +1,4 @@
-// ! Convert sequence format from one to another.
+//! Convert sequence format from one to another.
 use std::path::{Path, PathBuf};
 
 use colored::Colorize;
@@ -12,6 +12,7 @@ use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for AlignmentConversion<'_> {}
 
+/// Convert sequence format
 pub struct AlignmentConversion<'a> {
     input_fmt: &'a InputFmt,
     output_fmt: &'a OutputFmt,

@@ -1,3 +1,5 @@
+//! Split a concatenated alignment
+//! into multiple alignments based on partitions
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 

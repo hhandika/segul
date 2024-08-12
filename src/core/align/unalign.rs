@@ -15,6 +15,7 @@ use crate::{
     writer::sequences::SeqWriter,
 };
 
+/// Unalign alignment files
 pub struct UnalignAlignment<'a> {
     /// Input alignment files
     input_files: &'a [PathBuf],
