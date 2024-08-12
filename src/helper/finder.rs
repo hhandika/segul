@@ -250,7 +250,6 @@ impl<'a> SeqFileFinder<'a> {
     /// # Example
     /// ```
     /// use std::path::Path;
-    /// use segul::helper::types::InputFmt;
     /// use segul::helper::finder::SeqFileFinder;
     ///
     /// let dir = Path::new("tests/files/concat");
@@ -261,6 +260,18 @@ impl<'a> SeqFileFinder<'a> {
         walk_dir!(self, re_match_sequence_lazy)
     }
 
+    /// Find input files for sequence and alignment, recursively.
+    /// Limit search to only the input format.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::InputFmt;
+    /// use segul::helper::finder::SeqFileFinder;
+    ///
+    /// let dir = Path::new("tests/files/concat");
+    /// let files = SeqFileFinder::new(&dir).find_recursive_only(&InputFmt::Nexus);
+    /// assert_eq!(files.len(), 4);
     pub fn find_recursive_only(&self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
         let files = match input_fmt {
             InputFmt::Fasta => walk_dir!(self, re_matches_fasta_lazy),
