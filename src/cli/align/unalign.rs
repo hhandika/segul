@@ -26,7 +26,7 @@ impl<'a> UnalignParser<'a> {
     pub(in crate::cli) fn unalign(&mut self) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
-        let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
+        let output_fmt = self.parse_output_fmt(&self.args.output_fmt);
         let task = "Unalign sequence alignment";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);

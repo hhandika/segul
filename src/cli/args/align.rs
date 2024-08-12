@@ -188,8 +188,15 @@ pub(crate) struct UnalignArgs {
     pub(crate) io: IOArgs,
     #[command(flatten)]
     pub(crate) in_fmt: CommonSeqInput,
-    #[command(flatten)]
-    pub(crate) out_fmt: CommonSeqOutput,
+    #[arg(
+        short = 'F',
+        long = "output-format",
+        help = "Specify output format",
+        default_value = "fasta",
+        value_parser = builder::PossibleValuesParser::new(
+            ["fasta", "fasta-int"]),
+    )]
+    pub(crate) output_fmt: String,
     #[arg(
         short,
         long,

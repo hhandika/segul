@@ -1,11 +1,8 @@
-//! Convert an alignment to unaligned sequences.
-//!
-//! Support multiple alignments.
-
-use std::path::{Path, PathBuf};
+//! Convert input alignments to unaligned sequence files.
 
 use colored::Colorize;
 use rayon::prelude::*;
+use std::path::{Path, PathBuf};
 
 use crate::{
     core::OutputPrint,
@@ -19,10 +16,15 @@ use crate::{
 };
 
 pub struct UnalignAlignment<'a> {
+    /// Input alignment files
     input_files: &'a [PathBuf],
+    /// Input format of alignment files
     input_fmt: &'a InputFmt,
+    /// Data type of sequences
     datatype: &'a DataType,
+    /// Output directory
     output_dir: &'a Path,
+    /// Output format of sequence files. Always fasta
     output_fmt: &'a OutputFmt,
 }
 
@@ -41,6 +43,8 @@ impl Default for UnalignAlignment<'_> {
 }
 
 impl<'a> UnalignAlignment<'a> {
+    /// Create a new UnalignAlignment instance
+    /// The output format is always fasta
     pub fn new(
         input_files: &'a [PathBuf],
         input_fmt: &'a InputFmt,
@@ -57,7 +61,41 @@ impl<'a> UnalignAlignment<'a> {
         }
     }
 
+    /// Convert aligned sequences to unaligned sequences
+    /// by removing gaps from each sequence
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::path::{Path, PathBuf};
+    /// use tempdir::TempDir;
+    /// use segul::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
+    /// use segul::core::align::unalign::UnalignAlignment;
+    /// use segul::helper::finder::SeqFileFinder;
+    ///
+    /// let input_fmt = InputFmt::Nexus;
+    /// let datatype = DataType::Dna;
+    /// let input_dir = Path::new("tests/files/concat");
+    /// // Find matching alignment files in the input directory
+    /// let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
+    /// // Replace the temp directory with your own directory.
+    /// let output = TempDir::new("temp").unwrap();
+    /// let output_dir = output.path();
+    /// // Unalign feature only supports fasta or fasta-int output format
+    /// let output_fmt = OutputFmt::Fasta;
+    /// let handle = UnalignAlignment::new(
+    ///     &files,
+    ///     &input_fmt,
+    ///     &datatype,
+    ///     &output_dir,
+    ///     &output_fmt
+    ///     );
+    /// handle.unalign();
     pub fn unalign(&self) {
+        if self.output_fmt != &OutputFmt::Fasta || self.output_fmt != &OutputFmt::FastaInt {
+            log::warn!("Unalign feature only supports fasta or fasta-int output format");
+            return;
+        }
         let spin = utils::set_spinner();
         spin.set_message("Converting un-aligned sequence files...");
         self.input_files.par_iter().for_each(|file| {
