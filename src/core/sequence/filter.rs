@@ -97,7 +97,7 @@ impl<'a> SequenceFiltering<'a> {
     ///
     /// let input_fmt = InputFmt::Nexus;
     /// let datatype = DataType::Dna;
-    /// let input_dir = Path::new("tests/files/concat");
+    /// let input_dir = Path::new("tests/files/alignments");
     /// let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
     /// // Replace the temp directory with your own directory.
     /// let output = TempDir::new("tempt").unwrap();
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_filter_sequences_by_length() {
-        let dir = Path::new("tests/files/concat");
+        let dir = Path::new("tests/files/alignments");
         let params = SeqFilteringParameters::MinSequenceLength(7);
         setup!(dir, handle, params, output);
         handle.filter();

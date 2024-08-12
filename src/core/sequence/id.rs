@@ -59,8 +59,8 @@ impl<'a> SequenceID<'a> {
     /// use segul::helper::types::{DataType, InputFmt};
     /// use tempdir::TempDir;
     ///
-    /// let alignment_2 = PathBuf::from("tests/files/concat/gene_2.nex");
-    /// let alignment_1 = PathBuf::from("tests/files/concat/gene_1.nex");
+    /// let alignment_2 = PathBuf::from("tests/files/alignments/gene_2.nex");
+    /// let alignment_1 = PathBuf::from("tests/files/alignments/gene_1.nex");
     /// let files = vec![alignment_1, alignment_2];
     /// let output = TempDir::new("tempt").unwrap();
     /// let handle = SequenceID::new(&files, &InputFmt::Auto, &DataType::Dna, Path::new(output.path()), None);

@@ -93,7 +93,7 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 
 | Feature                        | Quick Link                                                                                                             |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Alignment concatenation        | [CLI](https://www.segul.app/docs/cli-usage/concat) / [GUI](https://www.segul.app/docs/gui-usage/align-concat)          |
+| Alignment concatenation        | [CLI](https://www.segul.app/docs/cli-usage/alignments) / [GUI](https://www.segul.app/docs/gui-usage/align-concat)      |
 | Alignment conversion           | [CLI](https://www.segul.app/docs/cli-usage/convert) / [GUI](https://www.segul.app/docs/gui-usage/align-convert)        |
 | Alignment filtering            | [CLI](https://www.segul.app/docs/cli-usage/filter) / [GUI](https://www.segul.app/docs/gui-usage/align-filter)          |
 | Alignment splitting            | [CLI](https://www.segul.app/docs/cli-usage/split) / [GUI](https://www.segul.app/docs/gui-usage/align-split)            |
@@ -101,7 +101,7 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 | Alignment summary statistics   | [CLI](https://www.segul.app/docs/cli-usage/summary) / [GUI](https://www.segul.app/docs/gui-usage/align-summary)        |
 | Genomic summary statistics     | [CLI](https://www.segul.app/docs/cli-usage/genomic) / [GUI](https://www.segul.app/docs/gui-usage/genomic)              |
 | Sequence extraction            | [CLI](https://www.segul.app/docs/cli-usage/extract) / [GUI](https://www.segul.app/docs/gui-usage/sequence-extract)     |
-| Sequence filtering             | [CLI](https://www.segul.app/docs/cli-usage/seq_filter) / GUI feature in development       |
+| Sequence filtering             | [CLI](https://www.segul.app/docs/cli-usage/seq_filter) / GUI feature in development                                    |
 | Sequence ID extraction         | [CLI](https://www.segul.app/docs/cli-usage/id) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id)               |
 | Sequence ID mapping            | [CLI](https://www.segul.app/docs/cli-usage/map) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id-map)          |
 | Sequence ID renaming           | [CLI](https://www.segul.app/docs/cli-usage/rename) / [GUI](https://www.segul.app/docs/gui-usage/sequence-rename)       |
