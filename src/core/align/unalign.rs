@@ -76,7 +76,7 @@ impl<'a> UnalignAlignment<'a> {
     ///
     /// let input_fmt = InputFmt::Nexus;
     /// let datatype = DataType::Dna;
-    /// let input_dir = Path::new("tests/files/concat");
+    /// let input_dir = Path::new("tests/files/alignments");
     /// // Find matching alignment files in the input directory
     /// let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
     /// // Replace the temp directory with your own directory.
@@ -93,10 +93,6 @@ impl<'a> UnalignAlignment<'a> {
     ///     );
     /// handle.unalign();
     pub fn unalign(&self) {
-        if self.output_fmt != &OutputFmt::Fasta || self.output_fmt != &OutputFmt::FastaInt {
-            log::warn!("Unalign feature only supports fasta or fasta-int output format");
-            return;
-        }
         let spin = utils::set_spinner();
         spin.set_message("Converting un-aligned sequence files...");
         self.input_files.par_iter().for_each(|file| {

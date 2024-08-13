@@ -227,7 +227,7 @@ impl<'a> SeqFileFinder<'a> {
     /// use segul::helper::types::InputFmt;
     /// use segul::helper::finder::SeqFileFinder;
     ///
-    /// let dir = Path::new("tests/files/concat");
+    /// let dir = Path::new("tests/files/alignments");
     /// let input_fmt = InputFmt::Nexus;
     /// let files = SeqFileFinder::new(&dir).find(&input_fmt);
     /// assert_eq!(files.len(), 4);
@@ -250,15 +250,37 @@ impl<'a> SeqFileFinder<'a> {
     /// # Example
     /// ```
     /// use std::path::Path;
-    /// use segul::helper::types::InputFmt;
     /// use segul::helper::finder::SeqFileFinder;
     ///
-    /// let dir = Path::new("tests/files/concat");
+    /// let dir = Path::new("tests/files/alignments");
     /// let files = SeqFileFinder::new(&dir).find_recursive();
     /// assert_eq!(files.len(), 4);
     /// ```
     pub fn find_recursive(&self) -> Vec<PathBuf> {
         walk_dir!(self, re_match_sequence_lazy)
+    }
+
+    /// Find input files for sequence and alignment, recursively.
+    /// Limit search to only the input format.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::types::InputFmt;
+    /// use segul::helper::finder::SeqFileFinder;
+    ///
+    /// let dir = Path::new("tests/files/alignments");
+    /// let files = SeqFileFinder::new(&dir).find_recursive_only(&InputFmt::Nexus);
+    /// assert_eq!(files.len(), 4);
+    pub fn find_recursive_only(&self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
+        let files = match input_fmt {
+            InputFmt::Fasta => walk_dir!(self, re_matches_fasta_lazy),
+            InputFmt::Nexus => walk_dir!(self, re_match_nexus_lazy),
+            InputFmt::Phylip => walk_dir!(self, re_match_phylip_lazy),
+            _ => unreachable!(),
+        };
+
+        files
     }
 
     fn check_results(&self, files: &[PathBuf]) {
@@ -305,6 +327,22 @@ fn re_match_sequence_lazy(fname: &str) -> bool {
     RE.is_match(fname)
 }
 
+fn re_match_nexus_lazy(fname: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?i)(.nex*|.nxs)(?:.*)").unwrap();
+    }
+
+    RE.is_match(fname)
+}
+
+fn re_match_phylip_lazy(fname: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?i)(.phy*|.fna|.fa*)(?:.*)").unwrap();
+    }
+
+    RE.is_match(fname)
+}
+
 /// Parse IDs from input sequence files.
 /// # Example
 /// ```
@@ -314,8 +352,8 @@ fn re_match_sequence_lazy(fname: &str) -> bool {
 /// use indexmap::IndexSet;
 ///
 /// let files = vec![
-///    PathBuf::from("tests/files/concat/gene_1.nex"),
-///    PathBuf::from("tests/files/concat/gene_2.nex"),
+///    PathBuf::from("tests/files/alignments/gene_1.nex"),
+///    PathBuf::from("tests/files/alignments/gene_2.nex"),
 /// ];
 ///
 /// let input_fmt = InputFmt::Nexus;
@@ -404,7 +442,7 @@ mod test {
 
     macro_rules! input {
         ($files: ident) => {
-            let path = Path::new("tests/files/concat");
+            let path = Path::new("tests/files/alignments");
 
             let mut $files = SeqFileFinder::new(path);
         };
@@ -451,7 +489,7 @@ mod test {
         input!(files);
         let fmt = InputFmt::Nexus;
         files.pattern(&fmt);
-        assert_eq!("tests/files/concat/*.nex*", files.pattern);
+        assert_eq!("tests/files/alignments/*.nex*", files.pattern);
     }
 
     #[test]
