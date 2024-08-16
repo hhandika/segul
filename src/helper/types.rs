@@ -364,6 +364,12 @@ impl Header {
             aligned: false,
         }
     }
+
+    pub fn from_seq_matrix(&mut self, matrix: &SeqMatrix, aligned: bool) {
+        self.ntax = matrix.len();
+        self.nchar = matrix.values().next().unwrap().len();
+        self.aligned = aligned;
+    }
 }
 
 /// Data types for taxon data
