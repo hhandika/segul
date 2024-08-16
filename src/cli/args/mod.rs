@@ -66,7 +66,7 @@ pub(crate) struct IOArgs {
     #[arg(short, long, help = "Input a path (allow wildcard)")]
     #[cfg(target_os = "windows")]
     pub(crate) input: Option<String>,
-    #[arg(short, long, help = "Input a path (allow wildcard)", num_args(1..))]
+    #[arg(short, long, help = "Input a path (allow wildcard)", num_args(0..))]
     #[cfg(not(target_os = "windows"))]
     pub(crate) input: Option<Vec<PathBuf>>,
     #[arg(long, help = "Force overwriting existing output files/directory")]

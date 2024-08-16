@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::{
     cli::{args::align::UnalignArgs, collect_paths, AlignSeqInput, InputCli, OutputCli},
     core::align::unalign::UnalignAlignment,
-    helper::logger::AlignSeqLogger,
+    helper::{logger::AlignSeqLogger, types::OutputFmt},
 };
 
 pub(in crate::cli) struct UnalignParser<'a> {
@@ -12,7 +12,15 @@ pub(in crate::cli) struct UnalignParser<'a> {
 }
 
 impl InputCli for UnalignParser<'_> {}
-impl OutputCli for UnalignParser<'_> {}
+impl OutputCli for UnalignParser<'_> {
+    fn parse_output_fmt(&self, output_fmt: &str) -> OutputFmt {
+        match output_fmt {
+            "fasta" => OutputFmt::Fasta,
+            "fasta-int" => OutputFmt::FastaInt,
+            _ => unreachable!("Output format is not supported"),
+        }
+    }
+}
 impl AlignSeqInput for UnalignParser<'_> {}
 
 impl<'a> UnalignParser<'a> {

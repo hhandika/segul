@@ -192,7 +192,7 @@ pub(crate) struct UnalignArgs {
         short = 'F',
         long = "output-format",
         help = "Specify output format",
-        default_value = "fasta",
+        default_value = "fasta-int",
         value_parser = builder::PossibleValuesParser::new(
             ["fasta", "fasta-int"]),
     )]
