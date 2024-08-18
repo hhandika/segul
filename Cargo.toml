@@ -13,7 +13,6 @@ categories = ["command-line-utilities", "science"]
 
 [dependencies]
 ahash = "0.8.*"
-alphanumeric-sort = "1.4.*"
 anyhow = "1.0.*"
 bytecount = "0.6.*"
 colored = "2.0.0"
@@ -37,6 +36,7 @@ serde = { version = "1.0.152", features = ["derive"] }
 walkdir = "2.3.3"
 assert_approx_eq = "1.1.0"
 zip = "0.6.6"
+alphanumeric-sort = "1.5.3"
 
 [dev-dependencies]
 assert_cmd = "2.*"
