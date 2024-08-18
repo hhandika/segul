@@ -66,7 +66,7 @@ impl<'a> SequenceAddition<'a> {
         let spinner = utils::set_spinner();
         spinner.set_message("Adding sequences...");
         let counter = self.add_sequences(dest_file, dest_fmt);
-        spinner.finish_with_message("Finished adding sequences.");
+        spinner.finish_with_message("Finished adding sequences.\n");
         self.print_output_info(&counter);
     }
 
@@ -80,7 +80,10 @@ impl<'a> SequenceAddition<'a> {
                     let input_matrix = self.get_matrix(input, self.input_fmt);
                     let dest_matrix =
                         self.create_final_matrix(input_matrix, dest_file, dest_fmt, &counter);
-                    self.write_output(&dest_matrix, dest_file);
+                    match dest_matrix {
+                        Some(matrix) => self.write_output(&matrix, dest_file),
+                        None => (),
+                    }
                 }
                 None => {
                     log::warn!("No destination file found for {}. Skipping...", input_stem);
@@ -99,8 +102,9 @@ impl<'a> SequenceAddition<'a> {
         dest_file: &Path,
         dest_fmt: &InputFmt,
         counter: &Mutex<SequenceCounter>,
-    ) -> SeqMatrix {
+    ) -> Option<SeqMatrix> {
         let mut dest_matrix = self.get_matrix(dest_file, dest_fmt);
+        let mut added_count = 0;
         input_matrix.iter().for_each(|(name, sequence)| {
             if dest_matrix.contains_key(name) {
                 log::warn!(
@@ -118,10 +122,15 @@ impl<'a> SequenceAddition<'a> {
                     .lock()
                     .expect("Failed to lock counter.")
                     .add_sequence(sequence);
+                added_count += 1;
             }
         });
-        self.clean_missing_data(&mut dest_matrix);
-        dest_matrix
+        if added_count > 0 {
+            self.clean_missing_data(&mut dest_matrix);
+            Some(dest_matrix)
+        } else {
+            None
+        }
     }
 
     fn create_dest_library(&self, dest_file: &[PathBuf]) -> HashMap<String, PathBuf> {
@@ -169,17 +178,24 @@ impl<'a> SequenceAddition<'a> {
     fn print_output_info(&self, counter: &SequenceCounter) {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Directory", self.output.display());
+        self.print_output_fmt(self.output_fmt);
         log::info!("{:18}: {}", "Total files", counter.total_input_files);
-        log::info!("{:18}: {}", "Total sequences", counter.total_sequence_added);
-        log::info!("{:18}: {}", "Total added", counter.total_sequence_added);
-        log::info!("{:18}: {}", "Total skipped", counter.skipped_sequences);
-        log::info!("{:18}: {:.2}", "Mean sequences", counter.mean_sequence);
+        log::info!("{:18}: {}", "Total sequences", counter.total_sequence_count);
         log::info!("{:18}: {:.2}", "Mean length", counter.mean_length);
-        log::info!(
-            "{:18}: {:.2}",
-            "Mean added length",
-            counter.mean_added_length
-        );
+        log::info!("{:18}: {}", "Total skipped", counter.skipped_sequences);
+        log::info!("{:18}: {}", "Sequence added", counter.total_sequence_added);
+        if counter.total_sequence_added > 0 {
+            log::info!(
+                "{:18}: {:.2}",
+                "Mean sequences",
+                counter.mean_added_sequences
+            );
+            log::info!(
+                "{:18}: {:.2}",
+                "Mean added length",
+                counter.mean_added_length
+            );
+        }
     }
 }
 
@@ -191,7 +207,7 @@ struct SequenceCounter {
     skipped_sequences: usize,
     total_added: usize,
     total_sequence_count: usize,
-    mean_sequence: f64,
+    mean_added_sequences: f64,
     mean_length: f64,
     total_length: usize,
     total_added_length: usize,
@@ -207,12 +223,20 @@ impl SequenceCounter {
             skipped_sequences: 0,
             total_added: 0,
             total_sequence_count: 0,
-            mean_sequence: 0.0,
+            mean_added_sequences: 0.0,
             mean_length: 0.0,
             total_length: 0,
             total_added_length: 0,
             mean_added_length: 0.0,
         }
+    }
+
+    fn calculate_mean(&mut self) {
+        if self.total_added > 0 {
+            self.mean_added_sequences = self.total_sequence_added as f64 / self.total_added as f64;
+            self.mean_added_length = self.total_added_length as f64 / self.total_added as f64;
+        }
+        self.mean_length = self.total_length as f64 / self.total_sequence_count as f64;
     }
 
     fn add_sequence(&mut self, sequence: &str) {
@@ -232,12 +256,6 @@ impl SequenceCounter {
     fn skip_file(&mut self) {
         self.skipped_files += 1;
     }
-
-    fn calculate_mean(&mut self) {
-        self.mean_sequence = self.total_sequence_added as f64 / self.total_input_files as f64;
-        self.mean_length = self.total_length as f64 / self.total_sequence_count as f64;
-        self.mean_added_length = self.total_added_length as f64 / self.total_sequence_added as f64;
-    }
 }
 
 #[cfg(test)]
@@ -256,7 +274,7 @@ mod tests {
         assert_eq!(counter.total_sequence_count, 3);
         assert_eq!(counter.total_sequence_added, 2);
         assert_eq!(counter.skipped_sequences, 1);
-        assert_eq!(counter.mean_sequence, 1.0);
+        assert_eq!(counter.mean_added_sequences, 1.0);
         assert_eq!(counter.mean_length, 4.0);
         assert_eq!(counter.total_length, 12);
         assert_eq!(counter.total_added_length, 8);
