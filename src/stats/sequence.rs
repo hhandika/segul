@@ -375,15 +375,17 @@ impl Sites {
     /// Get sites with missing data less than a threshold.
     /// Return the site location and the number of missing data.
     pub fn get_site_without_missing_data(
-        &self,
+        &mut self,
         matrix: &SeqMatrix,
         datatype: &DataType,
         threshold: f64,
     ) -> Vec<(usize, usize)> {
-        let sites = self.get_missing_data_per_site(matrix, datatype);
+        let site_matrix = self.index_sites(matrix, datatype);
+        let sites = self.get_missing_data_per_site(&site_matrix);
+        let base_count = site_matrix.len();
         sites
             .iter()
-            .filter(|(_, n)| *n as f64 / self.counts as f64 <= threshold)
+            .filter(|(_, n)| *n as f64 / base_count as f64 <= threshold)
             .map(|(s, n)| (*s, *n))
             .collect()
     }
@@ -408,12 +410,10 @@ impl Sites {
     /// Return the site location and the number of missing data sites.
     pub fn get_missing_data_per_site(
         &self,
-        matrix: &SeqMatrix,
-        datatype: &DataType,
+        indexed_sites: &HashMap<usize, Vec<u8>>,
     ) -> Vec<(usize, usize)> {
-        let site_matrix = self.index_sites(matrix, datatype);
         let mut missing_data_per_site: Vec<(usize, usize)> = Vec::new();
-        site_matrix.iter().for_each(|(site, seq)| {
+        indexed_sites.iter().for_each(|(site, seq)| {
             let n_missing = seq.iter().filter(|&ch| *ch == b'-' || *ch == b'?').count();
             if n_missing > 0 {
                 missing_data_per_site.push((*site, n_missing));

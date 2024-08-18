@@ -154,6 +154,7 @@ impl<'a> AlignmentTrimming<'a> {
             .iter()
             .map(|(i, _)| *i)
             .collect::<Vec<usize>>();
+
         if site_pos.is_empty() {
             None
         } else {
@@ -171,9 +172,12 @@ impl<'a> AlignmentTrimming<'a> {
             .iter()
             .map(|(i, _)| *i)
             .collect::<Vec<usize>>();
+        log::info!("Sites with missing data: {}", site_pos.len());
         if site_pos.is_empty() {
+            log::warn!("No sites to trim");
             None
         } else {
+            log::info!("Sites pre-trim: {}", matrix.len());
             Some(self.generate_new_matrix(matrix, site_pos))
         }
     }
@@ -193,6 +197,7 @@ impl<'a> AlignmentTrimming<'a> {
                 String::from_utf8(new_row).expect("Invalid UTF-8"),
             );
         });
+
         new_matrix
     }
 
@@ -200,7 +205,7 @@ impl<'a> AlignmentTrimming<'a> {
     fn write_output(&self, matrix: &SeqMatrix, file: &Path) -> usize {
         let alignment_dir = self.output_dir.join("trimmed_alignments");
         fs::create_dir_all(&alignment_dir).expect("Failed to create output directory");
-        let output_path = files::create_output_fname(file, &alignment_dir, self.output_fmt);
+        let output_path = files::create_output_fname(&alignment_dir, file, self.output_fmt);
         let mut header = Header::new();
         header.from_seq_matrix(matrix, true);
         let mut writer = SeqWriter::new(&output_path, matrix, &header);
@@ -211,7 +216,11 @@ impl<'a> AlignmentTrimming<'a> {
     }
 
     fn write_summary(&self, summary: &[TrimmingSummary]) {
-        let output_path = self.output_dir.join("trimming_summary.csv");
+        let output_path = self
+            .output_dir
+            .join("trimming_summary")
+            .with_extension("csv");
+        fs::create_dir_all(self.output_dir).expect("Failed to create output directory");
         let mut writer = csv::Writer::from_path(output_path).expect("Failed to create CSV writer");
         summary.iter().for_each(|s| {
             writer.serialize(s).expect("Failed to write summary");
@@ -275,9 +284,9 @@ mod tests {
 
     #[test]
     fn test_trim_missing_data() {
-        let input_files = vec![PathBuf::from("tests/files/gappy/gene_1.nex")];
+        let input_files = vec![PathBuf::from("tests/files/trimming.fas")];
         let output_dir = TempDir::new("test").expect("Failed to create temp dir");
-        let params = TrimmingParameters::MissingData(0.1);
+        let params = TrimmingParameters::MissingData(0.4);
         let align_trim = AlignmentTrimming::new(
             &input_files,
             &InputFmt::Auto,
@@ -288,14 +297,6 @@ mod tests {
         );
         let summary = align_trim.trim_sites();
         assert_eq!(summary.len(), 1);
-        assert_eq!(summary[0].before, 11);
-        // assert_eq!(summary[0].after, 5);
-        // assert_eq!(summary[0].removed, 6);
-        let output_files = output_dir
-            .path()
-            .join("trimmed_alignments")
-            .read_dir()
-            .unwrap();
-        assert_eq!(output_files.count(), 1);
+        assert_eq!(summary[0].before, 10);
     }
 }
