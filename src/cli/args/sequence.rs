@@ -10,6 +10,8 @@ use super::{CommonSeqInput, CommonSeqOutput, IOArgs};
 
 #[derive(Subcommand)]
 pub(crate) enum SequenceSubcommand {
+    #[command(about = "Add sequences to alignments", name = "add")]
+    Add(SequenceAddArgs),
     #[command(about = "Extract sequence from alignments", name = "extract")]
     Extract(SequenceExtractArgs),
     #[command(about = "Filter sequence based on selected criteria", name = "filter")]
@@ -25,6 +27,38 @@ pub(crate) enum SequenceSubcommand {
     Rename(SequenceRenameArgs),
     #[command(about = "Translate DNA to amino acid sequences", name = "translate")]
     Translate(SequenceTranslateArgs),
+}
+
+#[derive(Args)]
+pub(crate) struct SequenceAddArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
+    pub(crate) out_fmt: CommonSeqOutput,
+    #[arg(short, long, help = "Output path", default_value = "Sequence-Addition")]
+    pub(crate) output: PathBuf,
+    #[arg(
+        long,
+        help = "Input directory for destination sequences",
+        required_unless_present("destination_input"),
+    )]
+    pub(crate) destination_dir: Option<String>,
+    #[arg(
+        long,
+        help = "Input a path (allow wildcard) for destination sequences",
+    )]
+    pub(crate) destination_input: Option<Vec<PathBuf>>,
+    #[arg(
+        long = "destination-format",
+        help = "Specify destination sequence format",
+        default_value = "auto",
+        value_parser = builder::PossibleValuesParser::new(
+            ["fasta", "nexus", "phylip"]
+        ),
+    )]
+    pub(crate) destination_fmt: String,
 }
 
 
@@ -87,7 +121,7 @@ pub(crate) struct SequenceIdArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-ID")]
+    #[arg(short, long, help = "Output path", default_value = "Sequence-ID")]
     pub(crate) output: PathBuf,
     #[arg(short, long, help = "Prefix for filename")]
     pub(crate) prefix: Option<String>,

@@ -17,6 +17,7 @@ use super::args::genomics::{ContigSubcommand, SeqReadSubcommand};
 use super::args::sequence::SequenceSubcommand;
 use super::args::MainSubcommand;
 use super::contig::summarize::ContigCliParser;
+use super::sequence::addition::AdditionParser;
 use super::sequence::filter::SequenceFilterParser;
 
 pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
@@ -83,6 +84,9 @@ fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
         }
         SequenceSubcommand::Translate(translate_args) => {
             TranslateParser::new(translate_args).translate();
+        }
+        SequenceSubcommand::Add(add_args) => {
+            AdditionParser::new(add_args).add();
         }
     };
 }
