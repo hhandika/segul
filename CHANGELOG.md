@@ -5,6 +5,7 @@
 New Features:
 
 - Convert alignments to unaligned sequences.
+- Add sequence to an existing sequence files/alignments
 
 ## v0.22.1
 
