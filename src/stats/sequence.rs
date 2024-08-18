@@ -348,14 +348,83 @@ impl Sites {
     /// Get the site statistics from an alignment.
     pub fn get_stats(&mut self, matrix: &SeqMatrix, datatype: &DataType) {
         let site_matrix = self.index_sites(matrix, datatype);
-        self.get_site_stats(&site_matrix);
+        self.compute_parsimony_informative(&site_matrix);
         self.count_sites();
         self.get_proportion();
     }
 
+    /// Get parsimony informative for each site
+    /// Return the site location and the number of parsimony informative sites.
+    pub fn get_pars_inf_per_site(
+        &mut self,
+        matrix: &SeqMatrix,
+        datatype: &DataType,
+    ) -> Vec<(usize, usize)> {
+        let site_matrix = self.index_sites(matrix, datatype);
+        self.compute_parsimony_informative(&site_matrix);
+        let mut pars_inf_per_site: Vec<(usize, usize)> = Vec::new();
+        site_matrix.iter().for_each(|(site, seq)| {
+            let n_patterns = self.get_patterns(seq);
+            if n_patterns >= 2 {
+                pars_inf_per_site.push((*site, n_patterns));
+            }
+        });
+        pars_inf_per_site
+    }
+
+    /// Get sites with missing data less than a threshold.
+    /// Return the site location and the number of missing data.
+    pub fn get_site_without_missing_data(
+        &self,
+        matrix: &SeqMatrix,
+        datatype: &DataType,
+        threshold: f64,
+    ) -> Vec<(usize, usize)> {
+        let sites = self.get_missing_data_per_site(matrix, datatype);
+        sites
+            .iter()
+            .filter(|(_, n)| *n as f64 / self.counts as f64 <= threshold)
+            .map(|(s, n)| (*s, *n))
+            .collect()
+    }
+
+    /// Get sites with parsimony informative greater than a threshold.
+    /// Return the site location and the number of parsimony informative sites.
+    pub fn get_site_with_pars_informative(
+        &mut self,
+        matrix: &SeqMatrix,
+        datatype: &DataType,
+        threshold: usize,
+    ) -> Vec<(usize, usize)> {
+        let sites = self.get_pars_inf_per_site(matrix, datatype);
+        sites
+            .iter()
+            .filter(|(_, n)| *n >= threshold)
+            .map(|(s, n)| (*s, *n))
+            .collect()
+    }
+
+    /// Get missing data per site
+    /// Return the site location and the number of missing data sites.
+    pub fn get_missing_data_per_site(
+        &self,
+        matrix: &SeqMatrix,
+        datatype: &DataType,
+    ) -> Vec<(usize, usize)> {
+        let site_matrix = self.index_sites(matrix, datatype);
+        let mut missing_data_per_site: Vec<(usize, usize)> = Vec::new();
+        site_matrix.iter().for_each(|(site, seq)| {
+            let n_missing = seq.iter().filter(|&ch| *ch == b'-' || *ch == b'?').count();
+            if n_missing > 0 {
+                missing_data_per_site.push((*site, n_missing));
+            }
+        });
+        missing_data_per_site
+    }
+
     fn get_pars_inf_only(&mut self, matrix: &SeqMatrix, datatype: &DataType) -> usize {
         let site_matrix = self.index_sites(matrix, datatype);
-        self.get_site_stats(&site_matrix);
+        self.compute_parsimony_informative(&site_matrix);
         self.pars_inf
     }
 
@@ -425,7 +494,7 @@ impl Sites {
         ambiguous_aa.contains(ch)
     }
 
-    fn get_site_stats(&mut self, site_matrix: &HashMap<usize, Vec<u8>>) {
+    fn compute_parsimony_informative(&mut self, site_matrix: &HashMap<usize, Vec<u8>>) {
         site_matrix.values().for_each(|site| {
             let n_patterns = self.get_patterns(site);
             if n_patterns >= 2 {
@@ -678,7 +747,7 @@ mod test {
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::default();
         let smat = site.index_sites(&mat, &DNA);
-        site.get_site_stats(&smat);
+        site.compute_parsimony_informative(&smat);
         assert_eq!(1, site.pars_inf);
     }
 
@@ -689,7 +758,7 @@ mod test {
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::default();
         let site_mat = site.index_sites(&mat, &DNA);
-        site.get_site_stats(&site_mat);
+        site.compute_parsimony_informative(&site_mat);
         assert_eq!(1, site.pars_inf);
     }
 
@@ -700,7 +769,7 @@ mod test {
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::default();
         let smat = site.index_sites(&mat, &DNA);
-        site.get_site_stats(&smat);
+        site.compute_parsimony_informative(&smat);
         assert_eq!(1, site.pars_inf);
         assert_eq!(3, site.variable);
     }
@@ -713,7 +782,7 @@ mod test {
         let (matrix, _) = aln.get_alignment(&input_format);
         let mut site = Sites::default();
         let smat = site.index_sites(&matrix, &DNA);
-        site.get_site_stats(&smat);
+        site.compute_parsimony_informative(&smat);
         assert_eq!(18, site.conserved);
         assert_eq!(8, site.variable);
         assert_eq!(2, site.pars_inf);

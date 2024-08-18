@@ -197,12 +197,11 @@ pub(crate) struct AlignTrimArgs {
     #[arg(
         long = "missing-data",
         help = "Trim based on a threshold of missing data",
-        default_value = "0.1",
         value_name = "MISSING DATA"
     )]
     pub(crate) missing: Option<f64>,
     #[arg(
-        long = "parsimony-informative",
+        long = "pinf",
         help = "Trim based on a threshold of Parsimony Informative sites (PIS)",
         value_name = "PIS"
     )]

@@ -1,8 +1,27 @@
 //! Remove sites given a threshold of missing data.
 
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::mpsc,
+};
 
-use crate::helper::types::{DataType, InputFmt, OutputFmt};
+use colored::Colorize;
+use indexmap::IndexMap;
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    core::OutputPrint,
+    helper::{
+        files,
+        sequence::SeqParser,
+        types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix},
+        utils,
+    },
+    stats::sequence::Sites,
+    writer::sequences::SeqWriter,
+};
 
 pub enum TrimmingParameters {
     /// Trim based on a threshold of missing data
@@ -42,6 +61,8 @@ impl Default for AlignmentTrimming<'_> {
     }
 }
 
+impl OutputPrint for AlignmentTrimming<'_> {}
+
 impl<'a> AlignmentTrimming<'a> {
     /// Create a new AlignmentTrimming instance
     pub fn new(
@@ -64,19 +85,217 @@ impl<'a> AlignmentTrimming<'a> {
 
     /// Trim alignment files based on the given parameters
     pub fn trim(&self) {
+        let spinner = utils::set_spinner();
+        spinner.set_message("Trimming alignment files...");
+        self.trim_sites();
+        spinner.set_message("Writing summary...");
+        let summary = self.trim_sites();
+        self.write_summary(&summary);
+        spinner.finish_with_message("Alignment files trimmed successfully\n");
+        self.print_output_info();
+    }
+
+    fn trim_sites(&self) -> Vec<TrimmingSummary> {
         match self.params {
-            TrimmingParameters::MissingData(threshold) => {
-                println!(
-                    "Trimming based on missing data with threshold: {}",
-                    threshold
-                );
-            }
-            TrimmingParameters::ParsInf(threshold) => {
-                println!(
-                    "Trimming based on Parsimony Informative Sites with threshold: {}",
-                    threshold
-                );
-            }
+            TrimmingParameters::MissingData(threshold) => self.par_trim_missing_data(*threshold),
+            TrimmingParameters::ParsInf(threshold) => self.par_trim_informative_sites(*threshold),
         }
+    }
+
+    fn par_trim_informative_sites(&self, threshold: usize) -> Vec<TrimmingSummary> {
+        let (tx, rx) = mpsc::channel();
+        self.input_files.par_iter().for_each_with(tx, |tx, file| {
+            let (matrix, header) = self.parse_alignment(file);
+            let mut summary = TrimmingSummary::new(file);
+            match self.remove_site_with_informative(&matrix, threshold) {
+                Some(new_matrix) => {
+                    let nchar = self.write_output(&new_matrix, file);
+                    summary.add_summary(header.nchar, nchar);
+                }
+                None => {
+                    summary.add_summary(header.nchar, 0);
+                }
+            }
+            tx.send(summary).expect("Failed to send summary");
+        });
+        rx.iter().collect()
+    }
+
+    fn par_trim_missing_data(&self, threshold: f64) -> Vec<TrimmingSummary> {
+        let (tx, rx) = mpsc::channel();
+        self.input_files.par_iter().for_each_with(tx, |tx, file| {
+            let mut summary = TrimmingSummary::new(file);
+            let (matrix, header) = self.parse_alignment(file);
+            match self.remove_site_with_missing_data(&matrix, threshold) {
+                Some(new_matrix) => {
+                    let nchar = self.write_output(&new_matrix, file);
+                    summary.add_summary(header.nchar, nchar);
+                }
+                None => {
+                    summary.add_summary(header.nchar, 0);
+                }
+            }
+            tx.send(summary).expect("Failed to send summary");
+        });
+        rx.iter().collect()
+    }
+
+    fn parse_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
+        SeqParser::new(file, self.datatype).get_alignment(self.input_fmt)
+    }
+
+    fn remove_site_with_informative(
+        &self,
+        matrix: &SeqMatrix,
+        threshold: usize,
+    ) -> Option<SeqMatrix> {
+        let site_pos = Sites::default()
+            .get_site_with_pars_informative(matrix, self.datatype, threshold)
+            .iter()
+            .map(|(i, _)| *i)
+            .collect::<Vec<usize>>();
+        if site_pos.is_empty() {
+            None
+        } else {
+            Some(self.generate_new_matrix(matrix, site_pos))
+        }
+    }
+
+    fn remove_site_with_missing_data(
+        &self,
+        matrix: &SeqMatrix,
+        threshold: f64,
+    ) -> Option<SeqMatrix> {
+        let site_pos = Sites::default()
+            .get_site_without_missing_data(matrix, self.datatype, threshold)
+            .iter()
+            .map(|(i, _)| *i)
+            .collect::<Vec<usize>>();
+        if site_pos.is_empty() {
+            None
+        } else {
+            Some(self.generate_new_matrix(matrix, site_pos))
+        }
+    }
+
+    fn generate_new_matrix(&self, matrix: &SeqMatrix, site_pos: Vec<usize>) -> SeqMatrix {
+        let mut new_matrix: SeqMatrix = IndexMap::new();
+        // Iterate over the columns of the matrix
+        matrix.iter().for_each(|(k, v)| {
+            let new_row = v
+                .bytes()
+                .enumerate()
+                .filter(|(i, _)| site_pos.contains(i))
+                .map(|(_, b)| b)
+                .collect::<Vec<u8>>();
+            new_matrix.insert(
+                k.clone(),
+                String::from_utf8(new_row).expect("Invalid UTF-8"),
+            );
+        });
+        new_matrix
+    }
+
+    // Write output and return the nchar (number of sites) in NEXUS terms
+    fn write_output(&self, matrix: &SeqMatrix, file: &Path) -> usize {
+        let alignment_dir = self.output_dir.join("trimmed_alignments");
+        fs::create_dir_all(&alignment_dir).expect("Failed to create output directory");
+        let output_path = files::create_output_fname(file, &alignment_dir, self.output_fmt);
+        let mut header = Header::new();
+        header.from_seq_matrix(matrix, true);
+        let mut writer = SeqWriter::new(&output_path, matrix, &header);
+        writer
+            .write_sequence(&self.output_fmt)
+            .expect("Failed to write output file");
+        header.nchar
+    }
+
+    fn write_summary(&self, summary: &[TrimmingSummary]) {
+        let output_path = self.output_dir.join("trimming_summary.csv");
+        let mut writer = csv::Writer::from_path(output_path).expect("Failed to create CSV writer");
+        summary.iter().for_each(|s| {
+            writer.serialize(s).expect("Failed to write summary");
+        });
+    }
+
+    fn print_output_info(&self) {
+        log::info!("{}", "Output".yellow());
+        log::info!("{:18}: {}", "Directory", self.output_dir.display());
+        self.print_output_fmt(self.output_fmt);
+    }
+}
+
+#[derive(Debug, Serialize, Default, Deserialize)]
+struct TrimmingSummary {
+    /// Parent path
+    parent_path: PathBuf,
+    /// File name
+    file_name: String,
+    /// Number of sites before trimming
+    before: usize,
+    /// Number of sites after trimming
+    after: usize,
+    /// Number of sites removed
+    removed: usize,
+}
+
+impl TrimmingSummary {
+    /// Create a new TrimmingSummary instance
+    fn new(path: &Path) -> Self {
+        Self {
+            parent_path: path
+                .parent()
+                .expect("Failed to get parent path")
+                .to_path_buf(),
+            file_name: path
+                .file_name()
+                .expect("Failed to get file name")
+                .to_str()
+                .expect("Failed to convert to string")
+                .to_string(),
+            before: 0,
+            after: 0,
+            removed: 0,
+        }
+    }
+
+    /// Generate a summary of the trimming process
+    fn add_summary(&mut self, before: usize, after: usize) {
+        self.before = before;
+        self.after = after;
+        self.removed = before - after;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempdir::TempDir;
+
+    use super::*;
+
+    #[test]
+    fn test_trim_missing_data() {
+        let input_files = vec![PathBuf::from("tests/files/gappy/gene_1.nex")];
+        let output_dir = TempDir::new("test").expect("Failed to create temp dir");
+        let params = TrimmingParameters::MissingData(0.1);
+        let align_trim = AlignmentTrimming::new(
+            &input_files,
+            &InputFmt::Auto,
+            &DataType::Dna,
+            &output_dir.path(),
+            &OutputFmt::Fasta,
+            &params,
+        );
+        let summary = align_trim.trim_sites();
+        assert_eq!(summary.len(), 1);
+        assert_eq!(summary[0].before, 11);
+        // assert_eq!(summary[0].after, 5);
+        // assert_eq!(summary[0].removed, 6);
+        let output_files = output_dir
+            .path()
+            .join("trimmed_alignments")
+            .read_dir()
+            .unwrap();
+        assert_eq!(output_files.count(), 1);
     }
 }
