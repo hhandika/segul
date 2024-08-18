@@ -7,7 +7,10 @@ use colored::Colorize;
 use crate::{
     cli::{args::sequence::SequenceAddArgs, collect_paths, AlignSeqInput, InputCli, OutputCli},
     core::sequence::addition::SequenceAddition,
-    helper::{logger::AlignSeqLogger, types::InputFmt},
+    helper::{
+        logger::AlignSeqLogger,
+        types::{InputFmt, OutputFmt},
+    },
 };
 
 pub(in crate::cli) struct AdditionParser<'a> {
@@ -17,7 +20,15 @@ pub(in crate::cli) struct AdditionParser<'a> {
 }
 
 impl InputCli for AdditionParser<'_> {}
-impl OutputCli for AdditionParser<'_> {}
+impl OutputCli for AdditionParser<'_> {
+    fn parse_output_fmt(&self, output_fmt: &str) -> OutputFmt {
+        match output_fmt {
+            "fasta" => OutputFmt::Fasta,
+            "fasta-int" => OutputFmt::FastaInt,
+            _ => unreachable!("Output format is not supported"),
+        }
+    }
+}
 impl AlignSeqInput for AdditionParser<'_> {}
 
 impl<'a> AdditionParser<'a> {
@@ -33,7 +44,7 @@ impl<'a> AdditionParser<'a> {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let dest_fmt = self.parse_input_fmt(&self.args.destination_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
-        let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
+        let output_fmt = self.parse_output_fmt(&self.args.output_fmt);
         let task = "Sequence addition";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);

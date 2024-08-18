@@ -75,36 +75,53 @@ impl<'a> SequenceAddition<'a> {
         let counter = Mutex::new(SequenceCounter::new(self.input_files.len()));
         self.input_files.par_iter().for_each(|input| {
             let input_stem = self.get_file_stem(input);
-            let input_matrix = self.get_matrix(input, self.input_fmt);
-            let dest_file = dest_collection
-                .get(&input_stem)
-                .expect("Failed to get destination file.");
-            let mut dest_matrix = self.get_matrix(dest_file, dest_fmt);
-            input_matrix.iter().for_each(|(name, sequence)| {
-                if dest_matrix.contains_key(name) {
-                    log::warn!(
-                        "Sequence {} already exists in the {} file. Skipping...",
-                        name,
-                        dest_file.to_string_lossy()
-                    );
-                    counter
-                        .lock()
-                        .expect("Failed to lock counter.")
-                        .skip_sequence(sequence);
-                } else {
-                    dest_matrix.insert(name.to_string(), sequence.to_string());
-                    counter
-                        .lock()
-                        .expect("Failed to lock counter.")
-                        .add_sequence(sequence);
+            match dest_collection.get(&input_stem) {
+                Some(dest_file) => {
+                    let input_matrix = self.get_matrix(input, self.input_fmt);
+                    let dest_matrix =
+                        self.create_final_matrix(input_matrix, dest_file, dest_fmt, &counter);
+                    self.write_output(&dest_matrix, dest_file);
                 }
-            });
-            self.clean_missing_data(&mut dest_matrix);
-            self.write_output(&dest_matrix, dest_file);
+                None => {
+                    log::warn!("No destination file found for {}. Skipping...", input_stem);
+                    counter.lock().expect("Failed to lock counter.").skip_file();
+                }
+            };
         });
         let mut counter = counter.into_inner().expect("Failed to get counter.");
         counter.calculate_mean();
         counter
+    }
+
+    fn create_final_matrix(
+        &self,
+        input_matrix: SeqMatrix,
+        dest_file: &Path,
+        dest_fmt: &InputFmt,
+        counter: &Mutex<SequenceCounter>,
+    ) -> SeqMatrix {
+        let mut dest_matrix = self.get_matrix(dest_file, dest_fmt);
+        input_matrix.iter().for_each(|(name, sequence)| {
+            if dest_matrix.contains_key(name) {
+                log::warn!(
+                    "Sequence {} already exists in the {} file. Skipping...",
+                    name,
+                    dest_file.to_string_lossy()
+                );
+                counter
+                    .lock()
+                    .expect("Failed to lock counter.")
+                    .skip_sequence(sequence);
+            } else {
+                dest_matrix.insert(name.to_string(), sequence.to_string());
+                counter
+                    .lock()
+                    .expect("Failed to lock counter.")
+                    .add_sequence(sequence);
+            }
+        });
+        self.clean_missing_data(&mut dest_matrix);
+        dest_matrix
     }
 
     fn create_dest_library(&self, dest_file: &[PathBuf]) -> HashMap<String, PathBuf> {
@@ -155,7 +172,7 @@ impl<'a> SequenceAddition<'a> {
         log::info!("{:18}: {}", "Total files", counter.total_input_files);
         log::info!("{:18}: {}", "Total sequences", counter.total_sequence_added);
         log::info!("{:18}: {}", "Total added", counter.total_sequence_added);
-        log::info!("{:18}: {}", "Total skipped", counter.skip_counter);
+        log::info!("{:18}: {}", "Total skipped", counter.skipped_sequences);
         log::info!("{:18}: {:.2}", "Mean sequences", counter.mean_sequence);
         log::info!("{:18}: {:.2}", "Mean length", counter.mean_length);
         log::info!(
@@ -170,7 +187,8 @@ impl<'a> SequenceAddition<'a> {
 struct SequenceCounter {
     total_input_files: usize,
     total_sequence_added: usize,
-    skip_counter: usize,
+    skipped_files: usize,
+    skipped_sequences: usize,
     total_added: usize,
     total_sequence_count: usize,
     mean_sequence: f64,
@@ -185,7 +203,8 @@ impl SequenceCounter {
         Self {
             total_input_files,
             total_sequence_added: 0,
-            skip_counter: 0,
+            skipped_files: 0,
+            skipped_sequences: 0,
             total_added: 0,
             total_sequence_count: 0,
             mean_sequence: 0.0,
@@ -206,8 +225,12 @@ impl SequenceCounter {
 
     fn skip_sequence(&mut self, sequence: &str) {
         self.total_sequence_count += 1;
-        self.skip_counter += 1;
+        self.skipped_sequences += 1;
         self.total_length += sequence.len();
+    }
+
+    fn skip_file(&mut self) {
+        self.skipped_files += 1;
     }
 
     fn calculate_mean(&mut self) {
@@ -232,7 +255,7 @@ mod tests {
         counter.calculate_mean();
         assert_eq!(counter.total_sequence_count, 3);
         assert_eq!(counter.total_sequence_added, 2);
-        assert_eq!(counter.skip_counter, 1);
+        assert_eq!(counter.skipped_sequences, 1);
         assert_eq!(counter.mean_sequence, 1.0);
         assert_eq!(counter.mean_length, 4.0);
         assert_eq!(counter.total_length, 12);
@@ -262,7 +285,7 @@ mod tests {
         let counter = addition.add_sequences(&dest_files, &InputFmt::Auto);
         assert_eq!(counter.total_input_files, 2);
         assert_eq!(counter.total_sequence_added, 2);
-        assert_eq!(counter.skip_counter, 3);
+        assert_eq!(counter.skipped_sequences, 3);
         let output_files = output.path().read_dir().unwrap();
         assert_eq!(output_files.count(), 2);
         output.close().unwrap();

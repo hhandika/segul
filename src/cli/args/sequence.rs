@@ -35,8 +35,15 @@ pub(crate) struct SequenceAddArgs {
     pub(crate) io: IOArgs,
     #[command(flatten)]
     pub(crate) in_fmt: CommonSeqInput,
-    #[command(flatten)]
-    pub(crate) out_fmt: CommonSeqOutput,
+    #[arg(
+        short = 'F',
+        long = "output-format",
+        help = "Specify output format",
+        default_value = "fasta-int",
+        value_parser = builder::PossibleValuesParser::new(
+            ["fasta", "fasta-int"]),
+    )]
+    pub(crate) output_fmt: String,
     #[arg(short, long, help = "Output path", default_value = "Sequence-Addition")]
     pub(crate) output: PathBuf,
     #[arg(
@@ -55,7 +62,7 @@ pub(crate) struct SequenceAddArgs {
         help = "Specify destination sequence format",
         default_value = "auto",
         value_parser = builder::PossibleValuesParser::new(
-            ["fasta", "nexus", "phylip"]
+            ["auto", "fasta", "nexus", "phylip"]
         ),
     )]
     pub(crate) destination_fmt: String,
