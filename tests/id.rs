@@ -11,7 +11,7 @@ fn test_id_success() {
     initiate_cmd!(cmd, "sequence", "id", "tests/files/alignments/", tmp_dir);
     cmd.assert().success();
     let pred = predicates::path::is_file();
-    let res_path = tmp_dir.path().join("SEGUL-ID").join("id.txt");
+    let res_path = tmp_dir.path().join("Sequence-ID").join("id.txt");
     let ids = txt::parse_text_file(&res_path);
 
     assert!(pred.eval(&res_path));

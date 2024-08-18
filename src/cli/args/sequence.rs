@@ -66,6 +66,12 @@ pub(crate) struct SequenceAddArgs {
         ),
     )]
     pub(crate) destination_fmt: String,
+    #[arg(
+        long = "include-skipped-files",
+        default_value = "true",
+        help = "Include skipped files in the output",
+    )]
+    pub(crate) include_skipped_files: bool,
 }
 
 
