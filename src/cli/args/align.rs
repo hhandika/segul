@@ -18,6 +18,8 @@ pub(crate) enum AlignmentSubcommand {
     Split(AlignSplitArgs),
     #[command(about = "Compute Alignment Statistics", name = "summary")]
     Summary(AlignSummaryArgs),
+    #[command(about = "Trim alignment", name = "trim")]
+    Trim(AlignTrimArgs),
     #[command(about = "Convert alignment to unaligned sequences", name = "unalign")]
     Unalign(UnalignArgs),
 }
@@ -180,6 +182,31 @@ pub(crate) struct PartitionArgs {
     pub(crate) force: bool,
     #[arg(long = "skip-checking", help = "Skip checking partition formats")]
     pub(crate) skip_checking: bool,
+}
+
+#[derive(Args)]
+pub(crate) struct AlignTrimArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[command(flatten)]
+    pub(crate) out_fmt: CommonSeqOutput,
+    #[arg(short, long, help = "Output path", default_value = "Align-Trim")]
+    pub(crate) output: PathBuf,
+    #[arg(
+        long = "missing-data",
+        help = "Trim based on a threshold of missing data",
+        default_value = "0.1",
+        value_name = "MISSING DATA"
+    )]
+    pub(crate) missing: Option<f64>,
+    #[arg(
+        long = "parsimony-informative",
+        help = "Trim based on a threshold of Parsimony Informative sites (PIS)",
+        value_name = "PIS"
+    )]
+    pub(crate) pars_inf: Option<usize>,
 }
 
 #[derive(Args)]

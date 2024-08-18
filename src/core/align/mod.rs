@@ -5,4 +5,5 @@ pub mod filter;
 pub mod partition;
 pub mod split;
 pub mod summarize;
+pub mod trim;
 pub mod unalign;

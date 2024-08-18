@@ -1,4 +1,33 @@
 //! Convert input alignments to unaligned sequence files.
+//!
+//!
+//! # Example
+//!
+//! ```
+//! use std::path::{Path, PathBuf};
+//! use tempdir::TempDir;
+//! use segul::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
+//! use segul::core::align::unalign::UnalignAlignment;
+//! use segul::helper::finder::SeqFileFinder;
+//!
+//! let input_fmt = InputFmt::Nexus;
+//! let datatype = DataType::Dna;
+//! let input_dir = Path::new("tests/files/alignments");
+//! // Find matching alignment files in the input directory
+//! let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
+//! // Replace the temp directory with your own directory.
+//! let output = TempDir::new("temp").unwrap();
+//! let output_dir = output.path();
+//! // Unalign feature only supports fasta or fasta-int output format
+//! let output_fmt = OutputFmt::Fasta;
+//! let handle = UnalignAlignment::new(
+//!     &files,
+//!     &input_fmt,
+//!     &datatype,
+//!     &output_dir,
+//!     &output_fmt
+//!     );
+//! handle.unalign();
 
 use colored::Colorize;
 use rayon::prelude::*;
@@ -64,34 +93,6 @@ impl<'a> UnalignAlignment<'a> {
 
     /// Convert aligned sequences to unaligned sequences
     /// by removing gaps from each sequence
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::path::{Path, PathBuf};
-    /// use tempdir::TempDir;
-    /// use segul::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
-    /// use segul::core::align::unalign::UnalignAlignment;
-    /// use segul::helper::finder::SeqFileFinder;
-    ///
-    /// let input_fmt = InputFmt::Nexus;
-    /// let datatype = DataType::Dna;
-    /// let input_dir = Path::new("tests/files/alignments");
-    /// // Find matching alignment files in the input directory
-    /// let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
-    /// // Replace the temp directory with your own directory.
-    /// let output = TempDir::new("temp").unwrap();
-    /// let output_dir = output.path();
-    /// // Unalign feature only supports fasta or fasta-int output format
-    /// let output_fmt = OutputFmt::Fasta;
-    /// let handle = UnalignAlignment::new(
-    ///     &files,
-    ///     &input_fmt,
-    ///     &datatype,
-    ///     &output_dir,
-    ///     &output_fmt
-    ///     );
-    /// handle.unalign();
     pub fn unalign(&self) {
         if self.output_fmt != &OutputFmt::Fasta && self.output_fmt != &OutputFmt::FastaInt {
             let msg = format!(

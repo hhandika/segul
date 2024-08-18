@@ -11,6 +11,7 @@ use crate::cli::sequence::rename::RenameParser;
 use crate::cli::sequence::translate::TranslateParser;
 
 use super::align::concat::ConcatParser;
+use super::align::trim::AlignTrimParser;
 use super::align::unalign::UnalignParser;
 use super::args::align::{AlignmentSubcommand, PartitionSubcommand};
 use super::args::genomics::{ContigSubcommand, SeqReadSubcommand};
@@ -32,25 +33,19 @@ pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
 
 fn match_contig_subcommand(subcommand: &ContigSubcommand) {
     match subcommand {
-        ContigSubcommand::ContigSummary(summary_args) => {
-            ContigCliParser::new(summary_args).summarize();
-        }
+        ContigSubcommand::ContigSummary(args) => ContigCliParser::new(args).summarize(),
     };
 }
 
 fn match_raw_read_subcommand(subcommand: &SeqReadSubcommand) {
     match subcommand {
-        SeqReadSubcommand::RawSummary(raw_args) => {
-            ReadSummaryCliParser::new(raw_args).summarize();
-        }
+        SeqReadSubcommand::RawSummary(raw_args) => ReadSummaryCliParser::new(raw_args).summarize(),
     };
 }
 
 fn match_partition_subcommand(subcommand: &PartitionSubcommand) {
     match subcommand {
-        PartitionSubcommand::Convert(part_args) => {
-            PartParser::new(part_args).convert();
-        }
+        PartitionSubcommand::Convert(part_args) => PartParser::new(part_args).convert(),
     };
 }
 
@@ -61,32 +56,19 @@ fn match_alignment_subcommand(subcommand: &AlignmentSubcommand) {
         AlignmentSubcommand::Filter(filter_args) => FilterParser::new(filter_args).filter(),
         AlignmentSubcommand::Split(split_args) => SplitParser::new(split_args).split(),
         AlignmentSubcommand::Summary(summary_args) => SummaryParser::new(summary_args).summarize(),
+        AlignmentSubcommand::Trim(trim_args) => AlignTrimParser::new(trim_args).trim(),
         AlignmentSubcommand::Unalign(unalign_args) => UnalignParser::new(unalign_args).unalign(),
     };
 }
 
 fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
     match subcommand {
-        SequenceSubcommand::Extract(extract_args) => {
-            ExtractParser::new(extract_args).extract();
-        }
-        SequenceSubcommand::Filter(filter_args) => {
-            SequenceFilterParser::new(filter_args).filter();
-        }
-        SequenceSubcommand::Id(id_args) => {
-            IdParser::new(id_args).extract();
-        }
-        SequenceSubcommand::Remove(remove_args) => {
-            RemoveParser::new(remove_args).remove();
-        }
-        SequenceSubcommand::Rename(rename_args) => {
-            RenameParser::new(rename_args).rename();
-        }
-        SequenceSubcommand::Translate(translate_args) => {
-            TranslateParser::new(translate_args).translate();
-        }
-        SequenceSubcommand::Add(add_args) => {
-            AdditionParser::new(add_args).add();
-        }
+        SequenceSubcommand::Extract(extract_args) => ExtractParser::new(extract_args).extract(),
+        SequenceSubcommand::Filter(filter_args) => SequenceFilterParser::new(filter_args).filter(),
+        SequenceSubcommand::Id(id_args) => IdParser::new(id_args).extract(),
+        SequenceSubcommand::Remove(remove_args) => RemoveParser::new(remove_args).remove(),
+        SequenceSubcommand::Rename(rename_args) => RenameParser::new(rename_args).rename(),
+        SequenceSubcommand::Translate(trans_args) => TranslateParser::new(trans_args).translate(),
+        SequenceSubcommand::Add(add_args) => AdditionParser::new(add_args).add(),
     };
 }
