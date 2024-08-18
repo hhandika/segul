@@ -1,4 +1,5 @@
 //! Sequence handler module.
+pub mod addition;
 pub mod extract;
 pub mod filter;
 pub mod id;
