@@ -374,11 +374,7 @@ impl Sites {
 
     /// Get sites with missing data less than a threshold.
     /// Return the site location
-    pub fn get_site_without_missing_data(
-        &mut self,
-        matrix: &SeqMatrix,
-        threshold: f64,
-    ) -> Vec<usize> {
+    pub fn get_site_without_missing_data(&self, matrix: &SeqMatrix, threshold: f64) -> Vec<usize> {
         let site_matrix = self.index_site_with_missing_data(matrix);
         // Site base count is the total number of taxa
         let site_count = matrix.len();
@@ -416,9 +412,7 @@ impl Sites {
         let mut missing_data_per_site: Vec<(usize, f64)> = Vec::new();
         indexed_sites.iter().for_each(|(site, seq)| {
             let n_missing = seq.iter().filter(|&ch| *ch == b'-' || *ch == b'?').count();
-            if n_missing > 0 {
-                missing_data_per_site.push((*site, n_missing as f64 / site_count as f64));
-            }
+            missing_data_per_site.push((*site, n_missing as f64 / site_count as f64));
         });
         missing_data_per_site
     }
@@ -824,13 +818,15 @@ mod test {
         let id = ["ABC", "ABE", "ABF", "ABD"];
         let seq = ["AA--", "AT--", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
-        let mut site = Sites::default();
+        let site = Sites::default();
         let site_mat = site.index_site_with_missing_data(&mat);
         assert_eq!(4, site_mat.len());
         assert_eq!(4, site_mat.get(&0).unwrap().len());
         let missing = site.get_missing_data_per_site(&site_mat, 4);
-        assert_eq!(2, missing.len());
+        assert_eq!(4, missing.len());
+        assert_eq!(0.5, missing[0].1);
         let threshold = 0.4;
+        assert!(0.5 > threshold);
         let sites = site.get_site_without_missing_data(&mat, threshold);
         assert_eq!(2, sites.len());
     }

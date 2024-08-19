@@ -300,7 +300,7 @@ mod tests {
         );
         let summary = align_trim.trim_sites();
         let (matrix, header) = align_trim.parse_alignment(&input_files[0]);
-        let mut site = Sites::default();
+        let site = Sites::default();
         let site_missing = site.get_site_without_missing_data(&matrix, 0.6);
         let index_site = site.index_site_with_missing_data(&matrix);
         assert_eq!(index_site.len(), 8);
