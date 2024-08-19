@@ -87,7 +87,6 @@ impl<'a> AlignmentTrimming<'a> {
     pub fn trim(&self) {
         let spinner = utils::set_spinner();
         spinner.set_message("Trimming alignment files...");
-        self.trim_sites();
         spinner.set_message("Writing summary...");
         let summary = self.trim_sites();
         self.write_summary(&summary);
@@ -138,6 +137,7 @@ impl<'a> AlignmentTrimming<'a> {
             }
             tx.send(summary).expect("Failed to send summary");
         });
+
         rx.iter().collect()
     }
 
@@ -197,9 +197,8 @@ impl<'a> AlignmentTrimming<'a> {
 
     // Write output and return the nchar (number of sites) in NEXUS terms
     fn write_output(&self, matrix: &SeqMatrix, file: &Path) -> usize {
-        // let alignment_dir = self.output_dir.join("trimmed_alignments");
-        fs::create_dir_all(&self.output_dir).expect("Failed to create output directory");
-        let output_path = files::create_output_fname(&self.output_dir, file, self.output_fmt);
+        let alignment_dir = self.output_dir.join("trimmed_alignments");
+        let output_path = files::create_output_fname(&alignment_dir, file, self.output_fmt);
         let mut header = Header::new();
         header.from_seq_matrix(matrix, true);
         let mut writer = SeqWriter::new(&output_path, matrix, &header);
@@ -321,14 +320,14 @@ mod tests {
         assert_eq!(site_missing.len(), 7);
     }
 
-    // #[test]
-    // fn test_trimming_results() {
-    //     let input_files = vec![PathBuf::from(INPUT_PATH)];
-    //     let output_dir = TempDir::new("test").expect("Failed to create temp dir");
-    //     let params = TrimmingParameters::MissingData(0.4);
-    //     let align_trim = init_trimming!(&input_files, output_dir, &params);
-    //     align_trim.trim();
-    //     let output_files = output_dir.path().read_dir().unwrap();
-    //     assert_eq!(output_files.count(), 1);
-    // }
+    #[test]
+    fn test_trimming_results() {
+        let input_files = vec![PathBuf::from(INPUT_PATH)];
+        let output_dir = TempDir::new("test").expect("Failed to create temp dir");
+        let params = TrimmingParameters::MissingData(0.4);
+        let align_trim = init_trimming!(&input_files, output_dir, &params);
+        align_trim.trim();
+        let output_files = output_dir.path().read_dir().unwrap();
+        assert_eq!(output_files.count(), 2);
+    }
 }
