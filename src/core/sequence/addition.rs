@@ -9,7 +9,7 @@
 //! by excluding the gaps and missing data
 //! from the the resulting file.
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::Mutex,
 };
@@ -72,8 +72,9 @@ impl<'a> SequenceAddition<'a> {
         spinner.set_message("Adding sequences...");
         let counter = self.add_sequences(dest_file, dest_fmt);
         spinner.finish_with_message("Finished adding sequences.\n");
-        if !self.skip_other_destination && !counter.skipped_files.is_empty() {
-            self.write_skip_files(&counter);
+        if !self.skip_other_destination {
+            let skipped_files = self.get_skipped_files(&counter, dest_file);
+            self.write_skip_files(&skipped_files);
         }
         self.print_output_info(&counter);
     }
@@ -91,13 +92,16 @@ impl<'a> SequenceAddition<'a> {
                     match dest_matrix {
                         Some(matrix) => {
                             self.write_output(&matrix, dest_file);
-                            counter.lock().expect("Failed to lock counter.").add_file();
+                            counter
+                                .lock()
+                                .expect("Failed to lock counter.")
+                                .add_file(input);
                         }
                         None => {
                             counter
                                 .lock()
                                 .expect("Failed to lock counter.")
-                                .skip_file(input.clone());
+                                .skip_file(input);
                         }
                     }
                 }
@@ -106,7 +110,7 @@ impl<'a> SequenceAddition<'a> {
                     counter
                         .lock()
                         .expect("Failed to lock counter.")
-                        .skip_file(input.clone());
+                        .skip_file(input);
                 }
             };
         });
@@ -115,8 +119,18 @@ impl<'a> SequenceAddition<'a> {
         counter
     }
 
-    fn write_skip_files(&self, counter: &SequenceCounter) {
-        counter.skipped_files.iter().for_each(|file| {
+    fn get_skipped_files(&self, counter: &SequenceCounter, dest_files: &[PathBuf]) -> Vec<PathBuf> {
+        let mut skipped_files = Vec::new();
+        dest_files.iter().for_each(|file| {
+            if !counter.added_files.contains(file) {
+                skipped_files.push(file.to_path_buf());
+            }
+        });
+        skipped_files
+    }
+
+    fn write_skip_files(&self, skipped_files: &[PathBuf]) {
+        skipped_files.iter().for_each(|file| {
             let final_matrix = self.get_matrix(file, self.input_fmt);
             self.write_output(&final_matrix, file)
         });
@@ -230,6 +244,7 @@ impl<'a> SequenceAddition<'a> {
 struct SequenceCounter {
     total_input_files: usize,
     total_file_added: usize,
+    added_files: HashSet<PathBuf>,
     skipped_files: Vec<PathBuf>,
     skipped_file_counts: usize,
     skipped_sequences: usize,
@@ -247,6 +262,7 @@ impl SequenceCounter {
         Self {
             total_input_files,
             total_file_added: 0,
+            added_files: HashSet::new(),
             skipped_files: Vec::new(),
             skipped_file_counts: 0,
             total_sequence_added: 0,
@@ -283,13 +299,14 @@ impl SequenceCounter {
         self.total_length += sequence.len();
     }
 
-    fn skip_file(&mut self, file: PathBuf) {
+    fn skip_file(&mut self, file: &Path) {
         self.skipped_file_counts += 1;
-        self.skipped_files.push(file);
+        self.skipped_files.push(file.to_path_buf());
     }
 
-    fn add_file(&mut self) {
+    fn add_file(&mut self, file: &Path) {
         self.total_file_added += 1;
+        self.added_files.insert(file.to_path_buf());
     }
 }
 
@@ -306,7 +323,7 @@ mod tests {
         counter.add_sequence("ATCG");
         counter.skip_sequence("ATCG");
         counter.skip_sequence("ATCG");
-        counter.add_file();
+        counter.add_file(Path::new("file"));
         counter.calculate_mean();
         assert_eq!(counter.total_input_files, 2);
         assert_eq!(counter.total_sequence_counts, 4);
