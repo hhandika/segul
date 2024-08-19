@@ -273,14 +273,12 @@ impl<'a> SeqFileFinder<'a> {
     /// let files = SeqFileFinder::new(&dir).find_recursive_only(&InputFmt::Nexus);
     /// assert_eq!(files.len(), 4);
     pub fn find_recursive_only(&self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
-        let files = match input_fmt {
+        match input_fmt {
             InputFmt::Fasta => walk_dir!(self, re_matches_fasta_lazy),
             InputFmt::Nexus => walk_dir!(self, re_match_nexus_lazy),
             InputFmt::Phylip => walk_dir!(self, re_match_phylip_lazy),
             _ => unreachable!(),
-        };
-
-        files
+        }
     }
 
     fn check_results(&self, files: &[PathBuf]) {

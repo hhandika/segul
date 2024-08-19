@@ -73,7 +73,7 @@ impl<'a> AdditionParser<'a> {
         match &self.args.destination_dir {
             Some(dir) => {
                 self.dest_dir = Some(PathBuf::from(&dir));
-                self.glob_paths(&dir, dest_fmt)
+                self.glob_paths(dir, dest_fmt)
             }
             None => self.collect_paths(&self.args.destination_input),
         }

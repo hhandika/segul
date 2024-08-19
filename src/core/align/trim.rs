@@ -203,7 +203,7 @@ impl<'a> AlignmentTrimming<'a> {
         header.from_seq_matrix(matrix, true);
         let mut writer = SeqWriter::new(&output_path, matrix, &header);
         writer
-            .write_sequence(&self.output_fmt)
+            .write_sequence(self.output_fmt)
             .expect("Failed to write output file");
         header.nchar
     }
