@@ -11,7 +11,7 @@
 use std::{
     collections::{HashMap, HashSet},
     path::{Path, PathBuf},
-    sync::Mutex,
+    sync::{Mutex, RwLock},
 };
 
 use colored::Colorize;
@@ -46,6 +46,19 @@ pub struct SequenceAddition<'a> {
     skip_other_destination: bool,
 }
 
+impl Default for SequenceAddition<'_> {
+    fn default() -> Self {
+        Self {
+            input_files: &[],
+            input_fmt: &InputFmt::Auto,
+            datatype: &DataType::Dna,
+            output: Path::new("output"),
+            output_fmt: &OutputFmt::Fasta,
+            skip_other_destination: false,
+        }
+    }
+}
+
 impl OutputPrint for SequenceAddition<'_> {}
 
 impl<'a> SequenceAddition<'a> {
@@ -72,16 +85,20 @@ impl<'a> SequenceAddition<'a> {
         spinner.set_message("Adding sequences...");
         let counter = self.add_sequences(dest_file, dest_fmt);
         spinner.finish_with_message("Finished adding sequences.\n");
+        let mut total_written = 0;
         if !self.skip_other_destination {
             let skipped_files = self.get_skipped_files(&counter, dest_file);
-            self.write_skip_files(&skipped_files);
+            total_written = self.write_skip_files(&skipped_files);
         }
-        self.print_output_info(&counter);
+        self.print_output_info(&counter, total_written);
     }
 
     fn add_sequences(&self, dest_file: &[PathBuf], dest_fmt: &InputFmt) -> SequenceCounter {
         let dest_collection = self.create_dest_library(dest_file);
-        let counter = Mutex::new(SequenceCounter::new(self.input_files.len()));
+        let counter = Mutex::new(SequenceCounter::new(
+            self.input_files.len(),
+            dest_file.len(),
+        ));
         self.input_files.par_iter().for_each(|input| {
             let input_stem = self.get_file_stem(input);
             match dest_collection.get(&input_stem) {
@@ -95,22 +112,22 @@ impl<'a> SequenceAddition<'a> {
                             counter
                                 .lock()
                                 .expect("Failed to lock counter.")
-                                .add_file(input);
+                                .add_file(&input_stem);
                         }
                         None => {
                             counter
                                 .lock()
                                 .expect("Failed to lock counter.")
-                                .skip_file(input);
+                                .skip_file(&input_stem);
                         }
                     }
                 }
                 None => {
-                    log::warn!("No destination file found for {}. Skipping...", input_stem);
+                    log::warn!("No destination file found for {}. Skipping...", &input_stem);
                     counter
                         .lock()
                         .expect("Failed to lock counter.")
-                        .skip_file(input);
+                        .skip_file(&input_stem);
                 }
             };
         });
@@ -120,20 +137,22 @@ impl<'a> SequenceAddition<'a> {
     }
 
     fn get_skipped_files(&self, counter: &SequenceCounter, dest_files: &[PathBuf]) -> Vec<PathBuf> {
-        let mut skipped_files = Vec::new();
-        dest_files.iter().for_each(|file| {
-            if !counter.added_files.contains(file) {
-                skipped_files.push(file.to_path_buf());
-            }
-        });
-        skipped_files
+        dest_files
+            .iter()
+            .filter(|file| !counter.added_files.contains(&self.get_file_stem(file)))
+            .cloned()
+            .collect()
     }
 
-    fn write_skip_files(&self, skipped_files: &[PathBuf]) {
-        skipped_files.iter().for_each(|file| {
+    fn write_skip_files(&self, skipped_files: &[PathBuf]) -> usize {
+        let counter = RwLock::new(0);
+        skipped_files.par_iter().for_each(|file| {
             let final_matrix = self.get_matrix(file, self.input_fmt);
-            self.write_output(&final_matrix, file)
+            self.write_output(&final_matrix, file);
+            *counter.write().expect("Failed to write counter.") += 1;
         });
+        let counter = *counter.read().expect("Failed to read counter.");
+        counter
     }
 
     fn create_final_matrix(
@@ -210,16 +229,25 @@ impl<'a> SequenceAddition<'a> {
             .expect("Failed to write sequences.");
     }
 
-    fn print_output_info(&self, counter: &SequenceCounter) {
+    fn print_output_info(&self, counter: &SequenceCounter, total_written: usize) {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Directory", self.output.display());
         self.print_output_fmt(self.output_fmt);
 
         log::info!("\n{}", "File Summary".yellow());
-        log::info!("{:18}: {}", "Total files", counter.total_input_files);
+        log::info!("{:18}: {}", "Total input files", counter.total_input_files);
+        log::info!(
+            "{:18}: {}",
+            "Total dest files",
+            counter.total_destination_files
+        );
         log::info!("{:18}: {}", "Files skipped", counter.skipped_file_counts);
-        log::info!("{:18}: {}\n", "Files added", counter.total_file_added);
-
+        log::info!("{:18}: {}", "Files added", counter.total_file_added);
+        log::info!(
+            "{:18}: {}\n",
+            "Files written",
+            counter.total_file_added + total_written
+        );
         log::info!("{}", "Sequences Summary".yellow());
         log::info!(
             "{:18}: {}",
@@ -243,9 +271,12 @@ impl<'a> SequenceAddition<'a> {
 #[derive(Debug, Serialize, Deserialize)]
 struct SequenceCounter {
     total_input_files: usize,
+    total_destination_files: usize,
     total_file_added: usize,
-    added_files: HashSet<PathBuf>,
-    skipped_files: Vec<PathBuf>,
+    /// Store file stem
+    added_files: HashSet<String>,
+    /// Store file stem
+    skipped_files: Vec<String>,
     skipped_file_counts: usize,
     skipped_sequences: usize,
     total_sequence_counts: usize,
@@ -258,9 +289,10 @@ struct SequenceCounter {
 }
 
 impl SequenceCounter {
-    fn new(total_input_files: usize) -> Self {
+    fn new(total_input_files: usize, total_destination_files: usize) -> Self {
         Self {
             total_input_files,
+            total_destination_files,
             total_file_added: 0,
             added_files: HashSet::new(),
             skipped_files: Vec::new(),
@@ -299,14 +331,14 @@ impl SequenceCounter {
         self.total_length += sequence.len();
     }
 
-    fn skip_file(&mut self, file: &Path) {
+    fn skip_file(&mut self, file_stem: &str) {
         self.skipped_file_counts += 1;
-        self.skipped_files.push(file.to_path_buf());
+        self.skipped_files.push(file_stem.to_string());
     }
 
-    fn add_file(&mut self, file: &Path) {
+    fn add_file(&mut self, file_stem: &str) {
         self.total_file_added += 1;
-        self.added_files.insert(file.to_path_buf());
+        self.added_files.insert(file_stem.to_string());
     }
 }
 
@@ -318,12 +350,12 @@ mod tests {
 
     #[test]
     fn test_stat_counter() {
-        let mut counter = SequenceCounter::new(2);
+        let mut counter = SequenceCounter::new(2, 2);
         counter.add_sequence("ATCG");
         counter.add_sequence("ATCG");
         counter.skip_sequence("ATCG");
         counter.skip_sequence("ATCG");
-        counter.add_file(Path::new("file"));
+        counter.add_file("file");
         counter.calculate_mean();
         assert_eq!(counter.total_input_files, 2);
         assert_eq!(counter.total_sequence_counts, 4);
@@ -364,5 +396,19 @@ mod tests {
         let output_files = output.path().read_dir().unwrap();
         assert_eq!(output_files.count(), 2);
         output.close().unwrap();
+    }
+
+    #[test]
+    fn test_finding_skiped_files() {
+        let mut counter = SequenceCounter::new(2, 3);
+        counter.add_file("gene_1");
+        let dest_files = vec![
+            PathBuf::from("tests/files/alignments/gene_1.nex"),
+            PathBuf::from("tests/files/alignments/gene_2.nex"),
+            PathBuf::from("tests/files/alignments/gene_3.nex"),
+        ];
+        let addition = SequenceAddition::default();
+        let skipped_files = addition.get_skipped_files(&counter, &dest_files);
+        assert_eq!(skipped_files.len(), 2);
     }
 }
