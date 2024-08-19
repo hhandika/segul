@@ -11,6 +11,8 @@ pub(in crate::cli) struct AlignTrimParser<'a> {
     pub input_dir: Option<PathBuf>,
     pub missing_data: Option<f64>,
     pub pars_inf: Option<usize>,
+    params: TrimmingParameters,
+    param_counter: usize,
 }
 
 impl InputCli for AlignTrimParser<'_> {}
@@ -24,6 +26,8 @@ impl<'a> AlignTrimParser<'a> {
             input_dir: None,
             missing_data: None,
             pars_inf: None,
+            param_counter: 0,
+            params: TrimmingParameters::None,
         }
     }
 
@@ -44,27 +48,34 @@ impl<'a> AlignTrimParser<'a> {
         )
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        let params = self.parse_params();
+        self.parse_params();
+        self.check_multiple_params();
         let trim = AlignmentTrimming::new(
             &files,
             &input_fmt,
             &datatype,
             &self.args.output,
             &output_fmt,
-            &params,
+            &self.params,
         );
         trim.trim();
     }
 
-    fn parse_params(&self) -> TrimmingParameters {
+    fn parse_params(&mut self) {
         if let Some(missing_data) = self.missing_data {
-            return TrimmingParameters::MissingData(missing_data);
+            self.params = TrimmingParameters::MissingData(missing_data);
+            self.param_counter += 1;
         }
 
         if let Some(pars_inf) = self.pars_inf {
-            return TrimmingParameters::ParsInf(pars_inf);
+            self.params = TrimmingParameters::ParsInf(pars_inf);
+            self.param_counter += 1;
         }
+    }
 
-        unreachable!("Trimming parameters are not provided")
+    fn check_multiple_params(&self) {
+        if self.param_counter > 1 {
+            panic!("Only one parameter is allowed");
+        }
     }
 }

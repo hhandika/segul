@@ -30,6 +30,8 @@ pub enum TrimmingParameters {
     /// PIS is the number of sites that have at least two different states
     /// and at least two of the states have a minimum frequency of 2
     ParsInf(usize),
+    /// No trimming parameters
+    None,
 }
 
 /// Trim alignment data structure
@@ -98,6 +100,10 @@ impl<'a> AlignmentTrimming<'a> {
         match self.params {
             TrimmingParameters::MissingData(threshold) => self.par_trim_missing_data(*threshold),
             TrimmingParameters::ParsInf(threshold) => self.par_trim_informative_sites(*threshold),
+            TrimmingParameters::None => {
+                log::warn!("No trimming parameters provided. Skipping trimming...");
+                std::process::exit(1);
+            }
         }
     }
 
