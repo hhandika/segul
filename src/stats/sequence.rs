@@ -373,20 +373,20 @@ impl Sites {
     }
 
     /// Get sites with missing data less than a threshold.
-    /// Return the site location and the number of missing data.
+    /// Return the site location
     pub fn get_site_without_missing_data(
         &mut self,
         matrix: &SeqMatrix,
-        datatype: &DataType,
         threshold: f64,
-    ) -> Vec<(usize, usize)> {
-        let site_matrix = self.index_sites(matrix, datatype);
-        let sites = self.get_missing_data_per_site(&site_matrix);
-        let base_count = site_matrix.len();
+    ) -> Vec<usize> {
+        let site_matrix = self.index_site_with_missing_data(matrix);
+        // Site base count is the total number of taxa
+        let site_count = matrix.len();
+        let sites = self.get_missing_data_per_site(&site_matrix, site_count);
         sites
             .iter()
-            .filter(|(_, n)| *n as f64 / base_count as f64 <= threshold)
-            .map(|(s, n)| (*s, *n))
+            .filter(|(_, prop)| *prop < threshold)
+            .map(|(site, _)| *site)
             .collect()
     }
 
@@ -407,16 +407,17 @@ impl Sites {
     }
 
     /// Get missing data per site
-    /// Return the site location and the number of missing data sites.
+    /// Return the site location and the proportion of missing data.
     pub fn get_missing_data_per_site(
         &self,
         indexed_sites: &HashMap<usize, Vec<u8>>,
-    ) -> Vec<(usize, usize)> {
-        let mut missing_data_per_site: Vec<(usize, usize)> = Vec::new();
+        site_count: usize,
+    ) -> Vec<(usize, f64)> {
+        let mut missing_data_per_site: Vec<(usize, f64)> = Vec::new();
         indexed_sites.iter().for_each(|(site, seq)| {
             let n_missing = seq.iter().filter(|&ch| *ch == b'-' || *ch == b'?').count();
             if n_missing > 0 {
-                missing_data_per_site.push((*site, n_missing));
+                missing_data_per_site.push((*site, n_missing as f64 / site_count as f64));
             }
         });
         missing_data_per_site
@@ -434,6 +435,22 @@ impl Sites {
             DataType::Aa => self.index_site_aa(matrix),
             _ => unreachable!(),
         }
+    }
+
+    pub fn index_site_with_missing_data(&self, matrix: &SeqMatrix) -> HashMap<usize, Vec<u8>> {
+        let mut site_matrix: HashMap<usize, Vec<u8>> = HashMap::new();
+        matrix.values().for_each(|seq| {
+            seq.bytes()
+                .enumerate()
+                .for_each(|(idx, dna)| match site_matrix.get_mut(&idx) {
+                    Some(value) => value.push(dna),
+                    None => {
+                        site_matrix.insert(idx, vec![dna]);
+                    }
+                })
+        });
+
+        site_matrix
     }
 
     fn index_site_dna(&self, matrix: &SeqMatrix) -> HashMap<usize, Vec<u8>> {
@@ -786,6 +803,36 @@ mod test {
         assert_eq!(18, site.conserved);
         assert_eq!(8, site.variable);
         assert_eq!(2, site.pars_inf);
+    }
+
+    #[test]
+    fn test_site_missing_data() {
+        let mut index_site = HashMap::new();
+        // Create dummy hash map data with sites
+        index_site.insert(0, vec![b'A', b'T', b'?', b'-']);
+        let site = Sites::default();
+        let data = site.get_missing_data_per_site(&index_site, 4);
+        assert_eq!(1, data.len());
+        let site_length = index_site.get(&0).unwrap().len();
+        let missing_data = 2;
+
+        assert_eq!(missing_data as f64 / site_length as f64, data[0].1,);
+    }
+
+    #[test]
+    fn test_site_indexing() {
+        let id = ["ABC", "ABE", "ABF", "ABD"];
+        let seq = ["AA--", "AT--", "ATGC", "ATGA"];
+        let mat = get_matrix(&id, &seq);
+        let mut site = Sites::default();
+        let site_mat = site.index_site_with_missing_data(&mat);
+        assert_eq!(4, site_mat.len());
+        assert_eq!(4, site_mat.get(&0).unwrap().len());
+        let missing = site.get_missing_data_per_site(&site_mat, 4);
+        assert_eq!(2, missing.len());
+        let threshold = 0.4;
+        let sites = site.get_site_without_missing_data(&mat, threshold);
+        assert_eq!(2, sites.len());
     }
 
     #[test]

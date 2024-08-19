@@ -132,7 +132,8 @@ impl<'a> AlignmentTrimming<'a> {
                     summary.add_summary(header.nchar, nchar);
                 }
                 None => {
-                    summary.add_summary(header.nchar, 0);
+                    let nchar = self.write_output(&matrix, file);
+                    summary.add_summary(header.nchar, nchar);
                 }
             }
             tx.send(summary).expect("Failed to send summary");
@@ -167,17 +168,10 @@ impl<'a> AlignmentTrimming<'a> {
         matrix: &SeqMatrix,
         threshold: f64,
     ) -> Option<SeqMatrix> {
-        let site_pos = Sites::default()
-            .get_site_without_missing_data(matrix, self.datatype, threshold)
-            .iter()
-            .map(|(i, _)| *i)
-            .collect::<Vec<usize>>();
-        log::info!("Sites with missing data: {}", site_pos.len());
+        let site_pos = Sites::default().get_site_without_missing_data(matrix, threshold);
         if site_pos.is_empty() {
-            log::warn!("No sites to trim");
             None
         } else {
-            log::info!("Sites pre-trim: {}", matrix.len());
             Some(self.generate_new_matrix(matrix, site_pos))
         }
     }
@@ -270,9 +264,18 @@ impl TrimmingSummary {
 
     /// Generate a summary of the trimming process
     fn add_summary(&mut self, before: usize, after: usize) {
-        self.before = before;
-        self.after = after;
-        self.removed = before - after;
+        if before < after {
+            panic!("Number of sites after trimming is greater than before");
+        }
+        if before == after {
+            self.before = before;
+            self.after = after;
+            self.removed = 0;
+        } else {
+            self.before = before;
+            self.after = after;
+            self.removed = before - after;
+        }
     }
 }
 
@@ -296,7 +299,16 @@ mod tests {
             &params,
         );
         let summary = align_trim.trim_sites();
+        let (matrix, header) = align_trim.parse_alignment(&input_files[0]);
+        let mut site = Sites::default();
+        let site_missing = site.get_site_without_missing_data(&matrix, 0.6);
+        let index_site = site.index_site_with_missing_data(&matrix);
+        assert_eq!(index_site.len(), 8);
+        assert_eq!(index_site.get(&0).unwrap().len(), 4);
         assert_eq!(summary.len(), 1);
-        assert_eq!(summary[0].before, 10);
+        assert_eq!(summary[0].before, 8);
+        assert_eq!(matrix.len(), 4);
+        assert_eq!(header.nchar, 8);
+        assert_eq!(site_missing.len(), 1);
     }
 }
