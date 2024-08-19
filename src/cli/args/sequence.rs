@@ -52,11 +52,20 @@ pub(crate) struct SequenceAddArgs {
         required_unless_present("destination_input"),
     )]
     pub(crate) destination_dir: Option<String>,
+    #[cfg(not(target_os = "windows"))]
+    #[arg(
+        long,
+        help = "Input a path (allow wildcard) for destination sequences",
+        #[cfg(target_os = "windows")]
+        value_parser = builder::WindowsPathBufParser::default(),
+    )]
+    pub(crate) destination_input: Option<Vec<PathBuf>>,
+    #[cfg(target_os = "windows")]
     #[arg(
         long,
         help = "Input a path (allow wildcard) for destination sequences",
     )]
-    pub(crate) destination_input: Option<Vec<PathBuf>>,
+    pub(crate) destination_input: Option<String>,
     #[arg(
         long = "destination-format",
         help = "Specify destination sequence format",
