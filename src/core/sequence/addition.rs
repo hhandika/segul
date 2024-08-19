@@ -43,7 +43,7 @@ pub struct SequenceAddition<'a> {
     /// Include or not include skipped files.
     /// If true, skipped files will be written to the output.
     /// in the same format as the output.
-    include_skipped: bool,
+    skip_other_destination: bool,
 }
 
 impl OutputPrint for SequenceAddition<'_> {}
@@ -55,7 +55,7 @@ impl<'a> SequenceAddition<'a> {
         datatype: &'a DataType,
         output: &'a Path,
         output_fmt: &'a OutputFmt,
-        include_skipped: bool,
+        skip_other_destination: bool,
     ) -> Self {
         Self {
             input_files,
@@ -63,7 +63,7 @@ impl<'a> SequenceAddition<'a> {
             datatype,
             output,
             output_fmt,
-            include_skipped,
+            skip_other_destination,
         }
     }
 
@@ -72,7 +72,7 @@ impl<'a> SequenceAddition<'a> {
         spinner.set_message("Adding sequences...");
         let counter = self.add_sequences(dest_file, dest_fmt);
         spinner.finish_with_message("Finished adding sequences.\n");
-        if self.include_skipped && !counter.skipped_files.is_empty() {
+        if !self.skip_other_destination && !counter.skipped_files.is_empty() {
             self.write_skip_files(&counter);
         }
         self.print_output_info(&counter);
