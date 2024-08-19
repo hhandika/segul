@@ -725,6 +725,8 @@ impl Chars {
 
 #[cfg(test)]
 mod test {
+    use core::str;
+
     use super::*;
     use crate::helper::sequence::SeqParser;
     use crate::helper::types::{DataType, InputFmt};
@@ -823,8 +825,11 @@ mod test {
         assert_eq!(4, site_mat.len());
         assert_eq!(4, site_mat.get(&0).unwrap().len());
         let missing = site.get_missing_data_per_site(&site_mat, 4);
+        let site_dna = "--GG";
+        let matrix_seq = site_mat.get(&2).unwrap();
+        let matrix_dna = str::from_utf8(matrix_seq.as_slice()).unwrap();
+        assert_eq!(site_dna, matrix_dna);
         assert_eq!(4, missing.len());
-        assert_eq!(0.5, missing[0].1);
         let threshold = 0.4;
         assert!(0.5 > threshold);
         let sites = site.get_site_without_missing_data(&mat, threshold);

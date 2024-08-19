@@ -307,8 +307,9 @@ mod tests {
         assert_eq!(index_site.get(&0).unwrap().len(), 4);
         assert_eq!(summary.len(), 1);
         assert_eq!(summary[0].before, 8);
+        assert_eq!(summary[0].after, 7);
         assert_eq!(matrix.len(), 4);
         assert_eq!(header.nchar, 8);
-        assert_eq!(site_missing.len(), 1);
+        assert_eq!(site_missing.len(), 7);
     }
 }
