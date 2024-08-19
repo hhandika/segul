@@ -127,6 +127,8 @@ pub(crate) struct SequenceFilterArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "min-length", help = "Filter by minimal sequence length")]
     pub(crate) min_len: Option<usize>,
+    #[arg(long = "max-length", help = "Filter by maximum sequence length")]
+    pub(crate) max_len: Option<usize>,
     #[arg(
         long = "max-gap",
         help = "Filter by maximum gap percentage",

@@ -27,6 +27,23 @@ use crate::{
     writer::sequences::SeqWriter,
 };
 
+macro_rules! filter_by_length {
+    ($self: ident, $length: ident, $filter: ident) => {{
+        let counter = AtomicUsize::new(0);
+        $self.files.par_iter().for_each(|file| {
+            let (mut matrix, mut header) = $self.get_sequence_matrix(file);
+            matrix.retain(|_, seq| $self.$filter(seq, $length));
+            header.ntax = matrix.len();
+            if header.ntax > 0 {
+                $self.write_sequence(file, &matrix, &header);
+                counter.fetch_add(1, Ordering::Relaxed);
+            }
+        });
+
+        counter.into_inner()
+    }};
+}
+
 /// Available sequence filtering options.
 pub enum SeqFilteringParameters {
     /// Filtered sequences based the percentage of gaps in a sequence.
@@ -45,6 +62,7 @@ pub enum SeqFilteringParameters {
     /// Filter sequences based on the minimum sequence length without gaps.
     /// Remove sequences that have a sequence length less than the specified number.
     MinSequenceLength(usize),
+    MaxSeequenceLength(usize),
     None,
 }
 
@@ -113,7 +131,10 @@ impl<'a> SequenceFiltering<'a> {
                 self.filter_gappy_sequences(threshold)
             }
             SeqFilteringParameters::MinSequenceLength(min_length) => {
-                self.filter_sequences_by_length(min_length)
+                self.filter_sequences_by_min_length(min_length)
+            }
+            SeqFilteringParameters::MaxSeequenceLength(max_length) => {
+                self.filter_sequences_by_max_length(max_length)
             }
             SeqFilteringParameters::None => {
                 log::warn!("No filtering parameters were provided!");
@@ -142,19 +163,20 @@ impl<'a> SequenceFiltering<'a> {
         counter.into_inner()
     }
 
-    fn filter_sequences_by_length(&self, length: &usize) -> usize {
-        let counter = AtomicUsize::new(0);
-        self.files.par_iter().for_each(|file| {
-            let (mut matrix, mut header) = self.get_sequence_matrix(file);
-            matrix.retain(|_, seq| self.count_non_gaps(seq) >= *length);
-            header.ntax = matrix.len();
-            if header.ntax > 0 {
-                self.write_sequence(file, &matrix, &header);
-                counter.fetch_add(1, Ordering::Relaxed);
-            }
-        });
+    fn filter_sequences_by_min_length(&self, length: &usize) -> usize {
+        filter_by_length!(self, length, is_longer_sequence)
+    }
 
-        counter.into_inner()
+    fn filter_sequences_by_max_length(&self, length: &usize) -> usize {
+        filter_by_length!(self, length, is_shorter_sequence)
+    }
+
+    fn is_longer_sequence(&self, sequence: &str, length: &usize) -> bool {
+        self.count_non_gaps(sequence) >= *length
+    }
+
+    fn is_shorter_sequence(&self, sequence: &str, length: &usize) -> bool {
+        self.count_non_gaps(sequence) <= *length
     }
 
     fn write_sequence(&self, file: &Path, matrix: &SeqMatrix, header: &Header) {
