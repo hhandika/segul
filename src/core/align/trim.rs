@@ -197,9 +197,9 @@ impl<'a> AlignmentTrimming<'a> {
 
     // Write output and return the nchar (number of sites) in NEXUS terms
     fn write_output(&self, matrix: &SeqMatrix, file: &Path) -> usize {
-        let alignment_dir = self.output_dir.join("trimmed_alignments");
-        fs::create_dir_all(&alignment_dir).expect("Failed to create output directory");
-        let output_path = files::create_output_fname(&alignment_dir, file, self.output_fmt);
+        // let alignment_dir = self.output_dir.join("trimmed_alignments");
+        fs::create_dir_all(&self.output_dir).expect("Failed to create output directory");
+        let output_path = files::create_output_fname(&self.output_dir, file, self.output_fmt);
         let mut header = Header::new();
         header.from_seq_matrix(matrix, true);
         let mut writer = SeqWriter::new(&output_path, matrix, &header);
@@ -285,19 +285,27 @@ mod tests {
 
     use super::*;
 
+    macro_rules! init_trimming {
+        ($input:expr, $output:expr, $params:expr) => {
+            AlignmentTrimming::new(
+                $input,
+                &InputFmt::Auto,
+                &DataType::Dna,
+                &$output.path(),
+                &OutputFmt::Fasta,
+                $params,
+            )
+        };
+    }
+
+    const INPUT_PATH: &str = "tests/files/trimming.fas";
+
     #[test]
     fn test_trim_missing_data() {
-        let input_files = vec![PathBuf::from("tests/files/trimming.fas")];
+        let input_files = vec![PathBuf::from(INPUT_PATH)];
         let output_dir = TempDir::new("test").expect("Failed to create temp dir");
         let params = TrimmingParameters::MissingData(0.4);
-        let align_trim = AlignmentTrimming::new(
-            &input_files,
-            &InputFmt::Auto,
-            &DataType::Dna,
-            &output_dir.path(),
-            &OutputFmt::Fasta,
-            &params,
-        );
+        let align_trim = init_trimming!(&input_files, output_dir, &params);
         let summary = align_trim.trim_sites();
         let (matrix, header) = align_trim.parse_alignment(&input_files[0]);
         let site = Sites::default();
@@ -312,4 +320,15 @@ mod tests {
         assert_eq!(header.nchar, 8);
         assert_eq!(site_missing.len(), 7);
     }
+
+    // #[test]
+    // fn test_trimming_results() {
+    //     let input_files = vec![PathBuf::from(INPUT_PATH)];
+    //     let output_dir = TempDir::new("test").expect("Failed to create temp dir");
+    //     let params = TrimmingParameters::MissingData(0.4);
+    //     let align_trim = init_trimming!(&input_files, output_dir, &params);
+    //     align_trim.trim();
+    //     let output_files = output_dir.path().read_dir().unwrap();
+    //     assert_eq!(output_files.count(), 1);
+    // }
 }

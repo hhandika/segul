@@ -6,6 +6,8 @@ use ahash::AHashMap as HashMap;
 
 use crate::helper::types::{DataType, Header, SeqMatrix};
 
+pub type SiteMap = HashMap<usize, Vec<u8>>;
+
 /// Get parsimony informative sites.
 ///
 /// # Example
@@ -347,7 +349,7 @@ impl Sites {
 
     /// Get the site statistics from an alignment.
     pub fn get_stats(&mut self, matrix: &SeqMatrix, datatype: &DataType) {
-        let site_matrix = self.index_sites(matrix, datatype);
+        let site_matrix = self.index_site_without_ambiguity(matrix, datatype);
         self.compute_parsimony_informative(&site_matrix);
         self.count_sites();
         self.get_proportion();
@@ -360,7 +362,7 @@ impl Sites {
         matrix: &SeqMatrix,
         datatype: &DataType,
     ) -> Vec<(usize, usize)> {
-        let site_matrix = self.index_sites(matrix, datatype);
+        let site_matrix = self.index_site_without_ambiguity(matrix, datatype);
         self.compute_parsimony_informative(&site_matrix);
         let mut pars_inf_per_site: Vec<(usize, usize)> = Vec::new();
         site_matrix.iter().for_each(|(site, seq)| {
@@ -406,7 +408,7 @@ impl Sites {
     /// Return the site location and the proportion of missing data.
     pub fn get_missing_data_per_site(
         &self,
-        indexed_sites: &HashMap<usize, Vec<u8>>,
+        indexed_sites: &SiteMap,
         site_count: usize,
     ) -> Vec<(usize, f64)> {
         let mut missing_data_per_site: Vec<(usize, f64)> = Vec::new();
@@ -417,22 +419,10 @@ impl Sites {
         missing_data_per_site
     }
 
-    fn get_pars_inf_only(&mut self, matrix: &SeqMatrix, datatype: &DataType) -> usize {
-        let site_matrix = self.index_sites(matrix, datatype);
-        self.compute_parsimony_informative(&site_matrix);
-        self.pars_inf
-    }
-
-    fn index_sites(&self, matrix: &SeqMatrix, datatype: &DataType) -> HashMap<usize, Vec<u8>> {
-        match datatype {
-            DataType::Dna => self.index_site_dna(matrix),
-            DataType::Aa => self.index_site_aa(matrix),
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn index_site_with_missing_data(&self, matrix: &SeqMatrix) -> HashMap<usize, Vec<u8>> {
-        let mut site_matrix: HashMap<usize, Vec<u8>> = HashMap::new();
+    /// Get the sites as is
+    /// Return the site location including missing data characters.
+    pub fn index_site_with_missing_data(&self, matrix: &SeqMatrix) -> SiteMap {
+        let mut site_matrix: SiteMap = HashMap::new();
         matrix.values().for_each(|seq| {
             seq.bytes()
                 .enumerate()
@@ -447,8 +437,22 @@ impl Sites {
         site_matrix
     }
 
-    fn index_site_dna(&self, matrix: &SeqMatrix) -> HashMap<usize, Vec<u8>> {
-        let mut site_matrix: HashMap<usize, Vec<u8>> = HashMap::new();
+    pub fn index_site_without_ambiguity(&self, matrix: &SeqMatrix, datatype: &DataType) -> SiteMap {
+        match datatype {
+            DataType::Dna => self.index_site_dna(matrix),
+            DataType::Aa => self.index_site_aa(matrix),
+            _ => unreachable!(),
+        }
+    }
+
+    fn get_pars_inf_only(&mut self, matrix: &SeqMatrix, datatype: &DataType) -> usize {
+        let site_matrix = self.index_site_without_ambiguity(matrix, datatype);
+        self.compute_parsimony_informative(&site_matrix);
+        self.pars_inf
+    }
+
+    fn index_site_dna(&self, matrix: &SeqMatrix) -> SiteMap {
+        let mut site_matrix: SiteMap = HashMap::new();
         matrix.values().for_each(|seq| {
             seq.bytes()
                 .enumerate()
@@ -470,8 +474,8 @@ impl Sites {
         site_matrix
     }
 
-    fn index_site_aa(&self, matrix: &SeqMatrix) -> HashMap<usize, Vec<u8>> {
-        let mut site_matrix: HashMap<usize, Vec<u8>> = HashMap::new();
+    fn index_site_aa(&self, matrix: &SeqMatrix) -> SiteMap {
+        let mut site_matrix: SiteMap = HashMap::new();
         matrix.values().for_each(|seq| {
             seq.bytes().enumerate().for_each(|(idx, aa)| {
                 match site_matrix.get_mut(&idx) {
@@ -505,7 +509,7 @@ impl Sites {
         ambiguous_aa.contains(ch)
     }
 
-    fn compute_parsimony_informative(&mut self, site_matrix: &HashMap<usize, Vec<u8>>) {
+    fn compute_parsimony_informative(&mut self, site_matrix: &SiteMap) {
         site_matrix.values().for_each(|site| {
             let n_patterns = self.get_patterns(site);
             if n_patterns >= 2 {
@@ -759,7 +763,7 @@ mod test {
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::default();
-        let smat = site.index_sites(&mat, &DNA);
+        let smat = site.index_site_without_ambiguity(&mat, &DNA);
         site.compute_parsimony_informative(&smat);
         assert_eq!(1, site.pars_inf);
     }
@@ -770,7 +774,7 @@ mod test {
         let seq = ["AATT", "ATTA", "ATGC", "ATGA"];
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::default();
-        let site_mat = site.index_sites(&mat, &DNA);
+        let site_mat = site.index_site_without_ambiguity(&mat, &DNA);
         site.compute_parsimony_informative(&site_mat);
         assert_eq!(1, site.pars_inf);
     }
@@ -781,7 +785,7 @@ mod test {
         let seq = ["AATT---", "ATTA---", "ATGC---", "ATGA---"];
         let mat = get_matrix(&id, &seq);
         let mut site = Sites::default();
-        let smat = site.index_sites(&mat, &DNA);
+        let smat = site.index_site_without_ambiguity(&mat, &DNA);
         site.compute_parsimony_informative(&smat);
         assert_eq!(1, site.pars_inf);
         assert_eq!(3, site.variable);
@@ -794,7 +798,7 @@ mod test {
         let aln = SeqParser::new(path, &DNA);
         let (matrix, _) = aln.get_alignment(&input_format);
         let mut site = Sites::default();
-        let smat = site.index_sites(&matrix, &DNA);
+        let smat = site.index_site_without_ambiguity(&matrix, &DNA);
         site.compute_parsimony_informative(&smat);
         assert_eq!(18, site.conserved);
         assert_eq!(8, site.variable);
