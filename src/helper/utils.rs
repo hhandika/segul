@@ -45,7 +45,7 @@ pub fn set_spinner() -> ProgressBar {
     spin.set_style(
         ProgressStyle::default_spinner()
             .tick_chars("🌑🌒🌓🌔🌕🌖🌗🌘")
-            .template("{spinner} {msg}")
+            .template("{spinner} [{elapsed_precise}] {msg}")
             .expect("Failed getting progress bar."),
     );
     spin
