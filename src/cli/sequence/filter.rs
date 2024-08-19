@@ -16,6 +16,7 @@ pub(in crate::cli) struct SequenceFilterParser<'a> {
     args: &'a SequenceFilterArgs,
     input_dir: Option<PathBuf>,
     params: SeqFilteringParameters,
+    counter_params: usize,
 }
 
 impl<'a> SequenceFilterParser<'a> {
@@ -24,6 +25,7 @@ impl<'a> SequenceFilterParser<'a> {
             args,
             input_dir: None,
             params: SeqFilteringParameters::None,
+            counter_params: 0,
         }
     }
 
@@ -44,6 +46,7 @@ impl<'a> SequenceFilterParser<'a> {
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "Filtering Parameters".yellow());
         self.parse_params();
+        self.check_multiple_params();
         let filter = SequenceFiltering::new(
             &files,
             &input_fmt,
@@ -59,11 +62,25 @@ impl<'a> SequenceFilterParser<'a> {
         if let Some(min_len) = self.args.min_len {
             log::info!("{:18}: {}\n", "Minimum length", min_len);
             self.params = SeqFilteringParameters::MinSequenceLength(min_len);
+            self.counter_params += 1;
         }
         if let Some(max_gap) = self.args.max_gap {
             let percent_max_gap = max_gap * 100.0;
             log::info!("{:18}: {}\n", "Max gaps", format!("{}%", percent_max_gap));
             self.params = SeqFilteringParameters::PercentMaxGap(percent_max_gap);
+            self.counter_params += 1;
+        }
+        if let Some(max_len) = self.args.max_len {
+            log::info!("{:18}: {}\n", "Maximum length", max_len);
+            self.params = SeqFilteringParameters::MaxSequenceLength(max_len);
+            self.counter_params += 1;
+        }
+    }
+
+    fn check_multiple_params(&self) {
+        if self.counter_params > 1 {
+            log::warn!("Multiple parameters are set. Only one parameter is allowed at a time!");
+            std::process::exit(0);
         }
     }
 }

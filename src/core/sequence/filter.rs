@@ -62,7 +62,7 @@ pub enum SeqFilteringParameters {
     /// Filter sequences based on the minimum sequence length without gaps.
     /// Remove sequences that have a sequence length less than the specified number.
     MinSequenceLength(usize),
-    MaxSeequenceLength(usize),
+    MaxSequenceLength(usize),
     None,
 }
 
@@ -133,7 +133,7 @@ impl<'a> SequenceFiltering<'a> {
             SeqFilteringParameters::MinSequenceLength(min_length) => {
                 self.filter_sequences_by_min_length(min_length)
             }
-            SeqFilteringParameters::MaxSeequenceLength(max_length) => {
+            SeqFilteringParameters::MaxSequenceLength(max_length) => {
                 self.filter_sequences_by_max_length(max_length)
             }
             SeqFilteringParameters::None => {
