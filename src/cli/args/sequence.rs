@@ -56,8 +56,6 @@ pub(crate) struct SequenceAddArgs {
     #[arg(
         long,
         help = "Input a path (allow wildcard) for destination sequences",
-        #[cfg(target_os = "windows")]
-        value_parser = builder::WindowsPathBufParser::default(),
     )]
     pub(crate) destination_input: Option<Vec<PathBuf>>,
     #[cfg(target_os = "windows")]
