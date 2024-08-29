@@ -261,20 +261,19 @@ impl<R: Read> NexusReader<R> {
             .read_until(b';', &mut self.buffer)
             .expect("Failed reading nexus file");
         if bytes == 0 {
-            None
-        } else {
-            let mut block: String = std::str::from_utf8(&self.buffer)
-                .expect("Failed parsing nexus block")
-                .trim()
-                .to_string();
-            block.pop(); // remove terminated semicolon
-            let commands = get_commands(&block);
-            match commands.as_str() {
-                "dimensions" => Some(Block::Dimensions(self.parse_header(&block))),
-                "format" => Some(Block::Format(self.parse_header(&block))),
-                "matrix" => Some(Block::Matrix(self.parse_matrix(&block))),
-                _ => Some(Block::Undetermined),
-            }
+            return None;
+        }
+        let mut block: String = std::str::from_utf8(&self.buffer)
+            .expect("Failed parsing nexus block")
+            .trim()
+            .to_string();
+        block.pop(); // remove terminated semicolon
+        let commands = get_commands(&block);
+        match commands.as_str() {
+            "dimensions" => Some(Block::Dimensions(self.parse_header(&block))),
+            "format" => Some(Block::Format(self.parse_header(&block))),
+            "matrix" => Some(Block::Matrix(self.parse_matrix(&block))),
+            _ => Some(Block::Undetermined),
         }
     }
 
