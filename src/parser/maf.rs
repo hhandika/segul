@@ -21,7 +21,6 @@
 //! The line with `##maf` is the header line. The line with `a` is the alignment
 //! line. The line with `s` is the sequence line. It some cases, there are `q`
 //! lines, which are the quality lines.
-
 use std::{
     error::Error,
     fmt::Display,
@@ -37,7 +36,7 @@ const EOF: usize = 0;
 /// We can think of a paragraph as a block of text that is separated by a blank
 /// line. In MAF format, there are two types of paragraphs: header and alignment.
 /// Source: http://genome.ucsc.edu/FAQ/FAQformat.html#format5
-pub enum MafParagraf {
+pub enum MafParagraph {
     Track(TrackLine),
     Header(MafHeader),
     Comments(String),
@@ -99,7 +98,7 @@ pub struct TrackLine {
     pub description: Option<String>,
     pub frames: Option<String>,
     pub maf_dot: Option<String>,
-    pub visiblity: Option<String>,
+    pub visibility: Option<String>,
     pub species_order: Option<String>,
 }
 
@@ -110,7 +109,7 @@ impl TrackLine {
             description: None,
             frames: None,
             maf_dot: None,
-            visiblity: None,
+            visibility: None,
             species_order: None,
         }
     }
@@ -122,39 +121,39 @@ impl TrackLine {
 
         self.name = parts.next().unwrap_or_default().to_string();
         self.description = parts.next().map(|s| s.to_string());
-        self.frames = parts.next();
-        self.maf_dot = parts.next();
-        self.visiblity = parts.next();
-        self.species_order = parts.next();
+        self.frames = parts.next().map(|s| s.to_string());
+        self.maf_dot = parts.next().map(|s| s.to_string());
+        self.visibility = parts.next().map(|s| s.to_string());
+        self.species_order = parts.next().map(|s| s.to_string());
 
         Ok(())
     }
 }
 
-pub enum MafVisiblity {
+pub enum MafVisibility {
     Dense,
     Pack,
     Full,
 }
 
-impl Display for MafVisiblity {
+impl Display for MafVisibility {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MafVisiblity::Dense => write!(f, "dense"),
-            MafVisiblity::Pack => write!(f, "pack"),
-            MafVisiblity::Full => write!(f, "full"),
+            MafVisibility::Dense => write!(f, "dense"),
+            MafVisibility::Pack => write!(f, "pack"),
+            MafVisibility::Full => write!(f, "full"),
         }
     }
 }
 
-impl FromStr for MafVisiblity {
+impl FromStr for MafVisibility {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "dense" => Ok(MafVisiblity::Dense),
-            "pack" => Ok(MafVisiblity::Pack),
-            "full" => Ok(MafVisiblity::Full),
+            "dense" => Ok(MafVisibility::Dense),
+            "pack" => Ok(MafVisibility::Pack),
+            "full" => Ok(MafVisibility::Full),
             _ => Err(format!("Unknown visiblity: {}", s)),
         }
     }
@@ -241,7 +240,7 @@ impl MafSequence {
 /// - `rightStatus`: a character that specifies the relationship between the
 ///     sequence in the current block and the sequence in the subsequent block.
 /// - `leftValues`: the values of the information before the block of sequences.
-/// - `righCount`: the number of bases in the aligning species between the start of the
+/// - `rightCount`: the number of bases in the aligning species between the start of the
 ///    current block and the start of the next block.
 pub struct MafInformation {
     pub source: String,
@@ -353,7 +352,7 @@ impl<R: Read> MafReader<R> {
         }
     }
 
-    pub fn next_paragraph(&mut self) -> Option<MafParagraf> {
+    pub fn next_paragraph(&mut self) -> Option<MafParagraph> {
         let bytes = self
             .reader
             .read_until(END_OF_LINE, &mut self.buf)
@@ -365,33 +364,37 @@ impl<R: Read> MafReader<R> {
         // Check the first character of the line
         match self.buf[0] {
             b'#' => {
+                // The double dashes `##`` indicates the header line
                 if self.buf[1] == b'#' {
                     self.parse_header()
                 } else {
-                    self.parse_track_line()
+                    // Otherwise, it is a comment line
+                    let line = String::from_utf8_lossy(&self.buf);
+                    Some(MafParagraph::Comments(line.to_string()))
                 }
             }
+            b't' => self.parse_track_line(),
             b'a' => self.parse_alignments(),
-            b'\n' => Some(MafParagraf::Empty),
+            b'\n' => Some(MafParagraph::Empty),
             _ => None,
         }
     }
 
-    fn parse_header(&mut self) -> Option<MafParagraf> {
+    fn parse_header(&mut self) -> Option<MafParagraph> {
         let line = String::from_utf8_lossy(&self.buf);
         let mut header = MafHeader::new();
         header.from_str(&line).unwrap();
-        Some(MafParagraf::Header(header))
+        Some(MafParagraph::Header(header))
     }
 
-    fn parse_track_line(&mut self) -> Option<MafParagraf> {
+    fn parse_track_line(&mut self) -> Option<MafParagraph> {
         let line = String::from_utf8_lossy(&self.buf);
         let mut track = TrackLine::new();
         track.from_str(&line).unwrap();
-        Some(MafParagraf::Track(track))
+        Some(MafParagraph::Track(track))
     }
 
-    fn parse_alignments(&mut self) -> Option<MafParagraf> {
+    fn parse_alignments(&mut self) -> Option<MafParagraph> {
         let mut alignment = MafAlignment::new();
 
         loop {
@@ -428,7 +431,7 @@ impl<R: Read> MafReader<R> {
             }
         }
 
-        Some(MafParagraf::Alignment(alignment))
+        Some(MafParagraph::Alignment(alignment))
     }
 }
 
@@ -453,6 +456,6 @@ mod tests {
         track.from_str(line).unwrap();
         assert_eq!(track.name, "chr1");
         assert_eq!(track.description.unwrap(), "Human chromosome 1");
-        assert_eq!(track.visiblity.unwrap(), "pack");
+        assert_eq!(track.visibility.unwrap(), "pack");
     }
 }
