@@ -42,6 +42,7 @@ pub enum MafParagraph {
     Comments(String),
     Alignment(MafAlignment),
     Empty,
+    Unknown,
 }
 
 pub struct MafHeader {
@@ -282,7 +283,9 @@ pub struct MafSequence {
 
 impl MafSequence {
     pub fn from_str(line: &[u8]) -> Result<Self, Box<dyn Error>> {
-        let mut parts = line.split(|b| b.is_ascii_whitespace());
+        let mut parts = line
+            .split(|b| b.is_ascii_whitespace())
+            .filter(|b| !b.is_empty());
 
         let _ = parts.next(); // Skip the first character
 
@@ -291,8 +294,7 @@ impl MafSequence {
         let size = parts.next().unwrap_or_default();
         let strand = parts.next().unwrap_or_default();
         let src_size = parts.next().unwrap_or_default();
-
-        let text = parts.next().unwrap();
+        let text = parts.next().unwrap_or_default();
 
         Ok(MafSequence {
             source: String::from_utf8_lossy(source).to_string(),
@@ -443,29 +445,34 @@ impl<R: Read> MafReader<R> {
         }
 
         // Check the first character of the line
-        match self.buf[0] {
-            b'#' => {
-                // The double dashes `##`` indicates the header line
-                if self.buf[1] == b'#' {
-                    self.parse_header()
-                } else {
-                    // Otherwise, it is a comment line
-                    let line = String::from_utf8_lossy(&self.buf);
-                    Some(MafParagraph::Comments(line.to_string()))
-                }
-            }
+        let paragraph = match self.buf[0] {
+            b'#' => self.parse_header(),
             b't' => self.parse_track_line(),
             b'a' => self.parse_alignments(),
             b'\n' => Some(MafParagraph::Empty),
-            _ => None,
-        }
+            _ => Some(MafParagraph::Unknown),
+        };
+
+        self.buf.clear();
+
+        paragraph
     }
 
     fn parse_header(&mut self) -> Option<MafParagraph> {
         let line = String::from_utf8_lossy(&self.buf);
-        let mut header = MafHeader::new();
-        header.from_str(&line).unwrap();
-        Some(MafParagraph::Header(header))
+        if line.starts_with("##maf") {
+            let mut header = MafHeader::new();
+            header.from_str(&line).unwrap();
+            self.buf.clear();
+            Some(MafParagraph::Header(header))
+        } else {
+            self.parse_comments()
+        }
+    }
+
+    fn parse_comments(&mut self) -> Option<MafParagraph> {
+        let line = String::from_utf8_lossy(&self.buf);
+        Some(MafParagraph::Comments(line.to_string()))
     }
 
     fn parse_track_line(&mut self) -> Option<MafParagraph> {
@@ -480,7 +487,7 @@ impl<R: Read> MafReader<R> {
         alignment
             .parse_scores(&String::from_utf8_lossy(&self.buf))
             .unwrap();
-
+        self.buf.clear();
         loop {
             let bytes = self
                 .reader
@@ -508,10 +515,7 @@ impl<R: Read> MafReader<R> {
                     let empty = MafEmptyLine::from_str(&self.buf).unwrap();
                     alignment.empty = Some(empty);
                 }
-                b'\n' => {
-                    self.buf.clear();
-                    break;
-                }
+                b'\n' | b' ' => break,
                 _ => {}
             }
             self.buf.clear();
@@ -565,11 +569,11 @@ mod tests {
         // let mut count = 0;
         for paragraph in reader {
             match paragraph {
-                // MafParagraph::Track(track) => {
-                //     assert_eq!(track.name, "chr1");
-                //     assert_eq!(track.description.unwrap(), "Human chromosome");
-                //     assert_eq!(track.visibility.unwrap(), MafVisibility::Pack);
-                // }
+                MafParagraph::Track(track) => {
+                    assert_eq!(track.name, "euArc");
+                    assert_eq!(track.description.unwrap(), "Human chromosome");
+                    assert_eq!(track.visibility.unwrap(), MafVisibility::Pack);
+                }
                 MafParagraph::Header(header) => {
                     assert_eq!(header.version, "1");
                     assert_eq!(header.scoring, "tba.v8");
