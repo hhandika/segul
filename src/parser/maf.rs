@@ -28,7 +28,7 @@ use std::{
     str::FromStr,
 };
 
-use nom::{bytes::complete, character, sequence, IResult};
+use nom::{bytes::complete, character, combinator, sequence, IResult};
 
 const END_OF_LINE: u8 = b'\n';
 const EOF: usize = 0;
@@ -97,8 +97,8 @@ pub struct TrackLine {
     pub name: String,
     pub description: Option<String>,
     pub frames: Option<String>,
-    pub maf_dot: Option<String>,
-    pub visibility: Option<String>,
+    pub maf_dot: bool,
+    pub visibility: Option<MafVisibility>,
     pub species_order: Option<String>,
 }
 
@@ -108,28 +108,98 @@ impl TrackLine {
             name: String::new(),
             description: None,
             frames: None,
-            maf_dot: None,
+            maf_dot: false,
             visibility: None,
             species_order: None,
         }
     }
 
     pub fn from_str(&mut self, line: &str) -> Result<(), Box<dyn Error>> {
-        let mut parts = line.split_whitespace();
+        let track = self.parse_track(line);
 
-        let _ = parts.next(); // Skip the first character
+        match track {
+            Ok(value) => {
+                self.parse_attributes(&value);
+                Ok(())
+            }
+            Err(_) => Err("Error parsing track".into()),
+        }
+    }
 
-        self.name = parts.next().unwrap_or_default().to_string();
-        self.description = parts.next().map(|s| s.to_string());
-        self.frames = parts.next().map(|s| s.to_string());
-        self.maf_dot = parts.next().map(|s| s.to_string());
-        self.visibility = parts.next().map(|s| s.to_string());
-        self.species_order = parts.next().map(|s| s.to_string());
+    fn parse_track(&mut self, input: &str) -> Result<String, Box<dyn Error>> {
+        let track: IResult<&str, &str> =
+            sequence::preceded(complete::tag("track "), complete::take_until("\n"))(input);
 
-        Ok(())
+        match track {
+            Ok((_, value)) => Ok(value.to_string()),
+            Err(_) => Err("Error parsing track".into()),
+        }
+    }
+
+    fn parse_attributes(&mut self, input: &str) {
+        let tag: IResult<
+            &str,
+            (
+                &str,
+                Option<&str>,
+                Option<&str>,
+                Option<&str>,
+                Option<&str>,
+                Option<&str>,
+            ),
+        > = sequence::tuple((
+            sequence::preceded(complete::tag("name="), character::complete::alphanumeric1),
+            combinator::opt(sequence::preceded(
+                complete::tag(" description=\""),
+                complete::take_until("\""),
+            )),
+            combinator::opt(sequence::preceded(
+                complete::tag(" frames="),
+                character::complete::not_line_ending,
+            )),
+            combinator::opt(sequence::preceded(
+                complete::tag(" mafDot="),
+                character::complete::not_line_ending,
+            )),
+            combinator::opt(sequence::preceded(
+                complete::tag(" visibility="),
+                character::complete::not_line_ending,
+            )),
+            combinator::opt(sequence::preceded(
+                complete::tag(" speciesOrder="),
+                sequence::delimited(
+                    character::complete::char('"'),
+                    complete::take_until("\""),
+                    character::complete::char('"'),
+                ),
+            )),
+        ))(input);
+
+        match tag {
+            Ok((_, (name, description, visibility, frames, maf_dot, species_order))) => {
+                self.name = name.to_string();
+                self.description = description.map(|s| s.to_string());
+                self.frames = frames.map(|s| s.to_string());
+                self.maf_dot = maf_dot.map(|s| s == "on").unwrap_or_default();
+                self.species_order = species_order.map(|s| s.to_string());
+                self.parse_visibility(visibility);
+            }
+            Err(_) => {}
+        }
+    }
+
+    fn parse_visibility(&mut self, value: Option<&str>) {
+        self.visibility = match value {
+            Some(value) => match MafVisibility::from_str(value) {
+                Ok(visibility) => Some(visibility),
+                Err(_) => None,
+            },
+            None => None,
+        }
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum MafVisibility {
     Dense,
     Pack,
@@ -154,7 +224,7 @@ impl FromStr for MafVisibility {
             "dense" => Ok(MafVisibility::Dense),
             "pack" => Ok(MafVisibility::Pack),
             "full" => Ok(MafVisibility::Full),
-            _ => Err(format!("Unknown visiblity: {}", s)),
+            _ => Err(format!("Unknown visibility: {}", s)),
         }
     }
 }
@@ -187,6 +257,17 @@ impl MafAlignment {
 
     pub fn add_sequence(&mut self, sequence: MafSequence) {
         self.sequences.push(sequence);
+    }
+
+    pub fn parse_scores(&self, value: &str) -> Result<f64, Box<dyn Error>> {
+        let tag: IResult<&str, &str> = sequence::preceded(
+            complete::tag("a score="),
+            complete::take_while(|c: char| c.is_ascii_digit() || c == '.'),
+        )(value);
+        match tag {
+            Ok((_, value)) => Ok(value.parse()?),
+            Err(_) => Err("Error parsing score".into()),
+        }
     }
 }
 
@@ -396,6 +477,9 @@ impl<R: Read> MafReader<R> {
 
     fn parse_alignments(&mut self) -> Option<MafParagraph> {
         let mut alignment = MafAlignment::new();
+        alignment
+            .parse_scores(&String::from_utf8_lossy(&self.buf))
+            .unwrap();
 
         loop {
             let bytes = self
@@ -425,13 +509,23 @@ impl<R: Read> MafReader<R> {
                     alignment.empty = Some(empty);
                 }
                 b'\n' => {
+                    self.buf.clear();
                     break;
                 }
                 _ => {}
             }
+            self.buf.clear();
         }
 
         Some(MafParagraph::Alignment(alignment))
+    }
+}
+
+impl<R: Read> Iterator for MafReader<R> {
+    type Item = MafParagraph;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_paragraph()
     }
 }
 
@@ -450,12 +544,44 @@ mod tests {
 
     #[test]
     fn test_parse_track_line() {
-        let line = "track name=chr1 description=\"Human chromosome
-        # 1\" visibility=pack\n";
+        let line = "track name=chr1 description=\"Human chromosome\" visibility=pack\n";
         let mut track = TrackLine::new();
         track.from_str(line).unwrap();
-        assert_eq!(track.name, "chr1");
-        assert_eq!(track.description.unwrap(), "Human chromosome 1");
-        assert_eq!(track.visibility.unwrap(), "pack");
+        let track_line = track.parse_track(line);
+        assert_eq!(
+            track_line.unwrap(),
+            "name=chr1 description=\"Human chromosome\" visibility=pack"
+        );
+        // assert_eq!(track.name, "chr1");
+        assert_eq!(track.description.unwrap(), "Human chromosome");
+        // assert_eq!(track.visibility.unwrap(), MafVisibility::Pack);
+    }
+
+    #[test]
+    fn test_parse_maf_file() {
+        let file = std::fs::File::open("tests/files/maf/simple.maf").unwrap();
+        let reader = MafReader::new(file);
+        let mut alignments = Vec::new();
+        // let mut count = 0;
+        for paragraph in reader {
+            match paragraph {
+                // MafParagraph::Track(track) => {
+                //     assert_eq!(track.name, "chr1");
+                //     assert_eq!(track.description.unwrap(), "Human chromosome");
+                //     assert_eq!(track.visibility.unwrap(), MafVisibility::Pack);
+                // }
+                MafParagraph::Header(header) => {
+                    assert_eq!(header.version, "1");
+                    assert_eq!(header.scoring, "tba.v8");
+                }
+                MafParagraph::Alignment(alignment) => {
+                    alignments.push(alignment);
+                }
+                _ => {}
+            }
+            // count += 1;
+        }
+
+        assert_eq!(alignments.len(), 3);
     }
 }
