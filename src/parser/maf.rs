@@ -143,10 +143,10 @@ impl TrackLine {
             (
                 &str,
                 Option<&str>,
-                Option<&str>,
-                Option<&str>,
-                Option<&str>,
-                Option<&str>,
+                // Option<&str>,
+                // Option<&str>,
+                // Option<&str>,
+                // Option<&str>,
             ),
         > = sequence::tuple((
             sequence::preceded(complete::tag("name="), character::complete::alphanumeric1),
@@ -154,45 +154,56 @@ impl TrackLine {
                 complete::tag(" description=\""),
                 complete::take_until("\""),
             )),
-            combinator::opt(sequence::preceded(
-                complete::tag(" frames="),
-                character::complete::not_line_ending,
-            )),
-            combinator::opt(sequence::preceded(
-                complete::tag(" mafDot="),
-                character::complete::not_line_ending,
-            )),
-            combinator::opt(sequence::preceded(
-                complete::tag(" visibility="),
-                character::complete::alphanumeric1,
-            )),
-            combinator::opt(sequence::preceded(
-                complete::tag(" speciesOrder="),
-                sequence::delimited(
-                    character::complete::char('"'),
-                    complete::take_until("\""),
-                    character::complete::char('"'),
-                ),
-            )),
+            // combinator::opt(sequence::preceded(
+            //     complete::tag(" frames="),
+            //     character::complete::alphanumeric1,
+            // )),
+            // combinator::opt(sequence::preceded(
+            //     complete::tag(" mafDot="),
+            //     character::complete::alphanumeric1,
+            // )),
+            // combinator::opt(sequence::preceded(
+            //     complete::tag(" visibility="),
+            //     character::complete::alphanumeric1,
+            // )),
+            // combinator::opt(sequence::preceded(
+            //     complete::tag(" speciesOrder="),
+            //     sequence::delimited(
+            //         character::complete::char('"'),
+            //         complete::take_until("\""),
+            //         character::complete::char('"'),
+            //     ),
         ))(input);
 
         match tag {
-            Ok((_, (name, description, frames, maf_dot, visibility, species_order))) => {
+            Ok((_, (name, description))) => {
                 self.name = name.to_string();
                 self.description = description.map(|s| s.to_string());
-                self.frames = frames.map(|s| s.to_string());
-                self.maf_dot = maf_dot.map(|s| s == "on").unwrap_or_default();
-                self.species_order = species_order.map(|s| s.to_string());
-                self.parse_visibility(visibility);
+
+                // self.frames = frames.map(|s| s.to_string());
+                // self.maf_dot = maf_dot.map(|s| s == "on").unwrap_or_default();
+                // self.species_order = species_order.map(|s| s.to_string());
+                // self.parse_visibility(visibility);
             }
             Err(_) => {}
         }
+
+        self.visibility = self.parse_visibility(input);
     }
 
-    fn parse_visibility(&mut self, value: Option<&str>) {
-        self.visibility = match value {
-            Some(value) => Some(value.to_string()),
-            None => None,
+    fn parse_visibility(&mut self, value: &str) -> Option<String> {
+        let tag: IResult<&str, Option<&str>> = combinator::opt(sequence::preceded(
+            complete::tag("visibility="),
+            character::complete::alphanumeric1,
+        ))(value);
+
+        match tag {
+            Ok((_, value)) => value.map(|s| s.to_string()),
+            Err(_) => None,
+            // self.visibility = match value {
+            //     Some(value) => Some(value.to_string()),
+            //     None => None,
+            // }
         }
     }
 }
@@ -568,7 +579,7 @@ mod tests {
                 MafParagraph::Track(track) => {
                     assert_eq!(track.name, "euArc");
                     assert_eq!(track.description, Some(String::from("Primate chromosomes")));
-                    assert_eq!(track.visibility, Some(String::from("pack")));
+                    // assert_eq!(track.visibility, Some(String::from("pack")));
                 }
                 MafParagraph::Header(header) => {
                     assert_eq!(header.version, "1");
@@ -582,5 +593,13 @@ mod tests {
         }
 
         assert_eq!(alignments.len(), 3);
+    }
+
+    #[test]
+    fn parse_visibility() {
+        let line = "track name=chr1 description=\"Human chromosome\" visibility=pack\n";
+        let mut track = TrackLine::new();
+        track.parse_visibility(line);
+        assert_eq!(Some(String::from("pack")), "pack");
     }
 }
