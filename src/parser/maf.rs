@@ -99,7 +99,7 @@ pub struct TrackLine {
     pub description: Option<String>,
     pub frames: Option<String>,
     pub maf_dot: bool,
-    pub visibility: Option<MafVisibility>,
+    pub visibility: Option<String>,
     pub species_order: Option<String>,
 }
 
@@ -164,7 +164,7 @@ impl TrackLine {
             )),
             combinator::opt(sequence::preceded(
                 complete::tag(" visibility="),
-                character::complete::not_line_ending,
+                character::complete::alphanumeric1,
             )),
             combinator::opt(sequence::preceded(
                 complete::tag(" speciesOrder="),
@@ -177,7 +177,7 @@ impl TrackLine {
         ))(input);
 
         match tag {
-            Ok((_, (name, description, visibility, frames, maf_dot, species_order))) => {
+            Ok((_, (name, description, frames, maf_dot, visibility, species_order))) => {
                 self.name = name.to_string();
                 self.description = description.map(|s| s.to_string());
                 self.frames = frames.map(|s| s.to_string());
@@ -191,10 +191,7 @@ impl TrackLine {
 
     fn parse_visibility(&mut self, value: Option<&str>) {
         self.visibility = match value {
-            Some(value) => match MafVisibility::from_str(value) {
-                Ok(visibility) => Some(visibility),
-                Err(_) => None,
-            },
+            Some(value) => Some(value.to_string()),
             None => None,
         }
     }
@@ -566,13 +563,12 @@ mod tests {
         let file = std::fs::File::open("tests/files/maf/simple.maf").unwrap();
         let reader = MafReader::new(file);
         let mut alignments = Vec::new();
-        // let mut count = 0;
         for paragraph in reader {
             match paragraph {
                 MafParagraph::Track(track) => {
                     assert_eq!(track.name, "euArc");
-                    assert_eq!(track.description.unwrap(), "Human chromosome");
-                    assert_eq!(track.visibility.unwrap(), MafVisibility::Pack);
+                    assert_eq!(track.description, Some(String::from("Primate chromosomes")));
+                    assert_eq!(track.visibility, Some(String::from("pack")));
                 }
                 MafParagraph::Header(header) => {
                     assert_eq!(header.version, "1");
@@ -583,7 +579,6 @@ mod tests {
                 }
                 _ => {}
             }
-            // count += 1;
         }
 
         assert_eq!(alignments.len(), 3);

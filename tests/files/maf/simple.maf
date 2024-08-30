@@ -1,4 +1,4 @@
-track name=euArc visibility=pack
+track name=euArc description="Primate chromosomes" visibility=pack
 ##maf version=1 scoring=tba.v8 
 # tba.v8 (((human chimp) baboon) (mouse rat))
                    
