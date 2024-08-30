@@ -188,22 +188,20 @@ impl TrackLine {
             Err(_) => {}
         }
 
-        self.visibility = self.parse_visibility(input);
+        self.parse_visibility(input);
     }
 
-    fn parse_visibility(&mut self, value: &str) -> Option<String> {
+    fn parse_visibility(&mut self, value: &str) {
         let tag: IResult<&str, Option<&str>> = combinator::opt(sequence::preceded(
             complete::tag("visibility="),
             character::complete::alphanumeric1,
         ))(value);
 
         match tag {
-            Ok((_, value)) => value.map(|s| s.to_string()),
-            Err(_) => None,
-            // self.visibility = match value {
-            //     Some(value) => Some(value.to_string()),
-            //     None => None,
-            // }
+            Ok((_, value)) => {
+                self.visibility = value.map(|s| s.to_string());
+            }
+            Err(_) => {}
         }
     }
 }
@@ -600,6 +598,6 @@ mod tests {
         let line = "track name=chr1 description=\"Human chromosome\" visibility=pack\n";
         let mut track = TrackLine::new();
         track.parse_visibility(line);
-        assert_eq!(Some(String::from("pack")), "pack");
+        assert_eq!(track.visibility, Some(String::from("pack")));
     }
 }
