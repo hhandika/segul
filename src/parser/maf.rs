@@ -28,7 +28,12 @@ use std::{
     str::FromStr,
 };
 
-use nom::{bytes::complete, character, combinator, sequence, IResult};
+use nom::{
+    bytes::complete,
+    character,
+    combinator::{self},
+    sequence, IResult,
+};
 
 const END_OF_LINE: u8 = b'\n';
 const EOF: usize = 0;
@@ -59,6 +64,7 @@ impl MafHeader {
             program: None,
         }
     }
+
     pub fn from_str(&mut self, line: &str) -> Result<(), Box<dyn Error>> {
         let mut parts = line.split_whitespace();
 
@@ -116,92 +122,127 @@ impl TrackLine {
     }
 
     pub fn from_str(&mut self, line: &str) -> Result<(), Box<dyn Error>> {
-        let track = self.parse_track(line);
+        let (_, tract) = self.parse_track(line).unwrap();
+        let (_, name) = self.parse_name(tract).unwrap();
 
-        match track {
-            Ok(value) => {
-                self.parse_attributes(&value);
-                Ok(())
+        self.name = name.to_string();
+
+        if tract.contains("description") {
+            let input = self.capture_tags(tract, "description=");
+            if let Some(input) = input {
+                let (_, description) = self.parse_description(&input).unwrap_or_default();
+                self.description = description.map(|s| s.to_string());
             }
-            Err(_) => Err("Error parsing track".into()),
         }
+
+        if tract.contains("frames") {
+            let input = self.capture_tags(tract, "frames=");
+            if let Some(input) = input {
+                let (_, frames) = self.parse_frames(input.as_str()).unwrap_or_default();
+                self.frames = frames.map(|s| s.to_string());
+            }
+        }
+
+        if tract.contains("mafDot") {
+            let input = self.capture_tags(tract, "mafDot=");
+            if let Some(input) = input {
+                let (_, maf_dot) = self.parse_maf_dot(input.as_str()).unwrap_or_default();
+                self.maf_dot = maf_dot;
+            }
+        }
+
+        if tract.contains("visibility") {
+            let input = self.capture_tags(tract, "visibility=");
+            if let Some(input) = input {
+                let (_, visibility) = self.parse_visibility(input.as_str()).unwrap_or_default();
+                self.visibility = visibility.map(|s| s.to_string());
+            }
+        }
+
+        if tract.contains("speciesOrder") {
+            let input = self.capture_tags(tract, "speciesOrder=");
+            if let Some(input) = input {
+                let (_, species_order) =
+                    self.parse_species_order(input.as_str()).unwrap_or_default();
+                self.species_order = species_order.map(|s| s.to_string());
+            }
+        }
+
+        Ok(())
     }
 
-    fn parse_track(&mut self, input: &str) -> Result<String, Box<dyn Error>> {
+    fn parse_track<'a>(&mut self, input: &'a str) -> IResult<&'a str, &'a str> {
         let track: IResult<&str, &str> =
             sequence::preceded(complete::tag("track "), complete::take_until("\n"))(input);
-
-        match track {
-            Ok((_, value)) => Ok(value.to_string()),
-            Err(_) => Err("Error parsing track".into()),
-        }
+        track
     }
 
-    fn parse_attributes(&mut self, input: &str) {
-        let tag: IResult<
-            &str,
-            (
-                &str,
-                Option<&str>,
-                // Option<&str>,
-                // Option<&str>,
-                // Option<&str>,
-                // Option<&str>,
+    fn parse_name<'a>(&mut self, input: &'a str) -> IResult<&'a str, &'a str> {
+        let name: IResult<&str, &str> =
+            sequence::preceded(complete::tag("name="), character::complete::alphanumeric1)(input);
+        name
+    }
+
+    fn parse_description<'a>(&mut self, input: &'a str) -> IResult<&'a str, Option<&'a str>> {
+        let description: IResult<&str, Option<&str>> = combinator::opt(sequence::preceded(
+            complete::tag("description="),
+            sequence::delimited(
+                character::complete::char('"'),
+                complete::take_while(|c: char| c != '"'),
+                character::complete::char('"'),
             ),
-        > = sequence::tuple((
-            sequence::preceded(complete::tag("name="), character::complete::alphanumeric1),
-            combinator::opt(sequence::preceded(
-                complete::tag(" description=\""),
-                complete::take_until("\""),
-            )),
-            // combinator::opt(sequence::preceded(
-            //     complete::tag(" frames="),
-            //     character::complete::alphanumeric1,
-            // )),
-            // combinator::opt(sequence::preceded(
-            //     complete::tag(" mafDot="),
-            //     character::complete::alphanumeric1,
-            // )),
-            // combinator::opt(sequence::preceded(
-            //     complete::tag(" visibility="),
-            //     character::complete::alphanumeric1,
-            // )),
-            // combinator::opt(sequence::preceded(
-            //     complete::tag(" speciesOrder="),
-            //     sequence::delimited(
-            //         character::complete::char('"'),
-            //         complete::take_until("\""),
-            //         character::complete::char('"'),
-            //     ),
         ))(input);
 
-        match tag {
-            Ok((_, (name, description))) => {
-                self.name = name.to_string();
-                self.description = description.map(|s| s.to_string());
-
-                // self.frames = frames.map(|s| s.to_string());
-                // self.maf_dot = maf_dot.map(|s| s == "on").unwrap_or_default();
-                // self.species_order = species_order.map(|s| s.to_string());
-                // self.parse_visibility(visibility);
-            }
-            Err(_) => {}
-        }
-
-        self.parse_visibility(input);
+        description
     }
 
-    fn parse_visibility(&mut self, value: &str) {
-        let tag: IResult<&str, Option<&str>> = combinator::opt(sequence::preceded(
+    fn parse_frames<'a>(&mut self, input: &'a str) -> IResult<&'a str, Option<&'a str>> {
+        let (input, _) = character::complete::space0(input)?;
+        let frames: IResult<&str, Option<&str>> = combinator::opt(sequence::preceded(
+            complete::tag("frames="),
+            character::complete::alphanumeric1,
+        ))(input);
+        frames
+    }
+
+    fn parse_maf_dot<'a>(&mut self, input: &'a str) -> IResult<&'a str, bool> {
+        let (input, _) = character::complete::space0(input)?;
+        let maf_dot: IResult<&str, &str> =
+            sequence::preceded(complete::tag("mafDot="), character::complete::alphanumeric1)(input);
+        match maf_dot {
+            Ok((_, value)) => Ok((input, value == "on")),
+            Err(_) => Ok((input, false)),
+        }
+    }
+
+    fn parse_visibility<'a>(&mut self, input: &'a str) -> IResult<&'a str, Option<&'a str>> {
+        let (input, _) = character::complete::space0(input)?;
+        combinator::opt(sequence::preceded(
             complete::tag("visibility="),
             character::complete::alphanumeric1,
-        ))(value);
+        ))(input)
+    }
 
-        match tag {
-            Ok((_, value)) => {
-                self.visibility = value.map(|s| s.to_string());
-            }
-            Err(_) => {}
+    fn parse_species_order<'a>(&mut self, input: &'a str) -> IResult<&'a str, Option<&'a str>> {
+        let (input, _) = character::complete::space0(input)?;
+        let species_order: IResult<&str, Option<&str>> = combinator::opt(sequence::preceded(
+            complete::tag("speciesOrder="),
+            sequence::delimited(
+                character::complete::char('"'),
+                complete::take_until("\""),
+                character::complete::char('"'),
+            ),
+        ))(input);
+        species_order
+    }
+
+    // Split the line at tags and the second part is the value.
+    fn capture_tags(&self, input: &str, tag: &str) -> Option<String> {
+        // use find pos to get the position of the first space
+        let pos = input.find(tag);
+        match pos {
+            Some(pos) => Some(input[pos..].to_string()),
+            None => None,
         }
     }
 }
@@ -564,14 +605,78 @@ mod tests {
         let line = "track name=chr1 description=\"Human chromosome\" visibility=pack\n";
         let mut track = TrackLine::new();
         track.from_str(line).unwrap();
-        let track_line = track.parse_track(line);
-        assert_eq!(
-            track_line.unwrap(),
-            "name=chr1 description=\"Human chromosome\" visibility=pack"
-        );
-        // assert_eq!(track.name, "chr1");
-        assert_eq!(track.description.unwrap(), "Human chromosome");
-        // assert_eq!(track.visibility.unwrap(), MafVisibility::Pack);
+        track.from_str(line).unwrap();
+        assert_eq!(track.name, "chr1");
+        assert_eq!(track.description, Some(String::from("Human chromosome")));
+        assert_eq!(track.visibility, Some(String::from("pack")));
+    }
+
+    #[test]
+    fn parse_name() {
+        let line = "name=chr1";
+        let mut track = TrackLine::new();
+        let name = track.parse_name(line).unwrap();
+        let (_, res) = name;
+        assert_eq!(res, "chr1");
+    }
+
+    #[test]
+    fn parse_description() {
+        let line = " description=\"Human chromosome\"";
+        let line2 = " description=\"Human chromosome\" visibility=pack";
+        let mut track = TrackLine::new();
+        let tags = track.capture_tags(line, "description=").unwrap();
+        let description = track.parse_description(&tags).unwrap();
+        let (_, res) = description;
+        assert_eq!(res, Some("Human chromosome"));
+        let tags2 = track.capture_tags(line2, "description=").unwrap();
+        let description2 = track.parse_description(&tags2).unwrap();
+        let (_, res2) = description2;
+        assert_eq!(res2, Some("Human chromosome"));
+    }
+
+    #[test]
+    fn parse_frames() {
+        let line = " frames=multiz28wayFrames";
+        let mut track = TrackLine::new();
+        let frames = track.parse_frames(line).unwrap();
+        let (_, res) = frames;
+        assert_eq!(res, Some("multiz28wayFrames"));
+    }
+
+    #[test]
+    fn parse_maf_dot() {
+        let line = " mafDot=on";
+        let mut track = TrackLine::new();
+        let tags = track.capture_tags(line, "mafDot=").unwrap();
+        let maf_dot = track.parse_maf_dot(&tags).unwrap();
+        let (_, res) = maf_dot;
+        assert_eq!(res, true);
+    }
+
+    #[test]
+    fn parse_visibility() {
+        let line = " visibility=pack";
+        let mut track = TrackLine::new();
+        let tags = track.capture_tags(line, "visibility=").unwrap();
+        let visibility = track.parse_visibility(&tags).unwrap();
+        let (_, res) = visibility;
+        assert_eq!(res, Some("pack"));
+
+        let complete_line = " description=\"Human chromosome\" visibility=pack\n";
+        let tags2 = track.capture_tags(complete_line, "visibility=").unwrap();
+        let visibility2 = track.parse_visibility(&tags2).unwrap();
+        let (_, res2) = visibility2;
+        assert_eq!(res2, Some("pack"));
+    }
+
+    #[test]
+    fn parse_species_order() {
+        let line = " speciesOrder=\"hg18 panTro2\"";
+        let mut track = TrackLine::new();
+        let species_order = track.parse_species_order(line).unwrap();
+        let (_, res) = species_order;
+        assert_eq!(res, Some("hg18 panTro2"));
     }
 
     #[test]
@@ -584,7 +689,7 @@ mod tests {
                 MafParagraph::Track(track) => {
                     assert_eq!(track.name, "euArc");
                     assert_eq!(track.description, Some(String::from("Primate chromosomes")));
-                    // assert_eq!(track.visibility, Some(String::from("pack")));
+                    assert_eq!(track.visibility, Some(String::from("pack")));
                 }
                 MafParagraph::Header(header) => {
                     assert_eq!(header.version, "1");
@@ -601,10 +706,13 @@ mod tests {
     }
 
     #[test]
-    fn parse_visibility() {
-        let line = "track name=chr1 description=\"Human chromosome\" visibility=pack\n";
-        let mut track = TrackLine::new();
-        track.parse_visibility(line);
-        assert_eq!(track.visibility, Some(String::from("pack")));
+    fn test_capture_tags() {
+        let line = "track name=chr1 description=\"Human chromosome\" visibility=pack";
+        let track = TrackLine::new();
+        let tags = track.capture_tags(line, "description=");
+        assert_eq!(
+            tags,
+            Some("description=\"Human chromosome\" visibility=pack".to_string())
+        );
     }
 }
