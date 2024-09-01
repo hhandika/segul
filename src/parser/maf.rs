@@ -441,6 +441,9 @@ impl<R: Read> MafReader<R> {
         }
     }
 
+    /// Read the next paragraph from the file.
+    /// In MAF terms, a paragraph is a block of text that is separated by a blank line.
+    /// It can be a header, a track line,or an alignment.
     pub fn next_paragraph(&mut self) -> Option<MafParagraph> {
         let bytes = self
             .reader
@@ -465,6 +468,8 @@ impl<R: Read> MafReader<R> {
     }
 
     fn parse_header(&mut self) -> Option<MafParagraph> {
+        // We convert to a string since this line is short
+        // and we can parse it easily.
         let line = String::from_utf8_lossy(&self.buf);
         if line.starts_with("##maf") {
             let mut header = MafHeader::new();
@@ -472,6 +477,8 @@ impl<R: Read> MafReader<R> {
             self.buf.clear();
             Some(MafParagraph::Header(header))
         } else {
+            // It must have been a comment if it does not start with ##maf
+            // Typically it starts with a single #
             self.parse_comments()
         }
     }
