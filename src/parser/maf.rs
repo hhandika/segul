@@ -36,9 +36,8 @@ use nom::{
 };
 
 #[cfg(target_os = "windows")]
-const END_OF_LINE: u8 = b'\r';
+const CAR_RETURN: u8 = b'\r';
 
-#[cfg(not(target_os = "windows"))]
 const END_OF_LINE: u8 = b'\n';
 const EOF: usize = 0;
 
@@ -503,6 +502,9 @@ impl<R: Read> MafReader<R> {
             return None;
         }
 
+        #[cfg(target_os = "windows")]
+        self.check_carriage_return();
+
         // Check the first character of the line
         let paragraph = match self.buf[0] {
             b'#' => self.parse_header(),
@@ -515,6 +517,14 @@ impl<R: Read> MafReader<R> {
         self.buf.clear();
 
         paragraph
+    }
+
+    // Check cariage return for windows
+    #[cfg(target_os = "windows")]
+    fn check_carriage_return(&mut self) {
+        if self.buf.ends_with(&[CAR_RETURN]) {
+            self.buf.pop();
+        }
     }
 
     fn parse_header(&mut self) -> Option<MafParagraph> {
