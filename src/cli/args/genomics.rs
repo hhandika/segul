@@ -22,6 +22,12 @@ pub(crate) enum ContigSubcommand {
     ContigSummary(ContigSummaryArgs),
 }
 
+#[derive(Subcommand)]
+pub(crate) enum GenomicSubcommand {
+    #[command(about = "Convert genomic files to other formats", name = "convert")]
+    Genomic(GenomicConvertArgs),
+}
+
 
 #[derive(Args)]
 pub(crate) struct SeqReadSummaryArgs {
@@ -66,6 +72,29 @@ pub(crate) struct ContigSummaryArgs {
     )]
     pub(crate) input_format: ContigFmt,
     #[arg(short = 'o', long = "output", help = "Output path", default_value = "Contig-Summary")]
+    pub(crate) output: PathBuf,
+    #[arg(long = "prefix", help = "Specify prefix for output files")]
+    pub(crate) prefix: Option<String>,
+}
+
+#[derive(Args)]
+pub(crate) struct GenomicConvertArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[arg(long, help = "Path to the source of reference names")]
+    pub(crate) reference: PathBuf,
+    #[arg(long, help = "Source of names is a bed file")]
+    pub(crate) from_bed: bool,
+    #[arg(
+        short = 't', 
+        long = "output-format", 
+        help = "Specify output format", 
+        default_value = "fasta-int",
+        value_parser = 
+            builder::PossibleValuesParser::new(["fasta", "phylip","fasta-int", "phylip-int"]),
+    )]
+    pub(crate) output_fmt: String,
+    #[arg(short = 'o', long = "output", help = "Output path", default_value = "Genomic-Convert")]
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,

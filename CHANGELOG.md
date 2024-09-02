@@ -1,19 +1,25 @@
 # Release Notes
 
-## v0.22.1
+## v0.23.0
 
-### Bug Fixes
+New Features:
+
+- Convert alignments to unaligned sequences.
+- Add sequence to an existing sequence files/alignments
+- Trim sequences.
+
+## v0.22.1
 
 - Sequence filtering now does not enforce input is an alignment.
 
 ## v0.22.0
 
-### New Features
+New Features:
 
 - Filter sequences based on gaps or sequence length.
 - Add a proportion of missing data parameter to the alignment filtering.
 
-### API Breaking Changes
+API Breaking Changes:
 
 - Rename classes and methods to improve clarity and consistency.
 - Remove unnecessary mutability for conversion modules.

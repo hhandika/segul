@@ -3,6 +3,7 @@ mod align;
 mod args;
 mod commands;
 mod contig;
+mod maf;
 mod read;
 mod sequence;
 

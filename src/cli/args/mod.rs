@@ -7,6 +7,7 @@ use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
 use genomics::ContigSubcommand;
+use genomics::GenomicSubcommand;
 use genomics::SeqReadSubcommand;
 
 use super::args::sequence::SequenceSubcommand;
@@ -40,6 +41,8 @@ pub(crate) enum MainSubcommand {
     RawRead(SeqReadSubcommand),
     #[command(subcommand, about = "Contiguous sequence analyses", name = "contig")]
     Contig(ContigSubcommand),
+    #[command(subcommand, about = "Genomic specific analyses", name = "genomic")]
+    Genomic(GenomicSubcommand),
     #[command(subcommand, about = "Alignment analyses", name = "align")]
     Alignment(AlignmentSubcommand),
     #[command(
@@ -66,7 +69,7 @@ pub(crate) struct IOArgs {
     #[arg(short, long, help = "Input a path (allow wildcard)")]
     #[cfg(target_os = "windows")]
     pub(crate) input: Option<String>,
-    #[arg(short, long, help = "Input a path (allow wildcard)", num_args(1..))]
+    #[arg(short, long, help = "Input a path (allow wildcard)", num_args(0..))]
     #[cfg(not(target_os = "windows"))]
     pub(crate) input: Option<Vec<PathBuf>>,
     #[arg(long, help = "Force overwriting existing output files/directory")]

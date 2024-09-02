@@ -10,6 +10,8 @@ use super::{CommonSeqInput, CommonSeqOutput, IOArgs};
 
 #[derive(Subcommand)]
 pub(crate) enum SequenceSubcommand {
+    #[command(about = "Add sequences to alignments", name = "add")]
+    Add(SequenceAddArgs),
     #[command(about = "Extract sequence from alignments", name = "extract")]
     Extract(SequenceExtractArgs),
     #[command(about = "Filter sequence based on selected criteria", name = "filter")]
@@ -25,6 +27,57 @@ pub(crate) enum SequenceSubcommand {
     Rename(SequenceRenameArgs),
     #[command(about = "Translate DNA to amino acid sequences", name = "translate")]
     Translate(SequenceTranslateArgs),
+}
+
+#[derive(Args)]
+pub(crate) struct SequenceAddArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[arg(
+        short = 'F',
+        long = "output-format",
+        help = "Specify output format",
+        default_value = "fasta-int",
+        value_parser = builder::PossibleValuesParser::new(
+            ["fasta", "fasta-int"]),
+    )]
+    pub(crate) output_fmt: String,
+    #[arg(short, long, help = "Output path", default_value = "Sequence-Addition")]
+    pub(crate) output: PathBuf,
+    #[arg(
+        long,
+        help = "Input directory for destination sequences",
+        required_unless_present("destination_input"),
+    )]
+    pub(crate) destination_dir: Option<String>,
+    #[cfg(not(target_os = "windows"))]
+    #[arg(
+        long,
+        help = "Input a path (allow wildcard) for destination sequences",
+    )]
+    pub(crate) destination_input: Option<Vec<PathBuf>>,
+    #[cfg(target_os = "windows")]
+    #[arg(
+        long,
+        help = "Input a path (allow wildcard) for destination sequences",
+    )]
+    pub(crate) destination_input: Option<String>,
+    #[arg(
+        long = "destination-format",
+        help = "Specify destination sequence format",
+        default_value = "auto",
+        value_parser = builder::PossibleValuesParser::new(
+            ["auto", "fasta", "nexus", "phylip"]
+        ),
+    )]
+    pub(crate) destination_fmt: String,
+    #[arg(
+        long,
+        help = "Only produce output that have added sequences",
+    )]
+    pub(crate) added_only: bool,
 }
 
 
@@ -72,6 +125,8 @@ pub(crate) struct SequenceFilterArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "min-length", help = "Filter by minimal sequence length")]
     pub(crate) min_len: Option<usize>,
+    #[arg(long = "max-length", help = "Filter by maximum sequence length")]
+    pub(crate) max_len: Option<usize>,
     #[arg(
         long = "max-gap",
         help = "Filter by maximum gap percentage",
@@ -87,7 +142,7 @@ pub(crate) struct SequenceIdArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "SEGUL-ID")]
+    #[arg(short, long, help = "Output path", default_value = "Sequence-ID")]
     pub(crate) output: PathBuf,
     #[arg(short, long, help = "Prefix for filename")]
     pub(crate) prefix: Option<String>,

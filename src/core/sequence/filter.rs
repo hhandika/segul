@@ -17,6 +17,7 @@ use colored::Colorize;
 use rayon::prelude::*;
 
 use crate::{
+    core::OutputPrint,
     helper::{
         files,
         sequence::SeqParser,
@@ -25,6 +26,23 @@ use crate::{
     },
     writer::sequences::SeqWriter,
 };
+
+macro_rules! filter_by_length {
+    ($self: ident, $length: ident, $filter: ident) => {{
+        let counter = AtomicUsize::new(0);
+        $self.files.par_iter().for_each(|file| {
+            let (mut matrix, mut header) = $self.get_sequence_matrix(file);
+            matrix.retain(|_, seq| $self.$filter(seq, $length));
+            header.ntax = matrix.len();
+            if header.ntax > 0 {
+                $self.write_sequence(file, &matrix, &header);
+                counter.fetch_add(1, Ordering::Relaxed);
+            }
+        });
+
+        counter.into_inner()
+    }};
+}
 
 /// Available sequence filtering options.
 pub enum SeqFilteringParameters {
@@ -44,6 +62,7 @@ pub enum SeqFilteringParameters {
     /// Filter sequences based on the minimum sequence length without gaps.
     /// Remove sequences that have a sequence length less than the specified number.
     MinSequenceLength(usize),
+    MaxSequenceLength(usize),
     None,
 }
 
@@ -61,6 +80,8 @@ pub struct SequenceFiltering<'a> {
     /// Choice of filtering options.
     params: &'a SeqFilteringParameters,
 }
+
+impl OutputPrint for SequenceFiltering<'_> {}
 
 impl<'a> SequenceFiltering<'a> {
     pub fn new(
@@ -94,7 +115,7 @@ impl<'a> SequenceFiltering<'a> {
     ///
     /// let input_fmt = InputFmt::Nexus;
     /// let datatype = DataType::Dna;
-    /// let input_dir = Path::new("tests/files/concat");
+    /// let input_dir = Path::new("tests/files/alignments");
     /// let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
     /// // Replace the temp directory with your own directory.
     /// let output = TempDir::new("tempt").unwrap();
@@ -110,7 +131,10 @@ impl<'a> SequenceFiltering<'a> {
                 self.filter_gappy_sequences(threshold)
             }
             SeqFilteringParameters::MinSequenceLength(min_length) => {
-                self.filter_sequences_by_length(min_length)
+                self.filter_sequences_by_min_length(min_length)
+            }
+            SeqFilteringParameters::MaxSequenceLength(max_length) => {
+                self.filter_sequences_by_max_length(max_length)
             }
             SeqFilteringParameters::None => {
                 log::warn!("No filtering parameters were provided!");
@@ -119,7 +143,7 @@ impl<'a> SequenceFiltering<'a> {
         };
         spinner.finish_with_message("Finished filtering sequences!\n");
         if filtered_aln == 0 {
-            log::warn!("No matching sequences were found!!");
+            log::warn!("No matching sequences were found!");
         } else {
             self.print_output_info(filtered_aln);
         }
@@ -128,7 +152,7 @@ impl<'a> SequenceFiltering<'a> {
     fn filter_gappy_sequences(&self, threshold: &f64) -> usize {
         let counter = AtomicUsize::new(0);
         self.files.par_iter().for_each(|file| {
-            let (mut matrix, mut header) = self.get_alignment(file);
+            let (mut matrix, mut header) = self.get_sequence_matrix(file);
             self.remove_gappy_sequences(&mut matrix, &mut header, threshold);
             if header.ntax > 0 {
                 self.write_sequence(file, &matrix, &header);
@@ -139,19 +163,20 @@ impl<'a> SequenceFiltering<'a> {
         counter.into_inner()
     }
 
-    fn filter_sequences_by_length(&self, length: &usize) -> usize {
-        let counter = AtomicUsize::new(0);
-        self.files.par_iter().for_each(|file| {
-            let (mut matrix, mut header) = self.get_alignment(file);
-            matrix.retain(|_, seq| self.count_non_gaps(seq) >= *length);
-            header.ntax = matrix.len();
-            if header.ntax > 0 {
-                self.write_sequence(file, &matrix, &header);
-                counter.fetch_add(1, Ordering::Relaxed);
-            }
-        });
+    fn filter_sequences_by_min_length(&self, length: &usize) -> usize {
+        filter_by_length!(self, length, is_longer_sequence)
+    }
 
-        counter.into_inner()
+    fn filter_sequences_by_max_length(&self, length: &usize) -> usize {
+        filter_by_length!(self, length, is_shorter_sequence)
+    }
+
+    fn is_longer_sequence(&self, sequence: &str, length: &usize) -> bool {
+        self.count_non_gaps(sequence) >= *length
+    }
+
+    fn is_shorter_sequence(&self, sequence: &str, length: &usize) -> bool {
+        self.count_non_gaps(sequence) <= *length
     }
 
     fn write_sequence(&self, file: &Path, matrix: &SeqMatrix, header: &Header) {
@@ -165,11 +190,11 @@ impl<'a> SequenceFiltering<'a> {
     fn print_output_info(&self, counter: usize) {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Directory", self.output.display());
-        log::info!("{:18}: {:?}", "Format", self.output_fmt);
+        self.print_output_fmt(self.output_fmt);
         log::info!("{:18}: {}", "Total files", counter);
     }
 
-    fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
+    fn get_sequence_matrix(&self, file: &Path) -> (SeqMatrix, Header) {
         let sequence = SeqParser::new(file, self.datatype);
         sequence.parse(self.input_fmt)
     }
@@ -221,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_filter_sequences_by_length() {
-        let dir = Path::new("tests/files/concat");
+        let dir = Path::new("tests/files/alignments");
         let params = SeqFilteringParameters::MinSequenceLength(7);
         setup!(dir, handle, params, output);
         handle.filter();
@@ -246,7 +271,7 @@ mod tests {
         setup!(input_dir, handle, params, output);
         let threshold = 0.5;
         let test_file = input_dir.join("gene_1.nex");
-        let (mut matrix, mut header) = handle.get_alignment(&test_file);
+        let (mut matrix, mut header) = handle.get_sequence_matrix(&test_file);
         handle.remove_gappy_sequences(&mut matrix, &mut header, &threshold);
         assert_eq!(matrix.len(), 1);
     }

@@ -1,4 +1,4 @@
-// A module for sequence statistics.
+//! Generate alignment summary statistics
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
