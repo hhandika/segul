@@ -5,6 +5,62 @@ use std::path::Path;
 use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum GenomicFmt {
+    /// Fastq format with auto-detection
+    /// to inter gzipped and non-gzipped files
+    FastqAuto,
+    /// Fastq format
+    /// with gzipped files
+    FastqGzip,
+    /// Fastq format
+    /// with non-gzipped files
+    Fastq,
+    /// Contig format with auto-detection
+    /// to inter gzipped and non-gzipped files
+    /// The contig file should be in FASTA format
+    ContigAuto,
+    /// Contig format
+    /// with gzipped files
+    ContigGzip,
+    /// Contig format
+    /// with non-gzipped files
+    Contig,
+    /// Multi-Alignment Format (MAF) format
+    Maf,
+}
+
+impl std::fmt::Display for GenomicFmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::FastqAuto => write!(f, "fastq-auto"),
+            Self::FastqGzip => write!(f, "fastq-gzip"),
+            Self::Fastq => write!(f, "fastq"),
+            Self::ContigAuto => write!(f, "contig-auto"),
+            Self::ContigGzip => write!(f, "contig-gzip"),
+            Self::Contig => write!(f, "contig"),
+            Self::Maf => write!(f, "maf"),
+        }
+    }
+}
+
+impl std::str::FromStr for GenomicFmt {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "fastq-auto" => Ok(Self::FastqAuto),
+            "fastq-gzip" => Ok(Self::FastqGzip),
+            "fastq" => Ok(Self::Fastq),
+            "contig-auto" => Ok(Self::ContigAuto),
+            "contig-gzip" => Ok(Self::ContigGzip),
+            "contig" => Ok(Self::Contig),
+            "maf" => Ok(Self::Maf),
+            _ => Err(format!("{} is not a valid format", s)),
+        }
+    }
+}
+
 /// Data types for high-throughput sequencing reads
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum SeqReadFmt {
