@@ -35,6 +35,10 @@ use nom::{
     sequence, IResult,
 };
 
+#[cfg(target_os = "windows")]
+const END_OF_LINE: u8 = b'\r';
+
+#[cfg(not(target_os = "windows"))]
 const END_OF_LINE: u8 = b'\n';
 const EOF: usize = 0;
 
