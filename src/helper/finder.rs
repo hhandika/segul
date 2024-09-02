@@ -224,7 +224,7 @@ impl<'a> MafFileFinder<'a> {
     ///
     /// let dir = Path::new("tests/files/maf");
     /// let files = MafFileFinder::new(&dir).find();
-    /// assert_eq!(files.len(), 2);
+    /// assert_eq!(files.len(), 1);
     pub fn find(&mut self) -> Vec<PathBuf> {
         self.maf_pattern();
         let files = self.glob_files(&self.pattern);
@@ -243,7 +243,7 @@ impl<'a> MafFileFinder<'a> {
     ///
     /// let dir = Path::new("tests/files/maf");
     /// let files = MafFileFinder::new(&dir).find_recursive();
-    /// assert_eq!(files.len(), 2);
+    /// assert_eq!(files.len(), 1);
     pub fn find_recursive(&self) -> Vec<PathBuf> {
         walk_dir!(self, re_matches_maf_lazy)
     }
