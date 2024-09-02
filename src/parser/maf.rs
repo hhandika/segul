@@ -588,7 +588,9 @@ impl<R: Read> MafReader<R> {
                     let empty = MafEmptyLine::from_str(&self.buf).unwrap();
                     alignment.empty = Some(empty);
                 }
-                b'\n' | b' ' => break,
+                END_OF_LINE | b' ' => break,
+                #[cfg(target_os = "windows")]
+                CAR_RETURN => break,
                 _ => {}
             }
             self.buf.clear();
