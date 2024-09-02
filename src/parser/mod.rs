@@ -1,4 +1,5 @@
 //! All the parsers for the supported formats.
+pub mod bed;
 pub mod delimited;
 pub mod fasta;
 pub mod maf;

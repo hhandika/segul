@@ -1,6 +1,7 @@
 //! Handle segul main functions.
 pub mod align;
 pub mod contig;
+pub mod maf;
 pub mod read;
 pub mod sequence;
 

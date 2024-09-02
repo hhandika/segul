@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use clap::{builder, Args, Subcommand};
 use clap::builder::TypedValueParser as _;
 
-use crate::helper::types::{ContigFmt, SeqReadFmt, SummaryMode};
+use crate::helper::types::{ContigFmt, OutputFmt, SeqReadFmt, SummaryMode};
 
 use super::IOArgs;
 
@@ -20,6 +20,12 @@ pub(crate) enum SeqReadSubcommand {
 pub(crate) enum ContigSubcommand {
     #[command(about = "Compute contig statistics", name = "summary")]
     ContigSummary(ContigSummaryArgs),
+}
+
+#[derive(Subcommand)]
+pub(crate) enum MafSubcommand {
+    #[command(about = "Convert MAF to other formats", name = "convert")]
+    MafConvert(MafConvertArgs),
 }
 
 
@@ -66,6 +72,30 @@ pub(crate) struct ContigSummaryArgs {
     )]
     pub(crate) input_format: ContigFmt,
     #[arg(short = 'o', long = "output", help = "Output path", default_value = "Contig-Summary")]
+    pub(crate) output: PathBuf,
+    #[arg(long = "prefix", help = "Specify prefix for output files")]
+    pub(crate) prefix: Option<String>,
+}
+
+#[derive(Args)]
+pub(crate) struct MafConvertArgs {
+    #[arg(short, long, help = "Input a maf file")]
+    pub(crate) input: PathBuf,
+    #[arg(long, help = "Source of reference names")]
+    pub(crate) reference_path: PathBuf,
+    #[arg(long, help = "Source of names is a bed file")]
+    pub(crate) from_bed: bool,
+    #[arg(
+        short = 't', 
+        long = "output-format", 
+        help = "Specify output format", 
+        default_value_t = OutputFmt::Fasta,
+        value_parser = 
+            builder::PossibleValuesParser::new(["fasta", "phylip"])
+            .map(|x| x.parse::<ContigFmt>().expect("Invalid output format")),
+    )]
+    pub(crate) output_fmt: OutputFmt,
+    #[arg(short = 'o', long = "output", help = "Output path", default_value = "Maf-Convert")]
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,

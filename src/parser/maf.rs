@@ -321,10 +321,10 @@ impl MafAlignment {
 
 pub struct MafSequence {
     pub source: String,
-    pub start: u64,
-    pub size: u64,
+    pub start: usize,
+    pub size: usize,
     pub strand: char,
-    pub src_size: u64,
+    pub src_size: usize,
     pub text: Vec<u8>,
 }
 
@@ -469,6 +469,7 @@ impl Quality {
     }
 }
 
+#[derive(Debug)]
 pub struct MafReader<R> {
     pub reader: BufReader<R>,
     pub buf: Vec<u8>,

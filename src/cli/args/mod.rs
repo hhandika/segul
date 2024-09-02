@@ -7,6 +7,7 @@ use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
 use genomics::ContigSubcommand;
+use genomics::MafSubcommand;
 use genomics::SeqReadSubcommand;
 
 use super::args::sequence::SequenceSubcommand;
@@ -40,6 +41,8 @@ pub(crate) enum MainSubcommand {
     RawRead(SeqReadSubcommand),
     #[command(subcommand, about = "Contiguous sequence analyses", name = "contig")]
     Contig(ContigSubcommand),
+    #[command(subcommand, about = "Multiple alignment format analyses", name = "maf")]
+    Maf(MafSubcommand),
     #[command(subcommand, about = "Alignment analyses", name = "align")]
     Alignment(AlignmentSubcommand),
     #[command(
