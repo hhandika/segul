@@ -94,7 +94,7 @@ pub(crate) struct GenomicConvertArgs {
             builder::PossibleValuesParser::new(["fasta", "phylip","fasta-int", "phylip-int"]),
     )]
     pub(crate) output_fmt: String,
-    #[arg(short = 'o', long = "output", help = "Output path", default_value = "Maf-Convert")]
+    #[arg(short = 'o', long = "output", help = "Output path", default_value = "Genomic-Convert")]
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,
