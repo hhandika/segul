@@ -64,7 +64,7 @@ impl<'a> AdditionParser<'a> {
             &datatype,
             &self.args.output,
             &output_fmt,
-            self.args.skip_other_destination,
+            self.args.added_only,
         );
         add.add(&dest_files, &dest_fmt);
     }

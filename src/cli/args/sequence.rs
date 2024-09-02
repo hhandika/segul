@@ -75,9 +75,9 @@ pub(crate) struct SequenceAddArgs {
     pub(crate) destination_fmt: String,
     #[arg(
         long,
-        help = "Skip destination sequence does match with the input",
+        help = "Only produce output that have added sequences",
     )]
-    pub(crate) skip_other_destination: bool,
+    pub(crate) added_only: bool,
 }
 
 

@@ -43,7 +43,7 @@ pub struct SequenceAddition<'a> {
     /// Include or not include skipped files.
     /// If true, skipped files will be written to the output.
     /// in the same format as the output.
-    skip_other_destination: bool,
+    added_only: bool,
 }
 
 impl Default for SequenceAddition<'_> {
@@ -54,7 +54,7 @@ impl Default for SequenceAddition<'_> {
             datatype: &DataType::Dna,
             output: Path::new("output"),
             output_fmt: &OutputFmt::Fasta,
-            skip_other_destination: false,
+            added_only: false,
         }
     }
 }
@@ -68,7 +68,7 @@ impl<'a> SequenceAddition<'a> {
         datatype: &'a DataType,
         output: &'a Path,
         output_fmt: &'a OutputFmt,
-        skip_other_destination: bool,
+        added_only: bool,
     ) -> Self {
         Self {
             input_files,
@@ -76,7 +76,7 @@ impl<'a> SequenceAddition<'a> {
             datatype,
             output,
             output_fmt,
-            skip_other_destination,
+            added_only,
         }
     }
 
@@ -86,7 +86,7 @@ impl<'a> SequenceAddition<'a> {
         let counter = self.add_sequences(dest_file, dest_fmt);
         spinner.finish_with_message("Finished adding sequences.\n");
         let mut total_written = 0;
-        if !self.skip_other_destination {
+        if !self.added_only {
             let skipped_files = self.get_skipped_files(&counter, dest_file);
             total_written = self.write_skip_files(&skipped_files);
         }
@@ -399,7 +399,7 @@ mod tests {
     }
 
     #[test]
-    fn test_finding_skiped_files() {
+    fn test_finding_skipped_files() {
         let mut counter = SequenceCounter::new(2, 3);
         counter.add_file("gene_1");
         let dest_files = vec![
