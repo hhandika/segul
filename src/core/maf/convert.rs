@@ -3,10 +3,9 @@
 //! Include support to match name with a reference sequence.
 use std::{
     collections::HashMap,
-    fs::File,
+    fs::{self, File},
     io::BufReader,
     path::{Path, PathBuf},
-    sync::Mutex,
 };
 
 use colored::Colorize;
@@ -55,54 +54,89 @@ impl<'a> MafConverter<'a> {
     }
 
     pub fn convert(&self) {
-        let spin = utils::set_spinner();
-        spin.set_message("Converting MAF format...");
         if self.name_from_bed {
             self.parse_maf_from_bed();
         }
-        spin.finish_with_message("Finished converting MAF format!\n");
         self.print_output_info();
     }
 
     fn parse_maf_from_bed(&self) {
+        let spin = utils::set_spinner();
+        spin.set_message("Converting MAF format...");
         let names = self.get_name_from_bed(self.name_source);
-        let parallel_names = Mutex::new(names);
         self.input_files.par_iter().for_each(|file| {
             let file = File::open(file).expect("Unable to open file");
             let buff = BufReader::new(file);
             let maf = MafReader::new(buff);
+            let mut aln_collection: HashMap<String, SeqMatrix> = HashMap::new();
+            let mut missing_refs = HashMap::new();
             maf.into_iter().for_each(|paragraph| match paragraph {
                 MafParagraph::Alignment(aln) => {
-                    let (matrix, header) = self.convert_to_seqmatrix(&aln);
+                    let new_matrix = self.convert_to_seqmatrix(&aln);
                     // Target is usually the first sequence
-                    let locked_names = parallel_names.lock().expect("Fail to access bed names");
-                    let file_name = locked_names
-                        .get(&aln.sequences[0].start)
-                        .map(|name| Path::new(name))
-                        .unwrap_or_else(|| Path::new(&aln.sequences[0].source));
-                    let output = self.generate_output_path(file_name);
-                    self.write_matrix(&matrix, &header, &output);
+                    let target = &aln.sequences[0];
+                    let name = names.get(&target.start);
+                    match name {
+                        Some(name) => match aln_collection.get_mut(name) {
+                            Some(matrix) => {
+                                matrix.extend(new_matrix.to_owned());
+                            }
+                            None => {
+                                aln_collection.insert(name.to_string(), new_matrix);
+                            }
+                        },
+                        None => {
+                            missing_refs.insert(target.source.to_string(), aln);
+                        }
+                    }
                 }
                 _ => (),
             });
+
+            spin.set_message("Writing output files...");
+            aln_collection.par_iter().for_each(|(target, matrix)| {
+                let output = self.generate_output_path(self.output_dir, Path::new(target));
+                let header = self.get_header(matrix);
+                self.write_matrix(matrix, &header, &output);
+            });
+            spin.finish_with_message("Finished converting MAF format!\n");
+
+            if !missing_refs.is_empty() {
+                self.write_missing_refs(&missing_refs);
+            }
         });
     }
 
-    fn generate_output_path(&self, output_file: &Path) -> PathBuf {
-        let output_fname =
-            files::create_output_fname(self.output_dir, output_file, self.output_fmt);
+    fn write_missing_refs(&self, missing_refs: &HashMap<String, MafAlignment>) {
+        log::warn!("{}: {}", "Missing references".yellow(), missing_refs.len());
+        let output_dir = self.output_dir.join("missing-refs");
+        fs::create_dir_all(&output_dir).expect("Failed to create output directory");
+        missing_refs.par_iter().for_each(|(name, aln)| {
+            let output = self.generate_output_path(&output_dir, Path::new(name));
+            let matrix = self.convert_to_seqmatrix(aln);
+            let header = self.get_header(&matrix);
+            self.write_matrix(&matrix, &header, &output);
+        });
+    }
+
+    fn generate_output_path(&self, output_dir: &Path, output_file: &Path) -> PathBuf {
+        let output_fname = files::create_output_fname(output_dir, output_file, self.output_fmt);
         output_fname
     }
 
-    fn convert_to_seqmatrix(&self, alignments: &MafAlignment) -> (SeqMatrix, Header) {
+    fn convert_to_seqmatrix(&self, alignments: &MafAlignment) -> SeqMatrix {
         let mut matrix: SeqMatrix = IndexMap::new();
         alignments.sequences.iter().for_each(|sample| {
             let seq = String::from_utf8_lossy(&sample.text).to_string();
             matrix.insert(sample.source.to_string(), seq);
         });
+        matrix
+    }
+
+    fn get_header(&self, matrix: &SeqMatrix) -> Header {
         let mut header = Header::new();
-        header.from_seq_matrix(&matrix, true);
-        (matrix, header)
+        header.from_seq_matrix(matrix, true);
+        header
     }
 
     fn write_matrix(&self, matrix: &SeqMatrix, header: &Header, output: &Path) {
@@ -142,7 +176,7 @@ mod tests {
     #[test]
     fn test_convert_to_seqmatrix() {
         let aln = MafAlignment {
-            score: 0.0,
+            score: None,
             quality: None,
             information: None,
             empty: None,
@@ -172,11 +206,8 @@ mod tests {
             output_fmt: &OutputFmt::Fasta,
             output_dir: &Path::new(""),
         };
-        let (matrix, header) = converter.convert_to_seqmatrix(&aln);
+        let matrix = converter.convert_to_seqmatrix(&aln);
         assert_eq!(matrix.len(), 2);
-        assert_eq!(header.ntax, 2);
-        assert_eq!(header.nchar, 10);
-        assert_eq!(header.datatype, String::from("dna"));
     }
 
     #[test]
@@ -188,7 +219,8 @@ mod tests {
             output_fmt: &OutputFmt::Fasta,
             output_dir: &Path::new("output"),
         };
-        let output = converter.generate_output_path(&Path::new("test.maf"));
+        let output_dir = Path::new("output");
+        let output = converter.generate_output_path(output_dir, &Path::new("test.maf"));
         assert_eq!(output, Path::new("output/test.fas"));
     }
 }

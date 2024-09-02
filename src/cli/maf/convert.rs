@@ -18,13 +18,15 @@ impl<'a> MafConvertParser<'a> {
 
     pub(in crate::cli) fn convert(&mut self) {
         // let task = "Sequence format conversion";
+        let output_fmt = self.parse_output_fmt(&self.args.output_fmt);
         let input: Vec<PathBuf> = vec![self.args.input.clone()];
+        self.check_output_dir_exist(&self.args.output, self.args.force);
         let convert = MafConverter::new(
             &input,
             &self.args.reference_path,
             self.args.from_bed,
             &self.args.output,
-            &self.args.output_fmt,
+            &output_fmt,
         );
         convert.convert();
     }

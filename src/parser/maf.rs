@@ -52,7 +52,7 @@ pub enum MafParagraph {
 
 pub struct MafHeader {
     pub version: String,
-    pub scoring: String,
+    pub scoring: Option<String>,
     pub program: Option<String>,
 }
 
@@ -60,7 +60,7 @@ impl MafHeader {
     pub fn new() -> Self {
         MafHeader {
             version: String::new(),
-            scoring: String::new(),
+            scoring: None,
             program: None,
         }
     }
@@ -71,7 +71,7 @@ impl MafHeader {
         let _ = parts.next(); // Skip the first character
 
         self.version = self.parse_version(parts.next().unwrap())?;
-        self.scoring = self.parse_scoring(parts.next().unwrap())?;
+        self.scoring = parts.next().map(|s| self.parse_scoring(s)).transpose()?;
         self.program = parts.next().map(|s| s.to_string());
 
         Ok(())
@@ -285,7 +285,7 @@ impl FromStr for MafVisibility {
 /// - `quality`: the `q` lines in the alignment. It is optional.
 ///
 pub struct MafAlignment {
-    pub score: f64,
+    pub score: Option<f64>,
     pub sequences: Vec<MafSequence>,
     pub quality: Option<Quality>,
     pub information: Option<MafInformation>,
@@ -295,7 +295,7 @@ pub struct MafAlignment {
 impl MafAlignment {
     pub fn new() -> Self {
         MafAlignment {
-            score: 0.0,
+            score: None,
             sequences: Vec::new(),
             quality: None,
             information: None,
@@ -307,14 +307,18 @@ impl MafAlignment {
         self.sequences.push(sequence);
     }
 
-    pub fn parse_scores(&self, value: &str) -> Result<f64, Box<dyn Error>> {
+    pub fn parse_scores(&self, value: &str) -> Option<f64> {
         let tag: IResult<&str, &str> = sequence::preceded(
             complete::tag("a score="),
             complete::take_while(|c: char| c.is_ascii_digit() || c == '.'),
         )(value);
         match tag {
-            Ok((_, value)) => Ok(value.parse()?),
-            Err(_) => Err("Error parsing score".into()),
+            Ok((_, value)) => Some(
+                value
+                    .parse()
+                    .expect("Error parsing score. It must be a number"),
+            ),
+            Err(_) => None,
         }
     }
 }
@@ -539,9 +543,7 @@ impl<R: Read> MafReader<R> {
 
     fn parse_alignments(&mut self) -> Option<MafParagraph> {
         let mut alignment = MafAlignment::new();
-        alignment
-            .parse_scores(&String::from_utf8_lossy(&self.buf))
-            .unwrap();
+        alignment.parse_scores(&String::from_utf8_lossy(&self.buf));
         self.buf.clear();
         loop {
             let bytes = self
@@ -598,7 +600,7 @@ mod tests {
         let mut header = MafHeader::new();
         header.from_str(line).unwrap();
         assert_eq!(header.version, "1");
-        assert_eq!(header.scoring, "roast.v2.0");
+        assert_eq!(header.scoring, Some(String::from("roast.v2.0")));
     }
 
     #[test]
@@ -694,7 +696,7 @@ mod tests {
                 }
                 MafParagraph::Header(header) => {
                     assert_eq!(header.version, "1");
-                    assert_eq!(header.scoring, "tba.v8");
+                    assert_eq!(header.scoring, Some(String::from("tba.v8")));
                 }
                 MafParagraph::Alignment(alignment) => {
                     alignments.push(alignment);

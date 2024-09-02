@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use clap::{builder, Args, Subcommand};
 use clap::builder::TypedValueParser as _;
 
-use crate::helper::types::{ContigFmt, OutputFmt, SeqReadFmt, SummaryMode};
+use crate::helper::types::{ContigFmt, SeqReadFmt, SummaryMode};
 
 use super::IOArgs;
 
@@ -89,14 +89,15 @@ pub(crate) struct MafConvertArgs {
         short = 't', 
         long = "output-format", 
         help = "Specify output format", 
-        default_value_t = OutputFmt::Fasta,
+        default_value = "fasta-int",
         value_parser = 
-            builder::PossibleValuesParser::new(["fasta", "phylip"])
-            .map(|x| x.parse::<ContigFmt>().expect("Invalid output format")),
+            builder::PossibleValuesParser::new(["fasta", "phylip","fasta-int", "phylip-int"]),
     )]
-    pub(crate) output_fmt: OutputFmt,
+    pub(crate) output_fmt: String,
     #[arg(short = 'o', long = "output", help = "Output path", default_value = "Maf-Convert")]
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,
+    #[arg(long, help = "Force overwriting existing output files/directory")]
+    pub(crate) force: bool,
 }
