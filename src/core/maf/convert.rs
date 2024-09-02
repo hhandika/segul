@@ -56,6 +56,11 @@ impl<'a> MafConverter<'a> {
     pub fn convert(&self) {
         if self.name_from_bed {
             self.parse_maf_from_bed();
+        } else {
+            unreachable!(
+                "Name source is not supported. \
+            Use BED file instead and set the flag --from-bed"
+            );
         }
         self.print_output_info();
     }

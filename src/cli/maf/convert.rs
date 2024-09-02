@@ -1,13 +1,13 @@
 use std::path::Path;
 
 use crate::{
-    cli::{args::genomics::MafConvertArgs, InputCli, OutputCli},
+    cli::{args::genomics::GenomicConvertArgs, InputCli, OutputCli},
     core::maf::convert::MafConverter,
     helper::{finder::MafFileFinder, utils},
 };
 
 pub(in crate::cli) struct MafConvertParser<'a> {
-    args: &'a MafConvertArgs,
+    args: &'a GenomicConvertArgs,
 }
 
 impl InputCli for MafConvertParser<'_> {}
@@ -15,7 +15,7 @@ impl InputCli for MafConvertParser<'_> {}
 impl OutputCli for MafConvertParser<'_> {}
 
 impl<'a> MafConvertParser<'a> {
-    pub(in crate::cli) fn new(args: &'a MafConvertArgs) -> Self {
+    pub(in crate::cli) fn new(args: &'a GenomicConvertArgs) -> Self {
         Self { args }
     }
 
@@ -38,7 +38,7 @@ impl<'a> MafConvertParser<'a> {
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let convert = MafConverter::new(
             &files,
-            &self.args.reference_path,
+            &self.args.reference,
             self.args.from_bed,
             &self.args.output,
             &output_fmt,

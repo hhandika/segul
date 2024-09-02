@@ -14,7 +14,7 @@ use super::align::concat::ConcatParser;
 use super::align::trim::AlignTrimParser;
 use super::align::unalign::UnalignParser;
 use super::args::align::{AlignmentSubcommand, PartitionSubcommand};
-use super::args::genomics::{ContigSubcommand, MafSubcommand, SeqReadSubcommand};
+use super::args::genomics::{ContigSubcommand, GenomicSubcommand, SeqReadSubcommand};
 use super::args::sequence::SequenceSubcommand;
 use super::args::MainSubcommand;
 use super::contig::summarize::ContigCliParser;
@@ -26,7 +26,7 @@ pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
     match subcommand {
         MainSubcommand::RawRead(subcommand) => match_raw_read_subcommand(subcommand),
         MainSubcommand::Contig(subcommand) => match_contig_subcommand(subcommand),
-        MainSubcommand::Maf(subcommand) => match_maf_subcommand(subcommand),
+        MainSubcommand::Genomic(subcommand) => match_genomic_subcommand(subcommand),
         MainSubcommand::Alignment(subcommand) => match_alignment_subcommand(subcommand),
         MainSubcommand::Partition(subcommand) => match_partition_subcommand(subcommand),
         MainSubcommand::Sequence(subcommand) => match_sequence_subcommand(subcommand),
@@ -45,9 +45,9 @@ fn match_raw_read_subcommand(subcommand: &SeqReadSubcommand) {
     };
 }
 
-fn match_maf_subcommand(subcommand: &MafSubcommand) {
+fn match_genomic_subcommand(subcommand: &GenomicSubcommand) {
     match subcommand {
-        MafSubcommand::MafConvert(maf_args) => {
+        GenomicSubcommand::Genomic(maf_args) => {
             MafConvertParser::new(maf_args).convert();
         }
     };
