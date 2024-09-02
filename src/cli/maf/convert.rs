@@ -34,7 +34,7 @@ impl<'a> MafConvertParser<'a> {
         log::info!("{:18}: {}", "File counts", utils::fmt_num(&files.len()));
         let task = "MAF format conversion";
         log::info!("{:18}: {}", "Input format:", "MAF");
-        log::info!("{:18}: {}\n", "Task", task);
+        log::info!("{:18}: {}", "Task", task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let convert = MafConverter::new(
             &files,
