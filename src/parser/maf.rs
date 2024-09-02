@@ -519,11 +519,13 @@ impl<R: Read> MafReader<R> {
         paragraph
     }
 
-    // Check cariage return for windows
+    // Check carriage return for windows
     #[cfg(target_os = "windows")]
     fn check_carriage_return(&mut self) {
-        if self.buf.ends_with(&[CAR_RETURN]) {
-            self.buf.pop();
+        if self.buf.contains(&CAR_RETURN) {
+            // Remove the carriage return
+            // and leave only the line feed
+            self.buf.retain(|&c| c != CAR_RETURN);
         }
     }
 
