@@ -108,7 +108,11 @@ impl<'a> MafConverter<'a> {
     }
 
     fn write_missing_refs(&self, missing_refs: &HashMap<String, MafAlignment>) {
-        log::warn!("{}: {}", "Missing references".yellow(), missing_refs.len());
+        log::warn!(
+            "{}: {}\n",
+            "Missing references".yellow(),
+            missing_refs.len()
+        );
         let output_dir = self.output_dir.join("missing-refs");
         fs::create_dir_all(&output_dir).expect("Failed to create output directory");
         missing_refs.par_iter().for_each(|(name, aln)| {

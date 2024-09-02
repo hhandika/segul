@@ -198,6 +198,61 @@ impl<'a> ContigFileFinder<'a> {
     }
 }
 
+pub struct MafFileFinder<'a> {
+    /// Input directory.
+    dir: &'a Path,
+    /// Glob pattern.
+    pattern: String,
+}
+
+impl FileFinder for MafFileFinder<'_> {}
+
+impl<'a> MafFileFinder<'a> {
+    pub fn new(dir: &'a Path) -> Self {
+        Self {
+            dir,
+            pattern: String::new(),
+        }
+    }
+
+    /// Find input files for multiple alignment format.
+    /// Return a vector of input files.
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::finder::MafFileFinder;
+    ///
+    /// let dir = Path::new("tests/files/maf");
+    /// let files = MafFileFinder::new(&dir).find();
+    /// assert_eq!(files.len(), 2);
+    pub fn find(&mut self) -> Vec<PathBuf> {
+        self.maf_pattern();
+        let files = self.glob_files(&self.pattern);
+        self.check_results(&files);
+
+        files
+    }
+
+    /// Find input files for multiple alignment format, recursively.
+    /// Return a vector of input files.
+    ///
+    /// # Example
+    /// ```
+    /// use std::path::Path;
+    /// use segul::helper::finder::MafFileFinder;
+    ///
+    /// let dir = Path::new("tests/files/maf");
+    /// let files = MafFileFinder::new(&dir).find_recursive();
+    /// assert_eq!(files.len(), 2);
+    pub fn find_recursive(&self) -> Vec<PathBuf> {
+        walk_dir!(self, re_matches_maf_lazy)
+    }
+
+    fn maf_pattern(&mut self) {
+        self.pattern = format!("{}/*.maf", self.dir.display());
+    }
+}
+
 /// Find sequence files from a directory.
 /// Supported file formats are FASTA, PHYLIP, and NEXUS.
 /// include support for interleaved and sequential formats.
@@ -312,6 +367,14 @@ fn re_matches_fastq_lazy(fname: &str) -> bool {
 fn re_matches_fasta_lazy(fname: &str) -> bool {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?i)(.fa*)(?:.*)").unwrap();
+    }
+
+    RE.is_match(fname)
+}
+
+fn re_matches_maf_lazy(fname: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?i)(.maf)").unwrap();
     }
 
     RE.is_match(fname)

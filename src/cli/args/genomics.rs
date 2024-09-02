@@ -79,8 +79,8 @@ pub(crate) struct ContigSummaryArgs {
 
 #[derive(Args)]
 pub(crate) struct MafConvertArgs {
-    #[arg(short, long, help = "Input a maf file")]
-    pub(crate) input: PathBuf,
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
     #[arg(long, help = "Source of reference names")]
     pub(crate) reference_path: PathBuf,
     #[arg(long, help = "Source of names is a bed file")]
@@ -98,6 +98,4 @@ pub(crate) struct MafConvertArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,
-    #[arg(long, help = "Force overwriting existing output files/directory")]
-    pub(crate) force: bool,
 }
