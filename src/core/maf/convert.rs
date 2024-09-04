@@ -93,7 +93,9 @@ impl<'a> MafConverter<'a> {
                             }
                         },
                         None => {
-                            missing_refs.insert(target.source.to_string(), aln);
+                            let name =
+                                format!("{}-{}-{}", target.source, target.start, target.size,);
+                            missing_refs.insert(name.replace(".", "_"), aln);
                         }
                     }
                 }
