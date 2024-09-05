@@ -10,11 +10,11 @@
 ![License](https://img.shields.io/github/license/hhandika/segul)
 [![LoC](https://tokei.rs/b1/github/hhandika/segul?category=code)](https://github.com/XAMPPRocky/tokei)
 
-SEGUL is an ultra-fast, memory-efficient application for working with phylogenomic datasets. It is available as standalone, zero dependency command line, GUI applications (called SEGUI), and library/packages for Rust and other programming languages. It runs from your smartphone to High Performance Computers (see platform support below). It is safe, multi threaded, and easy to use.
+SEGUL is an ultra-fast, memory-efficient application for working with phylogenomic datasets. We designed it to be easy for beginners in genomic studies (or bioinformatics in general) while providing advanced features for experienced users. It is available as a standalone, zero-dependency command line, GUI applications (called SEGUI), and libraries for Rust, Python, and other programming languages. It runs from your smartphone to High-Performance Computers (see platform support below). As far as we know, this is the only genomic software that can run native on mobile devices. 😉
 
-It is designed to handle operations on large genomic datasets, while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a variety of sequence alignment manipulations ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
+We optimized SEGUL for speed and memory efficiency. It runs analyses in parallel automatically and is free from data races (thanks to Rust). There is no need to guess the number of cores needed for each run. It can handle large genomic datasets while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for various genomic data wrangling and summarization ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
 
-Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcome feedback if you find any issues or have ideas to improve the app and its documentation.
+Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcome feedback if you find any issues, dificulties or have ideas to improve the app and its documentation (details [below](#contribution)).
 
 ## Citation
 
@@ -134,4 +134,4 @@ The NEXUS partition can be written as a charset block embedded in NEXUS formatte
 
 ## Contribution
 
-We welcome any kind of contribution, from issue reporting, ideas to improve the app, to code contribution. For ideas and issue reporting please post in [the Github issues page](https://github.com/hhandika/segul/issues). For code contribution, please fork the repository and send pull requests to this repository.
+We welcome any kind of contribution, from issue reporting, ideas to improve the app and documentation, to code contribution. For ideas and issue reporting please post in [the Github issues page](https://github.com/hhandika/segul/issues). For code contribution, please fork the repository and send pull requests to this repository.
