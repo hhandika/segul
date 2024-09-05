@@ -14,7 +14,7 @@ SEGUL is an ultra-fast, memory-efficient application for working with phylogenom
 
 It is designed to handle operations on large genomic datasets, while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for a variety of sequence alignment manipulations ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
 
-Learn more about SEGUL in the [documentation](https://www.segul.app/).
+Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcome feedback if you find any issues or have ideas to improve the app and its documentation.
 
 ## Citation
 
@@ -93,22 +93,27 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 
 ## Features
 
-| Feature                        | Quick Link                                                                                                             |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Alignment concatenation        | [CLI](https://www.segul.app/docs/cli-usage/align-concat) / [GUI](https://www.segul.app/docs/gui-usage/align-concat)      |
-| Alignment conversion           | [CLI](https://www.segul.app/docs/cli-usage/align-convert) / [GUI](https://www.segul.app/docs/gui-usage/align-convert)        |
-| Alignment filtering            | [CLI](https://www.segul.app/docs/cli-usage/align-filter) / [GUI](https://www.segul.app/docs/gui-usage/align-filter)          |
-| Alignment splitting            | [CLI](https://www.segul.app/docs/cli-usage/align-split) / [GUI](https://www.segul.app/docs/gui-usage/align-split)            |
-| Alignment partition conversion | [CLI](https://www.segul.app/docs/cli-usage/align-partition) / [GUI](https://www.segul.app/docs/gui-usage/align-partition)         |
-| Alignment summary statistics   | [CLI](https://www.segul.app/docs/cli-usage/align-summary) / [GUI](https://www.segul.app/docs/gui-usage/align-summary)        |
-| Genomic summary statistics     | [CLI](https://www.segul.app/docs/cli-usage/genomic-summary) / [GUI](https://www.segul.app/docs/gui-usage/genomic)              |
-| Sequence extraction            | [CLI](https://www.segul.app/docs/cli-usage/sequence-extract) / [GUI](https://www.segul.app/docs/gui-usage/sequence-extract)     |
-| Sequence filtering             | [CLI](https://www.segul.app/docs/cli-usage/sequence-filter) / GUI feature in development                                    |
-| Sequence ID extraction         | [CLI](https://www.segul.app/docs/cli-usage/sequence-id) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id)               |
-| Sequence ID mapping            | [CLI](https://www.segul.app/docs/cli-usage/sequence-map) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id-map)          |
-| Sequence ID renaming           | [CLI](https://www.segul.app/docs/cli-usage/sequence-rename) / [GUI](https://www.segul.app/docs/gui-usage/sequence-rename)       |
-| Sequence removal               | [CLI](https://www.segul.app/docs/cli-usage/sequence-remove) / [GUI](https://www.segul.app/docs/gui-usage/sequence-remove)       |
-| Sequence translation           | [CLI](https://www.segul.app/docs/cli-usage/sequence-translate) / [GUI](https://www.segul.app/docs/gui-usage/sequence-translate) |
+> To try beta features, follow the [installation instruction](https://www.segul.app/docs/installation/install_dev) for the beta version.
+
+| Features                       | Supported Input Formats | Guideline Quick Links                                                                                                                                                                                        |
+| ------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Alignment concatenation        | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/align-concat) / [GUI](https://www.segul.app/docs/gui-usage/align-concat) / [Python](https://www.segul.app/docs/api-usage/python/align_concat)                     |
+| Alignment conversion           | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/align-convert) / [GUI](https://www.segul.app/docs/gui-usage/align-convert) / [Python](https://www.segul.app/docs/api-usage/python/align_convert)                  |
+| Alignment filtering            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/align-filter) / [GUI](https://www.segul.app/docs/gui-usage/align-filter) / [Python](https://www.segul.app/docs/api-usage/python/align_filter)                     |
+| Alignment splitting            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/align-split) / [GUI](https://www.segul.app/docs/gui-usage/align-split) / [Python](https://www.segul.app/docs/api-usage/python/align_split)                        |
+| Alignment partition conversion | RaXML, NEXUS            | [CLI](https://www.segul.app/docs/cli-usage/align-partition) / [GUI](https://www.segul.app/docs/gui-usage/align-partition) / [Python](https://www.segul.app/docs/api-usage/python/align_partition)            |
+| Alignment summary statistics   | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/align-summary) / [GUI](https://www.segul.app/docs/gui-usage/align-summary) / [Python](https://www.segul.app/docs/api-usage/python/align_summary)                  |
+| Alignment trimming             | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/align-trim) (Beta) / GUI and Python API coming soon                                                                                                               |
+| Genomic summary statistics     | FASTQ, FASTA (contigs)  | [CLI](https://www.segul.app/docs/cli-usage/genomic-summary) / [GUI](https://www.segul.app/docs/gui-usage/genomic) / [Python](https://www.segul.app/docs/api-usage/python/genomic_summary)                    |
+| Multiple alignment conversion  | MAF                     | [CLI](https://www.segul.app/docs/cli-usage/genomic-convert) (Beta) / GUI and Python API coming soon                                                                                                          |
+| Sequence addition              | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-add) (Beta) / GUI and Python API coming soon                                                                                                             |
+| Sequence extraction            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-extract) / [GUI](https://www.segul.app/docs/gui-usage/sequence-extract) / [Python](https://www.segul.app/docs/api-usage/python/sequence_extract)         |
+| Sequence filtering             | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-filter) / GUI and Python API coming soon                                                                                                                 |
+| Sequence ID extraction         | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-id) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id) / [Python](https://www.segul.app/docs/api-usage/python/sequence_id)                        |
+| Sequence ID mapping            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-map) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id-map)  / [Python](https://www.segul.app/docs/api-usage/python/sequence_id)                  |
+| Sequence ID renaming           | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-rename) / [GUI](https://www.segul.app/docs/gui-usage/sequence-rename) / Python API coming soon                                                           |
+| Sequence removal               | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-remove) / [GUI](https://www.segul.app/docs/gui-usage/sequence-remove) / [Python](https://www.segul.app/docs/api-usage/python/sequence_remove)            |
+| Sequence translation           | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-translate) / [GUI](https://www.segul.app/docs/gui-usage/sequence-translate) / [Python](https://www.segul.app/docs/api-usage/python/sequence_translation) |
 
 Supported sequence formats:
 
@@ -116,6 +121,7 @@ Supported sequence formats:
 2. Relaxed PHYLIP
 3. FASTA
 4. FASTQ (gzipped and uncompressed)
+5. Multiple Alignment Format (MAF) (In development)
 
 All of the formats are supported in interleave and sequential versions. Except for FASTQ (DNA only), the app supports both DNA and amino acid sequences.
 
