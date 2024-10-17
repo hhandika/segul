@@ -20,7 +20,7 @@ use crate::{
         utils,
     },
     parser::{
-        bed::BedParser,
+        bed::{BedParser, BetRecord},
         maf::{MafAlignment, MafParagraph, MafReader},
     },
     writer::sequences::SeqWriter,
@@ -73,6 +73,8 @@ impl<'a> MafConverter<'a> {
             let file = File::open(file).expect("Unable to open file");
             let buff = BufReader::new(file);
             let maf = MafReader::new(buff);
+            // Take the gene name from the BED file as a key
+            // and store the alignment in a SeqMatrix
             let mut aln_collection: HashMap<String, SeqMatrix> = HashMap::new();
             let mut missing_refs = HashMap::new();
             maf.into_iter().for_each(|paragraph| match paragraph {
@@ -80,8 +82,8 @@ impl<'a> MafConverter<'a> {
                     let new_matrix = self.convert_to_seqmatrix(&aln);
                     // Target is usually the first sequence
                     let target = &aln.sequences[0];
-                    let name = names.get(&target.start);
-                    match name {
+                    let bed_name = names.get(&target.start);
+                    match bed_name {
                         Some(name) => match aln_collection.get_mut(name) {
                             Some(matrix) => {
                                 matrix.extend(new_matrix.to_owned());
@@ -91,7 +93,9 @@ impl<'a> MafConverter<'a> {
                             }
                         },
                         None => {
-                            missing_refs.insert(target.source.to_string(), aln);
+                            let name =
+                                format!("{}-{}-{}", target.source, target.start, target.size,);
+                            missing_refs.insert(name.replace(".", "_"), aln);
                         }
                     }
                 }
@@ -158,16 +162,34 @@ impl<'a> MafConverter<'a> {
     fn get_name_from_bed(&self, bed: &Path) -> HashMap<usize, String> {
         let bed = BedParser::new(bed, false);
         let bed = bed.parser().expect("Unable to parse BED file");
+        // Create a hashmap with the start position as key
+        // and the gene name as value
         let mut names = HashMap::new();
-        bed.iter().for_each(|record| match &record.name {
-            Some(name) => {
-                names.insert(record.chrom_start, name.to_string());
-            }
-            None => {
-                names.insert(record.chrom_start, record.chrom.to_owned());
-            }
+        bed.iter().for_each(|record| {
+            let gene_name = self.format_bed_name(record);
+            names.insert(record.chrom_start, gene_name);
         });
         names
+    }
+
+    fn format_bed_name(&self, record: &BetRecord) -> String {
+        let name = match &record.name {
+            Some(name) => {
+                format!(
+                    "{}-{}-{}-{}",
+                    name, record.chrom, record.chrom_start, record.chrom_end
+                )
+            }
+            None => {
+                format!(
+                    "{}-{}-{}",
+                    record.chrom, record.chrom_start, record.chrom_end
+                )
+            }
+        };
+        // Replace any dots in the name with underscores
+        // to avoid issues with file extensions
+        name.replace(".", "_")
     }
 
     fn print_output_info(&self) {
@@ -231,5 +253,27 @@ mod tests {
         let output_dir = Path::new("output");
         let output = converter.generate_output_path(output_dir, &Path::new("test.maf"));
         assert_eq!(output, Path::new("output/test.fas"));
+        let gene_name = String::from("hoxa1-chrom1-1-10");
+        let output = converter.generate_output_path(output_dir, Path::new(&gene_name));
+        assert_eq!(output, Path::new("output/hoxa1-chrom1-1-10.fas"));
+    }
+
+    #[test]
+    fn test_format_bed_name() {
+        let record = BetRecord {
+            chrom: "chr1".to_string(),
+            chrom_start: 1,
+            chrom_end: 10,
+            name: Some("gene".to_string()),
+        };
+        let converter = MafConverter {
+            input_files: &vec![],
+            name_source: &Path::new(""),
+            name_from_bed: false,
+            output_fmt: &OutputFmt::Fasta,
+            output_dir: &Path::new("output"),
+        };
+        let name = converter.format_bed_name(&record);
+        assert_eq!(name, "gene-chr1-1-10");
     }
 }
