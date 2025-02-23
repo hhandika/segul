@@ -35,6 +35,8 @@ use nom::{
     sequence, IResult,
 };
 
+use crate::helper::types::DnaStrand;
+
 #[cfg(target_os = "windows")]
 const CAR_RETURN: u8 = b'\r';
 
@@ -330,7 +332,7 @@ pub struct MafSequence {
     pub source: String,
     pub start: usize,
     pub size: usize,
-    pub strand: char,
+    pub strand: DnaStrand,
     pub src_size: usize,
     pub text: Vec<u8>,
 }
@@ -354,10 +356,12 @@ impl MafSequence {
             source: String::from_utf8_lossy(source).to_string(),
             start: String::from_utf8_lossy(start).parse().unwrap_or_default(),
             size: String::from_utf8_lossy(size).parse().unwrap_or_default(),
-            strand: String::from_utf8_lossy(strand)
-                .chars()
-                .next()
-                .unwrap_or_default(),
+            strand: DnaStrand::from_char(
+                String::from_utf8_lossy(strand)
+                    .chars()
+                    .next()
+                    .unwrap_or_default(),
+            ),
             src_size: String::from_utf8_lossy(src_size)
                 .parse()
                 .unwrap_or_default(),

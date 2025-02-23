@@ -202,7 +202,7 @@ impl<'a> MafConverter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::maf::MafSequence;
+    use crate::{helper::types::DnaStrand, parser::maf::MafSequence};
 
     #[test]
     fn test_convert_to_seqmatrix() {
@@ -216,7 +216,7 @@ mod tests {
                     source: "seq1".to_string(),
                     start: 1,
                     size: 10,
-                    strand: '+',
+                    strand: DnaStrand::Forward,
                     src_size: 100,
                     text: b"ACGTACGTAC".to_vec(),
                 },
@@ -224,7 +224,7 @@ mod tests {
                     source: "seq2".to_string(),
                     start: 1,
                     size: 10,
-                    strand: '+',
+                    strand: DnaStrand::Forward,
                     src_size: 100,
                     text: b"ACGTACGTAC".to_vec(),
                 },
@@ -260,12 +260,7 @@ mod tests {
 
     #[test]
     fn test_format_bed_name() {
-        let record = BetRecord {
-            chrom: "chr1".to_string(),
-            chrom_start: 1,
-            chrom_end: 10,
-            name: Some("gene".to_string()),
-        };
+        let record = BetRecord::new("chr1".to_string(), 1, 10, Some("gene".to_string()));
         let converter = MafConverter {
             input_files: &vec![],
             name_source: &Path::new(""),

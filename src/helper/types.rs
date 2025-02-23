@@ -317,6 +317,21 @@ impl std::str::FromStr for PartitionFmt {
     }
 }
 
+pub enum DnaStrand {
+    Forward,
+    Reverse,
+}
+
+impl DnaStrand {
+    pub fn from_char(c: char) -> Self {
+        match c {
+            '+' => DnaStrand::Forward,
+            '-' => DnaStrand::Reverse,
+            _ => panic!("Invalid DNA strand"),
+        }
+    }
+}
+
 /// Data types for sequence data
 #[derive(PartialEq)]
 pub enum DataType {

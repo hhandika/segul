@@ -1,4 +1,4 @@
-//! BED parser. Partially implemented.
+//! Simple BED parser.
 
 use std::{error::Error, path::Path};
 
@@ -11,6 +11,14 @@ pub struct BetRecord {
     pub chrom_start: usize,
     pub chrom_end: usize,
     pub name: Option<String>,
+    pub score: Option<String>,
+    pub strand: Option<String>,
+    pub thick_start: Option<usize>,
+    pub thick_end: Option<usize>,
+    pub item_rgb: Option<String>,
+    pub block_count: Option<usize>,
+    pub block_sizes: Option<String>,
+    pub block_starts: Option<String>,
 }
 
 impl BetRecord {
@@ -20,6 +28,14 @@ impl BetRecord {
             chrom_start,
             chrom_end,
             name,
+            score: None,
+            strand: None,
+            thick_start: None,
+            thick_end: None,
+            item_rgb: None,
+            block_count: None,
+            block_sizes: None,
+            block_starts: None,
         }
     }
 }
