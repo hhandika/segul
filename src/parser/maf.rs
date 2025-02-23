@@ -37,11 +37,7 @@ use nom::{
 
 use crate::helper::types::DnaStrand;
 
-#[cfg(target_os = "windows")]
-const CAR_RETURN: u8 = b'\r';
-
-const END_OF_LINE: u8 = b'\n';
-const EOF: usize = 0;
+use super::{END_OF_LINE, EOF};
 
 /// We can think of a paragraph as a block of text that is separated by a blank
 /// line. In MAF format, there are two types of paragraphs: header and alignment.

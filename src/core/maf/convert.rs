@@ -20,7 +20,7 @@ use crate::{
         utils,
     },
     parser::{
-        bed::{BedParser, BetRecord},
+        bed::{BedParser, BedRecord},
         maf::{MafAlignment, MafParagraph, MafReader},
     },
     writer::sequences::SeqWriter,
@@ -160,8 +160,8 @@ impl<'a> MafConverter<'a> {
     }
 
     fn get_name_from_bed(&self, bed: &Path) -> HashMap<usize, String> {
-        let bed = BedParser::new(bed, false);
-        let bed = bed.parser().expect("Unable to parse BED file");
+        let mut bed = BedParser::new(bed);
+        let bed = bed.parse().expect("Unable to parse BED file");
         // Create a hashmap with the start position as key
         // and the gene name as value
         let mut names = HashMap::new();
@@ -172,7 +172,7 @@ impl<'a> MafConverter<'a> {
         names
     }
 
-    fn format_bed_name(&self, record: &BetRecord) -> String {
+    fn format_bed_name(&self, record: &BedRecord) -> String {
         let name = match &record.name {
             Some(name) => {
                 format!(
@@ -260,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_format_bed_name() {
-        let record = BetRecord::new("chr1".to_string(), 1, 10, Some("gene".to_string()));
+        let record = BedRecord::new("chr1".to_string(), 1, 10, Some("gene".to_string()));
         let converter = MafConverter {
             input_files: &vec![],
             name_source: &Path::new(""),

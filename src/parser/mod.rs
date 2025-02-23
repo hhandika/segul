@@ -9,6 +9,12 @@ pub mod phylip;
 pub mod qscores;
 pub mod txt;
 
+#[cfg(target_os = "windows")]
+const CAR_RETURN: u8 = b'\r';
+
+const END_OF_LINE: u8 = b'\n';
+const EOF: usize = 0;
+
 macro_rules! insert_matrix {
     ($self: ident, $id: ident, $seq: ident ) => {
         match $self.matrix.get($id) {

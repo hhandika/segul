@@ -4,6 +4,7 @@ use std::path::Path;
 
 use ahash::AHashMap as HashMap;
 use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum GenomicFmt {
@@ -317,9 +318,40 @@ impl std::str::FromStr for PartitionFmt {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum DnaStrand {
     Forward,
     Reverse,
+    Missing,
+}
+
+impl Default for DnaStrand {
+    fn default() -> Self {
+        Self::Missing
+    }
+}
+
+impl std::fmt::Display for DnaStrand {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Forward => write!(f, "+"),
+            Self::Reverse => write!(f, "-"),
+            Self::Missing => write!(f, "."),
+        }
+    }
+}
+
+impl std::str::FromStr for DnaStrand {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "+" => Ok(Self::Forward),
+            "-" => Ok(Self::Reverse),
+            "." => Ok(Self::Missing),
+            _ => Err(format!("{} is not a valid DNA strand", s)),
+        }
+    }
 }
 
 impl DnaStrand {
@@ -327,7 +359,44 @@ impl DnaStrand {
         match c {
             '+' => DnaStrand::Forward,
             '-' => DnaStrand::Reverse,
+            '.' => DnaStrand::Missing,
             _ => panic!("Invalid DNA strand"),
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "+" => DnaStrand::Forward,
+            "-" => DnaStrand::Reverse,
+            "." => DnaStrand::Missing,
+            _ => panic!("Invalid DNA strand"),
+        }
+    }
+}
+
+impl Serialize for DnaStrand {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match *self {
+            DnaStrand::Forward => serializer.serialize_str("+"),
+            DnaStrand::Reverse => serializer.serialize_str("-"),
+            DnaStrand::Missing => serializer.serialize_str("."),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for DnaStrand {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        match s.as_str() {
+            "+" => Ok(DnaStrand::Forward),
+            "-" => Ok(DnaStrand::Reverse),
+            _ => Err(serde::de::Error::custom("Invalid DNA strand")),
         }
     }
 }
