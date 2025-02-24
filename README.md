@@ -14,9 +14,7 @@
 ![License](https://img.shields.io/github/license/hhandika/segul)
 [![LoC](https://tokei.rs/b1/github/hhandika/segul?category=code)](https://github.com/XAMPPRocky/tokei)
 
-SEGUL is an ultra-fast, memory-efficient application for working with phylogenomic datasets. We designed it to be easy for beginners in genomic studies (or bioinformatics in general) while providing advanced features for experienced users. It is available as a standalone, zero-dependency command line, GUI applications (called SEGUI), and libraries for Rust, Python, and other programming languages. It runs from your smartphone to High-Performance Computers (see platform support below). As far as we know, this is the only genomic software that can run native on mobile devices. 😉
-
-We optimized SEGUL for speed and memory efficiency. It runs analyses in parallel automatically. There is no need to guess the number of cores needed for each run. It can handle large genomic datasets while using minimal computational resources. However, it also provides convenient features for working on smaller datasets (e.g., Sanger datasets). In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for various genomic data wrangling and summarization ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
+SEGUL simplifies tedious, error-prone data wrangling and summarization for genomics and Sanger datasets. It also does it with high performance and  memory efficiency. We engineered SEGUL to be easy for beginners in genomic studies while providing advanced features for experienced users. In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for various genomic tasks ([see benchmark](https://www.segul.app/docs/cli_gui#performance)). More importantly, SEGUL runs on any platform, from mobile devices, personal computers, to high-performance computing clusters. It is available as a command-line interface (CLI), a graphical user interface (GUI) application, as well as a Rust library and Python package (see platform support [below](#installation)). SEGUL is part of our ongoing effort to ensure that genomic software is accessible to everyone, regardless of their bioinformatic skills and computing resources.
 
 Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcome feedback if you find any issues, dificulties or have ideas to improve the app and its documentation (details [below](#contribution)).
 
@@ -30,6 +28,26 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
 - GUI: [[Source code]](https://github.com/hhandika/segui)
 - Python API: [[Source code]](https://github.com/hhandika/pysegul) [[PyPI]](https://pypi.org/project/pysegul/)
+
+## Supported File Formats
+
+Sequence formats:
+
+1. NEXUS
+2. Relaxed PHYLIP
+3. FASTA
+4. FASTQ (gzipped and uncompressed)
+5. Multiple Alignment Format (MAF) (In development)
+6. Variant Call Format (VCF) (In development)
+
+All of the formats are supported in interleave and sequential versions. Except for FASTQ and MAF (DNA only), the app supports both DNA and amino acid sequences.
+
+Alignment partition formats:
+
+1. RaXML
+2. NEXUS
+
+The NEXUS partition can be written as a charset block embedded in NEXUS formatted sequences or a separate file.
 
 ## Installation
 
@@ -118,23 +136,6 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 | Sequence ID renaming           | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-rename) / [GUI](https://www.segul.app/docs/gui-usage/sequence-rename) / Coming soon                                                                      |
 | Sequence removal               | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-remove) / [GUI](https://www.segul.app/docs/gui-usage/sequence-remove) / [Python](https://www.segul.app/docs/api-usage/python/sequence_remove)            |
 | Sequence translation           | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-translate) / [GUI](https://www.segul.app/docs/gui-usage/sequence-translate) / [Python](https://www.segul.app/docs/api-usage/python/sequence_translation) |
-
-Supported sequence formats:
-
-1. NEXUS
-2. Relaxed PHYLIP
-3. FASTA
-4. FASTQ (gzipped and uncompressed)
-5. Multiple Alignment Format (MAF) (In development)
-
-All of the formats are supported in interleave and sequential versions. Except for FASTQ (DNA only), the app supports both DNA and amino acid sequences.
-
-Supported partition formats:
-
-1. RaXML
-2. NEXUS
-
-The NEXUS partition can be written as a charset block embedded in NEXUS formatted sequences or a separate file.
 
 ## Contribution
 
