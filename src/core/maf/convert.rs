@@ -73,14 +73,13 @@ impl<'a> MafConverter<'a> {
             let file = File::open(file).expect("Unable to open file");
             let buff = BufReader::new(file);
             let maf = MafReader::new(buff);
-            // Take the gene name from the BED file as a key
-            // and store the alignment in a SeqMatrix
             let mut aln_collection: HashMap<String, SeqMatrix> = HashMap::new();
             let mut missing_refs = HashMap::new();
             maf.into_iter().for_each(|paragraph| match paragraph {
                 MafParagraph::Alignment(aln) => {
                     let new_matrix = self.convert_to_seqmatrix(&aln);
-                    // Target is usually the first sequence
+                    // We assume that the first sequence is the target
+                    // and the rest are the samples
                     let target = &aln.sequences[0];
                     let bed_name = names.get(&target.start);
                     match bed_name {
