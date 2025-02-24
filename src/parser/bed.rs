@@ -6,6 +6,8 @@ use serde::Deserialize;
 
 use crate::helper::types::DnaStrand;
 
+#[cfg(target_os = "windows")]
+use super::CAR_RETURN;
 use super::END_OF_LINE;
 
 #[derive(Debug, Deserialize, Default)]
