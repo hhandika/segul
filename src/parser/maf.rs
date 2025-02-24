@@ -39,6 +39,9 @@ use crate::helper::types::DnaStrand;
 
 use super::{END_OF_LINE, EOF};
 
+#[cfg(target_os = "windows")]
+use super::CAR_RETURN;
+
 /// We can think of a paragraph as a block of text that is separated by a blank
 /// line. In MAF format, there are two types of paragraphs: header and alignment.
 /// Source: http://genome.ucsc.edu/FAQ/FAQformat.html#format5
@@ -589,6 +592,7 @@ impl<R: Read> MafReader<R> {
                     alignment.empty = Some(empty);
                 }
                 END_OF_LINE | b' ' => break,
+
                 #[cfg(target_os = "windows")]
                 CAR_RETURN => break,
                 _ => {}
