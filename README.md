@@ -16,7 +16,7 @@
 
 SEGUL simplifies tedious, error-prone data wrangling and summarization for genomics and Sanger datasets. It also does it with high performance and  memory efficiency. We engineered SEGUL to be easy for beginners in genomic studies while providing advanced features for experienced users. In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for various genomic tasks ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
 
-SEGUL runs on many software platforms, from mobile devices, personal computers, to high-performance computing clusters. It is available as a command-line interface (CLI), a graphical user interface (GUI) application, as well as a Rust library and Python package (see platform support [below](#installation)). SEGUL is part of [our ongoing effort](https://www.hhandika.com/software) to ensure that genomic software is accessible to everyone, regardless of their bioinformatic skills and computing resources.
+SEGUL runs on many software platforms, from mobile devices and personal computers to high-performance computing clusters. It is available as a command-line interface (CLI), a graphical user interface (GUI) application, and a Rust library and Python package (see platform support [below](#installation)). SEGUL is part of [our ongoing effort](https://www.hhandika.com/software) to ensure that genomic software is accessible to everyone, regardless of their bioinformatic skills and computing resources.
 
 Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcome feedback if you find any issues, dificulties or have ideas to improve the app and its documentation (details [below](#contribution)).
 
@@ -42,7 +42,7 @@ Sequence formats:
 5. Multiple Alignment Format (MAF) (In development)
 6. Variant Call Format (VCF) (In development)
 
-All of the formats are supported in interleave and sequential versions. Except for FASTQ and MAF (DNA only), the app supports both DNA and amino acid sequences.
+All formats are supported in interleave and sequential versions. The app supports DNA and amino acid sequences, except for FASTQ, MAF, and VCF (DNA only).
 
 Alignment partition formats:
 
@@ -82,7 +82,7 @@ Learn more about device requirements and GUI app installation in the [documentat
 
 ### CLI Version
 
-The CLI app may work in any Rust supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). However, we only tested and officially support the following platforms:
+The CLI app may work in any Rust-supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). However, we only tested and officially support the following platforms:
 
 - Linux
 - MacOS
@@ -141,4 +141,4 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 
 ## Contribution
 
-We welcome any kind of contribution, from issue reporting, ideas to improve the app and documentation, to code contribution. For ideas and issue reporting please post in [the Github issues page](https://github.com/hhandika/segul/issues). For code contribution, please fork the repository and send pull requests to this repository.
+We welcome any contribution, from issue reporting and ideas to improve the app and documentation to code contribution. For ideas and issue reporting, please post on [the Github issues page](https://github.com/hhandika/segul/issues). For code contribution, please fork the repository and send pull requests to this repository.
