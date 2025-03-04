@@ -14,11 +14,11 @@
 ![License](https://img.shields.io/github/license/hhandika/segul)
 [![LoC](https://tokei.rs/b1/github/hhandika/segul?category=code)](https://github.com/XAMPPRocky/tokei)
 
-SEGUL simplifies tedious, error-prone data wrangling and summarization for genomics and Sanger datasets. It also does it with high performance and  memory efficiency. We engineered SEGUL to be easy for beginners in genomic studies while providing advanced features for experienced users. In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for various genomic tasks ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
+SEGUL simplifies complex, tedious, and error-prone data wrangling and summarization for genomics and Sanger datasets. We develop it to be easy for beginners while providing advanced features for experienced users. SEGUL is also a high performance and memory efficient genomic tool. In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for various genomic tasks ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
 
 SEGUL runs on many software platforms, from mobile devices and personal computers to high-performance computing clusters. It is available as a command-line interface (CLI), a graphical user interface (GUI) application, and a Rust library and Python package (see platform support [below](#installation)). SEGUL is part of [our ongoing effort](https://www.hhandika.com/software) to ensure that genomic software is accessible to everyone, regardless of their bioinformatic skills and computing resources.
 
-Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcome feedback if you find any issues, dificulties or have ideas to improve the app and its documentation (details [below](#contribution)).
+Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcome feedback if you find any issues, difficulties or have ideas to improve the app and its documentation (details [below](#contribution)).
 
 ## Citation
 
