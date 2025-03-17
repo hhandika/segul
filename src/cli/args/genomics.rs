@@ -23,9 +23,9 @@ pub(crate) enum ContigSubcommand {
 }
 
 #[derive(Subcommand)]
-pub(crate) enum GenomicSubcommand {
-    #[command(about = "Convert genomic files to other formats", name = "convert")]
-    Genomic(GenomicConvertArgs),
+pub(crate) enum MafSubcommand {
+    #[command(about = "Convert genomic files to other formats", name = "maf")]
+    Maf(MafConvertArgs),
 }
 
 
@@ -78,7 +78,7 @@ pub(crate) struct ContigSummaryArgs {
 }
 
 #[derive(Args)]
-pub(crate) struct GenomicConvertArgs {
+pub(crate) struct MafConvertArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[arg(long, help = "Path to the source of reference names")]

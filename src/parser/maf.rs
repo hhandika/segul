@@ -35,11 +35,12 @@ use nom::{
     sequence, IResult,
 };
 
-#[cfg(target_os = "windows")]
-const CAR_RETURN: u8 = b'\r';
+use crate::helper::types::DnaStrand;
 
-const END_OF_LINE: u8 = b'\n';
-const EOF: usize = 0;
+use super::{END_OF_LINE, EOF};
+
+#[cfg(target_os = "windows")]
+use super::CAR_RETURN;
 
 /// We can think of a paragraph as a block of text that is separated by a blank
 /// line. In MAF format, there are two types of paragraphs: header and alignment.
@@ -330,7 +331,7 @@ pub struct MafSequence {
     pub source: String,
     pub start: usize,
     pub size: usize,
-    pub strand: char,
+    pub strand: DnaStrand,
     pub src_size: usize,
     pub text: Vec<u8>,
 }
@@ -354,10 +355,12 @@ impl MafSequence {
             source: String::from_utf8_lossy(source).to_string(),
             start: String::from_utf8_lossy(start).parse().unwrap_or_default(),
             size: String::from_utf8_lossy(size).parse().unwrap_or_default(),
-            strand: String::from_utf8_lossy(strand)
-                .chars()
-                .next()
-                .unwrap_or_default(),
+            strand: DnaStrand::from_char(
+                String::from_utf8_lossy(strand)
+                    .chars()
+                    .next()
+                    .unwrap_or_default(),
+            ),
             src_size: String::from_utf8_lossy(src_size)
                 .parse()
                 .unwrap_or_default(),
@@ -589,6 +592,7 @@ impl<R: Read> MafReader<R> {
                     alignment.empty = Some(empty);
                 }
                 END_OF_LINE | b' ' => break,
+
                 #[cfg(target_os = "windows")]
                 CAR_RETURN => break,
                 _ => {}

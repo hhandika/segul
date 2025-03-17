@@ -20,7 +20,7 @@ use crate::{
         utils,
     },
     parser::{
-        bed::{BedParser, BetRecord},
+        bed::{BedParser, BedRecord},
         maf::{MafAlignment, MafParagraph, MafReader},
     },
     writer::sequences::SeqWriter,
@@ -73,14 +73,13 @@ impl<'a> MafConverter<'a> {
             let file = File::open(file).expect("Unable to open file");
             let buff = BufReader::new(file);
             let maf = MafReader::new(buff);
-            // Take the gene name from the BED file as a key
-            // and store the alignment in a SeqMatrix
             let mut aln_collection: HashMap<String, SeqMatrix> = HashMap::new();
             let mut missing_refs = HashMap::new();
             maf.into_iter().for_each(|paragraph| match paragraph {
                 MafParagraph::Alignment(aln) => {
                     let new_matrix = self.convert_to_seqmatrix(&aln);
-                    // Target is usually the first sequence
+                    // We assume that the first sequence is the target
+                    // and the rest are the samples
                     let target = &aln.sequences[0];
                     let bed_name = names.get(&target.start);
                     match bed_name {
@@ -160,8 +159,8 @@ impl<'a> MafConverter<'a> {
     }
 
     fn get_name_from_bed(&self, bed: &Path) -> HashMap<usize, String> {
-        let bed = BedParser::new(bed, false);
-        let bed = bed.parser().expect("Unable to parse BED file");
+        let mut bed = BedParser::new(bed);
+        let bed = bed.parse().expect("Unable to parse BED file");
         // Create a hashmap with the start position as key
         // and the gene name as value
         let mut names = HashMap::new();
@@ -172,7 +171,7 @@ impl<'a> MafConverter<'a> {
         names
     }
 
-    fn format_bed_name(&self, record: &BetRecord) -> String {
+    fn format_bed_name(&self, record: &BedRecord) -> String {
         let name = match &record.name {
             Some(name) => {
                 format!(
@@ -202,7 +201,7 @@ impl<'a> MafConverter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::maf::MafSequence;
+    use crate::{helper::types::DnaStrand, parser::maf::MafSequence};
 
     #[test]
     fn test_convert_to_seqmatrix() {
@@ -216,7 +215,7 @@ mod tests {
                     source: "seq1".to_string(),
                     start: 1,
                     size: 10,
-                    strand: '+',
+                    strand: DnaStrand::Forward,
                     src_size: 100,
                     text: b"ACGTACGTAC".to_vec(),
                 },
@@ -224,7 +223,7 @@ mod tests {
                     source: "seq2".to_string(),
                     start: 1,
                     size: 10,
-                    strand: '+',
+                    strand: DnaStrand::Forward,
                     src_size: 100,
                     text: b"ACGTACGTAC".to_vec(),
                 },
@@ -260,12 +259,7 @@ mod tests {
 
     #[test]
     fn test_format_bed_name() {
-        let record = BetRecord {
-            chrom: "chr1".to_string(),
-            chrom_start: 1,
-            chrom_end: 10,
-            name: Some("gene".to_string()),
-        };
+        let record = BedRecord::new("chr1".to_string(), 1, 10, Some("gene".to_string()));
         let converter = MafConverter {
             input_files: &vec![],
             name_source: &Path::new(""),

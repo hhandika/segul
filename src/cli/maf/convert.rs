@@ -1,13 +1,13 @@
 use std::path::Path;
 
 use crate::{
-    cli::{args::genomics::GenomicConvertArgs, InputCli, OutputCli},
+    cli::{args::genomics::MafConvertArgs, InputCli, OutputCli},
     core::maf::convert::MafConverter,
     helper::{finder::MafFileFinder, utils},
 };
 
 pub(in crate::cli) struct MafConvertParser<'a> {
-    args: &'a GenomicConvertArgs,
+    args: &'a MafConvertArgs,
 }
 
 impl InputCli for MafConvertParser<'_> {}
@@ -15,7 +15,7 @@ impl InputCli for MafConvertParser<'_> {}
 impl OutputCli for MafConvertParser<'_> {}
 
 impl<'a> MafConvertParser<'a> {
-    pub(in crate::cli) fn new(args: &'a GenomicConvertArgs) -> Self {
+    pub(in crate::cli) fn new(args: &'a MafConvertArgs) -> Self {
         Self { args }
     }
 
