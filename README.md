@@ -6,7 +6,7 @@
 [![GH-Release](https://img.shields.io/github/v/tag/hhandika/segul?label=gh-releases&color=purple)](https://github.com/hhandika/segul/releases)
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/hhandika/segul/total?label=gh-download&color=purple)
 [![PyPI - Version](https://img.shields.io/pypi/v/pysegul?color=blue)](https://pypi.org/project/pysegul/)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/pysegul?label=pypi-download&color=blue)
+![Pepy Total Downloads](https://img.shields.io/pepy/dt/pysegul?label=pypi-download&color=blue)
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/recipes/segul/README.html)
 ![Conda Version](https://img.shields.io/conda/vn/bioconda/segul?label=bioconda&color=brightgreen)
 ![Conda Downloads](https://img.shields.io/conda/dn/bioconda/segul?label=bioconda-download&color=brightgreen)
