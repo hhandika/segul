@@ -7,6 +7,7 @@ New Features:
 - Convert alignments to unaligned sequences.
 - Add sequence to an existing sequence files/alignments
 - Trim sequences.
+- Fix max-gap filtering issues.
 
 ## v0.22.1
 

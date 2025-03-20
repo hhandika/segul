@@ -65,9 +65,8 @@ impl<'a> SequenceFilterParser<'a> {
             self.counter_params += 1;
         }
         if let Some(max_gap) = self.args.max_gap {
-            let percent_max_gap = max_gap * 100.0;
-            log::info!("{:18}: {}\n", "Max gaps", format!("{}%", percent_max_gap));
-            self.params = SeqFilteringParameters::PercentMaxGap(percent_max_gap);
+            log::info!("{:18}: {}\n", "Max gaps", format!("{}%", max_gap * 100.0));
+            self.params = SeqFilteringParameters::PercentMaxGap(max_gap);
             self.counter_params += 1;
         }
         if let Some(max_len) = self.args.max_len {
