@@ -57,12 +57,35 @@ impl<'a> MafConverter<'a> {
         if self.name_from_bed {
             self.parse_maf_from_bed();
         } else {
-            unreachable!(
-                "Name source is not supported. \
-            Use BED file instead and set the flag --from-bed"
-            );
+            self.parse_maf_any();
         }
         self.print_output_info();
+    }
+
+    fn parse_maf_any(&self) {
+        let spin = utils::set_spinner();
+        spin.set_message("Parsing MAF files...");
+        self.input_files.par_iter().for_each(|file| {
+            let file = File::open(file).expect("Unable to open file");
+            let buff = BufReader::new(file);
+            let maf = MafReader::new(buff);
+            maf.into_iter().for_each(|paragraph| match paragraph {
+                MafParagraph::Alignment(aln) => {
+                    let matrix = self.convert_to_seqmatrix(&aln);
+                    let header = self.get_header(&matrix);
+                    let output = self
+                        .generate_output_path(self.output_dir, Path::new(&aln.sequences[0].source));
+                    self.write_matrix(&matrix, &header, &output);
+                }
+                _ => (),
+            });
+        });
+        spin.finish_with_message("Finished parsing MAF files!\n");
+        log::info!(
+            "{}: {}",
+            "Parsed MAF files".yellow(),
+            self.input_files.len()
+        );
     }
 
     fn parse_maf_from_bed(&self) {
