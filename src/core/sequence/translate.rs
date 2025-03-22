@@ -105,6 +105,9 @@ impl<'a> SequenceTranslation<'a> {
         (trans_matrix, header)
     }
 
+    // We iter over the sequence and translate each codon to its corresponding amino acid
+    // We collect minus the first frame - 1 characters and then collect the rest in chunks of 3
+    // This allow us to adjust the reading frame when it doesn't start from the first character
     fn translate_seq(&self, seq: &str, frame: usize) -> String {
         let table = self.get_ncbi_tables();
         let mut translation = String::new();
@@ -213,6 +216,13 @@ mod tests {
             ),
             StandardCode
         );
+    }
+
+    #[test]
+    fn test_translate_frame_2() {
+        let dna = "TAAAGGGGATTTAGTTAGAA";
+        let frame = 2;
+        test_translate!(dna, frame, String::from("KGDLVRX"), StandardCode);
     }
 
     #[test]
