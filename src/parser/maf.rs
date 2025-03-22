@@ -311,18 +311,17 @@ impl MafAlignment {
         self.sequences.push(sequence);
     }
 
-    pub fn parse_scores(&self, value: &str) -> Option<f64> {
+    pub fn parse_scores(&mut self, value: &str) {
         let tag: IResult<&str, &str> = sequence::preceded(
             complete::tag("a score="),
             complete::take_while(|c: char| c.is_ascii_digit() || c == '.'),
         )(value);
+
         match tag {
-            Ok((_, value)) => Some(
-                value
-                    .parse()
-                    .expect("Error parsing score. It must be a number"),
-            ),
-            Err(_) => None,
+            Ok((_, value)) => {
+                self.score = value.parse::<f64>().ok();
+            }
+            Err(_) => self.score = None, // If parsing fails, set score to None
         }
     }
 }
@@ -562,7 +561,8 @@ impl<R: Read> MafReader<R> {
 
     fn parse_alignments(&mut self) -> Option<MafParagraph> {
         let mut alignment = MafAlignment::new();
-        alignment.parse_scores(&String::from_utf8_lossy(&self.buf));
+        let buf = String::from_utf8_lossy(&self.buf).to_string();
+        alignment.parse_scores(&buf);
         self.buf.clear();
         loop {
             let bytes = self
@@ -634,6 +634,22 @@ mod tests {
         assert_eq!(track.name, "chr1");
         assert_eq!(track.description, Some(String::from("Human chromosome")));
         assert_eq!(track.visibility, Some(String::from("pack")));
+    }
+
+    #[test]
+    fn test_score() {
+        let line = "a score=0.000000\n";
+        let mut alignment = MafAlignment::new();
+        alignment.parse_scores(line);
+        assert_eq!(alignment.score, Some(0.0));
+    }
+
+    #[test]
+    fn test_score_int() {
+        let line = "a score=1234\n";
+        let mut alignment = MafAlignment::new();
+        alignment.parse_scores(line);
+        assert_eq!(alignment.score, Some(1234.0));
     }
 
     #[test]
@@ -728,6 +744,7 @@ mod tests {
         }
 
         assert_eq!(alignments.len(), 3);
+        assert_eq!(alignments[0].score, Some(23262.0));
     }
 
     #[test]
