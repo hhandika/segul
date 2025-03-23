@@ -240,11 +240,11 @@ struct TrimmingSummary {
     /// File name
     file_name: String,
     /// Number of sites before trimming
-    before: usize,
+    site_count_before: usize,
     /// Number of sites after trimming
-    after: usize,
+    site_count_after: usize,
     /// Number of sites removed
-    removed: usize,
+    site_removed: usize,
 }
 
 impl TrimmingSummary {
@@ -261,9 +261,9 @@ impl TrimmingSummary {
                 .to_str()
                 .expect("Failed to convert to string")
                 .to_string(),
-            before: 0,
-            after: 0,
-            removed: 0,
+            site_count_before: 0,
+            site_count_after: 0,
+            site_removed: 0,
         }
     }
 
@@ -273,13 +273,13 @@ impl TrimmingSummary {
             panic!("Number of sites after trimming is greater than before");
         }
         if before == after {
-            self.before = before;
-            self.after = after;
-            self.removed = 0;
+            self.site_count_before = before;
+            self.site_count_after = after;
+            self.site_removed = 0;
         } else {
-            self.before = before;
-            self.after = after;
-            self.removed = before - after;
+            self.site_count_before = before;
+            self.site_count_after = after;
+            self.site_removed = before - after;
         }
     }
 }
@@ -319,8 +319,8 @@ mod tests {
         assert_eq!(index_site.len(), 8);
         assert_eq!(index_site.get(&0).unwrap().len(), 4);
         assert_eq!(summary.len(), 1);
-        assert_eq!(summary[0].before, 8);
-        assert_eq!(summary[0].after, 7);
+        assert_eq!(summary[0].site_count_before, 8);
+        assert_eq!(summary[0].site_count_after, 7);
         assert_eq!(matrix.len(), 4);
         assert_eq!(header.nchar, 8);
         assert_eq!(site_missing.len(), 7);
