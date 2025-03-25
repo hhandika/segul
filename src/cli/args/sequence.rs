@@ -48,36 +48,48 @@ pub(crate) struct SequenceAddArgs {
     pub(crate) output: PathBuf,
     #[arg(
         long,
-        help = "Input directory for destination sequences",
+        help = "Add to matching files in a directory",
         required_unless_present("destination_input"),
     )]
-    pub(crate) destination_dir: Option<String>,
+    pub(crate) to_dir: Option<String>,
     #[cfg(not(target_os = "windows"))]
     #[arg(
         long,
-        help = "Input a path (allow wildcard) for destination sequences",
+        help = "Add to matching files in standard input path (allow wildcard)",
     )]
-    pub(crate) destination_input: Option<Vec<PathBuf>>,
+    pub(crate) to_input: Option<Vec<PathBuf>>,
     #[cfg(target_os = "windows")]
     #[arg(
         long,
-        help = "Input a path (allow wildcard) for destination sequences",
+        help = "Add to matching files in standard input path (allow wildcard)",
     )]
-    pub(crate) destination_input: Option<String>,
+    pub(crate) to_input: Option<String>,
     #[arg(
-        long = "destination-format",
-        help = "Specify destination sequence format",
+        long,
+        help = "Specify format for finding target files",
         default_value = "auto",
         value_parser = builder::PossibleValuesParser::new(
             ["auto", "fasta", "nexus", "phylip"]
         ),
     )]
-    pub(crate) destination_fmt: String,
+    pub(crate) to_fmt: String,
+    #[arg(
+        long,
+        help = "Add to a single file. Output will be in an interleaved FASTA file",
+        required_unless_present("to_dir"),
+    )]
+    pub(crate) to_file: Option<PathBuf>,
     #[arg(
         long,
         help = "Only produce output that have added sequences",
     )]
     pub(crate) added_only: bool,
+    #[arg(
+        long,
+        help = "Include filename in sequence ID (for a single file output only)",
+        required_unless_present("to_dir"),
+    )]
+    pub(crate) include_filename: bool,
 }
 
 

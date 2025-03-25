@@ -42,7 +42,7 @@ impl<'a> AdditionParser<'a> {
 
     pub(in crate::cli) fn add(&mut self) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
-        let dest_fmt = self.parse_input_fmt(&self.args.destination_fmt);
+        let dest_fmt = self.parse_input_fmt(&self.args.to_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.output_fmt);
         let task = "Sequence addition";
@@ -66,16 +66,19 @@ impl<'a> AdditionParser<'a> {
             &output_fmt,
             self.args.added_only,
         );
-        add.add(&dest_files, &dest_fmt);
+        match &self.args.to_file {
+            Some(file) => add.add_single(file, self.args.include_filename),
+            None => add.add(&dest_files, &dest_fmt),
+        }
     }
 
     fn collect_destination_paths(&mut self, dest_fmt: &InputFmt) -> Vec<PathBuf> {
-        match &self.args.destination_dir {
+        match &self.args.to_dir {
             Some(dir) => {
                 self.dest_dir = Some(PathBuf::from(&dir));
                 self.glob_paths(dir, dest_fmt)
             }
-            None => self.collect_paths(&self.args.destination_input),
+            None => self.collect_paths(&self.args.to_input),
         }
     }
 

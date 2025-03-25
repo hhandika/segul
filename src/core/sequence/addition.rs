@@ -93,6 +93,27 @@ impl<'a> SequenceAddition<'a> {
         self.print_output_info(&counter, total_written);
     }
 
+    pub fn add_single(&self, dest_file: &Path, include_filename: bool) {
+        let to_matrix = Mutex::new(SeqMatrix::new());
+        self.input_files.par_iter().for_each(|input| {
+            let input_matrix = self.get_matrix(input, self.input_fmt);
+            input_matrix.iter().for_each(|(name, sequence)| {
+                let sequence_name = if include_filename {
+                    let input_stem = self.get_file_stem(input);
+                    format!("{}_{}", name, input_stem)
+                } else {
+                    name.to_string()
+                };
+                let mut to_matrix = to_matrix.lock().expect("Failed to lock to_matrix.");
+                to_matrix.insert(sequence_name, sequence.to_string());
+            });
+        });
+        let mut to_matrix = to_matrix.into_inner().expect("Failed to get to_matrix.");
+        self.clean_missing_data(&mut to_matrix);
+        self.write_output(&to_matrix, dest_file);
+        self.print_output();
+    }
+
     fn add_sequences(&self, dest_file: &[PathBuf], dest_fmt: &InputFmt) -> SequenceCounter {
         let dest_collection = self.create_dest_library(dest_file);
         let counter = Mutex::new(SequenceCounter::new(
@@ -230,10 +251,7 @@ impl<'a> SequenceAddition<'a> {
     }
 
     fn print_output_info(&self, counter: &SequenceCounter, total_written: usize) {
-        log::info!("{}", "Output".yellow());
-        log::info!("{:18}: {}", "Directory", self.output.display());
-        self.print_output_fmt(self.output_fmt);
-
+        self.print_output();
         log::info!("\n{}", "File Summary".yellow());
         log::info!("{:18}: {}", "Total input files", counter.total_input_files);
         log::info!(
@@ -265,6 +283,12 @@ impl<'a> SequenceAddition<'a> {
                 counter.mean_added_length
             );
         }
+    }
+
+    fn print_output(&self) {
+        log::info!("{}", "Output".yellow());
+        log::info!("{:18}: {}", "Directory", self.output.display());
+        self.print_output_fmt(self.output_fmt);
     }
 }
 
@@ -410,5 +434,32 @@ mod tests {
         let addition = SequenceAddition::default();
         let skipped_files = addition.get_skipped_files(&counter, &dest_files);
         assert_eq!(skipped_files.len(), 2);
+    }
+
+    #[test]
+    fn test_adding_single_file() {
+        let input_files = vec![
+            PathBuf::from("tests/files/gappy/gene_1.nex"),
+            PathBuf::from("tests/files/gappy/gene_2.nex"),
+        ];
+        let output = TempDir::new("temp").unwrap();
+        let addition = SequenceAddition::new(
+            &input_files,
+            &InputFmt::Auto,
+            &DataType::Dna,
+            output.path(),
+            &OutputFmt::Fasta,
+            false,
+        );
+        let dest_file = PathBuf::from("uce");
+        addition.add_single(&dest_file, true);
+        let output_files = output.path().read_dir().unwrap();
+        assert_eq!(output_files.count(), 1);
+        assert_eq!(
+            output.path().join("uce.fas").exists(),
+            true,
+            "Output file does not exist"
+        );
+        output.close().unwrap();
     }
 }
