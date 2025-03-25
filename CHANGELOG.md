@@ -7,6 +7,14 @@ New Features:
 - Convert alignments to unaligned sequences.
 - Add sequence to an existing sequence files/alignments
 - Trim sequences.
+
+Breaking Changes:
+
+- Filtering args changes for alignment filtering for better consistency.
+- Remove `--ntax` option to suply the number of taxa in the alignment for filtering.
+
+Bug Fixes:
+
 - Fix max-gap filtering issues.
 
 ## v0.22.1
