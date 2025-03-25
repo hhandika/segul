@@ -109,6 +109,7 @@ impl<'a> FilterParser<'a> {
             m if m.percent_inf.is_some() => FilteringParameters::PercInf(self.count_percent_inf()),
             m if m.ids.is_some() => FilteringParameters::TaxonAll(self.parse_taxon_id()),
             m if m.missing.is_some() => FilteringParameters::MissingData(self.parse_missing_data()),
+            m if m.ntax.is_some() => FilteringParameters::MinTax(self.parse_ntax()),
             _ => unreachable!("Invalid parameters!"),
         }
     }
@@ -146,6 +147,13 @@ impl<'a> FilterParser<'a> {
         }
     }
 
+    fn parse_ntax(&self) -> usize {
+        match self.args.ntax {
+            Some(ntax) => ntax,
+            None => unreachable!("Invalid parameters!"),
+        }
+    }
+
     fn parse_aln_len(&self) -> usize {
         match self.args.len {
             Some(len) => len,
@@ -161,16 +169,12 @@ impl<'a> FilterParser<'a> {
     }
 
     fn count_ntax(&mut self) {
-        if let Some(ntax) = self.args.ntax {
-            self.ntax = ntax;
-        } else {
-            let spin = utils::set_spinner();
-            spin.set_message("Counting the number of taxa...");
-            self.ntax = IDs::new(&self.files, &self.input_fmt, &self.datatype)
-                .id_unique()
-                .len();
-            spin.finish_with_message("Finished counting the number of taxa!\n");
-        };
+        let spin = utils::set_spinner();
+        spin.set_message("Counting the number of taxa...");
+        self.ntax = IDs::new(&self.files, &self.input_fmt, &self.datatype)
+            .id_unique()
+            .len();
+        spin.finish_with_message("Finished counting the number of taxa!\n");
     }
 
     fn count_min_tax(&self) -> usize {

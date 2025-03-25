@@ -83,7 +83,7 @@ pub(crate) struct AlignFilterArgs {
         help = "Filter by multiple minimal taxon percentage"
     )]
     pub(crate) npercent: Option<Vec<f64>>,
-    #[arg(long = "nseq", help = "Filter by multiple minimal taxon number")]
+    #[arg(long = "ntax", help = "Filter by minimal taxon number")]
     pub(crate) ntax: Option<usize>,
     #[arg(long = "percent", help = "Filter by minimal taxon percentage")]
     pub(crate) percent: Option<f64>,
