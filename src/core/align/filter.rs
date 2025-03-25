@@ -31,9 +31,13 @@ pub enum FilteringParameters {
     /// Filtered by minimum number of taxa.
     MinTax(usize),
     /// Filtered by minimum alignment length.
-    AlnLen(usize),
+    MinLen(usize),
+    /// Filtered by maximum alignment length.
+    MaxLen(usize),
     /// Filtered by minimum parsimony informative sites.
-    ParsInf(usize),
+    MinParsInf(usize),
+    /// Filtered by minimum parsimony informative sites.
+    MaxParsInf(usize),
     /// Filtered by percentage of parsimony informative sites.
     PercInf(f64),
     /// Filtered by taxa proportion of missing data. The value is in percentage.
@@ -152,15 +156,27 @@ impl<'a> AlignmentFiltering<'a> {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
-                FilteringParameters::AlnLen(nchar) => {
+                FilteringParameters::MinLen(nchar) => {
                     let header = self.get_header(file);
                     if header.nchar >= *nchar {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }
-                FilteringParameters::ParsInf(pars_inf) => {
+                FilteringParameters::MaxLen(nchar) => {
+                    let header = self.get_header(file);
+                    if header.nchar <= *nchar {
+                        s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
+                    }
+                }
+                FilteringParameters::MinParsInf(pars_inf) => {
                     let pars = self.get_pars_inf(file);
                     if pars >= *pars_inf {
+                        s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
+                    }
+                }
+                FilteringParameters::MaxParsInf(pars_inf) => {
+                    let pars = self.get_pars_inf(file);
+                    if pars <= *pars_inf {
                         s.send(file.to_path_buf()).expect("FAILED GETTING FILES");
                     }
                 }

@@ -74,8 +74,10 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) output: String,
     #[arg(long = "concat", help = "Concat filtered alignments")]
     pub(crate) concat: bool,
-    #[arg(long = "len", help = "Filter by sequence length")]
-    pub(crate) len: Option<usize>,
+    #[arg(long, help = "Filter by minimum sequence length")]
+    pub(crate) min_len: Option<usize>,
+    #[arg(long, help = "Filter by maximum sequence length")]
+    pub(crate) max_len: Option<usize>,
     #[arg(long = "missing-data", help = "Filter by proportion of missing data")]
     pub(crate) missing: Option<f64>,
     #[arg(
@@ -89,11 +91,16 @@ pub(crate) struct AlignFilterArgs {
     pub(crate) percent: Option<f64>,
     #[arg(
         long = "percent-inf",
-        help = "Filter by minimal parsimony informative percentage"
+        help = "Filter by minimal parsimony informative percentage."
     )]
     pub(crate) percent_inf: Option<f64>,
-    #[arg(long = "pinf", help = "Filter by minimal parsimony informative sites")]
-    pub(crate) pinf: Option<usize>,
+    #[arg(long, help = "Filter by minimal parsimony informative sites")]
+    pub(crate) min_pinf: Option<usize>,
+    #[arg(
+        long = "max-pinf",
+        help = "Filter by maximum parsimony informative sites"
+    )]
+    pub(crate) max_pinf: Option<usize>,
     #[arg(long = "taxon-id", help = "Filter by taxon ID")]
     pub(crate) ids: Option<PathBuf>,
 }

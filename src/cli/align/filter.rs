@@ -104,8 +104,14 @@ impl<'a> FilterParser<'a> {
     fn parse_params(&mut self) {
         self.params = match self.args {
             m if m.percent.is_some() => self.parse_percent(),
-            m if m.len.is_some() => FilteringParameters::AlnLen(self.parse_aln_len()),
-            m if m.pinf.is_some() => FilteringParameters::ParsInf(self.parse_pars_inf()),
+            m if m.max_len.is_some() => {
+                FilteringParameters::MaxLen(self.args.max_len.expect("Invalid max_len"))
+            }
+            m if m.min_len.is_some() => FilteringParameters::MinLen(self.parse_aln_len()),
+            m if m.max_pinf.is_some() => {
+                FilteringParameters::MaxParsInf(self.args.max_pinf.expect("Invalid max_pinf"))
+            }
+            m if m.min_pinf.is_some() => FilteringParameters::MinParsInf(self.parse_pars_inf()),
             m if m.percent_inf.is_some() => FilteringParameters::PercInf(self.count_percent_inf()),
             m if m.ids.is_some() => FilteringParameters::TaxonAll(self.parse_taxon_id()),
             m if m.missing.is_some() => FilteringParameters::MissingData(self.parse_missing_data()),
@@ -155,14 +161,14 @@ impl<'a> FilterParser<'a> {
     }
 
     fn parse_aln_len(&self) -> usize {
-        match self.args.len {
+        match self.args.min_len {
             Some(len) => len,
             None => unreachable!("Invalid parameters!"),
         }
     }
 
     fn parse_pars_inf(&self) -> usize {
-        match self.args.pinf {
+        match self.args.min_pinf {
             Some(pinf) => pinf,
             None => unreachable!("Invalid parameters!"),
         }
@@ -194,10 +200,12 @@ impl<'a> FilterParser<'a> {
             FilteringParameters::MinTax(_) => {
                 format!("{}_{}p", self.args.output, self.percent * 100.0)
             }
-            FilteringParameters::AlnLen(len) => format!("{}_{}bp", self.args.output, len),
-            FilteringParameters::ParsInf(inf) => format!("{}_{}inf", self.args.output, inf),
+            FilteringParameters::MinLen(len) => format!("{}_{}bp", self.args.output, len),
+            FilteringParameters::MaxLen(len) => format!("{}_{}bp", self.args.output, len),
+            FilteringParameters::MinParsInf(inf) => format!("{}_{}pinf", self.args.output, inf),
+            FilteringParameters::MaxParsInf(inf) => format!("{}_{}pinf", self.args.output, inf),
             FilteringParameters::PercInf(perc_inf) => {
-                format!("{}_{}percent_inf", self.args.output, perc_inf * 100.0)
+                format!("{}_{}percent_pinf", self.args.output, perc_inf * 100.0)
             }
             FilteringParameters::TaxonAll(_) => format!("{}_taxonID", self.args.output),
             FilteringParameters::MissingData(perc) => {
@@ -216,8 +224,10 @@ impl<'a> FilterParser<'a> {
                 log::info!("{:18}: {}%", "Percent", self.percent * 100.0);
                 log::info!("{:18}: {}\n", "Min tax", min_taxa);
             }
-            FilteringParameters::AlnLen(len) => log::info!("{:18}: {} bp\n", "Min aln len", len),
-            FilteringParameters::ParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
+            FilteringParameters::MaxLen(len) => log::info!("{:18}: {} bp\n", "Max aln len", len),
+            FilteringParameters::MinLen(len) => log::info!("{:18}: {} bp\n", "Min aln len", len),
+            FilteringParameters::MaxParsInf(inf) => log::info!("{:18}: {}\n", "Max pars. inf", inf),
+            FilteringParameters::MinParsInf(inf) => log::info!("{:18}: {}\n", "Min pars. inf", inf),
             FilteringParameters::PercInf(perc_inf) => {
                 log::info!("{:18}: {}%\n", "% pars. inf", perc_inf * 100.0)
             }
@@ -247,8 +257,10 @@ mod test {
                 },
                 percent: Some(0.75),
                 ntax: None,
-                len: None,
-                pinf: None,
+                max_len: None,
+                max_pinf: None,
+                min_len: None,
+                min_pinf: None,
                 percent_inf: None,
                 ids: None,
                 concat: false,
