@@ -115,7 +115,7 @@ impl<'a> FilterParser<'a> {
             m if m.percent_inf.is_some() => FilteringParameters::PercInf(self.count_percent_inf()),
             m if m.ids.is_some() => FilteringParameters::TaxonAll(self.parse_taxon_id()),
             m if m.missing.is_some() => FilteringParameters::MissingData(self.parse_missing_data()),
-            m if m.ntax.is_some() => FilteringParameters::MinTax(self.parse_ntax()),
+            m if m.min_ntax.is_some() => FilteringParameters::MinTax(self.parse_ntax()),
             _ => unreachable!("Invalid parameters!"),
         }
     }
@@ -154,7 +154,7 @@ impl<'a> FilterParser<'a> {
     }
 
     fn parse_ntax(&self) -> usize {
-        match self.args.ntax {
+        match self.args.min_ntax {
             Some(ntax) => ntax,
             None => unreachable!("Invalid parameters!"),
         }
@@ -256,7 +256,7 @@ mod test {
                     force: false,
                 },
                 percent: Some(0.75),
-                ntax: None,
+                min_ntax: None,
                 max_len: None,
                 max_pinf: None,
                 min_len: None,
