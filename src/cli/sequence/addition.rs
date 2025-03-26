@@ -48,7 +48,6 @@ impl<'a> AdditionParser<'a> {
         let task = "Sequence addition";
         let dir = &self.args.io.dir;
         let files = collect_paths!(self, dir, input_fmt);
-        let dest_files = self.collect_destination_paths(&dest_fmt);
         AlignSeqLogger::new(
             self.input_dir.as_deref(),
             &input_fmt,
@@ -56,7 +55,6 @@ impl<'a> AdditionParser<'a> {
             files.len(),
         )
         .log(task);
-        self.log_destination_info(&dest_files);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let add = SequenceAddition::new(
             &files,
@@ -68,7 +66,11 @@ impl<'a> AdditionParser<'a> {
         );
         match &self.args.to_file {
             Some(file) => add.add_single(file, self.args.include_filename),
-            None => add.add(&dest_files, &dest_fmt),
+            None => {
+                let dest_files = self.collect_destination_paths(&dest_fmt);
+                self.log_destination_info(&dest_files);
+                add.add(&dest_files, &dest_fmt);
+            }
         }
     }
 

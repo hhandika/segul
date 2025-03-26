@@ -49,7 +49,7 @@ pub(crate) struct SequenceAddArgs {
     #[arg(
         long,
         help = "Add to matching files in a directory",
-        required_unless_present("destination_input"),
+        required_unless_present_any(["to_file", "to_input"]),
     )]
     pub(crate) to_dir: Option<String>,
     #[cfg(not(target_os = "windows"))]
