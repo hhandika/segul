@@ -311,7 +311,7 @@ impl<'a> SequenceAddition<'a> {
             counter.skipped_sequence_counts
         );
         log::info!("{:18}: {}", "Files added", counter.sequence_counts);
-        log::info!("{:18}: {}", "Mean length", counter.mean_length_added);
+        log::info!("{:18}: {:.2}", "Mean length", counter.mean_length_added);
     }
 
     fn print_output(&self) {
