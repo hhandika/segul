@@ -90,11 +90,14 @@ impl<'a> SequenceAddition<'a> {
             let skipped_files = self.get_skipped_files(&counter, dest_file);
             total_written = self.write_skip_files(&skipped_files);
         }
-        self.print_output_info(&counter, total_written);
+        self.print_multi_sequence_info(&counter, total_written);
     }
 
     pub fn add_single(&self, dest_file: &Path, include_filename: bool) {
+        let spinner = utils::set_spinner();
+        spinner.set_message("Adding sequences...");
         let to_matrix = Mutex::new(SeqMatrix::new());
+        let counter = Mutex::new(SingleSequenceCounter::new());
         self.input_files.par_iter().for_each(|input| {
             let input_matrix = self.get_matrix(input, self.input_fmt);
             input_matrix.iter().for_each(|(name, sequence)| {
@@ -105,13 +108,26 @@ impl<'a> SequenceAddition<'a> {
                     name.to_string()
                 };
                 let mut to_matrix = to_matrix.lock().expect("Failed to lock to_matrix.");
-                to_matrix.insert(sequence_name, sequence.to_string());
+                if to_matrix.contains_key(&sequence_name) {
+                    counter.lock().expect("Failed to lock counter.").skip();
+                } else {
+                    to_matrix.insert(sequence_name, sequence.to_string());
+                    counter
+                        .lock()
+                        .expect("Failed to lock counter.")
+                        .add(sequence);
+                }
             });
         });
+        spinner.finish_with_message("Finished adding sequences.\n");
         let mut to_matrix = to_matrix.into_inner().expect("Failed to get to_matrix.");
         self.clean_missing_data(&mut to_matrix);
+        if to_matrix.is_empty() {
+            log::warn!("No sequences to add. Exiting...");
+            return;
+        }
         self.write_output(&to_matrix, dest_file);
-        self.print_output();
+        self.print_single_sequence_info(&counter.into_inner().expect("Failed to get counter."));
     }
 
     fn add_sequences(&self, dest_file: &[PathBuf], dest_fmt: &InputFmt) -> SequenceCounter {
@@ -250,7 +266,7 @@ impl<'a> SequenceAddition<'a> {
             .expect("Failed to write sequences.");
     }
 
-    fn print_output_info(&self, counter: &SequenceCounter, total_written: usize) {
+    fn print_multi_sequence_info(&self, counter: &SequenceCounter, total_written: usize) {
         self.print_output();
         log::info!("\n{}", "File Summary".yellow());
         log::info!("{:18}: {}", "Total input files", counter.total_input_files);
@@ -285,10 +301,61 @@ impl<'a> SequenceAddition<'a> {
         }
     }
 
+    fn print_single_sequence_info(&self, counter: &SingleSequenceCounter) {
+        self.print_output();
+        log::info!("\n{}", "File Summary".yellow());
+        log::info!("{:18}: {}", "Total input files", self.input_files.len());
+        log::info!(
+            "{:18}: {}",
+            "Files skipped",
+            counter.skipped_sequence_counts
+        );
+        log::info!("{:18}: {}", "Files added", counter.sequence_counts);
+        log::info!("{:18}: {}", "Mean length", counter.mean_length_added);
+    }
+
     fn print_output(&self) {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Directory", self.output.display());
         self.print_output_fmt(self.output_fmt);
+    }
+}
+
+struct SingleSequenceCounter {
+    /// Total sequence added
+    sequence_counts: usize,
+    /// Skipped sequence counts
+    skipped_sequence_counts: usize,
+    /// Mean length of the sequence
+    mean_length_added: f64,
+    /// Total length of the sequence
+    total_length_added: usize,
+}
+
+impl SingleSequenceCounter {
+    fn new() -> Self {
+        Self {
+            sequence_counts: 0,
+            skipped_sequence_counts: 0,
+            mean_length_added: 0.0,
+            total_length_added: 0,
+        }
+    }
+
+    fn add(&mut self, sequence: &str) {
+        self.sequence_counts += 1;
+        self.total_length_added += sequence.len();
+        self.calculate_mean();
+    }
+
+    fn skip(&mut self) {
+        self.skipped_sequence_counts += 1;
+    }
+
+    fn calculate_mean(&mut self) {
+        if self.sequence_counts > 0 {
+            self.mean_length_added = self.total_length_added as f64 / self.sequence_counts as f64;
+        }
     }
 }
 
