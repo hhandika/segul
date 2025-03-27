@@ -372,6 +372,14 @@ impl DnaStrand {
             _ => panic!("Invalid DNA strand"),
         }
     }
+
+    pub fn to_char(&self) -> char {
+        match self {
+            DnaStrand::Forward => '+',
+            DnaStrand::Reverse => '-',
+            DnaStrand::Missing => '.',
+        }
+    }
 }
 
 impl Serialize for DnaStrand {
