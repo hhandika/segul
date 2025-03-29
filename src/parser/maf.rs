@@ -54,6 +54,7 @@ pub enum MafParagraph {
     Unknown,
 }
 
+#[derive(Debug, Default)]
 pub struct MafHeader {
     pub version: String,
     pub scoring: Option<String>,
@@ -111,6 +112,12 @@ pub struct TrackLine {
     pub maf_dot: bool,
     pub visibility: Option<String>,
     pub species_order: Option<String>,
+}
+
+impl Default for TrackLine {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TrackLine {
@@ -244,10 +251,7 @@ impl TrackLine {
     fn capture_tags(&self, input: &str, tag: &str) -> Option<String> {
         // use find pos to get the position of the first space
         let pos = input.find(tag);
-        match pos {
-            Some(pos) => Some(input[pos..].to_string()),
-            None => None,
-        }
+        pos.map(|pos| input[pos..].to_string())
     }
 }
 
@@ -296,6 +300,12 @@ pub struct MafAlignment {
     pub empty: Option<MafEmptyLine>,
 }
 
+impl Default for MafAlignment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MafAlignment {
     pub fn new() -> Self {
         MafAlignment {
@@ -336,7 +346,7 @@ pub struct MafSequence {
 }
 
 impl MafSequence {
-    pub fn from_str(line: &[u8]) -> Result<Self, Box<dyn Error>> {
+    pub fn from_buf(line: &[u8]) -> Result<Self, Box<dyn Error>> {
         let mut parts = line
             .split(|b| b.is_ascii_whitespace())
             .filter(|b| !b.is_empty());
@@ -390,7 +400,7 @@ pub struct MafInformation {
 }
 
 impl MafInformation {
-    pub fn from_str(line: &[u8]) -> Result<Self, Box<dyn Error>> {
+    pub fn from_buf(line: &[u8]) -> Result<Self, Box<dyn Error>> {
         let mut parts = line.split(|b| b.is_ascii_whitespace());
 
         let _ = parts.next(); // Skip the first character
@@ -430,7 +440,7 @@ pub struct MafEmptyLine {
 }
 
 impl MafEmptyLine {
-    pub fn from_str(line: &[u8]) -> Result<Self, Box<dyn Error>> {
+    pub fn from_buf(line: &[u8]) -> Result<Self, Box<dyn Error>> {
         let mut parts = line.split(|b| b.is_ascii_whitespace());
 
         let _ = parts.next(); // Skip the first character
@@ -463,7 +473,7 @@ pub struct Quality {
 }
 
 impl Quality {
-    pub fn from_str(line: &[u8]) -> Result<Self, Box<dyn Error>> {
+    pub fn from_buf(line: &[u8]) -> Result<Self, Box<dyn Error>> {
         let mut parts = line.split(|b| b.is_ascii_whitespace());
 
         let _ = parts.next(); // Skip the first character
@@ -576,19 +586,19 @@ impl<R: Read> MafReader<R> {
             match self.buf[0] {
                 b's' => {
                     let sequence =
-                        MafSequence::from_str(&self.buf).expect("Error parsing sequence");
+                        MafSequence::from_buf(&self.buf).expect("Error parsing sequence");
                     alignment.sequences.push(sequence);
                 }
                 b'q' => {
-                    let quality = Quality::from_str(&self.buf).unwrap();
+                    let quality = Quality::from_buf(&self.buf).unwrap();
                     alignment.quality = Some(quality);
                 }
                 b'i' => {
-                    let information = MafInformation::from_str(&self.buf).unwrap();
+                    let information = MafInformation::from_buf(&self.buf).unwrap();
                     alignment.information = Some(information);
                 }
                 b'e' => {
-                    let empty = MafEmptyLine::from_str(&self.buf).unwrap();
+                    let empty = MafEmptyLine::from_buf(&self.buf).unwrap();
                     alignment.empty = Some(empty);
                 }
                 END_OF_LINE | b' ' => break,

@@ -13,7 +13,7 @@ impl<'a> QScoreParser<'a> {
     }
 }
 
-impl<'a> Iterator for QScoreParser<'a> {
+impl Iterator for QScoreParser<'_> {
     type Item = Option<u8>;
     /// Read ASCII from vector bytes
     /// and convert to Illumina 1.8+ and Sanger quality scores

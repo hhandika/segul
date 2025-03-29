@@ -67,7 +67,6 @@ impl<'a> SequenceID<'a> {
     /// handle.get_unique();
     /// assert!(output.path().join("id.txt").exists());
     /// ```
-
     pub fn get_unique(&self) {
         fs::create_dir_all(self.output.parent().expect("Failed getting parent path"))
             .expect("Failed creating output dir");

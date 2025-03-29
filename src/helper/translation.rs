@@ -133,7 +133,7 @@ impl Default for NcbiTables<'_> {
     }
 }
 
-impl<'a> NcbiTables<'a> {
+impl NcbiTables<'_> {
     /// The constructor for the NCBI Table struct.
     /// The constructor initializes the translation tables.
     pub fn new() -> Self {

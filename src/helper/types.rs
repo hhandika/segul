@@ -364,15 +364,6 @@ impl DnaStrand {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "+" => DnaStrand::Forward,
-            "-" => DnaStrand::Reverse,
-            "." => DnaStrand::Missing,
-            _ => panic!("Invalid DNA strand"),
-        }
-    }
-
     pub fn to_char(&self) -> char {
         match self {
             DnaStrand::Forward => '+',

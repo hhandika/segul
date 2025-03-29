@@ -69,15 +69,14 @@ impl<'a> MafConverter<'a> {
             let file = File::open(file).expect("Unable to open file");
             let buff = BufReader::new(file);
             let maf = MafReader::new(buff);
-            maf.into_iter().for_each(|paragraph| match paragraph {
-                MafParagraph::Alignment(aln) => {
+            maf.into_iter().for_each(|paragraph| {
+                if let MafParagraph::Alignment(aln) = paragraph {
                     let matrix = self.convert_to_seqmatrix(&aln);
                     let header = self.get_header(&matrix);
                     let output = self
                         .generate_output_path(self.output_dir, Path::new(&aln.sequences[0].source));
                     self.write_matrix(&matrix, &header, &output);
                 }
-                _ => (),
             });
         });
         spin.finish_with_message("Finished parsing MAF files!\n");
@@ -98,8 +97,8 @@ impl<'a> MafConverter<'a> {
             let maf = MafReader::new(buff);
             let mut aln_collection: HashMap<String, SeqMatrix> = HashMap::new();
             let mut missing_refs = HashMap::new();
-            maf.into_iter().for_each(|paragraph| match paragraph {
-                MafParagraph::Alignment(aln) => {
+            maf.into_iter().for_each(|paragraph| {
+                if let MafParagraph::Alignment(aln) = paragraph {
                     let new_matrix = self.convert_to_seqmatrix(&aln);
                     // We assume that the first sequence is the target
                     // and the rest are the samples
@@ -121,7 +120,6 @@ impl<'a> MafConverter<'a> {
                         }
                     }
                 }
-                _ => (),
             });
 
             spin.set_message("Writing output files...");
@@ -155,8 +153,7 @@ impl<'a> MafConverter<'a> {
     }
 
     fn generate_output_path(&self, output_dir: &Path, output_file: &Path) -> PathBuf {
-        let output_fname = files::create_output_fname(output_dir, output_file, self.output_fmt);
-        output_fname
+        files::create_output_fname(output_dir, output_file, self.output_fmt)
     }
 
     fn convert_to_seqmatrix(&self, alignments: &MafAlignment) -> SeqMatrix {
