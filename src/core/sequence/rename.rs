@@ -228,16 +228,26 @@ impl<'a> SequenceRenaming<'a> {
         names.iter().for_each(|(origin, destination)| {
             let values = matrix.shift_remove(origin);
             if let Some(value) = values {
+                // We check the sequence length if the ID is not unique
+                if matrix.contains_key(destination) {
+                    log::warn!(
+                        "ID {} already exists. \
+                    Keeping the longest sequences.",
+                        destination
+                    );
+                    let new_value = matrix.get(destination).expect("Failed getting value");
+                    if new_value.len() > value.len() {
+                        matrix.insert(origin.to_string(), value);
+                        return;
+                    }
+                }
                 matrix.insert(destination.to_string(), value);
             }
         });
-
-        assert_eq!(
-            original_size,
-            matrix.len(),
-            "Failed renaming files. New ID counts does not match original ID counts. \
-         Original ID counts: {}. New ID counts: {}",
-            original_size,
+        log::warn!(
+            "Duplicate IDs found! Original ID count: {}. \
+        New ID count: {}",
+            original_size - matrix.len(),
             matrix.len()
         );
         (matrix, header)
