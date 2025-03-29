@@ -232,7 +232,7 @@ impl<'a> SequenceRenaming<'a> {
                 if let Some(existing_value) = matrix.get(destination) {
                     log::warn!(
                         "\n{}:ID {} already exists. \
-                    Keeping the longest sequences.\n",
+                    Keeping the longest sequences.",
                         "Warning".yellow(),
                         destination
                     );
