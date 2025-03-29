@@ -12,7 +12,7 @@ New Features:
 Breaking Changes:
 
 - Filtering args changes for alignment filtering for better consistency.
-- Remove `--ntax` option to suply the number of taxa in the alignment for filtering.
+- Remove `--ntax` option to supply the number of taxa in the alignment for filtering.
 
 Bug Fixes:
 
