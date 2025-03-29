@@ -34,7 +34,6 @@ impl<'a> IdParser<'a> {
             &datatype,
             files.len(),
         );
-        self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let id = SequenceID::new(
             &files,
             &input_fmt,
@@ -45,10 +44,12 @@ impl<'a> IdParser<'a> {
         if self.args.map {
             let task = "Sequence ID Mapping";
             log.log(task);
+            self.check_output_dir_exist(&self.args.output, self.args.io.force);
             id.map_id();
         } else {
             let task = "Sequence ID Generation";
             log.log(task);
+            self.check_output_dir_exist(&self.args.output, self.args.io.force);
             id.get_unique();
         }
     }
