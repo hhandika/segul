@@ -7,6 +7,7 @@ New Features:
 - Convert alignments to unaligned sequences.
 - Add sequence to an existing sequence files/alignments
 - Trim sequences.
+- Renaming feature using file input now allow duplicate IDs with a warning.
 
 Breaking Changes:
 
