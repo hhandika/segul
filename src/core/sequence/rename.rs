@@ -226,22 +226,21 @@ impl<'a> SequenceRenaming<'a> {
         let (mut matrix, header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
         let original_size = matrix.len();
         names.iter().for_each(|(origin, destination)| {
-            let values = matrix.shift_remove(origin);
-            if let Some(value) = values {
+            if let Some(value) = matrix.shift_remove(origin) {
                 // We check the sequence length if the ID is not unique
-                if matrix.contains_key(destination) {
+                // to avoid overwriting the sequence with a shorter one.
+                if let Some(existing_value) = matrix.get(destination) {
                     log::warn!(
                         "ID {} already exists. \
                     Keeping the longest sequences.",
                         destination
                     );
-                    let new_value = matrix.get(destination).expect("Failed getting value");
-                    if new_value.len() > value.len() {
+                    if existing_value.len() > value.len() {
                         matrix.insert(origin.to_string(), value);
-                        return;
                     }
+                } else {
+                    matrix.insert(destination.to_string(), value);
                 }
-                matrix.insert(destination.to_string(), value);
             }
         });
         log::warn!(
