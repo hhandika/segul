@@ -231,8 +231,8 @@ impl<'a> SequenceRenaming<'a> {
                 // to avoid overwriting the sequence with a shorter one.
                 if let Some(existing_value) = matrix.get(destination) {
                     log::warn!(
-                        "{}:ID {} already exists. \
-                    Keeping the longest sequences.",
+                        "\n{}:ID {} already exists. \
+                    Keeping the longest sequences.\n",
                         "Warning".yellow(),
                         destination
                     );
@@ -246,7 +246,7 @@ impl<'a> SequenceRenaming<'a> {
         });
         log::warn!(
             "Duplicate IDs found! Original ID count: {}. \
-        New ID count: {}. Total duplicates: {}",
+        New ID count: {}. Total duplicates: {}\n",
             original_size,
             matrix.len(),
             original_size - matrix.len()
