@@ -504,6 +504,11 @@ impl Header {
         }
     }
 
+    pub fn update(&mut self, matrix: &SeqMatrix) {
+        self.ntax = matrix.len();
+        self.nchar = matrix.values().next().unwrap().len();
+    }
+
     pub fn from_seq_matrix(&mut self, matrix: &SeqMatrix, aligned: bool) {
         self.ntax = matrix.len();
         self.nchar = matrix.values().next().unwrap().len();

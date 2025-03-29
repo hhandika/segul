@@ -223,7 +223,7 @@ impl<'a> SequenceRenaming<'a> {
     }
 
     fn replace_id(&self, file: &Path, names: &[(String, String)]) -> (SeqMatrix, Header) {
-        let (mut matrix, header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
+        let (mut matrix, mut header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
         let original_size = matrix.len();
         names.iter().for_each(|(origin, destination)| {
             if let Some(value) = matrix.shift_remove(origin) {
@@ -231,7 +231,7 @@ impl<'a> SequenceRenaming<'a> {
                 // to avoid overwriting the sequence with a shorter one.
                 if let Some(existing_value) = matrix.get(destination) {
                     log::warn!(
-                        "\n{}:ID {} already exists. \
+                        "\n{}! ID {} already exists. \
                     Keeping the longest sequences.",
                         "Warning".yellow(),
                         destination
@@ -244,13 +244,17 @@ impl<'a> SequenceRenaming<'a> {
                 }
             }
         });
-        log::warn!(
-            "Duplicate IDs found! Original ID count: {}. \
-        New ID count: {}. Total duplicates: {}\n",
-            original_size,
-            matrix.len(),
-            original_size - matrix.len()
-        );
+
+        if original_size != matrix.len() {
+            log::warn!(
+                "Duplicate IDs found! Original ID count: {}. \
+            New ID count: {}. Total duplicates: {}\n",
+                original_size,
+                matrix.len(),
+                original_size - matrix.len()
+            );
+            header.update(&matrix);
+        }
         (matrix, header)
     }
 
