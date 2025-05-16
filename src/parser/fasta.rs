@@ -129,11 +129,11 @@ impl<R: Read> FastaReader<R> {
         while let Some(Ok(line)) = self.reader.by_ref().lines().next() {
             if let Some(id) = line.strip_prefix('>') {
                 if self.id.is_empty() {
-                    self.id = String::from(id);
+                    self.id = String::from(id.trim());
                     self.seq.clear();
                 } else {
                     let recs = self.get_recs(&self.id, &self.seq);
-                    self.id = String::from(id);
+                    self.id = String::from(id.trim());
                     self.seq.clear();
                     return Some(recs);
                 }
@@ -226,5 +226,15 @@ mod test {
         let res = String::from("MAYPMQLGFQDATSPI");
         assert_eq!(Some(&res), fas.matrix.get(&key));
         assert_eq!(String::from("protein"), fas.header.datatype);
+    }
+
+    #[test]
+    fn simple_trailing_space_fas_test() {
+        let sample = Path::new("tests/files/simple_id_whitespaces.fas");
+        let mut fas = Fasta::new(sample, &DNA);
+        fas.parse();
+        let key = String::from("CDEF");
+        let res = String::from("ATGTAT");
+        assert_eq!(Some(&res), fas.matrix.get(&key));
     }
 }
