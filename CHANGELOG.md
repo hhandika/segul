@@ -17,6 +17,7 @@ Breaking Changes:
 Bug Fixes:
 
 - Fix max-gap filtering issues.
+- Fix concatenation lead to missing data when sequence IDs contain trailing whitespace.
 
 ## v0.22.1
 
