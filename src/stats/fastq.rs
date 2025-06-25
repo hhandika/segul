@@ -6,12 +6,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use noodles::fastq::Reader;
+use noodles::fastq::io::Reader;
 
 use crate::{
     helper::{
         files,
-        types::{infer_raw_input_auto, SeqReadFmt},
+        types::{SeqReadFmt, infer_raw_input_auto},
     },
     parser::qscores::QScoreParser,
     stats::read::ReadRecord,
