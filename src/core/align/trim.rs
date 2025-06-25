@@ -291,7 +291,7 @@ mod tests {
     use super::*;
 
     macro_rules! init_trimming {
-        ($input:expr, $output:expr, $params:expr) => {
+        ($input:expr_2021, $output:expr_2021, $params:expr_2021) => {
             AlignmentTrimming::new(
                 $input,
                 &InputFmt::Auto,

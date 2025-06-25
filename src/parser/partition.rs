@@ -221,7 +221,7 @@ mod test {
     use super::*;
 
     macro_rules! test_partition_parser {
-        ($input:expr, $format:ident) => {
+        ($input:expr_2021, $format:ident) => {
             let path = Path::new($input);
             let parser = PartitionParser::new(path, &PartitionFmt::$format, true);
             let partitions = parser.parse();

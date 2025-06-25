@@ -10,7 +10,7 @@ use crate::writer::FileWriter;
 impl FileWriter for PartWriter<'_> {}
 
 macro_rules! write_partition {
-    ($self:ident, $write_type:ident, $partition:ident, $is_codon: expr) => {{
+    ($self:ident, $write_type:ident, $partition:ident, $is_codon: expr_2021) => {{
         let mut writer = $self
             .$write_type($self.fpath)
             .expect("Failed creating/appending a partition file");

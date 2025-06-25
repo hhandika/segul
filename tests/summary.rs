@@ -9,7 +9,7 @@ use glob::glob;
 use predicates::Predicate;
 
 macro_rules! generate_test {
-    ($tmp_dir: ident, $loc_count: expr, $taxon_count: expr, $loc_cols: expr, $taxon_cols: expr) => {
+    ($tmp_dir: ident, $loc_count: expr_2021, $taxon_count: expr_2021, $loc_cols: expr_2021, $taxon_cols: expr_2021) => {
         let pred = predicates::path::is_dir();
         let output_dir = $tmp_dir.path().join("Align-Summary");
         let locus_path = output_dir.join("locus_summary.csv");
@@ -34,7 +34,7 @@ macro_rules! generate_test {
 }
 
 macro_rules! generate_locus_test {
-    ($tmp_dir:ident, $fcount: expr, $cols: expr) => {
+    ($tmp_dir:ident, $fcount: expr_2021, $cols: expr_2021) => {
         let pred = predicates::path::is_dir();
         let output_dir = $tmp_dir.path().join("Align-Summary");
         let files = glob(&format!("{}/*.csv", output_dir.display()))

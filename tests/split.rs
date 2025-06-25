@@ -10,7 +10,7 @@ use segul::helper::types::InputFmt;
 pub const DIR: &str = "temp";
 
 macro_rules! initiate_split_cmd {
-    ($cmd: ident, $tmp_dir: ident, $part: expr) => {
+    ($cmd: ident, $tmp_dir: ident, $part: expr_2021) => {
         let $tmp_dir = utils::create_tmp_dir().unwrap();
         let dir = env::current_dir().unwrap().join("tests/files/partition");
         let input = dir.join("concat_part.fas");

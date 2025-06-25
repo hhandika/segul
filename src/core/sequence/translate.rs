@@ -180,7 +180,7 @@ mod tests {
     use super::*;
 
     macro_rules! test_translate {
-        ($input:expr, $frame:expr, $result:expr, $code:ident) => {
+        ($input:expr_2021, $frame:expr_2021, $result:expr_2021, $code:ident) => {
             let trans = SequenceTranslation::new(
                 &InputFmt::Fasta,
                 &GeneticCodes::$code,

@@ -8,7 +8,7 @@ pub const DIR: &str = "temp";
 
 #[macro_export]
 macro_rules! initiate_cmd {
-    ($cmd: ident, $sub_cmd1: expr, $sub_cmd2: expr, $dir: expr, $tmp_dir: ident) => {
+    ($cmd: ident, $sub_cmd1: expr_2021, $sub_cmd2: expr_2021, $dir: expr_2021, $tmp_dir: ident) => {
         let $tmp_dir = utils::create_tmp_dir().unwrap();
         let dir = env::current_dir().unwrap().join($dir);
         let path = std::path::PathBuf::from($tmp_dir.path());
@@ -24,7 +24,7 @@ macro_rules! initiate_cmd {
 
 #[macro_export]
 macro_rules! test_results {
-    ($res: expr, $tmp_dir: ident, $path: expr, $fmt: ident) => {
+    ($res: expr_2021, $tmp_dir: ident, $path: expr_2021, $fmt: ident) => {
         let pred = predicates::path::is_dir();
         let res_path = $tmp_dir.path().join($path);
 

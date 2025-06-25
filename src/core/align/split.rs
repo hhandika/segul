@@ -138,7 +138,7 @@ mod test {
     use super::*;
 
     macro_rules! input_split {
-        ($var:ident, $input:expr) => {
+        ($var:ident, $input:expr_2021) => {
             let $var = AlignmentSplitting::new(
                 &Path::new($input),
                 &DataType::Dna,

@@ -37,7 +37,7 @@ mod test {
     use super::*;
 
     macro_rules! qscore_parser {
-        ($scores:expr, $sum: ident) => {
+        ($scores:expr_2021, $sum: ident) => {
             let records = QScoreParser::new($scores);
             let $sum: u8 = records
                 .into_iter()

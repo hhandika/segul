@@ -39,7 +39,7 @@ pub fn parse_cli() {
 }
 
 macro_rules! check_output_path {
-    ($type: ident, $execution: ident, $path: ident, $prompt: expr, $err_msg: expr) => {
+    ($type: ident, $execution: ident, $path: ident, $prompt: expr_2021, $err_msg: expr_2021) => {
         if $path.$type() {
             let selection = Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt($prompt)

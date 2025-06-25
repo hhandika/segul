@@ -13,7 +13,7 @@ use crate::helper::types::OutputFmt;
 use crate::helper::utils;
 
 macro_rules! log_output_fmt {
-    ($filetype: expr) => {
+    ($filetype: expr_2021) => {
         log::info!("{:18}: {}", "Output format", $filetype)
     };
 }

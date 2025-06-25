@@ -38,7 +38,7 @@ mod test {
     use super::*;
 
     macro_rules! test_parse_delimited_text {
-        ($name:ident, $fpath:expr, $expected_or:expr,$expected_dest:expr) => {
+        ($name:ident, $fpath:expr_2021, $expected_or:expr_2021,$expected_dest:expr_2021) => {
             #[test]
             fn $name() {
                 let result = parse_delimited_text($fpath);

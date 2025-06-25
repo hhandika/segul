@@ -8,7 +8,7 @@ use segul::helper::finder::SeqFileFinder;
 use segul::helper::types::InputFmt;
 
 macro_rules! test_filter {
-    ($test: ident, $arg: expr, $val: expr, $output: expr, $res: expr) => {
+    ($test: ident, $arg: expr_2021, $val: expr_2021, $output: expr_2021, $res: expr_2021) => {
         #[test]
         fn $test() {
             initiate_cmd!(cmd, "align", "filter", "tests/files/long-aln/", tmp_dir);

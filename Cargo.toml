@@ -2,7 +2,7 @@
 name = "segul"
 version = "0.23.0"
 authors = ["Heru Handika <herubiolog@gmail.com>"]
-edition = "2021"
+edition = "2024"
 license = "MIT"
 description = "An ultrafast and memory-efficient tool for phylogenomics"
 readme = "README.md"

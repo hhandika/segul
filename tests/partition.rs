@@ -8,7 +8,7 @@ use predicates::Predicate;
 use segul::parser::txt;
 
 macro_rules! initiate_part_cmd {
-    ($cmd: ident, $tmp_dir: ident, $part: expr) => {
+    ($cmd: ident, $tmp_dir: ident, $part: expr_2021) => {
         let $tmp_dir = utils::create_tmp_dir().unwrap();
         let dir = env::current_dir().unwrap().join("tests/files/partition");
         let input = dir.join("partition.nex");
