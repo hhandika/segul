@@ -24,12 +24,14 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 
 > Handika, H., and J. A. Esselstyn. 2024. SEGUL: Ultrafast, memory-efficient and mobile-friendly software for manipulating and summarizing phylogenomic datasets. _Molecular Ecology Resources_. [https://doi.org/10.1111/1755-0998.13964](https://doi.org/10.1111/1755-0998.13964).
 
-## Links
+## Essential Links
 
-- App Documentation: [[EN]](https://segul.app/)
-- API Documentation: [[Rust]](https://docs.rs/segul/0.18.1/segul/)
-- GUI: [[Source code]](https://github.com/hhandika/segui)
-- Python API: [[Source code]](https://github.com/hhandika/pysegul) [[PyPI]](https://pypi.org/project/pysegul/)
+- **App Documentation**: [EN](https://segul.app/)
+- **API Documentation:** [Rust](https://docs.rs/segul/) • [Python](https://www.segul.app/docs/category/python)
+- **GUI:** [Source code](https://github.com/hhandika/segui) • [Installation](https://www.segul.app/docs/installation/install_gui) • [App Store](https://apps.apple.com/us/app/segui/id6447999874?itsct=apps_box_badge&itscg=30200) • [Google Play](https://play.google.com/store/apps/details?id=com.hhandika.segui&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1) • [Snap Store](https://snapcraft.io/segui) • [Microsoft Store](https://apps.microsoft.com/detail/SEGUI/9NP1BQ6FW9PW?mode=direct)
+- **CLI:** [Downloads](https://github.com/hhandika/segul/releases) • [Docs](https://www.segul.app/docs/installation/install_binary)
+- **Python API:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Usage](https://www.segul.app/docs/api-usage/python/intro)
+- **Bioconda:** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
 
 ## Supported File Formats
 
@@ -92,7 +94,7 @@ The CLI app may work in any Rust-supported [platform](https://doc.rust-lang.org/
 #### CLI Installation Methods
 
 - Pre-compiled binaries: [[Releases]](https://github.com/hhandika/segul/releases) [[Docs]](https://www.segul.app/docs/installation/install_binary)
-- Conda: [[Package]](https://anaconda.org/bioconda/segul) [[Docs]](https://www.segul.app/docs/installation/install_conda)
+- Bioconda: [[Package]](https://anaconda.org/bioconda/segul) [[Docs]](https://www.segul.app/docs/installation/install_conda)
 - Package manager: [[Docs]](https://www.segul.app/docs/installation/install_cargo)
 - From source: [[Docs]](https://www.segul.app/docs/installation/install_source)
 - Beta version: [[Docs]](https://www.segul.app/docs/installation/install_dev)
