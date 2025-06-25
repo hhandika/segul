@@ -19,6 +19,10 @@ Bug Fixes:
 - Fix max-gap filtering issues.
 - Fix concatenation lead to missing data when sequence IDs contain trailing whitespace.
 
+Other Changes:
+
+- Migrate to Rust 2024 edition.
+
 ## v0.22.1
 
 - Sequence filtering now does not enforce input is an alignment.
