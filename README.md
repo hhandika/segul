@@ -30,8 +30,8 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - **API Documentation:** [Rust](https://docs.rs/segul/) • [Python](https://www.segul.app/docs/category/python)
 - **GUI:** [Source code](https://github.com/hhandika/segui) • [Installation](https://www.segul.app/docs/installation/install_gui) • [App Store](https://apps.apple.com/us/app/segui/id6447999874?itsct=apps_box_badge&itscg=30200) • [Google Play](https://play.google.com/store/apps/details?id=com.hhandika.segui&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1) • [Snap Store](https://snapcraft.io/segui) • [Microsoft Store](https://apps.microsoft.com/detail/SEGUI/9NP1BQ6FW9PW?mode=direct)
 - **CLI:** [Downloads](https://github.com/hhandika/segul/releases) • [Docs](https://www.segul.app/docs/installation/install_binary)
-- **Python API:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Usage](https://www.segul.app/docs/api-usage/python/intro)
-- **Bioconda:** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
+- **Bioconda (CLI):** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
+- **Python package:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Docs](https://www.segul.app/docs/api-usage/python/intro)
 
 ## Supported File Formats
 
