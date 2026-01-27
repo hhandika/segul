@@ -12,7 +12,7 @@
 ![Conda Downloads](https://img.shields.io/conda/dn/bioconda/segul?label=bioconda-download&color=brightgreen)
 ![last-commit](https://img.shields.io/github/last-commit/hhandika/segul)
 ![License](https://img.shields.io/github/license/hhandika/segul)
-[![LoC](https://tokei.rs/b1/github/hhandika/segul?category=code)](https://github.com/XAMPPRocky/tokei)
+![GitHub top language](https://img.shields.io/github/languages/top/hhandika/segul)
 
 SEGUL simplifies complex, tedious, and error-prone data wrangling and summarization for genomics and Sanger datasets. We develop it to be easy for beginners while providing advanced features for experienced users. SEGUL is also a high performance and memory efficient genomic tool. In our tests, it consistently offers a faster and more efficient (low memory footprint) alternative to existing applications for various genomic tasks ([see benchmark](https://www.segul.app/docs/cli_gui#performance)).
 
