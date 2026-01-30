@@ -49,7 +49,7 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 ### Breaking Changes ⚠️
 
 - Filtering argument changes for better consistency (see [docs](https://www.segul.app/docs/cli-usage/align-filter)).
-- Remove `--ntax` option from [alignment filtering](https://www.segul.app/docs/cli-usage/align-filter) because SEGUL can automatically and fastly detect the number of sequences in the alignment.
+- Remove `--ntax` option from [alignment filtering](https://www.segul.app/docs/cli-usage/align-filter) because by default SEGUL automatically and fastly counts the number of unique taxa across all input alignments.
 
 ### Bug Fixes 🐛
 
