@@ -33,9 +33,9 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - **Bioconda (CLI):** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
 - **Python package:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Docs](https://www.segul.app/docs/api-usage/python/intro)
 
-## What's new in SEGUL v.23.0
+## What's New in SEGUL 0.23.0 ✨
 
-### New Features
+### New Features 🚀
 
 - [Convert alignments to unaligned sequences](https://www.segul.app/docs/cli-usage/align-unalign).
 - [Add sequence to an existing sequence files/alignments](https://www.segul.app/docs/cli-usage/sequence-add).
@@ -46,17 +46,17 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
   - Minimum taxon counts
   - Based on user-defined list of sequence IDs.
 
-### Breaking Changes
+### Breaking Changes ⚠️
 
 - Filtering args changes for alignment filtering for better consistency.
 - Remove `--ntax` option to supply the number of taxa in the alignment for filtering.
 
-### Bug Fixes
+### Bug Fixes 🐛
 
 - Fix max-gap filtering issues.
 - Fix concatenation lead to missing data when sequence IDs contain trailing whitespace.
 
-### Other Changes
+### Other Changes 🛠
 
 - Migrate to Rust 2024 edition.
 - Update dependencies.
