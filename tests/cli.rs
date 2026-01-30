@@ -1,4 +1,5 @@
 mod utils;
+
 use clap::crate_version;
 
 #[test]
