@@ -33,7 +33,7 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - **Bioconda (CLI):** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
 - **Python package:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Docs](https://www.segul.app/docs/api-usage/python/intro)
 
-## What's New in SEGUL 0.23.0 ✨
+## What's New in SEGUL 0.23.0
 
 ### New Features 🚀
 
@@ -48,13 +48,13 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 
 ### Breaking Changes ⚠️
 
-- Filtering args changes for alignment filtering for better consistency.
-- Remove `--ntax` option to supply the number of taxa in the alignment for filtering.
+- Filtering argument changes for better consistency (see [docs](https://www.segul.app/docs/cli-usage/align-filter)).
+- Remove `--ntax` option from [alignment filtering](https://www.segul.app/docs/cli-usage/align-filter) because SEGUL can automatically and fastly detect the number of sequences in the alignment.
 
 ### Bug Fixes 🐛
 
 - Fix max-gap filtering issues.
-- Fix concatenation lead to missing data when sequence IDs contain trailing whitespace.
+- Fix concatenation leading to missing data when sequence IDs in FASTA files contain trailing whitespace.
 
 ### Other Changes 🛠
 
