@@ -33,6 +33,34 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - **Bioconda (CLI):** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
 - **Python package:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Docs](https://www.segul.app/docs/api-usage/python/intro)
 
+## What's new in SEGUL v.23.0
+
+### New Features
+
+- [Convert alignments to unaligned sequences](https://www.segul.app/docs/cli-usage/align-unalign).
+- [Add sequence to an existing sequence files/alignments](https://www.segul.app/docs/cli-usage/sequence-add).
+- [Trim alignments](https://www.segul.app/docs/cli-usage/align-trim).
+- New options for filtering alignments ([see details](https://www.segul.app/docs/cli-usage/align-filter)):
+  - Minimum or maximum sequence length.
+  - Minimum or maximum of parsimony informative sites
+  - Minimum taxon counts
+  - Based on user-defined list of sequence IDs.
+
+### Breaking Changes
+
+- Filtering args changes for alignment filtering for better consistency.
+- Remove `--ntax` option to supply the number of taxa in the alignment for filtering.
+
+### Bug Fixes
+
+- Fix max-gap filtering issues.
+- Fix concatenation lead to missing data when sequence IDs contain trailing whitespace.
+
+### Other Changes
+
+- Migrate to Rust 2024 edition.
+- Update dependencies.
+
 ## Supported File Formats
 
 Sequence formats:
@@ -66,13 +94,13 @@ The NEXUS partition can be written as a charset block embedded in NEXUS formatte
     src="https://tools.applemediaservices.com/api/badges/download-on-the-mac-app-store/black/en-us?size=250x83&amp;releaseDate=1716076800"
     alt="Download on the Mac App Store"
     width="220"
-  />](https://apps.apple.com/us/app/segui/id6447999874?mt=12&amp;itsct=apps_box_badge&amp;itscg=30200)
+  />](https://apps.apple.com/us/app/segui/id6447999874?mt=12&itsct=apps_box_badge&itscg=30200)
 
 [![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/segui)
 
 ### Mobile
 
-[<img style="padding-left: 15" src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1716076800" alt="Download on the App Store" width="180">](https://apps.apple.com/us/app/segui/id6447999874?itsct=apps_box_badge&amp;itscg=30200)
+[<img style="padding-left: 15" src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1716076800" alt="Download on the App Store" width="180">](https://apps.apple.com/us/app/segui/id6447999874?itsct=apps_box_badge&itscg=30200)
 
 [<img
     alt="Get it on Google Play"
@@ -136,7 +164,7 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 | Sequence extraction            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-extract) / [GUI](https://www.segul.app/docs/gui-usage/sequence-extract) / [Python](https://www.segul.app/docs/api-usage/python/sequence_extract)         |
 | Sequence filtering             | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-filter) / Coming soon                                                                                                                                    |
 | Sequence ID extraction         | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-id) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id) / [Python](https://www.segul.app/docs/api-usage/python/sequence_id)                        |
-| Sequence ID mapping            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-map) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id-map)  / [Python](https://www.segul.app/docs/api-usage/python/sequence_id)                  |
+| Sequence ID mapping            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-map) / [GUI](https://www.segul.app/docs/gui-usage/sequence-id-map) / [Python](https://www.segul.app/docs/api-usage/python/sequence_id)                   |
 | Sequence ID renaming           | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-rename) / [GUI](https://www.segul.app/docs/gui-usage/sequence-rename) / Coming soon                                                                      |
 | Sequence removal               | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-remove) / [GUI](https://www.segul.app/docs/gui-usage/sequence-remove) / [Python](https://www.segul.app/docs/api-usage/python/sequence_remove)            |
 | Sequence translation           | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-translate) / [GUI](https://www.segul.app/docs/gui-usage/sequence-translate) / [Python](https://www.segul.app/docs/api-usage/python/sequence_translation) |

@@ -1,7 +1,7 @@
 use std::io::Result;
 use std::path::Path;
 
-use assert_cmd::Command;
+use assert_cmd::{Command, cargo};
 use tempdir::TempDir;
 
 pub const DIR: &str = "temp";
@@ -38,11 +38,10 @@ macro_rules! test_results {
 }
 
 pub fn segul(dir: &Path) -> Command {
-    let mut cmd = Command::cargo_bin("segul").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("segul");
     cmd.current_dir(dir);
     cmd
 }
-
 pub fn create_tmp_dir() -> Result<TempDir> {
     let tmp_dir = TempDir::new(DIR)?;
     Ok(tmp_dir)
