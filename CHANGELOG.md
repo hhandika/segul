@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.23.2
+
+- Add Windows ARM64 support.
+
+## v0.23.1
+
+- Fix ARM support for Linux.
+
 ## v0.23.0
 
 New Features:
