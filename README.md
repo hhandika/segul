@@ -119,6 +119,8 @@ The CLI app may work in any Rust-supported [platform](https://doc.rust-lang.org/
 - Windows
 - Windows Subsystem for Linux (WSL)
 
+> **Notes**: SEGUL v0.23.2 adds support for Windows on ARM64 architecture, bringing full support for both x86_64 and ARM64 architectures on Windows, Linux, and MacOS.
+
 #### CLI Installation Methods
 
 - Pre-compiled binaries: [[Releases]](https://github.com/hhandika/segul/releases) [[Docs]](https://www.segul.app/docs/installation/install_binary)
