@@ -11,14 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build
-        uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release
+        run: cargo build --release
 
       - name: Compress release
         run: tar czvf segul.tar.gz -C target/release segul
@@ -36,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -45,8 +44,7 @@ jobs:
           target: x86_64-unknown-linux-musl
 
       - name: Build
-        uses: dtolnay/rust-toolchain@stable
-      - run: |
+        run: |
           sudo apt install musl-tools
           cargo build --release --target x86_64-unknown-linux-musl
 
@@ -63,20 +61,19 @@ jobs:
   
   linux_arm:
     name: Linux arm64 GNU
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build
-        uses: houseabsolute/actions-rust-cross@v0
-        with:
-          command: both
-          target: aarch64-unknown-linux-gnu
-          args: --release
+        run: cargo build --release
 
       - name: Compress release
-        run: tar czvf segul.tar.gz -C target/aarch64-unknown-linux-gnu/release segul
+        run: tar czvf segul.tar.gz -C target/release segul
 
       - name: Upload release
         uses: svenstaro/upload-release-action@v2
@@ -88,17 +85,16 @@ jobs:
 
   macos:
     name: macOS x86_64
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build
-        uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release
+        run: cargo build --release
 
       - name: Compress release
         run: tar czvf segul.tar.gz -C target/release segul
@@ -116,20 +112,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          target: aarch64-apple-darwin
 
       - name: Build
-        uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release --target aarch64-apple-darwin
+        run: cargo build --release
 
       - name: Compress release
-        run: tar czvf segul.tar.gz -C target/aarch64-apple-darwin/release segul
+        run: tar czvf segul.tar.gz -C target/release segul
 
       - name: Upload release
         uses: svenstaro/upload-release-action@v2
@@ -144,16 +136,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
 
       - name: Build
-        uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release
+        run: cargo build --release
 
       - name: Compress release
         run: powershell Compress-Archive target/release/segul.exe segul.zip
@@ -166,27 +155,29 @@ jobs:
           asset_name: segul-Windows-x86_64.zip
           tag: ${{ github.ref }}
 
-  # windows_arm:
-  #   name: Windows arm64
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@v3
-      
-  #     - name: Build
-  #       uses: houseabsolute/actions-rust-cross@v0
-  #       with:
-  #         command: both
-  #         target: aarch64-pc-windows-msvc
-  #         args: --release
+  windows_arm:
+    name: Windows arm64
+    runs-on: windows-11-arm
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v5
 
-  #     - name: Compress release
-  #       run: tar czvf segul.tar.gz -C target/aarch64-pc-windows-msvc/release segul.exe
+      - name: Install Rustup
+        run: |
+          curl -LOs https://static.rust-lang.org/rustup/dist/aarch64-pc-windows-msvc/rustup-init.exe
+          ./rustup-init.exe -y --default-toolchain stable --no-modify-path
+          echo "$env:USERPROFILE/.cargo/bin" >> $env:GITHUB_PATH
 
-  #     - name: Upload release
-  #       uses: svenstaro/upload-release-action@v2
-  #       with:
-  #         repo_token: ${{ secrets.GITHUB_TOKEN }}
-  #         file: segul.zip
-  #         asset_name: segul-Windows-arm64.tar.gz
-  #         tag: ${{ github.ref }}
+      - name: Build
+        run: cargo build --release
+
+      - name: Compress release
+        run: powershell Compress-Archive target/release/segul.exe segul.zip
+
+      - name: Upload release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: segul.zip
+          asset_name: segul-Windows-arm64.zip
+          tag: ${{ github.ref }}
