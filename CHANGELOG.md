@@ -4,24 +4,29 @@
 
 New Features:
 
-- Convert alignments to unaligned sequences.
-- Add sequence to an existing sequence files/alignments
-- Trim sequences.
-- Renaming feature using file input now allow duplicate IDs with a warning.
+- [Convert alignments to unaligned sequences](https://www.segul.app/docs/cli-usage/align-unalign).
+- [Add sequence to an existing sequence files/alignments](https://www.segul.app/docs/cli-usage/sequence-add).
+- [Trim alignments](https://www.segul.app/docs/cli-usage/align-trim).
+- New options for filtering alignments ([see details](https://www.segul.app/docs/cli-usage/align-filter)):
+  - Minimum or maximum sequence length.
+  - Minimum or maximum of parsimony informative sites
+  - Minimum taxon counts
+  - Based on user-defined list of sequence IDs.
 
 Breaking Changes:
 
-- Filtering args changes for alignment filtering for better consistency.
-- Remove `--ntax` option to supply the number of taxa in the alignment for filtering.
+- Filtering argument changes for better consistency (see [docs](https://www.segul.app/docs/cli-usage/align-filter)).
+- Remove `--ntax` option from [alignment filtering](https://www.segul.app/docs/cli-usage/align-filter) because by default SEGUL automatically and fastly counts the number of unique taxa across all input alignments.
 
 Bug Fixes:
 
 - Fix max-gap filtering issues.
-- Fix concatenation lead to missing data when sequence IDs contain trailing whitespace.
+- Fix concatenation leading to missing data when sequence IDs in FASTA files contain trailing whitespace.
 
 Other Changes:
 
 - Migrate to Rust 2024 edition.
+- Update dependencies.
 
 ## v0.22.1
 
