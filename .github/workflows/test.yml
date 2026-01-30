@@ -8,7 +8,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-latest", "ubuntu-24.04-arm"]
+        os: 
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+          - ubuntu-24.04-arm
+          - windows-11-arm
 
     steps:
       - name: Checkout sources
@@ -27,7 +32,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-latest", "ubuntu-24.04-arm"]
+        os: 
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+          - ubuntu-24.04-arm
+          - windows-11-arm
 
     steps:
       - name: Checkout sources
