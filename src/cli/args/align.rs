@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use clap::builder::TypedValueParser as _;
 use clap::Subcommand;
-use clap::{builder, Args};
+use clap::builder::TypedValueParser as _;
+use clap::{Args, builder};
 
 use super::{CommonConcatArgs, CommonSeqInput, CommonSeqOutput, IOArgs};
 
@@ -101,7 +101,7 @@ pub(crate) struct AlignFilterArgs {
         help = "Filter by maximum parsimony informative sites"
     )]
     pub(crate) max_pinf: Option<usize>,
-    #[arg(long = "taxon-id", help = "Filter by taxon ID")]
+    #[arg(long = "taxon-id", help = "Filter by taxon ID in a text file")]
     pub(crate) ids: Option<PathBuf>,
 }
 
