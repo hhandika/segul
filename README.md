@@ -3,7 +3,6 @@
 ![Segul-Tests](https://github.com/hhandika/segul/workflows/Segul-Tests/badge.svg)
 [![Crate-IO](https://img.shields.io/crates/v/segul)](https://crates.io/crates/segul)
 [![GH-Release](https://img.shields.io/github/v/tag/hhandika/segul?label=gh-releases&color=purple)](https://github.com/hhandika/segul/releases)
-[![PyPI - Version](https://img.shields.io/pypi/v/pysegul?color=blue)](https://pypi.org/project/pysegul/)
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/recipes/segul/README.html)
 ![Conda Version](https://img.shields.io/conda/vn/bioconda/segul?label=bioconda&color=brightgreen)
 ![Crates-Download](https://img.shields.io/crates/d/segul?color=orange&label=crates.io-downloads)
