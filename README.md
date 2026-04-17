@@ -173,3 +173,7 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 ## Contribution
 
 We welcome any contribution, from issue reporting and ideas to improve the app and documentation to code contribution. For ideas and issue reporting, please post on [the Github issues page](https://github.com/hhandika/segul/issues). For code contribution, please fork the repository and send pull requests to this repository.
+
+## Acknowledgments
+
+We thank Andre E. Moncrieff, Austin S. Chipps, Carl R. Hutter, Darwin Morales-Martínez, Diego J. Elias, Giovani Hernández-Canchola, Glaucia C. Del-Rio, Roberta C. Canton, Samantha L. Rutledge, Sarin Tiatragul, and Spenser J. Babb-Biernacki for their valuable feedback on the application and its documentation. We are grateful to Spenser J. Babb-Biernacki for suggesting the expansion of the SEGUL acronym. Financial support was provided by the National Science Foundation ([DEB-1754393](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1754393)) and the Alfred L. Gardner and Mark S. Hafner Mammalogy Fund. Several features of SEGUL are inspired by [Phyluce](https://phyluce.readthedocs.io/en/latest/), [AMAS](https://github.com/marekborowiec/AMAS), [goalign](https://github.com/evolbioinfo/goalign), and [FrogCap](https://github.com/chutter/FrogCap-Sequence-Capture). Additionally, SEGUL benefited greatly from excellent open-source libraries, particularly those provided by the Rust and Flutter programming communities.
