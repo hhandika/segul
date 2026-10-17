@@ -1,6 +1,7 @@
 //! Alignment modules that handle alignment operation.
 pub mod concat;
 pub mod convert;
+pub mod distance;
 pub mod filter;
 pub mod partition;
 pub mod split;

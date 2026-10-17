@@ -5,20 +5,21 @@
 //! 1. Alignment concatenation
 //! 2. Alignment conversion
 //! 3. Alignment filtering
-//! 4. Alignment partition conversion
-//! 5. Alignment splitting
-//! 6. Alignment summary statistics
-//! 7. Unalign alignments
-//! 7. Contiguous sequence summary statistics
-//! 8. Raw read summary statistics
-//! 9. Sample distribution mapping
-//! 10. Sequence extraction
-//! 11. Sequence filtering
-//! 12. Sequence ID renaming
-//! 13. Sequence removal
-//! 14. Sequence translation
-//! 15. Sequence transposition
-//! 16. Sequence unique ID parsing
+//! 4. Alignment pairwise genetic distances
+//! 5. Alignment partition conversion
+//! 6. Alignment splitting
+//! 7. Alignment summary statistics
+//! 8. Unalign alignments
+//! 9. Contiguous sequence summary statistics
+//! 10. Raw read summary statistics
+//! 11. Sample distribution mapping
+//! 12. Sequence extraction
+//! 13. Sequence filtering
+//! 14. Sequence ID renaming
+//! 15. Sequence removal
+//! 16. Sequence translation
+//! 17. Sequence transposition
+//! 18. Sequence unique ID parsing
 //!
 //! ## Cargo features
 //!
@@ -27,7 +28,7 @@
 //!
 //! | Feature    | Provides                                                  |
 //! |------------|-----------------------------------------------------------|
-//! | `align`    | Alignment concat, convert, filter, split, summary, trim   |
+//! | `align`    | Alignment concat, convert, distance, filter, split, summary, trim |
 //! | `sequence` | Sequence extract, filter, rename, remove, translate, transpose, ID |
 //! | `read`     | Raw read (FASTQ) summary statistics                       |
 //! | `contig`   | Contiguous sequence summary statistics                    |

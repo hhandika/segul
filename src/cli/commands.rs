@@ -1,4 +1,5 @@
 use crate::cli::align::convert::ConvertParser;
+use crate::cli::align::distance::DistanceParser;
 use crate::cli::align::filter::FilterParser;
 use crate::cli::align::partition::PartParser;
 use crate::cli::align::split::SplitParser;
@@ -64,6 +65,9 @@ fn match_alignment_subcommand(subcommand: &AlignmentSubcommand) {
     match subcommand {
         AlignmentSubcommand::Concat(concat_args) => ConcatParser::new(concat_args).concat(),
         AlignmentSubcommand::Convert(convert_args) => ConvertParser::new(convert_args).convert(),
+        AlignmentSubcommand::Distance(distance_args) => {
+            DistanceParser::new(distance_args).compute()
+        }
         AlignmentSubcommand::Filter(filter_args) => FilterParser::new(filter_args).filter(),
         AlignmentSubcommand::Split(split_args) => SplitParser::new(split_args).split(),
         AlignmentSubcommand::Summary(summary_args) => SummaryParser::new(summary_args).summarize(),

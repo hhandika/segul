@@ -13,13 +13,13 @@ All features are enabled by default. To pull in only what you need:
 segul-core = { version = "0.24", default-features = false, features = ["align", "sequence"] }
 ```
 
-| Feature    | Provides                                                |
-|------------|---------------------------------------------------------|
-| `align`    | Alignment concat, convert, filter, split, summary, trim |
-| `sequence` | Sequence extract, filter, rename, remove, translate, ID |
-| `read`     | Raw read (FASTQ) summary statistics                     |
-| `contig`   | Contiguous sequence summary statistics                  |
-| `maf`      | Multiple alignment format (MAF) conversion              |
+| Feature    | Provides                                                           |
+|------------|--------------------------------------------------------------------|
+| `align`    | Alignment concat, convert, distance, filter, split, summary, trim  |
+| `sequence` | Sequence extract, filter, rename, remove, translate, transpose, ID |
+| `read`     | Raw read (FASTQ) summary statistics                                |
+| `contig`   | Contiguous sequence summary statistics                             |
+| `maf`      | Multiple alignment format (MAF) conversion                         |
 
 The base modules (`helper`, the FASTA/NEXUS/PHYLIP parsers, and sequence and partition writers) are always available.
 

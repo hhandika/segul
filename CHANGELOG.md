@@ -21,6 +21,7 @@ Migration:
 New Features:
 
 - `segul sequence transpose`: transpose locus alignments into per-sample sequence files. Each sample gets its own file with one sequence per locus, labeled by locus name, with gaps and missing data removed.
+- `segul align distance`: compute pairwise genetic distances for each alignment. Supports uncorrected p-distance, Jukes-Cantor (JC69), Kimura 2-parameter (K2P), Tamura-Nei (TN93), and Poisson (amino acid) models, using pairwise deletion for gaps, missing data, and ambiguous characters. Writes a square distance matrix for each locus to `per_locus/` and a summary of each locus's distances (min, max, mean, median, SD) to the output directory.
 
 ## v0.23.2
 

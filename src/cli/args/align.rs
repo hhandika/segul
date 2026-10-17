@@ -12,6 +12,8 @@ pub(crate) enum AlignmentSubcommand {
     Concat(AlignConcatArgs),
     #[command(about = "Convert sequence formats", name = "convert")]
     Convert(AlignConvertArgs),
+    #[command(about = "Compute pairwise genetic distances", name = "distance")]
+    Distance(AlignDistanceArgs),
     #[command(about = "Filter alignments", name = "filter")]
     Filter(AlignFilterArgs),
     #[command(about = "Split alignment by partitions", name = "split")]
@@ -58,6 +60,25 @@ pub(crate) struct AlignConvertArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "sort", help = "Sort sequences by IDs alphabetically")]
     pub(crate) sort: bool,
+}
+
+#[derive(Args)]
+pub(crate) struct AlignDistanceArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[arg(
+        long = "model",
+        help = "Specify distance model. Use k2p and tn93 for DNA, poisson for amino acid",
+        default_value = "p",
+        value_parser = builder::PossibleValuesParser::new(["p", "jc69", "k2p", "tn93", "poisson"]),
+    )]
+    pub(crate) model: String,
+    #[arg(short, long, help = "Output path", default_value = "Align-Distance")]
+    pub(crate) output: PathBuf,
+    #[arg(long = "prefix", help = "Specify prefix for the summary file")]
+    pub(crate) prefix: Option<String>,
 }
 
 #[derive(Args)]
