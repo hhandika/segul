@@ -93,6 +93,42 @@ pub(crate) struct AlignDistanceArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for the summary file")]
     pub(crate) prefix: Option<String>,
+    #[arg(
+        long = "long",
+        help = "Also write pairwise distances and group statistics of all loci as long tables"
+    )]
+    pub(crate) long: bool,
+    #[arg(
+        long = "group-delimiter",
+        help = "Group samples by splitting IDs on this character, e.g. _",
+        requires = "group_fields",
+        conflicts_with_all(["group_regex", "group_file", "group_auto"]),
+    )]
+    pub(crate) group_delimiter: Option<char>,
+    #[arg(
+        long = "group-fields",
+        help = "Number of leading ID fields that name the group, used with --group-delimiter",
+        requires = "group_delimiter",
+        value_parser = builder::RangedU64ValueParser::<usize>::new().range(1..),
+    )]
+    pub(crate) group_fields: Option<usize>,
+    #[arg(
+        long = "group-regex",
+        help = "Group samples by a regex. Uses the first capture group or the whole match",
+        conflicts_with_all(["group_file", "group_auto"]),
+    )]
+    pub(crate) group_regex: Option<String>,
+    #[arg(
+        long = "group-file",
+        help = "Group samples using a CSV/TSV file with a header and sample and group columns",
+        conflicts_with = "group_auto"
+    )]
+    pub(crate) group_file: Option<PathBuf>,
+    #[arg(
+        long = "group-auto",
+        help = "Detect the group delimiter and field count from sample IDs"
+    )]
+    pub(crate) group_auto: bool,
 }
 
 #[derive(Args)]

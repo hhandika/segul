@@ -1,7 +1,10 @@
 use std::path::PathBuf;
 
+use crate::core::align::distance::group::SampleGrouping;
 use crate::core::align::distance::{AlignmentDistance, MatrixDiagonal, MatrixTriangle};
+use crate::helper::finder::IDs;
 use crate::helper::logger::AlignSeqLogger;
+use crate::helper::types::{DataType, InputFmt};
 use crate::stats::distance::DistanceModel;
 
 use crate::cli::args::align::AlignDistanceArgs;
@@ -49,11 +52,65 @@ impl<'a> DistanceParser<'a> {
             files.len(),
         )
         .log(task);
+        let grouping = self.parse_grouping(&files, &input_fmt, &datatype);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        AlignmentDistance::new(&input_fmt, &datatype, &model, &self.args.output)
+        let mut handle = AlignmentDistance::new(&input_fmt, &datatype, &model, &self.args.output)
             .with_triangle(triangle)
             .with_diagonal(diagonal)
-            .compute(&files, self.args.prefix.as_deref());
+            .with_long_format(self.args.long);
+        if let Some(grouping) = grouping {
+            handle = handle.with_grouping(grouping);
+        }
+        handle.compute(&files, self.args.prefix.as_deref());
+    }
+
+    fn parse_grouping(
+        &self,
+        files: &[PathBuf],
+        input_fmt: &InputFmt,
+        datatype: &DataType,
+    ) -> Option<SampleGrouping> {
+        let grouping = if let (Some(delimiter), Some(fields)) =
+            (self.args.group_delimiter, self.args.group_fields)
+        {
+            SampleGrouping::from_delimiter(delimiter, fields)
+        } else if let Some(pattern) = &self.args.group_regex {
+            SampleGrouping::from_regex(pattern)
+        } else if let Some(path) = &self.args.group_file {
+            SampleGrouping::from_map_file(path)
+        } else if self.args.group_auto {
+            let ids: Vec<String> = IDs::new(files, input_fmt, datatype)
+                .id_unique()
+                .into_iter()
+                .collect();
+            match SampleGrouping::detect(&ids) {
+                Some(suggestion) => {
+                    log::info!(
+                        "Detected groups: split on '{}', keep {} field(s), {} groups\n",
+                        suggestion.delimiter,
+                        suggestion.fields,
+                        suggestion.groups
+                    );
+                    Ok(suggestion.to_grouping())
+                }
+                None => {
+                    log::error!(
+                        "Could not detect groups from sample IDs. \
+                        Use --group-delimiter, --group-regex, or --group-file."
+                    );
+                    std::process::exit(1);
+                }
+            }
+        } else {
+            return None;
+        };
+        match grouping {
+            Ok(grouping) => Some(grouping),
+            Err(e) => {
+                log::error!("{:#}", e);
+                std::process::exit(1);
+            }
+        }
     }
 
     fn parse_model(&self, model: &str) -> DistanceModel {
