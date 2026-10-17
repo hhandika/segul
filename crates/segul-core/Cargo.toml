@@ -1,0 +1,56 @@
+[package]
+name = "segul-core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["alignment", "genomics", "phylogenomics", "bioinformatics"]
+categories = ["science"]
+
+[features]
+default = ["align", "sequence", "read", "contig", "maf"]
+align = []
+sequence = []
+read = ["dep:noodles", "noodles/fastq"]
+contig = []
+maf = []
+
+[dependencies]
+ahash.workspace = true
+anyhow.workspace = true
+bytecount.workspace = true
+colored.workspace = true
+chrono.workspace = true
+glob.workspace = true
+indexmap.workspace = true
+indicatif.workspace = true
+lazy_static.workspace = true
+log.workspace = true
+log4rs.workspace = true
+nom.workspace = true
+num-format.workspace = true
+rayon.workspace = true
+regex.workspace = true
+noodles = { workspace = true, optional = true }
+flate2.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+walkdir.workspace = true
+assert_approx_eq.workspace = true
+zip.workspace = true
+alphanumeric-sort.workspace = true
+csv.workspace = true
+
+[dev-dependencies]
+tempdir.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true

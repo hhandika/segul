@@ -11,7 +11,7 @@ macro_rules! test_filter {
     ($test: ident, $arg: expr_2021, $val: expr_2021, $output: expr_2021, $res: expr_2021) => {
         #[test]
         fn $test() {
-            initiate_cmd!(cmd, "align", "filter", "tests/files/long-aln/", tmp_dir);
+            initiate_cmd!(cmd, "align", "filter", "crates/segul-core/tests/files/long-aln/", tmp_dir);
             cmd.arg($arg).arg($val).assert().success();
             test_results!($res, tmp_dir, $output, Nexus);
         }
@@ -27,7 +27,7 @@ test_filter! {test_max_len, "--max-len", "30", "Align-Filter_30bp", 4}
 
 #[test]
 fn test_filter_missing_data() {
-    initiate_cmd!(cmd, "align", "filter", "tests/files/gappy/", tmp_dir);
+    initiate_cmd!(cmd, "align", "filter", "crates/segul-core/tests/files/gappy/", tmp_dir);
     cmd.arg("--missing-data").arg("0.25").assert().success();
     let output = tmp_dir.path().join("Align-Filter_25percent_missing");
     test_results!(3, tmp_dir, output, Nexus);
@@ -36,7 +36,7 @@ fn test_filter_missing_data() {
 #[test]
 #[should_panic]
 fn test_filter_panic() {
-    initiate_cmd!(cmd, "align", "filter", "tests/files/long-aln/", tmp_dir);
+    initiate_cmd!(cmd, "align", "filter", "crates/segul-core/tests/files/long-aln/", tmp_dir);
     let output = tmp_dir.path().join("concat_50p");
     cmd.arg("--min-len")
         .arg("27")

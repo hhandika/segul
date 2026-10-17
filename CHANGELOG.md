@@ -1,5 +1,25 @@
 # Release Notes
 
+## v0.24.0
+
+Library Changes:
+
+- The library code now lives in a new crate, [`segul-core`](https://crates.io/crates/segul-core). The `segul` crate is the command-line app.
+- `segul-core` uses Cargo features to enable only what you need: `align`, `sequence`, `read`, `contig`, and `maf`. All features are on by default. For example:
+
+  ```toml
+  segul-core = { version = "0.24", default-features = false, features = ["read"] }
+  ```
+
+- Library code no longer depends on `clap` or `dialoguer`. `noodles` is only needed by the `read` feature.
+
+Migration:
+
+- Replace `segul::` with `segul_core::` in your imports.
+- `segul` still re-exports `core`, `helper`, `parser`, `stats`, and `writer` from `segul-core`, so existing code keeps compiling. These re-exports will be removed in a future release.
+
+No changes to the command-line app.
+
 ## v0.23.2
 
 - Add Windows ARM64 support.

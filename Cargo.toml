@@ -1,17 +1,17 @@
-[package]
-name = "segul"
-version = "0.23.2"
+[workspace]
+members = ["crates/segul-core"]
+
+[workspace.package]
+version = "0.24.0"
 authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2024"
 license = "MIT"
 description = "An ultrafast and memory-efficient tool for phylogenomics"
-readme = "README.md"
 homepage = "https://www.segul.app/"
 repository = "https://github.com/hhandika/segul"
-keywords = ["cli", "utility", "alignment", "genomics", "phylogenomics"]
-categories = ["command-line-utilities", "science"]
 
-[dependencies]
+[workspace.dependencies]
+segul-core = { path = "crates/segul-core", version = "0.24.0", default-features = false }
 ahash = "0.8.*"
 anyhow = "1.0.*"
 bytecount = "0.6.*"
@@ -29,7 +29,7 @@ num-format = "0.*"
 rayon = "1.*"
 regex = "1.*"
 clap = { version = "4.5.*", features = ["cargo", "derive"] }
-noodles = { version = "0.99.*", features = ["fastq", "fasta", "bed"] }
+noodles = { version = "0.99.*" }
 flate2 = "1.0.31"
 serde_json = "1.0.91"
 serde = { version = "1.0.152", features = ["derive"] }
@@ -38,16 +38,44 @@ assert_approx_eq = "1.1.0"
 zip = "0.6.6"
 alphanumeric-sort = "1.5.3"
 csv = "1.3.0"
-
-[dev-dependencies]
 assert_cmd = "2.*"
 predicates = "2.*"
 tempdir = "0.3.7"
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(docsrs)'] }
+
+[package]
+name = "segul"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["cli", "utility", "alignment", "genomics", "phylogenomics"]
+categories = ["command-line-utilities", "science"]
+exclude = ["crates/"]
+
+[dependencies]
+segul-core = { workspace = true, features = ["align", "sequence", "read", "contig", "maf"] }
+clap.workspace = true
+colored.workspace = true
+dialoguer.workspace = true
+glob.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+predicates.workspace = true
+tempdir.workspace = true
 
 [profile.release]
 debug = false
 lto = "fat"
 panic = "abort"
 
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
+[lints]
+workspace = true
