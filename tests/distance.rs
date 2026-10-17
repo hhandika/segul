@@ -52,3 +52,26 @@ fn test_align_distance_invalid_model() {
     cmd.assert().failure();
     tmp_dir.close().unwrap();
 }
+
+#[test]
+fn test_align_distance_lower_triangle() {
+    initiate_cmd!(
+        cmd,
+        "align",
+        "distance",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
+    cmd.arg("--triangle").arg("lower");
+    cmd.assert().success();
+    let matrix = tmp_dir
+        .path()
+        .join("Align-Distance")
+        .join("per_locus")
+        .join("gene_2.csv");
+    let content = std::fs::read_to_string(matrix).unwrap();
+    let lines: Vec<&str> = content.lines().collect();
+    assert_eq!(lines[1], "ABCD,0.000000,");
+    assert_eq!(lines[2], "ABCF,0.125000,0.000000");
+    tmp_dir.close().unwrap();
+}

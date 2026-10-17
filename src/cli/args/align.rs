@@ -75,6 +75,13 @@ pub(crate) struct AlignDistanceArgs {
         value_parser = builder::PossibleValuesParser::new(["p", "jc69", "k2p", "tn93", "poisson"]),
     )]
     pub(crate) model: String,
+    #[arg(
+        long = "triangle",
+        help = "Write the full matrix, or only its lower or upper triangle",
+        default_value = "full",
+        value_parser = builder::PossibleValuesParser::new(["full", "lower", "upper"]),
+    )]
+    pub(crate) triangle: String,
     #[arg(short, long, help = "Output path", default_value = "Align-Distance")]
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for the summary file")]

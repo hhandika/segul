@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::core::align::distance::AlignmentDistance;
+use crate::core::align::distance::{AlignmentDistance, MatrixTriangle};
 use crate::helper::logger::AlignSeqLogger;
 use crate::stats::distance::DistanceModel;
 
@@ -28,6 +28,7 @@ impl<'a> DistanceParser<'a> {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let model = self.parse_model(&self.args.model);
+        let triangle = self.parse_triangle(&self.args.triangle);
         if !model.is_valid_for(&datatype) {
             log::error!(
                 "The {} model is not valid for {} data. \
@@ -49,6 +50,7 @@ impl<'a> DistanceParser<'a> {
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         AlignmentDistance::new(&input_fmt, &datatype, &model, &self.args.output)
+            .with_triangle(triangle)
             .compute(&files, self.args.prefix.as_deref());
     }
 
@@ -56,5 +58,11 @@ impl<'a> DistanceParser<'a> {
         model
             .parse::<DistanceModel>()
             .expect("Failed to parse distance model")
+    }
+
+    fn parse_triangle(&self, triangle: &str) -> MatrixTriangle {
+        triangle
+            .parse::<MatrixTriangle>()
+            .expect("Failed to parse matrix triangle")
     }
 }

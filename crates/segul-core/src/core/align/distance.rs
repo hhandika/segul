@@ -21,6 +21,43 @@ use crate::stats::distance::{self, BaseFreqs, DistanceModel, DistanceSummary, Pa
 const PER_LOCUS_DIR: &str = "per_locus";
 const DEFAULT_PREFIX: &str = "distance";
 
+/// Which part of the distance matrix to write.
+/// The diagonal is always written.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum MatrixTriangle {
+    /// Write both triangles.
+    #[default]
+    Full,
+    /// Write the lower triangle only. Cells above the diagonal are empty.
+    Lower,
+    /// Write the upper triangle only. Cells below the diagonal are empty.
+    Upper,
+}
+
+impl MatrixTriangle {
+    /// Check whether the cell at row `i` and column `j` is written.
+    fn includes(&self, i: usize, j: usize) -> bool {
+        match self {
+            Self::Full => true,
+            Self::Lower => j <= i,
+            Self::Upper => j >= i,
+        }
+    }
+}
+
+impl std::str::FromStr for MatrixTriangle {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "full" => Ok(Self::Full),
+            "lower" => Ok(Self::Lower),
+            "upper" => Ok(Self::Upper),
+            _ => Err(format!("{} is not a valid matrix triangle", s)),
+        }
+    }
+}
+
 /// Compute pairwise distances for alignments.
 pub struct AlignmentDistance<'a> {
     /// The input format of the alignment files.
@@ -31,6 +68,8 @@ pub struct AlignmentDistance<'a> {
     model: &'a DistanceModel,
     /// The output directory.
     output_dir: &'a Path,
+    /// Which part of the distance matrix to write. Defaults to the full matrix.
+    triangle: MatrixTriangle,
 }
 
 impl<'a> AlignmentDistance<'a> {
@@ -45,7 +84,15 @@ impl<'a> AlignmentDistance<'a> {
             datatype,
             model,
             output_dir,
+            triangle: MatrixTriangle::Full,
         }
+    }
+
+    /// Write only the lower or upper triangle of each distance matrix,
+    /// leaving the other triangle empty.
+    pub fn with_triangle(mut self, triangle: MatrixTriangle) -> Self {
+        self.triangle = triangle;
+        self
     }
 
     /// Compute pairwise distances for each alignment.
@@ -154,7 +201,13 @@ impl<'a> AlignmentDistance<'a> {
         writer.write_record(&header)?;
         for (i, id) in ids.iter().enumerate() {
             let mut row = vec![id.to_string()];
-            row.extend((0..ids.len()).map(|j| fmt_distance(distances.get(i, j))));
+            row.extend((0..ids.len()).map(|j| {
+                if self.triangle.includes(i, j) {
+                    fmt_distance(distances.get(i, j))
+                } else {
+                    String::new()
+                }
+            }));
             writer.write_record(&row)?;
         }
         writer.flush()?;
@@ -339,6 +392,50 @@ mod tests {
         assert_eq!(field("undefined_pairs"), "0");
         assert_approx_eq!(field("max").parse::<f64>().unwrap(), 0.4);
         assert_approx_eq!(field("median").parse::<f64>().unwrap(), 0.2);
+    }
+
+    #[test]
+    fn test_matrix_triangle() {
+        let input = TempDir::new("temp").unwrap();
+        let file = write_test_locus(input.path());
+        for (triangle, expected) in [
+            (
+                MatrixTriangle::Lower,
+                [
+                    "ABCD,0.000000,,",
+                    "ABCE,0.166667,0.000000,",
+                    "ABCF,0.200000,0.400000,0.000000",
+                ],
+            ),
+            (
+                MatrixTriangle::Upper,
+                [
+                    "ABCD,0.000000,0.166667,0.200000",
+                    "ABCE,,0.000000,0.400000",
+                    "ABCF,,,0.000000",
+                ],
+            ),
+        ] {
+            let output = TempDir::new("temp").unwrap();
+            AlignmentDistance::new(
+                &InputFmt::Fasta,
+                &DataType::Dna,
+                &DistanceModel::Uncorrected,
+                output.path(),
+            )
+            .with_triangle(triangle)
+            .compute(std::slice::from_ref(&file), None);
+            let matrix_path = output.path().join(PER_LOCUS_DIR).join("locus_1.csv");
+            let content = fs::read_to_string(matrix_path).unwrap();
+            let lines: Vec<&str> = content.lines().skip(1).collect();
+            assert_eq!(lines, expected, "{:?}", triangle);
+        }
+    }
+
+    #[test]
+    fn test_matrix_triangle_from_str() {
+        assert_eq!("lower".parse::<MatrixTriangle>(), Ok(MatrixTriangle::Lower));
+        assert!("diagonal".parse::<MatrixTriangle>().is_err());
     }
 
     #[test]
