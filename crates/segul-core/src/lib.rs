@@ -17,7 +17,8 @@
 //! 12. Sequence ID renaming
 //! 13. Sequence removal
 //! 14. Sequence translation
-//! 15. Sequence unique ID parsing
+//! 15. Sequence transposition
+//! 16. Sequence unique ID parsing
 //!
 //! ## Cargo features
 //!
@@ -27,7 +28,7 @@
 //! | Feature    | Provides                                                  |
 //! |------------|-----------------------------------------------------------|
 //! | `align`    | Alignment concat, convert, filter, split, summary, trim   |
-//! | `sequence` | Sequence extract, filter, rename, remove, translate, ID   |
+//! | `sequence` | Sequence extract, filter, rename, remove, translate, transpose, ID |
 //! | `read`     | Raw read (FASTQ) summary statistics                       |
 //! | `contig`   | Contiguous sequence summary statistics                    |
 //! | `maf`      | Multiple alignment format (MAF) conversion                |

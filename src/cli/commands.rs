@@ -9,6 +9,7 @@ use crate::cli::sequence::id::IdParser;
 use crate::cli::sequence::remove::RemoveParser;
 use crate::cli::sequence::rename::RenameParser;
 use crate::cli::sequence::translate::TranslateParser;
+use crate::cli::sequence::transpose::TransposeParser;
 
 use super::align::concat::ConcatParser;
 use super::align::trim::AlignTrimParser;
@@ -79,6 +80,9 @@ fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
         SequenceSubcommand::Remove(remove_args) => RemoveParser::new(remove_args).remove(),
         SequenceSubcommand::Rename(rename_args) => RenameParser::new(rename_args).rename(),
         SequenceSubcommand::Translate(trans_args) => TranslateParser::new(trans_args).translate(),
+        SequenceSubcommand::Transpose(transpose_args) => {
+            TransposeParser::new(transpose_args).transpose()
+        }
         SequenceSubcommand::Add(add_args) => AdditionParser::new(add_args).add(),
     };
 }

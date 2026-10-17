@@ -18,7 +18,9 @@ Migration:
 - Replace `segul::` with `segul_core::` in your imports.
 - `segul` still re-exports `core`, `helper`, `parser`, `stats`, and `writer` from `segul-core`, so existing code keeps compiling. These re-exports will be removed in a future release.
 
-No changes to the command-line app.
+New Features:
+
+- `segul sequence transpose`: transpose locus alignments into per-sample sequence files. Each sample gets its own file with one sequence per locus, labeled by locus name, with gaps and missing data removed.
 
 ## v0.23.2
 

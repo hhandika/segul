@@ -5,3 +5,4 @@ pub(crate) mod id;
 pub(crate) mod remove;
 pub(crate) mod rename;
 pub(crate) mod translate;
+pub(crate) mod transpose;

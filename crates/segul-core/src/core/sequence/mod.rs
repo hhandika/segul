@@ -6,3 +6,4 @@ pub mod id;
 pub mod remove;
 pub mod rename;
 pub mod translate;
+pub mod transpose;
