@@ -262,6 +262,15 @@ impl GroupDistances {
         names
     }
 
+    /// The highest mean distance between `group` and any other group.
+    pub fn row_max(&self, group: &str) -> Option<f64> {
+        self.names
+            .iter()
+            .filter(|other| other.as_str() != group)
+            .filter_map(|other| self.get(group, other).mean())
+            .max_by(|a, b| a.total_cmp(b))
+    }
+
     /// Statistics between groups `a` and `b`, in either order.
     pub fn get(&self, a: &str, b: &str) -> GroupStats {
         self.stats
@@ -407,6 +416,7 @@ mod tests {
         assert_eq!(stats.min, Some(0.1));
         assert_eq!(distances.names(), vec!["a", "b"]);
         assert_eq!(distances.get("a", "a").mean(), None);
+        assert_approx_eq!(distances.row_max("a").unwrap(), 0.2);
 
         let mut other = GroupDistances::default();
         other.add_group("c");

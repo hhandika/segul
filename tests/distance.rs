@@ -160,3 +160,27 @@ fn test_align_distance_group_delimiter_requires_fields() {
     cmd.assert().failure();
     tmp_dir.close().unwrap();
 }
+
+#[test]
+fn test_align_distance_group_diagonal() {
+    initiate_cmd!(
+        cmd,
+        "align",
+        "distance",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
+    cmd.arg("--group-regex")
+        .arg("^ABC[DE]")
+        .arg("--group-diagonal")
+        .arg("blank");
+    cmd.assert().success();
+    let matrix = tmp_dir
+        .path()
+        .join("Align-Distance")
+        .join("distance_group_mean.csv");
+    let content = std::fs::read_to_string(matrix).unwrap();
+    let lines: Vec<&str> = content.lines().collect();
+    assert!(lines[1].starts_with("ABCD,,"), "{}", lines[1]);
+    tmp_dir.close().unwrap();
+}

@@ -91,7 +91,7 @@ pub(crate) struct AlignDistanceArgs {
     pub(crate) diagonal: String,
     #[arg(short, long, help = "Output path", default_value = "Align-Distance")]
     pub(crate) output: PathBuf,
-    #[arg(long = "prefix", help = "Specify prefix for the summary file")]
+    #[arg(long = "prefix", help = "Specify prefix for the output files")]
     pub(crate) prefix: Option<String>,
     #[arg(
         long = "long",
@@ -129,6 +129,14 @@ pub(crate) struct AlignDistanceArgs {
         help = "Detect the group delimiter and field count from sample IDs"
     )]
     pub(crate) group_auto: bool,
+    #[arg(
+        long = "group-diagonal",
+        help = "Write the within-group mean, zero, blank, or each group's highest mean \
+            to another group on the group matrix diagonal",
+        default_value = "within",
+        value_parser = builder::PossibleValuesParser::new(["within", "zero", "blank", "max"]),
+    )]
+    pub(crate) group_diagonal: String,
 }
 
 #[derive(Args)]

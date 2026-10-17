@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
 use crate::core::align::distance::group::SampleGrouping;
-use crate::core::align::distance::{AlignmentDistance, MatrixDiagonal, MatrixTriangle};
+use crate::core::align::distance::{
+    AlignmentDistance, GroupDiagonal, MatrixDiagonal, MatrixTriangle,
+};
 use crate::helper::finder::IDs;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::{DataType, InputFmt};
@@ -59,9 +61,18 @@ impl<'a> DistanceParser<'a> {
             .with_diagonal(diagonal)
             .with_long_format(self.args.long);
         if let Some(grouping) = grouping {
-            handle = handle.with_grouping(grouping);
+            let group_diagonal = self.parse_group_diagonal(&self.args.group_diagonal);
+            handle = handle
+                .with_grouping(grouping)
+                .with_group_diagonal(group_diagonal);
         }
         handle.compute(&files, self.args.prefix.as_deref());
+    }
+
+    fn parse_group_diagonal(&self, diagonal: &str) -> GroupDiagonal {
+        diagonal
+            .parse::<GroupDiagonal>()
+            .expect("Failed to parse group matrix diagonal")
     }
 
     fn parse_grouping(

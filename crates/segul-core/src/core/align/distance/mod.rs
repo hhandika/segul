@@ -9,7 +9,8 @@
 //! such as populations or species, is written for each locus to
 //! `output_dir/per_locus_group/<locus>.csv` and pooled across loci to
 //! `output_dir/<prefix>_group_mean.csv`, with pair counts in
-//! `output_dir/<prefix>_group_pairs.csv`.
+//! `output_dir/<prefix>_group_pairs.csv`. The diagonal of the mean matrices
+//! follows [`GroupDiagonal`] and defaults to the within-group mean.
 //!
 //! With long format enabled, all pairwise distances across loci are written to
 //! `output_dir/<prefix>_pairwise_long.csv`, and with grouping, all group
@@ -32,7 +33,7 @@ use crate::helper::types::{DataType, InputFmt, SeqMatrix};
 use crate::helper::utils;
 use crate::stats::distance::{self, BaseFreqs, DistanceModel, DistanceSummary, PairCounts};
 
-use group::{GroupAssignment, GroupDistances, GroupStats, SampleGrouping};
+use group::{GroupAssignment, GroupDistances, SampleGrouping};
 
 const PER_LOCUS_DIR: &str = "per_locus";
 const PER_LOCUS_GROUP_DIR: &str = "per_locus_group";
@@ -104,6 +105,35 @@ impl std::str::FromStr for MatrixDiagonal {
     }
 }
 
+/// What to write on the diagonal of the group mean matrices.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum GroupDiagonal {
+    /// Write the mean distance within each group.
+    #[default]
+    Within,
+    /// Write zero.
+    Zero,
+    /// Leave the diagonal empty.
+    Blank,
+    /// Write the highest mean distance of the group to any other group (the row maximum).
+    /// Written as `NA` if the group has no defined mean to another group.
+    RowMax,
+}
+
+impl std::str::FromStr for GroupDiagonal {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "within" => Ok(Self::Within),
+            "zero" => Ok(Self::Zero),
+            "blank" => Ok(Self::Blank),
+            "max" => Ok(Self::RowMax),
+            _ => Err(format!("{} is not a valid group matrix diagonal", s)),
+        }
+    }
+}
+
 /// Compute pairwise distances for alignments.
 pub struct AlignmentDistance<'a> {
     /// The input format of the alignment files.
@@ -120,6 +150,9 @@ pub struct AlignmentDistance<'a> {
     diagonal: MatrixDiagonal,
     /// How to group samples for group mean distances. Defaults to no grouping.
     grouping: Option<SampleGrouping>,
+    /// What to write on the diagonal of the group mean matrices.
+    /// Defaults to the within-group mean.
+    group_diagonal: GroupDiagonal,
     /// Whether to write long-format tables. Defaults to false.
     long_format: bool,
 }
@@ -139,6 +172,7 @@ impl<'a> AlignmentDistance<'a> {
             triangle: MatrixTriangle::Full,
             diagonal: MatrixDiagonal::Zero,
             grouping: None,
+            group_diagonal: GroupDiagonal::Within,
             long_format: false,
         }
     }
@@ -159,6 +193,12 @@ impl<'a> AlignmentDistance<'a> {
     /// Compute the mean distance within and between groups of samples.
     pub fn with_grouping(mut self, grouping: SampleGrouping) -> Self {
         self.grouping = Some(grouping);
+        self
+    }
+
+    /// Set what to write on the diagonal of the group mean matrices.
+    pub fn with_group_diagonal(mut self, diagonal: GroupDiagonal) -> Self {
+        self.group_diagonal = diagonal;
         self
     }
 
@@ -271,7 +311,7 @@ impl<'a> AlignmentDistance<'a> {
                 .join(PER_LOCUS_GROUP_DIR)
                 .join(&locus)
                 .with_extension("csv");
-            self.write_group_matrix(&path, groups, |s| fmt_distance(s.mean()))
+            self.write_group_mean_matrix(&path, groups)
                 .unwrap_or_else(|e| {
                     log::error!(
                         "Failed to write group distance matrix for {}: {}",
@@ -389,12 +429,33 @@ impl<'a> AlignmentDistance<'a> {
         groups
     }
 
-    /// Write a group by group matrix. The diagonal holds within-group values.
+    /// Write a group by group matrix of mean distances.
+    /// The diagonal follows [`GroupDiagonal`].
+    fn write_group_mean_matrix(&self, output_path: &Path, groups: &GroupDistances) -> Result<()> {
+        self.write_group_matrix(output_path, groups, |a, b| {
+            if a == b {
+                self.fmt_group_diagonal(groups, a)
+            } else {
+                fmt_distance(groups.get(a, b).mean())
+            }
+        })
+    }
+
+    fn fmt_group_diagonal(&self, groups: &GroupDistances, group: &str) -> String {
+        match self.group_diagonal {
+            GroupDiagonal::Within => fmt_distance(groups.get(group, group).mean()),
+            GroupDiagonal::Zero => fmt_distance(Some(0.0)),
+            GroupDiagonal::Blank => String::new(),
+            GroupDiagonal::RowMax => fmt_distance(groups.row_max(group)),
+        }
+    }
+
+    /// Write a group by group matrix with `cell` giving the value for each pair of groups.
     fn write_group_matrix(
         &self,
         output_path: &Path,
         groups: &GroupDistances,
-        fmt: impl Fn(&GroupStats) -> String,
+        cell: impl Fn(&str, &str) -> String,
     ) -> Result<()> {
         let mut writer = csv::Writer::from_path(output_path)
             .with_context(|| format!("Failed to create {}", output_path.display()))?;
@@ -406,7 +467,7 @@ impl<'a> AlignmentDistance<'a> {
             let mut row = vec![a.to_string()];
             row.extend(names.iter().enumerate().map(|(j, b)| {
                 if self.triangle.includes(i, j) {
-                    fmt(&groups.get(a, b))
+                    cell(a, b)
                 } else {
                     String::new()
                 }
@@ -428,9 +489,9 @@ impl<'a> AlignmentDistance<'a> {
             .filter_map(|r| r.groups.as_ref())
             .for_each(|g| pooled.merge(g));
         let mean_path = self.prefixed_path(prefix, "group_mean");
-        self.write_group_matrix(&mean_path, &pooled, |s| fmt_distance(s.mean()))?;
+        self.write_group_mean_matrix(&mean_path, &pooled)?;
         let pairs_path = self.prefixed_path(prefix, "group_pairs");
-        self.write_group_matrix(&pairs_path, &pooled, |s| s.n_pairs.to_string())?;
+        self.write_group_matrix(&pairs_path, &pooled, |a, b| groups_pairs(&pooled, a, b))?;
         let mut outputs = vec![("Group mean", mean_path), ("Group pairs", pairs_path)];
         if self.long_format {
             let long_path = self.prefixed_path(prefix, "group_long");
@@ -582,6 +643,10 @@ impl<'a> AlignmentDistance<'a> {
             .for_each(|(label, path)| log::info!("{:18}: {}", label, path.display()));
         log::info!("");
     }
+}
+
+fn groups_pairs(groups: &GroupDistances, a: &str, b: &str) -> String {
+    groups.get(a, b).n_pairs.to_string()
 }
 
 fn fmt_distance(distance: Option<f64>) -> String {
@@ -781,6 +846,66 @@ mod tests {
             read_lines(&pooled),
             [",sp1,sp2", "sp1,0.208333,", "sp2,0.430556,0.166667"]
         );
+    }
+
+    #[test]
+    fn test_group_diagonal() {
+        // Locus 1 means: within sp1 and sp2 1/6, between 1/3.
+        // Pooled: within sp1 0.208333, within sp2 0.166667, between 0.430556.
+        for (diagonal, expected) in [
+            (
+                GroupDiagonal::Zero,
+                ["sp1,0.000000,0.430556", "sp2,0.430556,0.000000"],
+            ),
+            (GroupDiagonal::Blank, ["sp1,,0.430556", "sp2,0.430556,"]),
+            (
+                GroupDiagonal::RowMax,
+                ["sp1,0.430556,0.430556", "sp2,0.430556,0.430556"],
+            ),
+        ] {
+            let input = TempDir::new("temp").unwrap();
+            let output = TempDir::new("temp").unwrap();
+            let files = write_group_loci(input.path());
+            AlignmentDistance::new(
+                &InputFmt::Fasta,
+                &DataType::Dna,
+                &DistanceModel::Uncorrected,
+                output.path(),
+            )
+            .with_grouping(SampleGrouping::from_delimiter('_', 1).unwrap())
+            .with_group_diagonal(diagonal)
+            .compute(&files, None);
+            let pooled = read_lines(&output.path().join("distance_group_mean.csv"));
+            assert_eq!(pooled[1..], expected, "{:?}", diagonal);
+            // Pair counts always keep the within-group counts on the diagonal.
+            let pairs = read_lines(&output.path().join("distance_group_pairs.csv"));
+            assert_eq!(pairs[1..], ["sp1,2,6", "sp2,6,1"]);
+        }
+    }
+
+    #[test]
+    fn test_group_row_max_without_other_groups() {
+        let input = TempDir::new("temp").unwrap();
+        let output = TempDir::new("temp").unwrap();
+        let file = write_test_locus(input.path());
+        AlignmentDistance::new(
+            &InputFmt::Fasta,
+            &DataType::Dna,
+            &DistanceModel::Uncorrected,
+            output.path(),
+        )
+        .with_grouping(SampleGrouping::from_regex("^ABC").unwrap())
+        .with_group_diagonal(GroupDiagonal::RowMax)
+        .compute(&[file], None);
+        let pooled = read_lines(&output.path().join("distance_group_mean.csv"));
+        assert_eq!(pooled, [",ABC", "ABC,NA"]);
+    }
+
+    #[test]
+    fn test_group_diagonal_from_str() {
+        assert_eq!("within".parse::<GroupDiagonal>(), Ok(GroupDiagonal::Within));
+        assert_eq!("max".parse::<GroupDiagonal>(), Ok(GroupDiagonal::RowMax));
+        assert!("mean".parse::<GroupDiagonal>().is_err());
     }
 
     #[test]
