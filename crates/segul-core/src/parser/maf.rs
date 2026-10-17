@@ -24,27 +24,26 @@
 use std::{
     error::Error,
     fmt::Display,
-    io::{prelude::*, BufReader},
+    io::{BufReader, prelude::*},
     str::FromStr,
 };
 
+use anyhow::{Context, anyhow, bail};
 use nom::{
+    IResult,
     bytes::complete,
     character,
     combinator::{self},
-    sequence, IResult,
+    sequence,
 };
 
 use crate::helper::types::DnaStrand;
 
 use super::{END_OF_LINE, EOF};
 
-#[cfg(target_os = "windows")]
-use super::CAR_RETURN;
-
 /// We can think of a paragraph as a block of text that is separated by a blank
 /// line. In MAF format, there are two types of paragraphs: header and alignment.
-/// Source: http://genome.ucsc.edu/FAQ/FAQformat.html#format5
+/// Source: <http://genome.ucsc.edu/FAQ/FAQformat.html#format5>
 pub enum MafParagraph {
     Track(TrackLine),
     Header(MafHeader),
@@ -75,7 +74,8 @@ impl MafHeader {
 
         let _ = parts.next(); // Skip the first character
 
-        self.version = self.parse_version(parts.next().unwrap())?;
+        let version = parts.next().ok_or("Missing MAF version")?;
+        self.version = self.parse_version(version)?;
         self.scoring = parts.next().map(|s| self.parse_scoring(s)).transpose()?;
         self.program = parts.next().map(|s| s.to_string());
 
@@ -133,8 +133,13 @@ impl TrackLine {
     }
 
     pub fn from_str(&mut self, line: &str) -> Result<(), Box<dyn Error>> {
-        let (_, tract) = self.parse_track(line).unwrap();
-        let (_, name) = self.parse_name(tract).unwrap();
+        let line = line.trim_end();
+        let (_, tract) = self
+            .parse_track(line)
+            .map_err(|_| "Track line must start with 'track '")?;
+        let (_, name) = self
+            .parse_name(tract)
+            .map_err(|_| "Track line must have a name")?;
 
         self.name = name.to_string();
 
@@ -184,7 +189,7 @@ impl TrackLine {
 
     fn parse_track<'a>(&mut self, input: &'a str) -> IResult<&'a str, &'a str> {
         let track: IResult<&str, &str> =
-            sequence::preceded(complete::tag("track "), complete::take_until("\n"))(input);
+            sequence::preceded(complete::tag("track "), combinator::rest)(input);
         track
     }
 
@@ -292,6 +297,7 @@ impl FromStr for MafVisibility {
 /// - `information`: the `i` lines in the alignment. It is optional.
 /// - `quality`: the `q` lines in the alignment. It is optional.
 ///
+#[derive(Debug, Clone)]
 pub struct MafAlignment {
     pub score: Option<f64>,
     pub sequences: Vec<MafSequence>,
@@ -321,21 +327,19 @@ impl MafAlignment {
         self.sequences.push(sequence);
     }
 
+    /// Parse the `key=value` pairs on the `a` line and keep the score.
+    /// Negative and exponential scores are supported.
+    /// The score is `None` when missing or invalid.
     pub fn parse_scores(&mut self, value: &str) {
-        let tag: IResult<&str, &str> = sequence::preceded(
-            complete::tag("a score="),
-            complete::take_while(|c: char| c.is_ascii_digit() || c == '.'),
-        )(value);
-
-        match tag {
-            Ok((_, value)) => {
-                self.score = value.parse::<f64>().ok();
-            }
-            Err(_) => self.score = None, // If parsing fails, set score to None
-        }
+        self.score = value
+            .split_whitespace()
+            .filter_map(|field| field.split_once('='))
+            .find(|(key, _)| *key == "score")
+            .and_then(|(_, score)| score.parse::<f64>().ok());
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct MafSequence {
     pub source: String,
     pub start: usize,
@@ -346,35 +350,39 @@ pub struct MafSequence {
 }
 
 impl MafSequence {
-    pub fn from_buf(line: &[u8]) -> Result<Self, Box<dyn Error>> {
-        let mut parts = line
+    /// Parse an `s` line: `s src start size strand srcSize text`.
+    /// Every field is required and the strand must be `+` or `-`.
+    pub fn from_buf(line: &[u8]) -> anyhow::Result<Self> {
+        let fields: Vec<&[u8]> = line
             .split(|b| b.is_ascii_whitespace())
-            .filter(|b| !b.is_empty());
-
-        let _ = parts.next(); // Skip the first character
-
-        let source = parts.next().unwrap_or_default();
-        let start = parts.next().unwrap_or_default();
-        let size = parts.next().unwrap_or_default();
-        let strand = parts.next().unwrap_or_default();
-        let src_size = parts.next().unwrap_or_default();
-        let text = parts.next().unwrap_or_default();
-
+            .filter(|b| !b.is_empty())
+            .collect();
+        if fields.len() != 7 {
+            bail!(
+                "expected 7 fields in a sequence line (s src start size strand srcSize text), \
+                found {}",
+                fields.len()
+            );
+        }
+        let strand = match fields[4] {
+            b"+" => DnaStrand::Forward,
+            b"-" => DnaStrand::Reverse,
+            other => bail!("invalid strand '{}'", String::from_utf8_lossy(other)),
+        };
         Ok(MafSequence {
-            source: String::from_utf8_lossy(source).to_string(),
-            start: String::from_utf8_lossy(start).parse().unwrap_or_default(),
-            size: String::from_utf8_lossy(size).parse().unwrap_or_default(),
-            strand: DnaStrand::from_char(
-                String::from_utf8_lossy(strand)
-                    .chars()
-                    .next()
-                    .unwrap_or_default(),
-            ),
-            src_size: String::from_utf8_lossy(src_size)
-                .parse()
-                .unwrap_or_default(),
-            text: text.to_vec(),
+            source: String::from_utf8_lossy(fields[1]).to_string(),
+            start: Self::parse_number(fields[2], "start")?,
+            size: Self::parse_number(fields[3], "size")?,
+            strand,
+            src_size: Self::parse_number(fields[5], "srcSize")?,
+            text: fields[6].to_vec(),
         })
+    }
+
+    fn parse_number(field: &[u8], name: &str) -> anyhow::Result<usize> {
+        let text = String::from_utf8_lossy(field);
+        text.parse()
+            .with_context(|| format!("invalid {} '{}'", name, text))
     }
 }
 
@@ -383,14 +391,15 @@ impl MafSequence {
 /// It contains:
 /// - `src`: the source of the information.
 /// - `leftStatus`: a character that specifies the relationship between the
-///     sequence in the current block and the sequence in the previous block.
+///   sequence in the current block and the sequence in the previous block.
 /// - `leftCount`: the number of bases in the aligning species between the start and
-///     the end of the previous block.
+///   the end of the previous block.
 /// - `rightStatus`: a character that specifies the relationship between the
-///     sequence in the current block and the sequence in the subsequent block.
+///   sequence in the current block and the sequence in the subsequent block.
 /// - `leftValues`: the values of the information before the block of sequences.
 /// - `rightCount`: the number of bases in the aligning species between the start of the
-///    current block and the start of the next block.
+///   current block and the start of the next block.
+#[derive(Debug, Clone)]
 pub struct MafInformation {
     pub source: String,
     pub left_status: char,
@@ -432,6 +441,7 @@ impl MafInformation {
 }
 
 /// This is the `e` line in MAF format.
+#[derive(Debug, Clone)]
 pub struct MafEmptyLine {
     pub source: String,
     pub size: u64,
@@ -464,6 +474,7 @@ impl MafEmptyLine {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Quality {
     /// The name of the source sequence.
     pub source: String,
@@ -491,131 +502,131 @@ impl Quality {
 #[derive(Debug)]
 pub struct MafReader<R> {
     pub reader: BufReader<R>,
-    pub buf: Vec<u8>,
+    line_number: usize,
+    // An `a` line read while finishing the previous block.
+    pending: Option<Vec<u8>>,
 }
 
 impl<R: Read> MafReader<R> {
     pub fn new(file: R) -> Self {
         MafReader {
             reader: BufReader::new(file),
-            buf: Vec::new(),
+            line_number: 0,
+            pending: None,
         }
     }
 
     /// Read the next paragraph from the file.
     /// In MAF terms, a paragraph is a block of text that is separated by a blank line.
-    /// It can be a header, a track line,or an alignment.
-    pub fn next_paragraph(&mut self) -> Option<MafParagraph> {
+    /// It can be a header, a track line, or an alignment.
+    /// Returns `None` at the end of the file.
+    pub fn next_paragraph(&mut self) -> Option<anyhow::Result<MafParagraph>> {
+        let line = match self.read_line() {
+            Ok(Some(line)) => line,
+            Ok(None) => return None,
+            Err(e) => return Some(Err(e)),
+        };
+        if line.trim_ascii().is_empty() {
+            return Some(Ok(MafParagraph::Empty));
+        }
+        let paragraph = match line[0] {
+            b'#' => Ok(self.parse_header(&line)),
+            b't' => Ok(self.parse_track_line(&line)),
+            b'a' => self.parse_alignments(&line),
+            _ => Ok(MafParagraph::Unknown),
+        };
+        Some(paragraph)
+    }
+
+    /// Read one line without its line ending (`\n` or `\r\n`).
+    fn read_line(&mut self) -> anyhow::Result<Option<Vec<u8>>> {
+        if let Some(line) = self.pending.take() {
+            return Ok(Some(line));
+        }
+        let mut buf = Vec::new();
         let bytes = self
             .reader
-            .read_until(END_OF_LINE, &mut self.buf)
-            .expect("Error reading file");
+            .read_until(END_OF_LINE, &mut buf)
+            .with_context(|| format!("Failed reading MAF line {}", self.line_number + 1))?;
         if bytes == EOF {
-            return None;
+            return Ok(None);
         }
-
-        #[cfg(target_os = "windows")]
-        self.check_carriage_return();
-
-        // Check the first character of the line
-        let paragraph = match self.buf[0] {
-            b'#' => self.parse_header(),
-            b't' => self.parse_track_line(),
-            b'a' => self.parse_alignments(),
-            b'\n' => Some(MafParagraph::Empty),
-            _ => Some(MafParagraph::Unknown),
-        };
-
-        self.buf.clear();
-
-        paragraph
+        self.line_number += 1;
+        while matches!(buf.last(), Some(b'\n' | b'\r')) {
+            buf.pop();
+        }
+        Ok(Some(buf))
     }
 
-    // Check carriage return for windows
-    #[cfg(target_os = "windows")]
-    fn check_carriage_return(&mut self) {
-        if self.buf.contains(&CAR_RETURN) {
-            // Remove the carriage return
-            // and leave only the line feed
-            self.buf.retain(|&c| c != CAR_RETURN);
-        }
-    }
-
-    fn parse_header(&mut self) -> Option<MafParagraph> {
+    fn parse_header(&self, line: &[u8]) -> MafParagraph {
         // We convert to a string since this line is short
         // and we can parse it easily.
-        let line = String::from_utf8_lossy(&self.buf);
+        let line = String::from_utf8_lossy(line);
         if line.starts_with("##maf") {
             let mut header = MafHeader::new();
-            header.from_str(&line).unwrap();
-            self.buf.clear();
-            Some(MafParagraph::Header(header))
+            match header.from_str(&line) {
+                Ok(()) => MafParagraph::Header(header),
+                Err(e) => {
+                    log::warn!("Skipping MAF header at line {}: {}", self.line_number, e);
+                    MafParagraph::Unknown
+                }
+            }
         } else {
             // It must have been a comment if it does not start with ##maf
             // Typically it starts with a single #
-            self.parse_comments()
+            MafParagraph::Comments(line.to_string())
         }
     }
 
-    fn parse_comments(&mut self) -> Option<MafParagraph> {
-        let line = String::from_utf8_lossy(&self.buf);
-        Some(MafParagraph::Comments(line.to_string()))
-    }
-
-    fn parse_track_line(&mut self) -> Option<MafParagraph> {
-        let line = String::from_utf8_lossy(&self.buf);
+    fn parse_track_line(&self, line: &[u8]) -> MafParagraph {
+        let line = String::from_utf8_lossy(line);
         let mut track = TrackLine::new();
-        track.from_str(&line).unwrap();
-        Some(MafParagraph::Track(track))
+        match track.from_str(&line) {
+            Ok(()) => MafParagraph::Track(track),
+            Err(e) => {
+                log::warn!("Skipping MAF track line {}: {}", self.line_number, e);
+                MafParagraph::Unknown
+            }
+        }
     }
 
-    fn parse_alignments(&mut self) -> Option<MafParagraph> {
+    fn parse_alignments(&mut self, first_line: &[u8]) -> anyhow::Result<MafParagraph> {
         let mut alignment = MafAlignment::new();
-        let buf = String::from_utf8_lossy(&self.buf).to_string();
-        alignment.parse_scores(&buf);
-        self.buf.clear();
-        loop {
-            let bytes = self
-                .reader
-                .read_until(END_OF_LINE, &mut self.buf)
-                .expect("Error reading file");
-            if bytes == EOF {
+        alignment.parse_scores(&String::from_utf8_lossy(first_line));
+        while let Some(line) = self.read_line()? {
+            if line.trim_ascii().is_empty() {
                 break;
             }
-
-            match self.buf[0] {
+            match line[0] {
                 b's' => {
-                    let sequence =
-                        MafSequence::from_buf(&self.buf).expect("Error parsing sequence");
+                    let sequence = MafSequence::from_buf(&line).with_context(|| {
+                        format!("Invalid MAF sequence line {}", self.line_number)
+                    })?;
                     alignment.sequences.push(sequence);
                 }
-                b'q' => {
-                    let quality = Quality::from_buf(&self.buf).unwrap();
-                    alignment.quality = Some(quality);
+                b'q' => alignment.quality = Quality::from_buf(&line).ok(),
+                b'i' => alignment.information = MafInformation::from_buf(&line).ok(),
+                b'e' => alignment.empty = MafEmptyLine::from_buf(&line).ok(),
+                // A new block without a separating blank line.
+                b'a' => {
+                    self.pending = Some(line);
+                    break;
                 }
-                b'i' => {
-                    let information = MafInformation::from_buf(&self.buf).unwrap();
-                    alignment.information = Some(information);
-                }
-                b'e' => {
-                    let empty = MafEmptyLine::from_buf(&self.buf).unwrap();
-                    alignment.empty = Some(empty);
-                }
-                END_OF_LINE | b' ' => break,
-
-                #[cfg(target_os = "windows")]
-                CAR_RETURN => break,
                 _ => {}
             }
-            self.buf.clear();
         }
-
-        Some(MafParagraph::Alignment(alignment))
+        if alignment.sequences.is_empty() {
+            return Err(anyhow!(
+                "MAF alignment block ending at line {} has no sequence lines",
+                self.line_number
+            ));
+        }
+        Ok(MafParagraph::Alignment(alignment))
     }
 }
 
 impl<R: Read> Iterator for MafReader<R> {
-    type Item = MafParagraph;
+    type Item = anyhow::Result<MafParagraph>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_paragraph()
@@ -702,7 +713,7 @@ mod tests {
         let tags = track.capture_tags(line, "mafDot=").unwrap();
         let maf_dot = track.parse_maf_dot(&tags).unwrap();
         let (_, res) = maf_dot;
-        assert_eq!(res, true);
+        assert!(res);
     }
 
     #[test]
@@ -736,7 +747,7 @@ mod tests {
         let reader = MafReader::new(file);
         let mut alignments = Vec::new();
         for paragraph in reader {
-            match paragraph {
+            match paragraph.unwrap() {
                 MafParagraph::Track(track) => {
                     assert_eq!(track.name, "euArc");
                     assert_eq!(track.description, Some(String::from("Primate chromosomes")));
@@ -755,6 +766,71 @@ mod tests {
 
         assert_eq!(alignments.len(), 3);
         assert_eq!(alignments[0].score, Some(23262.0));
+    }
+
+    fn read_blocks(text: &str) -> anyhow::Result<Vec<MafAlignment>> {
+        let mut blocks = Vec::new();
+        for paragraph in MafReader::new(text.as_bytes()) {
+            if let MafParagraph::Alignment(aln) = paragraph? {
+                blocks.push(aln);
+            }
+        }
+        Ok(blocks)
+    }
+
+    #[test]
+    fn test_crlf_blocks_are_not_fused() {
+        let text = std::fs::read_to_string("tests/files/maf/simple.maf")
+            .unwrap()
+            .replace('\n', "\r\n");
+        let blocks = read_blocks(&text).unwrap();
+        assert_eq!(blocks.len(), 3);
+        assert_eq!(blocks[1].sequences.len(), 5);
+        assert_eq!(blocks[0].sequences[0].text.last(), Some(&b'G'));
+    }
+
+    #[test]
+    fn test_whitespace_only_separator() {
+        let text = "a score=1\ns a.c 0 2 + 10 AC\n   \na score=2\ns a.c 2 2 + 10 GT\n";
+        assert_eq!(read_blocks(text).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_blocks_without_blank_line() {
+        let text = "a score=1\ns a.c 0 2 + 10 AC\na score=2\ns a.c 2 2 + 10 GT";
+        let blocks = read_blocks(text).unwrap();
+        assert_eq!(blocks.len(), 2);
+        assert_eq!(blocks[1].score, Some(2.0));
+        assert_eq!(blocks[1].sequences[0].text, b"GT".to_vec());
+    }
+
+    #[test]
+    fn test_negative_and_exponent_scores() {
+        let mut alignment = MafAlignment::new();
+        alignment.parse_scores("a score=-12.5 pass=2");
+        assert_eq!(alignment.score, Some(-12.5));
+        alignment.parse_scores("a pass=2 score=1e3");
+        assert_eq!(alignment.score, Some(1000.0));
+        alignment.parse_scores("a");
+        assert_eq!(alignment.score, None);
+    }
+
+    #[test]
+    fn test_invalid_sequence_lines() {
+        let missing = read_blocks("a score=1\ns a.c 0 2 + AC\n").unwrap_err();
+        assert!(format!("{:#}", missing).contains("line 2"));
+        let strand = read_blocks("a score=1\ns a.c 0 2 x 10 AC\n").unwrap_err();
+        assert!(format!("{:#}", strand).contains("invalid strand"));
+        assert!(read_blocks("a score=1\ns a.c zero 2 + 10 AC\n").is_err());
+    }
+
+    #[test]
+    fn test_track_line_without_newline() {
+        let mut track = TrackLine::new();
+        track.from_str("track name=chr1").unwrap();
+        assert_eq!(track.name, "chr1");
+        let blocks = read_blocks("track name=x\n\na score=1\ns a.c 0 2 + 10 AC").unwrap();
+        assert_eq!(blocks.len(), 1);
     }
 
     #[test]

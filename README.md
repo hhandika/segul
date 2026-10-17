@@ -69,7 +69,7 @@ Sequence formats:
 2. Relaxed PHYLIP
 3. FASTA
 4. FASTQ (gzipped and uncompressed)
-5. Multiple Alignment Format (MAF) (In development)
+5. Multiple Alignment Format (MAF), including gzipped files
 6. Variant Call Format (VCF) (In development)
 
 All formats are supported in interleave and sequential versions. The app supports DNA and amino acid sequences, except for FASTQ, MAF, and VCF (DNA only).
@@ -161,7 +161,8 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 | Alignment summary statistics   | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/align-summary) / [GUI](https://www.segul.app/docs/gui-usage/align-summary) / [Python](https://www.segul.app/docs/api-usage/python/align_summary)                  |
 | Alignment trimming             | FASTA, NEXUS, PHYLIP    | [CLI (Beta)](https://www.segul.app/docs/cli-usage/align-trim) / Coming soon                                                                                                                                  |
 | Genomic summary statistics     | FASTQ, FASTA (contigs)  | [CLI](https://www.segul.app/docs/cli-usage/genomic-summary) / [GUI](https://www.segul.app/docs/gui-usage/genomic) / [Python](https://www.segul.app/docs/api-usage/python/genomic_summary)                    |
-| Multiple alignment conversion  | MAF                     | [CLI (Beta)](https://www.segul.app/docs/cli-usage/genomic-convert) / Coming soon                                                                                                                             |
+| Multiple alignment conversion  | MAF, BED                | [CLI](https://www.segul.app/docs/cli-usage/maf-convert) / Coming soon                                                                                                                                        |
+| Multiple alignment summary     | MAF                     | [CLI](https://www.segul.app/docs/cli-usage/maf-summary) / Coming soon                                                                                                                                        |
 | Sequence addition              | FASTA, NEXUS, PHYLIP    | [CLI (Beta)](https://www.segul.app/docs/cli-usage/sequence-add) / Coming soon                                                                                                                                |
 | Sequence extraction            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-extract) / [GUI](https://www.segul.app/docs/gui-usage/sequence-extract) / [Python](https://www.segul.app/docs/api-usage/python/sequence_extract)         |
 | Sequence filtering             | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-filter) / Coming soon                                                                                                                                    |

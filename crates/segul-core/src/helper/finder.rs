@@ -215,8 +215,8 @@ impl<'a> MafFileFinder<'a> {
         }
     }
 
-    /// Find input files for multiple alignment format.
-    /// Return a vector of input files.
+    /// Find MAF files (`.maf` or `.maf.gz`, any case) directly in the directory.
+    /// Subdirectories are not searched. Files are sorted by path.
     /// # Example
     /// ```
     /// use std::path::Path;
@@ -224,12 +224,23 @@ impl<'a> MafFileFinder<'a> {
     ///
     /// let dir = Path::new("tests/files/maf");
     /// let files = MafFileFinder::new(&dir).find();
-    /// assert_eq!(files.len(), 1);
+    /// assert!(files.iter().any(|f| f.ends_with("simple.maf")));
+    /// ```
     pub fn find(&mut self) -> Vec<PathBuf> {
-        self.maf_pattern();
-        let files = self.glob_files(&self.pattern);
+        self.pattern = format!("{}/*.maf(.gz)", self.dir.display());
+        let mut files: Vec<PathBuf> = std::fs::read_dir(self.dir)
+            .expect("Failed reading the input directory")
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.path())
+            .filter(|path| path.is_file())
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(re_matches_maf_lazy)
+            })
+            .collect();
+        files.sort();
         self.check_results(&files);
-
         files
     }
 
@@ -243,13 +254,12 @@ impl<'a> MafFileFinder<'a> {
     ///
     /// let dir = Path::new("tests/files/maf");
     /// let files = MafFileFinder::new(&dir).find_recursive();
-    /// assert_eq!(files.len(), 1);
+    /// assert!(files.iter().any(|f| f.ends_with("simple.maf")));
+    /// ```
     pub fn find_recursive(&self) -> Vec<PathBuf> {
-        walk_dir!(self, re_matches_maf_lazy)
-    }
-
-    fn maf_pattern(&mut self) {
-        self.pattern = format!("{}/*.maf", self.dir.display());
+        let mut files: Vec<PathBuf> = walk_dir!(self, re_matches_maf_lazy);
+        files.sort();
+        files
     }
 }
 
@@ -374,7 +384,7 @@ fn re_matches_fasta_lazy(fname: &str) -> bool {
 
 fn re_matches_maf_lazy(fname: &str) -> bool {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?i)(.maf)").unwrap();
+        static ref RE: Regex = Regex::new(r"(?i)\.maf(\.gz)?$").unwrap();
     }
 
     RE.is_match(fname)
@@ -500,6 +510,15 @@ impl<'a> IDs<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_maf_file_names() {
+        assert!(re_matches_maf_lazy("genome.maf"));
+        assert!(re_matches_maf_lazy("genome.MAF.gz"));
+        assert!(!re_matches_maf_lazy("formaf.txt"));
+        assert!(!re_matches_maf_lazy("genome.maf.bak"));
+        assert!(!re_matches_maf_lazy("reads.fq.gz"));
+    }
 
     macro_rules! input {
         ($files: ident) => {

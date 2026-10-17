@@ -117,9 +117,75 @@ pub fn is_valid_aa(aa: &str) -> bool {
     aa.bytes().all(|char| AA.contains(&char))
 }
 
+/// Complement table for DNA, including IUPAC ambiguity codes.
+/// Case is preserved. Any other byte, such as gaps and missing data, maps to itself.
+const DNA_COMPLEMENT: [u8; 256] = build_dna_complement();
+
+const fn build_dna_complement() -> [u8; 256] {
+    let mut table = [0u8; 256];
+    let mut i = 0;
+    while i < 256 {
+        table[i] = i as u8;
+        i += 1;
+    }
+    let pairs: [(u8, u8); 11] = [
+        (b'A', b'T'),
+        (b'T', b'A'),
+        (b'U', b'A'),
+        (b'C', b'G'),
+        (b'G', b'C'),
+        (b'R', b'Y'),
+        (b'Y', b'R'),
+        (b'K', b'M'),
+        (b'M', b'K'),
+        (b'B', b'V'),
+        (b'V', b'B'),
+    ];
+    let mut j = 0;
+    while j < pairs.len() {
+        let (from, to) = pairs[j];
+        table[from as usize] = to;
+        table[from.to_ascii_lowercase() as usize] = to.to_ascii_lowercase();
+        j += 1;
+    }
+    // D and H complement each other. S, W, and N are their own complement.
+    table[b'D' as usize] = b'H';
+    table[b'H' as usize] = b'D';
+    table[b'd' as usize] = b'h';
+    table[b'h' as usize] = b'd';
+    table
+}
+
+/// Complement a single DNA character. Case is preserved.
+/// Gaps, missing data, and unknown characters are returned unchanged.
+pub fn complement_dna(base: u8) -> u8 {
+    DNA_COMPLEMENT[base as usize]
+}
+
+/// Reverse complement a DNA sequence, including IUPAC ambiguity codes.
+/// Case is preserved. Gaps and missing data are kept as they are.
+/// # Example
+/// ```
+/// use segul_core::helper::alphabet;
+///
+/// assert_eq!(alphabet::reverse_complement_dna(b"ACgt-N"), b"N-acGT".to_vec());
+/// ```
+pub fn reverse_complement_dna(seq: &[u8]) -> Vec<u8> {
+    seq.iter().rev().map(|&base| complement_dna(base)).collect()
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_reverse_complement_dna() {
+        assert_eq!(reverse_complement_dna(b"ACGTU"), b"AACGT".to_vec());
+        assert_eq!(reverse_complement_dna(b"acgt"), b"acgt".to_vec());
+        assert_eq!(reverse_complement_dna(b"RYKMBVDH"), b"DHBVKMRY".to_vec());
+        assert_eq!(reverse_complement_dna(b"SWN"), b"NWS".to_vec());
+        assert_eq!(reverse_complement_dna(b"A-?.*"), b"*.?-T".to_vec());
+    }
 
     #[test]
     fn test_check_valid_dna() {
