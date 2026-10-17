@@ -82,6 +82,13 @@ pub(crate) struct AlignDistanceArgs {
         value_parser = builder::PossibleValuesParser::new(["full", "lower", "upper"]),
     )]
     pub(crate) triangle: String,
+    #[arg(
+        long = "diagonal",
+        help = "Write zero, leave blank, or write each sample's highest distance on the diagonal",
+        default_value = "zero",
+        value_parser = builder::PossibleValuesParser::new(["zero", "blank", "max"]),
+    )]
+    pub(crate) diagonal: String,
     #[arg(short, long, help = "Output path", default_value = "Align-Distance")]
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for the summary file")]

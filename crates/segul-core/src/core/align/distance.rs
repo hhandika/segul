@@ -22,7 +22,7 @@ const PER_LOCUS_DIR: &str = "per_locus";
 const DEFAULT_PREFIX: &str = "distance";
 
 /// Which part of the distance matrix to write.
-/// The diagonal is always written.
+/// The diagonal is always written, see [`MatrixDiagonal`].
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum MatrixTriangle {
     /// Write both triangles.
@@ -58,6 +58,32 @@ impl std::str::FromStr for MatrixTriangle {
     }
 }
 
+/// What to write on the diagonal of the distance matrix.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum MatrixDiagonal {
+    /// Write zero, the distance of a sample to itself.
+    #[default]
+    Zero,
+    /// Leave the diagonal empty.
+    Blank,
+    /// Write the highest distance of the sample to any other sample (the row maximum).
+    /// Written as `NA` if the sample has no defined distances.
+    RowMax,
+}
+
+impl std::str::FromStr for MatrixDiagonal {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "zero" => Ok(Self::Zero),
+            "blank" => Ok(Self::Blank),
+            "max" => Ok(Self::RowMax),
+            _ => Err(format!("{} is not a valid matrix diagonal", s)),
+        }
+    }
+}
+
 /// Compute pairwise distances for alignments.
 pub struct AlignmentDistance<'a> {
     /// The input format of the alignment files.
@@ -70,6 +96,8 @@ pub struct AlignmentDistance<'a> {
     output_dir: &'a Path,
     /// Which part of the distance matrix to write. Defaults to the full matrix.
     triangle: MatrixTriangle,
+    /// What to write on the diagonal. Defaults to zero.
+    diagonal: MatrixDiagonal,
 }
 
 impl<'a> AlignmentDistance<'a> {
@@ -85,6 +113,7 @@ impl<'a> AlignmentDistance<'a> {
             model,
             output_dir,
             triangle: MatrixTriangle::Full,
+            diagonal: MatrixDiagonal::Zero,
         }
     }
 
@@ -92,6 +121,12 @@ impl<'a> AlignmentDistance<'a> {
     /// leaving the other triangle empty.
     pub fn with_triangle(mut self, triangle: MatrixTriangle) -> Self {
         self.triangle = triangle;
+        self
+    }
+
+    /// Set what to write on the diagonal of each distance matrix.
+    pub fn with_diagonal(mut self, diagonal: MatrixDiagonal) -> Self {
+        self.diagonal = diagonal;
         self
     }
 
@@ -202,7 +237,9 @@ impl<'a> AlignmentDistance<'a> {
         for (i, id) in ids.iter().enumerate() {
             let mut row = vec![id.to_string()];
             row.extend((0..ids.len()).map(|j| {
-                if self.triangle.includes(i, j) {
+                if i == j {
+                    self.fmt_diagonal(distances, i)
+                } else if self.triangle.includes(i, j) {
                     fmt_distance(distances.get(i, j))
                 } else {
                     String::new()
@@ -212,6 +249,14 @@ impl<'a> AlignmentDistance<'a> {
         }
         writer.flush()?;
         Ok(())
+    }
+
+    fn fmt_diagonal(&self, distances: &PairDistances, i: usize) -> String {
+        match self.diagonal {
+            MatrixDiagonal::Zero => fmt_distance(Some(0.0)),
+            MatrixDiagonal::Blank => String::new(),
+            MatrixDiagonal::RowMax => fmt_distance(distances.row_max(i)),
+        }
     }
 
     fn write_summary(&self, summary: &[LocusDistance], prefix: Option<&str>) -> PathBuf {
@@ -262,6 +307,14 @@ impl PairDistances {
             std::cmp::Ordering::Less => self.pairs[i][j - i - 1].1,
             std::cmp::Ordering::Greater => self.pairs[j][i - j - 1].1,
         }
+    }
+
+    /// The highest defined distance between sample `i` and any other sample.
+    fn row_max(&self, i: usize) -> Option<f64> {
+        (0..self.ntax)
+            .filter(|j| *j != i)
+            .filter_map(|j| self.get(i, j))
+            .max_by(|a, b| a.total_cmp(b))
     }
 
     fn iter(&self) -> impl Iterator<Item = &(usize, Option<f64>)> {
@@ -430,6 +483,62 @@ mod tests {
             let lines: Vec<&str> = content.lines().skip(1).collect();
             assert_eq!(lines, expected, "{:?}", triangle);
         }
+    }
+
+    #[test]
+    fn test_matrix_diagonal() {
+        let input = TempDir::new("temp").unwrap();
+        let file = write_test_locus(input.path());
+        for (diagonal, expected) in [
+            (
+                MatrixDiagonal::Blank,
+                [",,", "0.166667,,", "0.200000,0.400000,"],
+            ),
+            (
+                MatrixDiagonal::RowMax,
+                [
+                    "0.200000,,",
+                    "0.166667,0.400000,",
+                    "0.200000,0.400000,0.400000",
+                ],
+            ),
+        ] {
+            let output = TempDir::new("temp").unwrap();
+            AlignmentDistance::new(
+                &InputFmt::Fasta,
+                &DataType::Dna,
+                &DistanceModel::Uncorrected,
+                output.path(),
+            )
+            .with_triangle(MatrixTriangle::Lower)
+            .with_diagonal(diagonal)
+            .compute(std::slice::from_ref(&file), None);
+            let matrix_path = output.path().join(PER_LOCUS_DIR).join("locus_1.csv");
+            let content = fs::read_to_string(matrix_path).unwrap();
+            // Drop the header row and the sample ID column
+            let lines: Vec<&str> = content
+                .lines()
+                .skip(1)
+                .map(|line| line.split_once(',').unwrap().1)
+                .collect();
+            assert_eq!(lines, expected, "{:?}", diagonal);
+        }
+    }
+
+    #[test]
+    fn test_row_max_without_pairs() {
+        let distances = PairDistances {
+            ntax: 2,
+            pairs: vec![vec![(0, None)], vec![]],
+        };
+        assert_eq!(distances.row_max(0), None);
+        assert_eq!(fmt_distance(distances.row_max(0)), "NA");
+    }
+
+    #[test]
+    fn test_matrix_diagonal_from_str() {
+        assert_eq!("max".parse::<MatrixDiagonal>(), Ok(MatrixDiagonal::RowMax));
+        assert!("one".parse::<MatrixDiagonal>().is_err());
     }
 
     #[test]
