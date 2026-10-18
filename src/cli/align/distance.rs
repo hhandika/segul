@@ -1,9 +1,7 @@
 use std::path::PathBuf;
 
 use crate::core::align::distance::group::SampleGrouping;
-use crate::core::align::distance::{
-    AlignmentDistance, GroupDiagonal, MatrixDiagonal, MatrixTriangle,
-};
+use crate::core::align::distance::{AlignmentDistance, MatrixDiagonal, MatrixTriangle};
 use crate::helper::finder::IDs;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::{DataType, InputFmt};
@@ -34,7 +32,18 @@ impl<'a> DistanceParser<'a> {
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let model = self.parse_model(&self.args.model);
         let triangle = self.parse_triangle(&self.args.triangle);
-        let diagonal = self.parse_diagonal(&self.args.diagonal);
+        let diagonal = self
+            .args
+            .diagonal
+            .as_deref()
+            .map(|d| self.parse_diagonal(d));
+        if diagonal.is_some_and(|d| d.requires_grouping()) && !self.has_grouping() {
+            log::error!(
+                "--diagonal mean and max require grouping. \
+                Use --group-delimiter, --group-regex, --group-file, or --group-auto."
+            );
+            std::process::exit(1);
+        }
         if !model.is_valid_for(&datatype) {
             log::error!(
                 "The {} model is not valid for {} data. \
@@ -58,21 +67,21 @@ impl<'a> DistanceParser<'a> {
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut handle = AlignmentDistance::new(&input_fmt, &datatype, &model, &self.args.output)
             .with_triangle(triangle)
-            .with_diagonal(diagonal)
             .with_long_format(self.args.long);
+        if let Some(diagonal) = diagonal {
+            handle = handle.with_diagonal(diagonal);
+        }
         if let Some(grouping) = grouping {
-            let group_diagonal = self.parse_group_diagonal(&self.args.group_diagonal);
-            handle = handle
-                .with_grouping(grouping)
-                .with_group_diagonal(group_diagonal);
+            handle = handle.with_grouping(grouping);
         }
         handle.compute(&files, self.args.prefix.as_deref());
     }
 
-    fn parse_group_diagonal(&self, diagonal: &str) -> GroupDiagonal {
-        diagonal
-            .parse::<GroupDiagonal>()
-            .expect("Failed to parse group matrix diagonal")
+    fn has_grouping(&self) -> bool {
+        self.args.group_delimiter.is_some()
+            || self.args.group_regex.is_some()
+            || self.args.group_file.is_some()
+            || self.args.group_auto
     }
 
     fn parse_grouping(

@@ -162,7 +162,21 @@ fn test_align_distance_group_delimiter_requires_fields() {
 }
 
 #[test]
-fn test_align_distance_group_diagonal() {
+fn test_align_distance_group_diagonal_requires_grouping() {
+    initiate_cmd!(
+        cmd,
+        "align",
+        "distance",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
+    cmd.arg("--diagonal").arg("mean");
+    cmd.assert().failure();
+    tmp_dir.close().unwrap();
+}
+
+#[test]
+fn test_align_distance_group_max_diagonal() {
     initiate_cmd!(
         cmd,
         "align",
@@ -172,15 +186,14 @@ fn test_align_distance_group_diagonal() {
     );
     cmd.arg("--group-regex")
         .arg("^ABC[DE]")
-        .arg("--group-diagonal")
-        .arg("blank");
+        .arg("--diagonal")
+        .arg("max");
     cmd.assert().success();
-    let matrix = tmp_dir
-        .path()
-        .join("Align-Distance")
-        .join("distance_group_mean.csv");
-    let content = std::fs::read_to_string(matrix).unwrap();
-    let lines: Vec<&str> = content.lines().collect();
-    assert!(lines[1].starts_with("ABCD,,"), "{}", lines[1]);
+    let res_path = tmp_dir.path().join("Align-Distance");
+    let mean = std::fs::read_to_string(res_path.join("distance_group_mean.csv")).unwrap();
+    assert!(mean.lines().nth(1).unwrap().starts_with("ABCD,"));
+    // Sample matrices keep zero on the diagonal.
+    let matrix = std::fs::read_to_string(res_path.join("per_locus").join("gene_2.csv")).unwrap();
+    assert!(matrix.lines().nth(1).unwrap().starts_with("ABCD,0.000000"));
     tmp_dir.close().unwrap();
 }
