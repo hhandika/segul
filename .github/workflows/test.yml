@@ -2,6 +2,9 @@ name: Segul-Tests
 
 on: push
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Check
