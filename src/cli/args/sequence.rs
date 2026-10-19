@@ -27,6 +27,11 @@ pub(crate) enum SequenceSubcommand {
     Rename(SequenceRenameArgs),
     #[command(about = "Translate DNA to amino acid sequences", name = "translate")]
     Translate(SequenceTranslateArgs),
+    #[command(
+        about = "Transpose locus alignments into per-sample sequences",
+        name = "transpose"
+    )]
+    Transpose(SequenceTransposeArgs),
 }
 
 #[derive(Args)]
@@ -301,4 +306,23 @@ pub(crate) struct SequenceTranslateArgs {
             ]) 
     )]
     pub(crate) table: String,
+}
+
+#[derive(Args)]
+pub(crate) struct SequenceTransposeArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[arg(
+        short = 'F',
+        long = "output-format",
+        help = "Specify output format",
+        default_value = "fasta",
+        value_parser = builder::PossibleValuesParser::new(
+            ["fasta", "fasta-int"]),
+    )]
+    pub(crate) output_fmt: String,
+    #[arg(short, long, help = "Output directory", default_value = "Sequence-Transpose")]
+    pub(crate) output: PathBuf,
 }

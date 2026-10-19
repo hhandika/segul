@@ -1,5 +1,56 @@
 # Release Notes
 
+## v0.24.0
+
+Library Changes:
+
+- The library code now lives in a new crate, [`segul-core`](https://crates.io/crates/segul-core). The `segul` crate is the command-line app.
+- `segul-core` uses Cargo features to enable only what you need: `align`, `sequence`, `read`, `contig`, and `maf`. All features are on by default. For example:
+
+  ```toml
+  segul-core = { version = "0.24", default-features = false, features = ["read"] }
+  ```
+
+- Library code no longer depends on `clap` or `dialoguer`. `noodles` is only needed by the `read` feature.
+
+Migration:
+
+- Replace `segul::` with `segul_core::` in your imports.
+- `segul` still re-exports `core`, `helper`, `parser`, `stats`, and `writer` from `segul-core`, so existing code keeps compiling. These re-exports will be removed in a future release.
+
+Breaking Changes:
+
+- MAF conversion is now `segul maf convert` (was `segul maf maf`), matching the documentation.
+- `--bed <FILE>` replaces `--reference <FILE> --from-bed`. The BED file is optional.
+- The MAF output format option is now `-F/--output-format`, like other commands (was `-t`). NEXUS output is supported. The default output directory is `Maf-Convert`.
+- Sample names drop the assembly suffix of MAF sources (`hg18.chr7` becomes `hg18`), so each species is one sample across blocks. Use `--full-source-name` to keep full names.
+- Blocks that match no BED region are no longer written by default. Use `--write-unmatched` to write them to `unmatched/` (was `missing-refs/`).
+- `-d` finds `.maf` and `.maf.gz` files directly in the directory, without searching subdirectories, like other commands.
+- Library: `MafReader` yields `anyhow::Result<MafParagraph>`, `MafConverter` uses a builder and returns a `MafConvertReport`, and `BedParser::parse` takes `&self` and returns `anyhow::Result`.
+
+New Features:
+
+- `segul maf summary`: per-file and per-species MAF statistics (blocks, alignment length, reference coverage, gaps) written to CSV.
+- `segul maf convert` with a BED file assigns each block to every locus it overlaps on the same chromosome, clips it to the locus (`--no-clip` keeps whole blocks), and merges blocks of a locus across all input files, padding missing species with gaps. A `maf_convert.csv` report lists every locus.
+- `segul maf convert` without a BED file writes one file per block, or one per reference chromosome with `--group-by chrom`.
+- Block filters: `--min-block-len`, `--min-species`, `--min-score`, and `--species` or `--species-file` to keep only listed species.
+- `--strand-aware` reverse complements loci on the minus strand of the BED file.
+- `--ref-species` sets the reference species. It defaults to the first species of the first block.
+- Gzipped MAF (`.maf.gz`) and BED (`.bed.gz`) files are read directly.
+- `segul sequence transpose`: transpose locus alignments into per-sample sequence files. Each sample gets its own file with one sequence per locus, labeled by locus name, with gaps and missing data removed.
+- `segul align distance`: compute pairwise genetic distances for each alignment. Supports uncorrected p-distance, Jukes-Cantor (JC69), Kimura 2-parameter (K2P), Tamura-Nei (TN93), and Poisson (amino acid) models, using pairwise deletion for gaps, missing data, and ambiguous characters. Writes a square distance matrix for each locus to `per_locus/` (use `--triangle lower` or `--triangle upper` to leave the other triangle empty, and `--diagonal zero`, `blank`, or `na` to set the diagonal) and a summary of each locus's distances (min, max, mean, median, SD) to the output directory.
+- `segul align distance` group means: group samples into populations or species with `--group-delimiter` and `--group-fields` (e.g. `_` and 2 turn `Rattus_rattus_FMNH1` into `Rattus_rattus`), `--group-regex`, `--group-file` (a CSV/TSV with sample and group columns), or `--group-auto` to detect the delimiter and field count from sample IDs. Writes within- and between-group mean distances for each locus to `per_locus_group/`, and pooled over all sample pairs of all loci to `<prefix>_group_mean.csv`, with pair counts in `<prefix>_group_pairs.csv`. The group mean matrices hold the within-group mean on the diagonal by default. Use `--diagonal mean` or `max` for the mean or highest distance within each group, or `zero`, `blank`, or `na`.
+- `segul align distance --long`: write the pairwise distances of all loci to one long table, `<prefix>_pairwise_long.csv` (locus, samples, groups, compared sites, distance), and with grouping, group statistics (pairs, mean, SD, min, max) per locus and pooled to `<prefix>_group_long.csv`.
+
+Bug Fixes:
+
+- Fix MAF conversion without a BED file failing when a reference has more than one block.
+- Fix BED files with four columns failing to parse because of the line ending. BED lines with CRLF endings, blank lines, or too few columns are handled or reported with the line number.
+- Fix MAF blocks of the same locus overwriting each other instead of being joined.
+- Fix BED matching that used only the start position and ignored the chromosome.
+- Fix consecutive MAF blocks merging when a file with CRLF line endings is read on Linux or macOS.
+- Fix negative MAF block scores being ignored.
+
 ## v0.23.2
 
 - Add Windows ARM64 support.

@@ -12,6 +12,8 @@ pub(crate) enum AlignmentSubcommand {
     Concat(AlignConcatArgs),
     #[command(about = "Convert sequence formats", name = "convert")]
     Convert(AlignConvertArgs),
+    #[command(about = "Compute pairwise genetic distances", name = "distance")]
+    Distance(AlignDistanceArgs),
     #[command(about = "Filter alignments", name = "filter")]
     Filter(AlignFilterArgs),
     #[command(about = "Split alignment by partitions", name = "split")]
@@ -58,6 +60,76 @@ pub(crate) struct AlignConvertArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "sort", help = "Sort sequences by IDs alphabetically")]
     pub(crate) sort: bool,
+}
+
+#[derive(Args)]
+pub(crate) struct AlignDistanceArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[command(flatten)]
+    pub(crate) in_fmt: CommonSeqInput,
+    #[arg(
+        long = "model",
+        help = "Specify distance model. Use k2p and tn93 for DNA, poisson for amino acid",
+        default_value = "p",
+        value_parser = builder::PossibleValuesParser::new(["p", "jc69", "k2p", "tn93", "poisson"]),
+    )]
+    pub(crate) model: String,
+    #[arg(
+        long = "triangle",
+        help = "Write the full matrix, or only its lower or upper triangle",
+        default_value = "full",
+        value_parser = builder::PossibleValuesParser::new(["full", "lower", "upper"]),
+    )]
+    pub(crate) triangle: String,
+    #[arg(
+        long = "diagonal",
+        help = "Write zero, blank, or NA on the diagonal. With grouping, mean or max writes \
+            the within-group mean or highest distance on the group matrices \
+            [default: zero, within-group mean on group matrices]",
+        value_parser = builder::PossibleValuesParser::new(["zero", "blank", "na", "mean", "max"]),
+    )]
+    pub(crate) diagonal: Option<String>,
+    #[arg(short, long, help = "Output path", default_value = "Align-Distance")]
+    pub(crate) output: PathBuf,
+    #[arg(long = "prefix", help = "Specify prefix for the output files")]
+    pub(crate) prefix: Option<String>,
+    #[arg(
+        long = "long",
+        help = "Also write pairwise distances and group statistics of all loci as long tables"
+    )]
+    pub(crate) long: bool,
+    #[arg(
+        long = "group-delimiter",
+        help = "Group samples by splitting IDs on this character, e.g. _",
+        requires = "group_fields",
+        conflicts_with_all(["group_regex", "group_file", "group_auto"]),
+    )]
+    pub(crate) group_delimiter: Option<char>,
+    #[arg(
+        long = "group-fields",
+        help = "Number of leading ID fields that name the group, used with --group-delimiter",
+        requires = "group_delimiter",
+        value_parser = builder::RangedU64ValueParser::<usize>::new().range(1..),
+    )]
+    pub(crate) group_fields: Option<usize>,
+    #[arg(
+        long = "group-regex",
+        help = "Group samples by a regex. Uses the first capture group or the whole match",
+        conflicts_with_all(["group_file", "group_auto"]),
+    )]
+    pub(crate) group_regex: Option<String>,
+    #[arg(
+        long = "group-file",
+        help = "Group samples using a CSV/TSV file with a header and sample and group columns",
+        conflicts_with = "group_auto"
+    )]
+    pub(crate) group_file: Option<PathBuf>,
+    #[arg(
+        long = "group-auto",
+        help = "Detect the group delimiter and field count from sample IDs"
+    )]
+    pub(crate) group_auto: bool,
 }
 
 #[derive(Args)]

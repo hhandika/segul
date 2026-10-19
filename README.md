@@ -2,6 +2,7 @@
 
 ![Segul-Tests](https://github.com/hhandika/segul/workflows/Segul-Tests/badge.svg)
 [![Crate-IO](https://img.shields.io/crates/v/segul)](https://crates.io/crates/segul)
+[![Crate-IO-Core](https://img.shields.io/crates/v/segul-core?label=segul-core)](https://crates.io/crates/segul-core)
 [![GH-Release](https://img.shields.io/github/v/tag/hhandika/segul?label=gh-releases&color=purple)](https://github.com/hhandika/segul/releases)
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/recipes/segul/README.html)
 ![Conda Version](https://img.shields.io/conda/vn/bioconda/segul?label=bioconda&color=brightgreen)
@@ -32,33 +33,40 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - **Bioconda (CLI):** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
 - **Python package:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Docs](https://www.segul.app/docs/api-usage/python/intro)
 
-## What's New in SEGUL 0.23.0
+## What's New in SEGUL 0.24.0 (Coming Soon)
 
 ### New Features 🚀
 
-- [Convert alignments to unaligned sequences](https://www.segul.app/docs/cli-usage/align-unalign).
-- [Add sequence to an existing sequence files/alignments](https://www.segul.app/docs/cli-usage/sequence-add).
-- [Trim alignments](https://www.segul.app/docs/cli-usage/align-trim).
-- New options for filtering alignments ([see details](https://www.segul.app/docs/cli-usage/align-filter)):
-  - Minimum or maximum sequence length.
-  - Minimum or maximum of parsimony informative sites
-  - Minimum taxon counts
-  - Based on user-defined list of sequence IDs.
+- `segul align distance`: compute pairwise genetic distances for each alignment using uncorrected p-distance, Jukes-Cantor (JC69), Kimura 2-parameter (K2P), Tamura-Nei (TN93), or Poisson (amino acid) models.
+  - Write a distance matrix and a summary (min, max, mean, median, SD) for each locus, with options to keep only the lower or upper triangle and to set the diagonal.
+  - Compute within- and between-group mean distances by grouping samples into populations or species using a delimiter, a regex, a CSV/TSV file, or automatic detection.
+  - Write the distances of all loci to one long table with `--long`.
+- `segul sequence transpose`: transpose locus alignments into per-sample sequence files.
+- `segul maf summary`: per-file and per-species MAF statistics written to CSV.
+- Improved `segul maf convert`:
+  - Assign blocks to every overlapping BED locus, clip them to the locus, and merge blocks across input files.
+  - Without a BED file, write one file per block or one per reference chromosome (`--group-by chrom`).
+  - Filter blocks by length, number of species, score, or a list of species.
+  - Reverse complement minus-strand loci with `--strand-aware`.
+  - Read gzipped MAF and BED files directly and write NEXUS output.
+- New [`segul-core`](https://crates.io/crates/segul-core) library crate with Cargo features (`align`, `sequence`, `read`, `contig`, and `maf`) to enable only what you need.
 
 ### Breaking Changes ⚠️
 
-- Filtering argument changes for better consistency (see [docs](https://www.segul.app/docs/cli-usage/align-filter)).
-- Remove `--ntax` option from [alignment filtering](https://www.segul.app/docs/cli-usage/align-filter) because by default SEGUL automatically and fastly counts the number of unique taxa across all input alignments.
+- MAF conversion is now `segul maf convert` (was `segul maf maf`).
+- `--bed <FILE>` replaces `--reference <FILE> --from-bed`, and the MAF output format option is now `-F/--output-format`.
+- MAF sample names drop the assembly suffix (`hg18.chr7` becomes `hg18`). Use `--full-source-name` to keep full names.
+- Blocks that match no BED region are no longer written by default. Use `--write-unmatched` to write them.
+- Library users: replace `segul::` with `segul_core::` in imports. The `segul` crate re-exports the old modules for now, but these will be removed in a future release.
 
 ### Bug Fixes 🐛
 
-- Fix max-gap filtering issues.
-- Fix concatenation leading to missing data when sequence IDs in FASTA files contain trailing whitespace.
+- Fix MAF conversion without a BED file failing when a reference has more than one block.
+- Fix BED parsing issues with four-column files, CRLF line endings, and matching that ignored the chromosome.
+- Fix MAF blocks of the same locus overwriting each other instead of being joined.
+- Fix negative MAF block scores being ignored.
 
-### Other Changes 🛠
-
-- Migrate to Rust 2024 edition.
-- Update dependencies.
+See the [release notes](CHANGELOG.md) for full details.
 
 ## Supported File Formats
 
@@ -68,7 +76,7 @@ Sequence formats:
 2. Relaxed PHYLIP
 3. FASTA
 4. FASTQ (gzipped and uncompressed)
-5. Multiple Alignment Format (MAF) (In development)
+5. Multiple Alignment Format (MAF), including gzipped files
 6. Variant Call Format (VCF) (In development)
 
 All formats are supported in interleave and sequential versions. The app supports DNA and amino acid sequences, except for FASTQ, MAF, and VCF (DNA only).
@@ -160,7 +168,8 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 | Alignment summary statistics   | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/align-summary) / [GUI](https://www.segul.app/docs/gui-usage/align-summary) / [Python](https://www.segul.app/docs/api-usage/python/align_summary)                  |
 | Alignment trimming             | FASTA, NEXUS, PHYLIP    | [CLI (Beta)](https://www.segul.app/docs/cli-usage/align-trim) / Coming soon                                                                                                                                  |
 | Genomic summary statistics     | FASTQ, FASTA (contigs)  | [CLI](https://www.segul.app/docs/cli-usage/genomic-summary) / [GUI](https://www.segul.app/docs/gui-usage/genomic) / [Python](https://www.segul.app/docs/api-usage/python/genomic_summary)                    |
-| Multiple alignment conversion  | MAF                     | [CLI (Beta)](https://www.segul.app/docs/cli-usage/genomic-convert) / Coming soon                                                                                                                             |
+| Multiple alignment conversion  | MAF, BED                | [CLI](https://www.segul.app/docs/cli-usage/maf-convert) / Coming soon                                                                                                                                        |
+| Multiple alignment summary     | MAF                     | [CLI](https://www.segul.app/docs/cli-usage/maf-summary) / Coming soon                                                                                                                                        |
 | Sequence addition              | FASTA, NEXUS, PHYLIP    | [CLI (Beta)](https://www.segul.app/docs/cli-usage/sequence-add) / Coming soon                                                                                                                                |
 | Sequence extraction            | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-extract) / [GUI](https://www.segul.app/docs/gui-usage/sequence-extract) / [Python](https://www.segul.app/docs/api-usage/python/sequence_extract)         |
 | Sequence filtering             | FASTA, NEXUS, PHYLIP    | [CLI](https://www.segul.app/docs/cli-usage/sequence-filter) / Coming soon                                                                                                                                    |

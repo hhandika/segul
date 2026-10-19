@@ -1,4 +1,5 @@
 use crate::cli::align::convert::ConvertParser;
+use crate::cli::align::distance::DistanceParser;
 use crate::cli::align::filter::FilterParser;
 use crate::cli::align::partition::PartParser;
 use crate::cli::align::split::SplitParser;
@@ -9,16 +10,18 @@ use crate::cli::sequence::id::IdParser;
 use crate::cli::sequence::remove::RemoveParser;
 use crate::cli::sequence::rename::RenameParser;
 use crate::cli::sequence::translate::TranslateParser;
+use crate::cli::sequence::transpose::TransposeParser;
 
 use super::align::concat::ConcatParser;
 use super::align::trim::AlignTrimParser;
 use super::align::unalign::UnalignParser;
+use super::args::MainSubcommand;
 use super::args::align::{AlignmentSubcommand, PartitionSubcommand};
 use super::args::genomics::{ContigSubcommand, MafSubcommand, SeqReadSubcommand};
 use super::args::sequence::SequenceSubcommand;
-use super::args::MainSubcommand;
 use super::contig::summarize::ContigCliParser;
 use super::maf::convert::MafConvertParser;
+use super::maf::summary::MafSummaryParser;
 use super::sequence::addition::AdditionParser;
 use super::sequence::filter::SequenceFilterParser;
 
@@ -26,7 +29,7 @@ pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
     match subcommand {
         MainSubcommand::RawRead(subcommand) => match_raw_read_subcommand(subcommand),
         MainSubcommand::Contig(subcommand) => match_contig_subcommand(subcommand),
-        MainSubcommand::Maf(subcommand) => match_genomic_subcommand(subcommand),
+        MainSubcommand::Maf(subcommand) => match_maf_subcommand(subcommand),
         MainSubcommand::Alignment(subcommand) => match_alignment_subcommand(subcommand),
         MainSubcommand::Partition(subcommand) => match_partition_subcommand(subcommand),
         MainSubcommand::Sequence(subcommand) => match_sequence_subcommand(subcommand),
@@ -45,11 +48,10 @@ fn match_raw_read_subcommand(subcommand: &SeqReadSubcommand) {
     };
 }
 
-fn match_genomic_subcommand(subcommand: &MafSubcommand) {
+fn match_maf_subcommand(subcommand: &MafSubcommand) {
     match subcommand {
-        MafSubcommand::Maf(maf_args) => {
-            MafConvertParser::new(maf_args).convert();
-        }
+        MafSubcommand::Convert(args) => MafConvertParser::new(args).convert(),
+        MafSubcommand::Summary(args) => MafSummaryParser::new(args).summarize(),
     };
 }
 
@@ -63,6 +65,9 @@ fn match_alignment_subcommand(subcommand: &AlignmentSubcommand) {
     match subcommand {
         AlignmentSubcommand::Concat(concat_args) => ConcatParser::new(concat_args).concat(),
         AlignmentSubcommand::Convert(convert_args) => ConvertParser::new(convert_args).convert(),
+        AlignmentSubcommand::Distance(distance_args) => {
+            DistanceParser::new(distance_args).compute()
+        }
         AlignmentSubcommand::Filter(filter_args) => FilterParser::new(filter_args).filter(),
         AlignmentSubcommand::Split(split_args) => SplitParser::new(split_args).split(),
         AlignmentSubcommand::Summary(summary_args) => SummaryParser::new(summary_args).summarize(),
@@ -79,6 +84,9 @@ fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
         SequenceSubcommand::Remove(remove_args) => RemoveParser::new(remove_args).remove(),
         SequenceSubcommand::Rename(rename_args) => RenameParser::new(rename_args).rename(),
         SequenceSubcommand::Translate(trans_args) => TranslateParser::new(trans_args).translate(),
+        SequenceSubcommand::Transpose(transpose_args) => {
+            TransposeParser::new(transpose_args).transpose()
+        }
         SequenceSubcommand::Add(add_args) => AdditionParser::new(add_args).add(),
     };
 }

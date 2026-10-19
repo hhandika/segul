@@ -9,7 +9,7 @@ mod utils;
 macro_rules! initiate_raw_cmd {
     ($cmd: ident, $tmp_dir: ident) => {
         let $tmp_dir = utils::create_tmp_dir().unwrap();
-        // let dir = env::current_dir().unwrap().join("tests/files/raw");
+        // let dir = env::current_dir().unwrap().join("crates/segul-core/tests/files/raw");
         let path = std::path::PathBuf::from($tmp_dir.path());
         let mut $cmd = utils::segul(&path);
         $cmd.arg("read").arg("summary");
