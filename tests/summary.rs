@@ -39,7 +39,7 @@ macro_rules! generate_locus_test {
         let output_dir = $tmp_dir.path().join("Align-Summary");
         let files = glob(&format!("{}/*.csv", output_dir.display()))
             .expect("Failed globbing files")
-            .filter_map(|ok| ok.ok())
+            .map_while(Result::ok)
             .collect::<Vec<_>>();
         let cols = count_header_cols(&files[0]);
         assert!(pred.eval(&output_dir));
@@ -98,7 +98,7 @@ fn parse_csv(fpath: &Path) -> Vec<String> {
     let buff = BufReader::new(file);
     let mut result = Vec::new();
     buff.lines()
-        .filter_map(|ok| ok.ok())
+        .map_while(Result::ok)
         .skip(1)
         .for_each(|line| {
             let parts: Vec<&str> = line.split(',').map(|e| e.trim()).collect();
@@ -113,7 +113,7 @@ fn count_header_cols(fpath: &Path) -> usize {
     let buff = BufReader::new(file);
     let mut result = 0;
     buff.lines()
-        .filter_map(|ok| ok.ok())
+        .map_while(Result::ok)
         .take(1)
         .for_each(|line| {
             let parts: Vec<&str> = line.split(',').map(|e| e.trim()).collect();

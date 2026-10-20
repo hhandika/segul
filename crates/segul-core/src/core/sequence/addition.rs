@@ -188,8 +188,7 @@ impl<'a> SequenceAddition<'a> {
             self.write_output(&final_matrix, file);
             *counter.write().expect("Failed to write counter.") += 1;
         });
-        let counter = *counter.read().expect("Failed to read counter.");
-        counter
+        *counter.read().expect("Failed to read counter.")
     }
 
     fn create_final_matrix(
@@ -522,9 +521,8 @@ mod tests {
         addition.add_single(&dest_file, true);
         let output_files = output.path().read_dir().unwrap();
         assert_eq!(output_files.count(), 1);
-        assert_eq!(
+        assert!(
             output.path().join("uce.fas").exists(),
-            true,
             "Output file does not exist"
         );
         output.close().unwrap();

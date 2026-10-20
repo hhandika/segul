@@ -65,7 +65,7 @@ pub fn print_divider() {
 }
 
 fn get_rep_str(sym: char) -> String {
-    iter::repeat(sym).take(DIVIDER_LEN).collect()
+    iter::repeat_n(sym, DIVIDER_LEN).collect()
 }
 
 #[cfg(test)]

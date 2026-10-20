@@ -152,6 +152,6 @@ mod tests {
         let seq = "ATG-?C";
         let unalign = UnalignAlignment::default();
         let res = unalign.remove_gaps(seq);
-        assert!(res == String::from("ATGC"));
+        assert_eq!(res, "ATGC");
     }
 }

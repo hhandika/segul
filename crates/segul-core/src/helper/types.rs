@@ -318,17 +318,12 @@ impl std::str::FromStr for PartitionFmt {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub enum DnaStrand {
     Forward,
     Reverse,
+    #[default]
     Missing,
-}
-
-impl Default for DnaStrand {
-    fn default() -> Self {
-        Self::Missing
-    }
 }
 
 impl std::fmt::Display for DnaStrand {
