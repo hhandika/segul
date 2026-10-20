@@ -6,7 +6,12 @@ writes:
 
 - **JSON** results in `results/` (committed), used by the website to show
   performance across versions.
-- **PNG** charts in `figures/` (ignored by git), for checking results by eye.
+- **PNG** charts in `figures/` (ignored by git), for checking results by eye:
+  - `combined.png`: time against memory for every task, one panel per task
+    and one point per version (lower left is better), like the scatter
+    figures in [segul-bench](https://github.com/hhandika/segul-bench).
+  - `time.png` and `memory.png`: each task relative to the oldest version.
+  - `<task>.png`: time and memory of one task per version.
 
 ## Requirements
 
@@ -96,6 +101,35 @@ args = ["align", "concat", "-d", "{input}", "-f", "nexus", "-o", "{output}"]
 In `args`, `{input}` is the dataset directory and `{output}` a fresh output
 directory for each run. Add `min_version = "0.24.0"` to skip releases that
 do not have a command.
+
+Datasets can also set:
+
+- `name`: a short name for task labels, such as `"Oliveros et al. 2019"`.
+- `datatype`: `dna` (default) or `aa`, passed to tasks as `{datatype}`.
+  Protein datasets need `--datatype {datatype}` in the task args, or segul
+  rejects them as invalid DNA.
+- `vars`: extra placeholders for task args. Values may use `{input}`, for
+  example the alignment and partition files of a concatenated dataset:
+
+  ```toml
+  vars = { alignment = "{input}/alignment.phy", format = "phylip", partition = "{input}/partitions.txt", partition_format = "raxml" }
+  ```
+
+To run one task on several datasets, list them in `datasets` instead of
+`dataset`. Each copy gets the id `<dataset>-<id>` and the label
+`<label> <dataset name>`:
+
+```toml
+[[tasks]]
+id = "concat"
+label = "Concatenate"
+datasets = ["esselstyn-2021", "oliveros-2019", "shen-2018"]
+args = ["align", "concat", "-d", "{input}", "-f", "nexus", "--datatype", "{datatype}", "-o", "{output}"]
+```
+
+The default `bench.toml` uses the SEGUL paper datasets from
+`~/Documents/segul-test-datasets`. On other machines, change the paths, or
+uncomment the synthetic datasets and tasks.
 
 ## Results format
 

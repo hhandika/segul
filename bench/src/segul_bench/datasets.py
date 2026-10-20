@@ -63,10 +63,18 @@ def ensure(dataset: Dataset, scale: str) -> Path | None:
 
 
 def describe(dataset: Dataset, path: Path | None) -> dict:
-    info = {"id": dataset.id, "kind": dataset.kind, "description": dataset.description}
+    info = {
+        "id": dataset.id,
+        "name": dataset.name,
+        "kind": dataset.kind,
+        "datatype": dataset.datatype,
+        "description": dataset.description,
+    }
     if path is not None:
-        info["size_mb"] = round(dir_size(path) / 1e6, 1)
-        info["files"] = sum(1 for p in path.iterdir() if p.is_file())
+        # Top-level files only: real dataset folders may hold copies in subfolders.
+        files = [p for p in path.iterdir() if p.is_file() and not p.name.startswith(".")]
+        info["size_mb"] = round(sum(p.stat().st_size for p in files) / 1e6, 1)
+        info["files"] = len(files)
     return info
 
 
