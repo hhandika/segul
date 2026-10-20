@@ -22,3 +22,5 @@
 bench/.cache/
 bench/figures/
 bench/.venv/
+__pycache__/
+*.py[cod]
