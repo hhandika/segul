@@ -96,7 +96,7 @@ fn check_valid_aa(input: &Path, id: &str, aa: &str) {
 /// ```
 // Public for library only. Do not use directly by the Cli app.
 pub fn is_valid_dna(dna: &str) -> bool {
-    dna.bytes().all(|char| DNA.contains(&char))
+    is_valid(dna.as_bytes(), &DNA_TABLE)
 }
 
 /// Check for valid amino acid sequence.
@@ -114,7 +114,29 @@ pub fn is_valid_dna(dna: &str) -> bool {
 /// ```
 // Public for library only. Do not use directly by the Cli app.
 pub fn is_valid_aa(aa: &str) -> bool {
-    aa.bytes().all(|char| AA.contains(&char))
+    is_valid(aa.as_bytes(), &AA_TABLE)
+}
+
+/// Lookup tables of valid bytes, built from `DNA` and `AA`.
+/// Avoids a linear search over the alphabet for every byte.
+const DNA_TABLE: [bool; 256] = build_alphabet_table(DNA);
+const AA_TABLE: [bool; 256] = build_alphabet_table(AA);
+
+const fn build_alphabet_table(alphabet: &[u8]) -> [bool; 256] {
+    let mut table = [false; 256];
+    let mut i = 0;
+    while i < alphabet.len() {
+        table[alphabet[i] as usize] = true;
+        i += 1;
+    }
+    table
+}
+
+#[inline]
+fn is_valid(seq: &[u8], table: &[bool; 256]) -> bool {
+    // Branch-free within each chunk, exit early between chunks.
+    seq.chunks(64)
+        .all(|chunk| chunk.iter().fold(true, |acc, &b| acc & table[b as usize]))
 }
 
 /// Complement table for DNA, including IUPAC ambiguity codes.
@@ -206,5 +228,15 @@ mod test {
         let id = "ABCD";
         let dna = String::from("agta?-z");
         check_valid_dna(sample, id, &dna);
+    }
+
+    #[test]
+    fn test_alphabet_tables_match_alphabets() {
+        for b in 0..=255u8 {
+            assert_eq!(DNA.contains(&b), DNA_TABLE[b as usize]);
+            assert_eq!(AA.contains(&b), AA_TABLE[b as usize]);
+        }
+        assert!(!is_valid_dna("acgt-?NX"));
+        assert!(!is_valid_aa("ARNDa"));
     }
 }

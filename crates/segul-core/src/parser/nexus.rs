@@ -145,8 +145,7 @@ impl<'a> Nexus<'a> {
             Some(pos) => (&text[..pos], true),
             None => (text, false),
         };
-        let mut tokens = data.split_whitespace();
-        if let (Some(id), Some(seq), None) = (tokens.next(), tokens.next(), tokens.next()) {
+        if let Some((id, seq)) = parser::split_id_seq(data) {
             if only_id {
                 if ids.contains(id) {
                     return true;
@@ -199,7 +198,7 @@ impl<'a> Nexus<'a> {
             None => {
                 // Reserve the full length upfront to avoid
                 // growing (and over-allocating) the string.
-                let mut value = String::with_capacity(self.header.nchar.min(MAX_RESERVE));
+                let mut value = String::with_capacity(self.header.nchar.min(parser::MAX_RESERVE));
                 value.push_str(seq);
                 self.matrix.insert(id.to_string(), value);
             }
@@ -307,10 +306,6 @@ impl<'a> Nexus<'a> {
         }
     }
 }
-
-/// Upper bound for pre-allocating interleaved sequences,
-/// guarding against invalid NCHAR values in the header.
-const MAX_RESERVE: usize = 1 << 30;
 
 /// Split a header command into lowercase tokens,
 /// ignoring the command itself.

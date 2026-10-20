@@ -15,16 +15,19 @@ use crate::helper::types::{DataType, Header, SeqMatrix};
 /// return a set of sequence IDs.
 pub fn parse_only_id(input: &Path) -> IndexSet<String> {
     let file = File::open(input).expect("Failed opening a fasta file.");
-    let buff = BufReader::new(file);
+    let mut buff = BufReader::new(file);
     let mut ids = IndexSet::new();
-    buff.lines()
-        .map_while(Result::ok)
-        .filter(|line| line.starts_with('>'))
-        .for_each(|line| {
-            if let Some(id) = line.strip_prefix('>') {
-                ids.insert(id.trim().to_string());
-            }
-        });
+    // Reuse the line buffer and only decode header lines.
+    let mut line = Vec::new();
+    while matches!(buff.read_until(b'\n', &mut line), Ok(n) if n > 0) {
+        if let Some(id) = line.strip_prefix(b">") {
+            match std::str::from_utf8(id) {
+                Ok(id) => ids.insert(id.trim().to_string()),
+                Err(_) => break,
+            };
+        }
+        line.clear();
+    }
     ids
 }
 
@@ -114,6 +117,7 @@ pub struct FastaReader<R> {
     reader: BufReader<R>,
     id: String,
     seq: String,
+    line: String,
 }
 
 impl<R: Read> FastaReader<R> {
@@ -122,18 +126,27 @@ impl<R: Read> FastaReader<R> {
             reader: BufReader::new(file),
             id: String::new(),
             seq: String::new(),
+            line: String::new(),
         }
     }
 
     pub fn next_seq(&mut self) -> Option<Records> {
-        while let Some(Ok(line)) = self.reader.by_ref().lines().next() {
+        // Reuse the line buffer instead of allocating a new string per line.
+        loop {
+            self.line.clear();
+            match self.reader.read_line(&mut self.line) {
+                Ok(n) if n > 0 => (),
+                _ => break,
+            }
+            let line = self.line.trim_end_matches(['\n', '\r']);
             if let Some(id) = line.strip_prefix('>') {
                 if self.id.is_empty() {
-                    self.id = String::from(id.trim());
+                    self.id.push_str(id.trim());
                     self.seq.clear();
                 } else {
                     let recs = self.get_recs(&self.id, &self.seq);
-                    self.id = String::from(id.trim());
+                    self.id.clear();
+                    self.id.push_str(id.trim());
                     self.seq.clear();
                     return Some(recs);
                 }
