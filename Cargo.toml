@@ -57,7 +57,7 @@ repository.workspace = true
 readme = "README.md"
 keywords = ["cli", "utility", "alignment", "genomics", "phylogenomics"]
 categories = ["command-line-utilities", "science"]
-exclude = ["crates/"]
+exclude = ["crates/", "bench/"]
 
 [dependencies]
 segul-core = { workspace = true, features = ["align", "sequence", "read", "contig", "maf"] }
