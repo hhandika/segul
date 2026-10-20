@@ -2,6 +2,16 @@
 
 ## v0.24.0
 
+Installation:
+
+- Install the CLI on Linux and macOS with one command:
+
+  ```bash
+  curl -fsSL https://segul.app/install.sh | sh
+  ```
+
+  The script installs the right binary for your system to `~/.local/bin` without root access, and uses the static Linux build on systems with GLIBC older than 2.34. Options include `--dir`, `--version`, `--musl`, and `--uninstall`, passed after `sh -s --`.
+
 Library Changes:
 
 - The library code now lives in a new crate, [`segul-core`](https://crates.io/crates/segul-core). The `segul` crate is the command-line app.

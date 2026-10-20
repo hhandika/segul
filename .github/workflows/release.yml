@@ -31,6 +31,16 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           body: |
+            ## Install
+
+            On Linux and macOS:
+
+            ```bash
+            curl -fsSL https://segul.app/install.sh | sh
+            ```
+
+            On Windows, download the zip file for your system below. For other installation methods, see the [installation guide](https://www.segul.app/docs/installation/intro).
+
             Check details of this release at [CHANGELOG.md](https://github.com/hhandika/segul/blob/main/CHANGELOG.md)
 
   linux_musl:

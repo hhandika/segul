@@ -50,6 +50,7 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
   - Reverse complement minus-strand loci with `--strand-aware`.
   - Read gzipped MAF and BED files directly and write NEXUS output.
 - New [`segul-core`](https://crates.io/crates/segul-core) library crate with Cargo features (`align`, `sequence`, `read`, `contig`, and `maf`) to enable only what you need.
+- One-line installer for Linux and macOS (coming with the v0.24 release): `curl -fsSL https://segul.app/install.sh | sh`.
 
 ### Performance ⚡
 
@@ -136,6 +137,18 @@ The CLI app may work in any Rust-supported [platform](https://doc.rust-lang.org/
 - Windows Subsystem for Linux (WSL)
 
 > **Notes**: SEGUL v0.23.2 adds support for Windows on ARM64 architecture, bringing full support for both x86_64 and ARM64 architectures on Windows, Linux, and MacOS.
+
+#### Quick Install
+
+> **Note**: The one-line installer is coming with the v0.24 release. Until then, use one of the installation methods below.
+
+On Linux and macOS, install the latest release with one command:
+
+```bash
+curl -fsSL https://segul.app/install.sh | sh
+```
+
+The script picks the right binary for your system and installs it to `~/.local/bin` without root access. See the [installer options](https://www.segul.app/docs/installation/install_cli#installer-script). On Windows, use the pre-compiled binaries below.
 
 #### CLI Installation Methods
 
