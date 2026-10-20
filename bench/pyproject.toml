@@ -1,0 +1,14 @@
+[project]
+name = "segul-bench"
+version = "0.1.0"
+description = "Track SEGUL execution time and memory usage across versions"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["matplotlib>=3.8"]
+
+[project.scripts]
+segul-bench = "segul_bench.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9,<0.10"]
+build-backend = "uv_build"

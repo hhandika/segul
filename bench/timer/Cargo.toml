@@ -1,0 +1,15 @@
+[package]
+name = "segul-bench-timer"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Run a command and report its wall time, CPU time and peak memory as JSON"
+
+# Standalone, not part of the segul workspace.
+[workspace]
+
+[dependencies]
+libc = "0.2"
+
+[profile.release]
+opt-level = "s"
