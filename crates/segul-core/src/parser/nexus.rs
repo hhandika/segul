@@ -1,7 +1,7 @@
 //! Nexus parser, support sequential and interleaved format.
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Read};
+use std::io::BufReader;
 use std::path::Path;
 
 use colored::Colorize;
@@ -36,8 +36,7 @@ impl<'a> Nexus<'a> {
     }
 
     pub fn parse(&mut self) {
-        let blocks = self.get_blocks();
-        self.parse_blocks(&blocks);
+        self.read_matrix(false);
         let mut seq_info = SeqCheck::new();
         seq_info.check(&self.matrix);
         self.header.aligned = seq_info.is_alignment;
@@ -46,45 +45,128 @@ impl<'a> Nexus<'a> {
     }
 
     pub fn parse_only_id(&mut self) -> IndexSet<String> {
-        let blocks = self.get_blocks();
-        let mut ids = IndexSet::new();
-        blocks.iter().for_each(|block| match block {
-            Block::Dimensions(dimensions) => self.parse_dimensions(dimensions),
-            Block::Matrix(matrix) => {
-                for (id, _) in matrix.iter() {
-                    if !ids.contains(id) {
-                        ids.insert(id.to_string());
-                    } else {
-                        break;
-                    }
-                }
-            }
-            _ => (),
-        });
-
+        let ids = self.read_matrix(true);
         parser::warn_duplicate_ids!(self, ids);
+        ids
+    }
+
+    /// Stream the file line by line. Header commands are buffered
+    /// until their terminating semicolon (they are small),
+    /// matrix lines are inserted directly into the matrix
+    /// without keeping a copy of the whole block in memory.
+    /// When `only_id` is true, sequences are never stored
+    /// and the IDs are returned instead.
+    fn read_matrix(&mut self, only_id: bool) -> IndexSet<String> {
+        let file = File::open(self.input).expect("Failed opening nexus file");
+        let mut reader = BufReader::new(file);
+        let mut line = Vec::new();
+        reader
+            .read_until(b'\n', &mut line)
+            .unwrap_or_else(|_| panic!("Failed reading nexus header for {}", self.input.display()));
+        self.check_nexus(self.line_to_str(&line).trim());
+
+        let mut ids = IndexSet::new();
+        let mut command = String::new();
+        let mut in_matrix = false;
+        loop {
+            line.clear();
+            let bytes = reader
+                .read_until(b'\n', &mut line)
+                .expect("Failed reading nexus file");
+            if bytes == 0 {
+                break;
+            }
+            let text = self.line_to_str(&line);
+            let done = if in_matrix {
+                self.read_matrix_line(text, only_id, &mut ids)
+            } else {
+                in_matrix = self.read_header_line(text, &mut command);
+                // Data that follows the matrix command on the same line.
+                in_matrix && self.read_matrix_line(&command, only_id, &mut ids)
+            };
+            if done {
+                break;
+            }
+        }
 
         ids
     }
 
-    fn get_blocks(&mut self) -> Vec<Block> {
-        let input = File::open(self.input).expect("Failed opening nexus file");
-        let mut buff = BufReader::new(input);
-        let mut header = String::new();
-        buff.read_line(&mut header)
-            .unwrap_or_else(|_| panic!("Failed reading nexus header for {}", self.input.display()));
-        self.check_nexus(header.trim());
-        let reader = NexusReader::new(buff);
-        reader.into_iter().collect()
+    /// Accumulate header commands until a semicolon is found.
+    /// Returns true when the matrix command starts.
+    fn read_header_line(&mut self, text: &str, command: &mut String) -> bool {
+        let mut rest = text;
+        while let Some(pos) = rest.find(';') {
+            command.push_str(&rest[..pos]);
+            if get_commands(command.trim()) == "matrix" {
+                // Matrix terminated on the same line, e.g. `matrix ABCD ACGT;`
+                self.strip_matrix_command(command);
+                command.push(';');
+                return true;
+            }
+            self.parse_command(command.trim());
+            command.clear();
+            rest = &rest[pos + 1..];
+        }
+        command.push_str(rest);
+        if get_commands(command.trim()) == "matrix" {
+            self.strip_matrix_command(command);
+            return true;
+        }
+        false
     }
 
-    fn parse_blocks(&mut self, blocks: &[Block]) {
-        blocks.iter().for_each(|block| match block {
-            Block::Dimensions(dimensions) => self.parse_dimensions(dimensions),
-            Block::Format(format) => self.parse_format(format),
-            Block::Matrix(matrix) => self.parse_matrix(matrix),
-            Block::Undetermined => (),
-        });
+    /// Keep only the text after the matrix command.
+    fn strip_matrix_command(&mut self, command: &mut String) {
+        let trimmed = command.trim_start();
+        let data = trimmed["matrix".len()..].to_string();
+        *command = data;
+        self.matrix.reserve(self.header.ntax);
+    }
+
+    fn parse_command(&mut self, command: &str) {
+        match get_commands(command).as_str() {
+            "dimensions" => {
+                let tokens = parse_header_tokens(command);
+                self.parse_dimensions(&tokens)
+            }
+            "format" => {
+                let tokens = parse_header_tokens(command);
+                self.parse_format(&tokens)
+            }
+            _ => (),
+        }
+    }
+
+    /// Parse a matrix line. Returns true when the matrix ends
+    /// or, for ID-only parsing, when IDs start repeating.
+    fn read_matrix_line(&mut self, text: &str, only_id: bool, ids: &mut IndexSet<String>) -> bool {
+        let (data, end) = match text.find(';') {
+            Some(pos) => (&text[..pos], true),
+            None => (text, false),
+        };
+        let mut tokens = data.split_whitespace();
+        if let (Some(id), Some(seq), None) = (tokens.next(), tokens.next(), tokens.next()) {
+            if only_id {
+                if ids.contains(id) {
+                    return true;
+                }
+                ids.insert(id.to_string());
+            } else {
+                alphabet::check_valid_seq(self.input, self.datatype, id, seq);
+                if self.interleave {
+                    self.insert_matrix_interleave(id, seq);
+                } else {
+                    parser::insert_matrix!(self, id, seq);
+                }
+            }
+        }
+        end
+    }
+
+    fn line_to_str<'b>(&self, line: &'b [u8]) -> &'b str {
+        std::str::from_utf8(line)
+            .unwrap_or_else(|_| panic!("Failed parsing nexus file {}", self.input.display()))
     }
 
     fn parse_dimensions(&mut self, blocks: &[String]) {
@@ -111,23 +193,15 @@ impl<'a> Nexus<'a> {
         });
     }
 
-    fn parse_matrix(&mut self, matrix: &[(String, String)]) {
-        self.matrix.reserve(self.header.ntax);
-        matrix.iter().for_each(|(id, seq)| {
-            alphabet::check_valid_seq(self.input, self.datatype, id, seq);
-            if self.interleave {
-                self.insert_matrix_interleave(id.to_string(), seq.to_string());
-            } else {
-                parser::insert_matrix!(self, id, seq);
-            }
-        });
-    }
-
-    fn insert_matrix_interleave(&mut self, id: String, dna: String) {
-        match self.matrix.get_mut(&id) {
-            Some(value) => value.push_str(&dna),
+    fn insert_matrix_interleave(&mut self, id: &str, seq: &str) {
+        match self.matrix.get_mut(id) {
+            Some(value) => value.push_str(seq),
             None => {
-                self.matrix.insert(id, dna);
+                // Reserve the full length upfront to avoid
+                // growing (and over-allocating) the string.
+                let mut value = String::with_capacity(self.header.nchar.min(MAX_RESERVE));
+                value.push_str(seq);
+                self.matrix.insert(id.to_string(), value);
             }
         }
     }
@@ -234,81 +308,18 @@ impl<'a> Nexus<'a> {
     }
 }
 
-enum Block {
-    Dimensions(Vec<String>),
-    Format(Vec<String>),
-    Matrix(Vec<(String, String)>),
-    Undetermined,
-}
+/// Upper bound for pre-allocating interleaved sequences,
+/// guarding against invalid NCHAR values in the header.
+const MAX_RESERVE: usize = 1 << 30;
 
-struct NexusReader<R> {
-    reader: BufReader<R>,
-    buffer: Vec<u8>,
-}
-
-impl<R: Read> NexusReader<R> {
-    fn new(file: R) -> Self {
-        Self {
-            reader: BufReader::new(file),
-            buffer: Vec::new(),
-        }
-    }
-
-    fn next_block(&mut self) -> Option<Block> {
-        self.buffer.clear();
-        let bytes = self
-            .reader
-            .read_until(b';', &mut self.buffer)
-            .expect("Failed reading nexus file");
-        if bytes == 0 {
-            return None;
-        }
-        let mut block: String = std::str::from_utf8(&self.buffer)
-            .expect("Failed parsing nexus block")
-            .trim()
-            .to_string();
-        block.pop(); // remove terminated semicolon
-        let commands = get_commands(&block);
-        match commands.as_str() {
-            "dimensions" => Some(Block::Dimensions(self.parse_header(&block))),
-            "format" => Some(Block::Format(self.parse_header(&block))),
-            "matrix" => Some(Block::Matrix(self.parse_matrix(&block))),
-            _ => Some(Block::Undetermined),
-        }
-    }
-
-    fn parse_header(&self, block: &str) -> Vec<String> {
-        let headers: Vec<&str> = block.split_whitespace().collect();
-        let mut tokens: Vec<String> = Vec::new();
-        headers[1..] // ignore NEXUS commands
-            .iter()
-            .filter(|h| !h.is_empty())
-            .for_each(|h| tokens.push(h.to_lowercase()));
-        tokens
-    }
-
-    fn parse_matrix(&self, block: &str) -> Vec<(String, String)> {
-        let matrix: Vec<&str> = block.split('\n').collect();
-        let mut sequence = Vec::new();
-        matrix[1..].iter().filter(|s| !s.is_empty()).for_each(|s| {
-            let seq: Vec<&str> = s.split_whitespace().collect();
-            if seq.len() == 2 {
-                sequence.push((seq[0].to_string(), seq[1].to_string()));
-            }
-        });
-
-        sequence
-    }
-}
-
-// Iterate over the file.
-// Collect each of the nexus block terminated by semi-colon.
-impl<R: Read> Iterator for NexusReader<R> {
-    type Item = Block;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.next_block()
-    }
+/// Split a header command into lowercase tokens,
+/// ignoring the command itself.
+fn parse_header_tokens(command: &str) -> Vec<String> {
+    command
+        .split_whitespace()
+        .skip(1)
+        .map(|token| token.to_lowercase())
+        .collect()
 }
 
 fn get_commands(text: &str) -> String {
@@ -449,6 +460,27 @@ mod test {
         let key = String::from("ABCE");
         let res = String::from("MAYPMQLGFQDATSPI");
         assert_eq!(Some(&res), nex.matrix.get(&key));
+    }
+
+    #[test]
+    fn test_nexus_parse_only_id_interleave() {
+        let sample = Path::new("tests/files/interleave.nex");
+        let mut nex = Nexus::new(sample, &DNA);
+        let ids = nex.parse_only_id();
+        assert_eq!(
+            vec!["ABCD", "ABCE", "ABCF"],
+            ids.into_iter().collect::<Vec<_>>()
+        );
+        assert!(nex.matrix.is_empty());
+    }
+
+    #[test]
+    fn test_nexus_parse_only_id_terminated_line() {
+        let sample = Path::new("tests/files/tabulated.nex");
+        let mut nex = Nexus::new(sample, &DNA);
+        let ids = nex.parse_only_id();
+        assert_eq!(2, ids.len());
+        assert_eq!(2, nex.header.ntax);
     }
 
     #[test]
