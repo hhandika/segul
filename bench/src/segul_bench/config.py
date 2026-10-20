@@ -22,9 +22,14 @@ class Dataset:
     id: str
     kind: str  # "synthetic" or "real"
     description: str
+    name: str = ""  # short name used in task labels, e.g. "Esselstyn et al. 2021"
+    datatype: str = "dna"  # passed to tasks as {datatype}
     generator: str | None = None
     params: dict[str, dict] = field(default_factory=dict)
     path: Path | None = None
+    # Extra placeholders for task args, e.g. the alignment file of a dataset.
+    # Values may use {input}.
+    vars: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -58,20 +63,24 @@ def load_config(path: Path = DEFAULT_CONFIG) -> Config:
             id=d["id"],
             kind=d.get("kind", "synthetic"),
             description=d.get("description", ""),
+            name=d.get("name", d["id"]),
+            datatype=d.get("datatype", "dna"),
             generator=d.get("generator"),
             params=d.get("params", {}),
             path=dataset_path,
+            vars={k: str(v) for k, v in d.get("vars", {}).items()},
         )
-    tasks = [
-        Task(
-            id=t["id"],
-            label=t["label"],
-            dataset=t["dataset"],
-            args=list(t["args"]),
-            min_version=t.get("min_version"),
-        )
-        for t in raw.get("tasks", [])
-    ]
+    tasks = []
+    for t in raw.get("tasks", []):
+        common = {"args": list(t["args"]), "min_version": t.get("min_version")}
+        if "datasets" in t:
+            # One task per dataset: ids become "<dataset>-<id>" and
+            # labels "<label> <dataset name>".
+            for dataset_id in t["datasets"]:
+                name = datasets[dataset_id].name if dataset_id in datasets else dataset_id
+                tasks.append(Task(id=f"{dataset_id}-{t['id']}", label=f"{t['label']} {name}", dataset=dataset_id, **common))
+        else:
+            tasks.append(Task(id=t["id"], label=t["label"], dataset=t["dataset"], **common))
     for task in tasks:
         if task.dataset not in datasets:
             raise SystemExit(f"Task {task.id} uses unknown dataset {task.dataset}")

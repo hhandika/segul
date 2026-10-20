@@ -16,7 +16,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .config import BENCH_DIR, CACHE_DIR, Config, Task
+from .config import BENCH_DIR, CACHE_DIR, Config, Dataset, Task
 from .versions import Version, parse_version
 
 # Output files that differ between runs for reasons unrelated to results.
@@ -106,9 +106,13 @@ def output_hash(out_dir: Path) -> str | None:
     return total.hexdigest()[:16]
 
 
-def build_args(task: Task, binary: Path, input_dir: Path, out_dir: Path) -> list[str]:
-    values = {"input": str(input_dir), "output": str(out_dir)}
-    return [str(binary)] + [arg.format(**values) for arg in task.args]
+def build_args(task: Task, dataset: Dataset, binary: Path, input_dir: Path, out_dir: Path) -> list[str]:
+    values = {"input": str(input_dir), "output": str(out_dir), "datatype": dataset.datatype}
+    values.update({key: value.format(**values) for key, value in dataset.vars.items()})
+    try:
+        return [str(binary)] + [arg.format(**values) for arg in task.args]
+    except KeyError as err:
+        raise SystemExit(f"Task {task.id}: unknown placeholder {err} for dataset {dataset.id}") from err
 
 
 def skip_reason(task: Task, version: Version) -> str | None:
@@ -120,6 +124,7 @@ def skip_reason(task: Task, version: Version) -> str | None:
 def run_task(
     timer: Path,
     task: Task,
+    dataset: Dataset,
     versions: list[Version],
     input_dir: Path,
     config: Config,
@@ -143,7 +148,7 @@ def run_task(
         if out_dir.exists():
             shutil.rmtree(out_dir)
         work.mkdir(parents=True, exist_ok=True)
-        args = build_args(task, version.binary, input_dir, out_dir)
+        args = build_args(task, dataset, version.binary, input_dir, out_dir)
         return measure(timer, args, work, work / "stderr.txt")
 
     for version in active:

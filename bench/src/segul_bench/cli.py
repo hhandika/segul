@@ -97,7 +97,7 @@ def cmd_run(args, config) -> int:
             print(f"  skipped: dataset {dataset.id} not found at {dataset.path}")
             continue
         dataset_reports.setdefault(dataset.id, ds.describe(dataset, input_dir))
-        results = run_task(timer, task, versions, input_dir, config, keep_output=args.keep_output)
+        results = run_task(timer, task, dataset, versions, input_dir, config, keep_output=args.keep_output)
         task_reports.append(
             {
                 "id": task.id,
