@@ -8,7 +8,7 @@ use crate::{
 };
 
 use crate::cli::{
-    args::sequence::SequenceRemoveArgs, collect_paths, AlignSeqInput, InputCli, OutputCli,
+    AlignSeqInput, InputCli, OutputCli, args::sequence::SequenceRemoveArgs, collect_paths,
 };
 
 impl InputCli for RemoveParser<'_> {}

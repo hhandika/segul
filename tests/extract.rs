@@ -9,7 +9,13 @@ use segul::helper::types::InputFmt;
 
 #[test]
 fn test_extract() {
-    initiate_cmd!(cmd, "sequence", "extract", "crates/segul-core/tests/files/alignments/", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "sequence",
+        "extract",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
     cmd.arg("--id=ABCD").assert().success();
     test_results!(4, tmp_dir, "Sequence-Extract", Nexus);
 }
@@ -17,7 +23,13 @@ fn test_extract() {
 #[test]
 #[should_panic]
 fn test_conflicting_extract_cmd() {
-    initiate_cmd!(cmd, "sequence", "extract", "crates/segul-core/tests/files/alignments/", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "sequence",
+        "extract",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
     cmd.arg("--id")
         .arg("ABCD")
         .arg("--re=^AB")
@@ -28,7 +40,13 @@ fn test_conflicting_extract_cmd() {
 #[test]
 #[should_panic]
 fn test_no_extract_cmd() {
-    initiate_cmd!(cmd, "sequence", "extract", "crates/segul-core/tests/files/alignments/", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "sequence",
+        "extract",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
     cmd.arg("--id")
         .arg("ABCD")
         .arg("--file")
@@ -39,7 +57,13 @@ fn test_no_extract_cmd() {
 
 #[test]
 fn test_extract_re() {
-    initiate_cmd!(cmd, "sequence", "extract", "crates/segul-core/tests/files/alignments/", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "sequence",
+        "extract",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
     cmd.arg("--re=^AB").assert().success();
     test_results!(4, tmp_dir, "Sequence-Extract", Nexus);
 }

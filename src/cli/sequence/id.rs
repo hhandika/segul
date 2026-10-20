@@ -4,7 +4,7 @@ use crate::core::sequence::id::SequenceID;
 use crate::helper::logger::AlignSeqLogger;
 
 use crate::cli::args::sequence::SequenceIdArgs;
-use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
+use crate::cli::{AlignSeqInput, InputCli, OutputCli, collect_paths};
 
 impl InputCli for IdParser<'_> {}
 impl OutputCli for IdParser<'_> {}

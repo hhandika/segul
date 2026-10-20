@@ -18,7 +18,7 @@ use std::time::Instant;
 
 use clap::Parser;
 use colored::Colorize;
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 
 use crate::cli::args::Cli;
 use crate::helper::finder::{ContigFileFinder, SeqFileFinder, SeqReadFinder};

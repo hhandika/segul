@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use colored::Colorize;
 
 use crate::{
-    cli::{args::sequence::SequenceFilterArgs, collect_paths, AlignSeqInput, InputCli, OutputCli},
+    cli::{AlignSeqInput, InputCli, OutputCli, args::sequence::SequenceFilterArgs, collect_paths},
     core::sequence::filter::{SeqFilteringParameters, SequenceFiltering},
     helper::logger::AlignSeqLogger,
 };

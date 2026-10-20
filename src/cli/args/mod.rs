@@ -2,10 +2,10 @@ use std::path::PathBuf;
 
 use align::AlignmentSubcommand;
 use align::PartitionSubcommand;
-use clap::builder;
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
+use clap::builder;
 use genomics::ContigSubcommand;
 use genomics::MafSubcommand;
 use genomics::SeqReadSubcommand;

@@ -141,7 +141,8 @@ impl<'a> ReadPosSummaryWriter<'a> {
         let mut zip = self
             .create_zip_writer(&zip_path)
             .expect("Failed writing to file");
-        let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        let options =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
         reads.iter().for_each(|r| {
             let file_name = format!(
                 "{}.{}",

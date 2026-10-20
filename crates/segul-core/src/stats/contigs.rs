@@ -4,7 +4,7 @@ use std::{io::BufRead, path::Path};
 use crate::{
     helper::{
         files,
-        types::{infer_contig_fmt_auto, ContigFmt},
+        types::{ContigFmt, infer_contig_fmt_auto},
     },
     stats::common::{CommonStats, NStats},
 };

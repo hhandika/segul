@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::{
-    cli::{args::align::UnalignArgs, collect_paths, AlignSeqInput, InputCli, OutputCli},
+    cli::{AlignSeqInput, InputCli, OutputCli, args::align::UnalignArgs, collect_paths},
     core::align::unalign::UnalignAlignment,
     helper::{logger::AlignSeqLogger, types::OutputFmt},
 };

@@ -9,7 +9,13 @@ use segul::helper::types::InputFmt;
 
 #[test]
 fn test_convert() {
-    initiate_cmd!(cmd, "align", "convert", "crates/segul-core/tests/files/alignments/", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "align",
+        "convert",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
     cmd.arg("-F").arg("phylip").assert().success();
     test_results!(4, tmp_dir, "Align-Convert", Phylip);
 }

@@ -6,7 +6,7 @@ use std::path::Path;
 
 use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
-use nom::{character::complete, sequence, IResult, Parser};
+use nom::{IResult, Parser, character::complete, sequence};
 
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;

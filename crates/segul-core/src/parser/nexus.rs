@@ -1,13 +1,13 @@
 //! Nexus parser, support sequential and interleaved format.
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::prelude::*;
 use std::path::Path;
 
 use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
 use lazy_static::lazy_static;
-use nom::{bytes::complete, character, sequence, IResult, Parser};
+use nom::{IResult, Parser, bytes::complete, character, sequence};
 use regex::Regex;
 
 use crate::helper::alphabet;
@@ -217,7 +217,8 @@ impl<'a> Nexus<'a> {
     #[inline]
     fn parse_datatype(&self, input: &str) -> String {
         let tag: IResult<&str, &str> =
-            sequence::preceded(complete::tag("datatype="), character::complete::alpha1).parse(input);
+            sequence::preceded(complete::tag("datatype="), character::complete::alpha1)
+                .parse(input);
         self.parse_string(tag)
     }
 

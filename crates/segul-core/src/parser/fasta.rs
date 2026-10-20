@@ -1,8 +1,8 @@
 //! A simple fasta parser that reads a fasta file and returns a sequence matrix.
 
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::prelude::*;
 use std::path::Path;
 
 use indexmap::{IndexMap, IndexSet};
