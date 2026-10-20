@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use indexmap::{IndexMap, IndexSet};
 use indicatif::ProgressBar;
+use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
@@ -103,27 +104,34 @@ impl<'a> Concat<'a> {
     }
 
     fn concat(&mut self, id: &IndexSet<String>) {
-        let mut alignment = IndexMap::with_capacity(id.len());
+        // Start with every taxon in ID order,
+        // so each locus appends without looking up the alignment.
+        let mut alignment: SeqMatrix = id.iter().map(|id| (id.clone(), String::new())).collect();
         let mut nchar = 0;
         let mut gene_start = 1;
         let mut partition = Vec::new();
-        self.files.iter().for_each(|file| {
-            let (matrix, header) = self.get_alignment(file);
-            nchar += header.nchar; // increment sequence length using the value from parser
-            let gene_name = self.parse_aln_name(file);
-            let part = self.get_partition(&gene_name, gene_start, nchar);
-            partition.push(part);
-            gene_start = nchar + 1;
-            id.iter().for_each(|id| match matrix.get(id) {
-                Some(seq) => {
-                    self.insert_alignment(&mut alignment, id, seq);
-                }
-                None => {
-                    let seq = self.get_missings(header.nchar);
-                    self.insert_alignment(&mut alignment, id, &seq);
-                }
-            });
-        });
+        // Parse a small batch of files in parallel, then append them in file order.
+        // Batching bounds how many parsed alignments are held in memory at once.
+        let batch_size = rayon::current_num_threads().max(1) * 2;
+        for files in self.files.chunks(batch_size) {
+            let parsed: Vec<(SeqMatrix, Header)> = files
+                .par_iter()
+                .map(|file| self.get_alignment(file))
+                .collect();
+            for (file, (matrix, header)) in files.iter().zip(parsed) {
+                nchar += header.nchar; // increment sequence length using the value from parser
+                let gene_name = self.parse_aln_name(file);
+                let part = self.get_partition(&gene_name, gene_start, nchar);
+                partition.push(part);
+                gene_start = nchar + 1;
+                alignment
+                    .iter_mut()
+                    .for_each(|(id, seqs)| match matrix.get(id) {
+                        Some(seq) => seqs.push_str(seq),
+                        None => seqs.extend(std::iter::repeat_n('?', header.nchar)),
+                    });
+            }
+        }
 
         self.alignment = alignment;
         self.header.nchar = nchar;
@@ -149,25 +157,11 @@ impl<'a> Concat<'a> {
         part
     }
 
-    fn insert_alignment(&self, alignment: &mut SeqMatrix, id: &str, seq: &str) {
-        match alignment.get_mut(id) {
-            Some(seqs) => seqs.push_str(seq),
-            None => {
-                alignment.insert(id.to_string(), seq.to_string());
-            }
-        }
-    }
-
     fn parse_aln_name(&self, file: &Path) -> String {
         file.file_stem()
             .and_then(OsStr::to_str)
             .expect("Failed getting alignment name from the file")
             .to_string()
-    }
-
-    #[inline]
-    fn get_missings(&self, len: usize) -> String {
-        "?".repeat(len)
     }
 
     #[inline]
@@ -232,16 +226,6 @@ mod test {
         assert_eq!(20, concat.partition[2].end);
         assert_eq!(21, concat.partition[3].start);
         assert_eq!(26, concat.partition[3].end);
-    }
-
-    #[test]
-    fn test_get_gaps() {
-        let len = 5;
-        let gaps = "?????";
-        assert_eq!(
-            gaps,
-            Concat::new(&mut [PathBuf::from(".")], &InputFmt::Fasta, &DNA).get_missings(len)
-        )
     }
 
     #[test]
