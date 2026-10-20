@@ -1,12 +1,17 @@
 """PNG charts of a benchmark report, for checking results by eye.
 
-Versions are ordered, so they use one blue ramp from light (oldest) to dark
-(newest). The ramp steps were validated as an ordinal palette on the light
-chart surface.
+- scorecard.png: the newest version relative to the oldest, per task, as a
+  table colored with the ColorBrewer RdBu diverging scale (blue is better).
+- scatter.png: time against memory, one panel per analysis, one color and
+  marker per dataset (ColorBrewer Dark2), with arrows from older versions
+  to the newest.
+- <task>.png: time and memory of one task per version (ColorBrewer Blues,
+  light for older versions and dark for newer).
 """
 
 from __future__ import annotations
 
+import math
 import re
 from pathlib import Path
 
@@ -14,101 +19,282 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib import colormaps  # noqa: E402
+from matplotlib.colors import TwoSlopeNorm, to_hex, to_rgb  # noqa: E402
 from matplotlib.ticker import FuncFormatter, LogLocator, MaxNLocator, NullFormatter  # noqa: E402
 
 SURFACE = "#fcfcfb"
 INK = "#0b0b0b"
 INK_SECONDARY = "#52514e"
 GRID = "#e1e0d9"
-# Blue steps 250 -> 700. Ordinal ramps start no lighter than step 250.
-BLUE_RAMP = [
-    "#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6",
-    "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b",
-]
 METRICS = {
     "wall_s": ("Wall time", "s"),
-    "max_rss_mb": ("Peak memory (RSS)", "MB"),
+    "max_rss_mb": ("Peak memory", "MB"),
 }
-
-
-def version_colors(versions: list[str]) -> dict[str, str]:
-    n = len(versions)
-    if n == 1:
-        return {versions[0]: BLUE_RAMP[-1]}
-    last = len(BLUE_RAMP) - 1
-    return {v: BLUE_RAMP[round(i * last / (n - 1))] for i, v in enumerate(versions)}
-
-
-def style_axes(ax) -> None:
-    ax.set_facecolor(SURFACE)
-    for side in ("top", "right"):
-        ax.spines[side].set_visible(False)
-    for side in ("left", "bottom"):
-        ax.spines[side].set_color(GRID)
-    ax.tick_params(colors=INK_SECONDARY, labelsize=9)
-    ax.set_axisbelow(True)
-
-
-def mean_of(result: dict, metric: str) -> float | None:
-    summary = result.get("summary", {}).get(metric)
-    return summary["mean"] if summary else None
+# A change smaller than this counts as "no change".
+NO_CHANGE = 0.05
+# Short names for segul subcommands, used to group tasks into analyses.
+ANALYSES = {
+    "align concat": "Concatenate",
+    "align convert": "Convert",
+    "align summary": "Summarize",
+    "align split": "Split",
+    "align filter": "Filter",
+    "align partition": "Partition",
+    "align translate": "Translate",
+    "sequence id": "Sample IDs",
+    "sequence remove": "Remove sequences",
+    "sequence rename": "Rename sequences",
+    "sequence extract": "Extract sequences",
+    "contig summary": "Contig summary",
+    "read summary": "Read summary",
+}
+# Marker shapes per dataset, so datasets are not told apart by color alone.
+MARKERS = ["o", "s", "^", "D", "v", "P", "X", "<", ">", "h", "p", "*"]
 
 
 def plot_report(report: dict, out_dir: Path) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
+    for stale in ("time.png", "memory.png", "combined.png"):  # earlier chart names
+        (out_dir / stale).unlink(missing_ok=True)
     versions = [v["id"] for v in report["versions"]]
+    written = [plot_scorecard(report, versions, out_dir), plot_scatter(report, versions, out_dir)]
     colors = version_colors(versions)
-    written = []
-    for metric in METRICS:
-        written.append(plot_relative(report, metric, versions, colors, out_dir))
-    written.append(plot_combined(report, versions, colors, out_dir))
     for task in report["tasks"]:
         written.append(plot_task(task, versions, colors, out_dir))
     return written
 
 
-def plot_relative(report, metric, versions, colors, out_dir) -> Path:
-    """Each task's metric relative to the oldest version that ran it,
-    so tasks of very different sizes share one axis."""
-    title, _ = METRICS[metric]
-    tasks = report["tasks"]
-    n_versions = len(versions)
-    bar_h = 0.8 / n_versions
-    fig, ax = plt.subplots(figsize=(9, 0.5 + 0.55 * len(tasks) * max(1, n_versions / 2.5)))
+# Data helpers -------------------------------------------------------------
+
+
+def analysis_of(task: dict) -> str:
+    command = " ".join(task.get("args", [])[:2])
+    return ANALYSES.get(command, command.capitalize() or task["id"])
+
+
+def means(task: dict) -> dict[str, tuple[float, float]]:
+    """Mean wall time and peak memory per version that ran successfully."""
+    values = {}
+    for result in task["results"]:
+        summary = result.get("summary", {})
+        if summary.get("wall_s") and summary.get("max_rss_mb"):
+            values[result["version"]] = (summary["wall_s"]["mean"], summary["max_rss_mb"]["mean"])
+    return values
+
+
+def grouped_rows(report: dict, versions: list[str]) -> list[tuple[str, list[tuple[str, dict]]]]:
+    """Tasks grouped by analysis, in first-seen order, labeled by dataset.
+    Tasks without results for at least one version are left out."""
+    names = {d["id"]: d.get("name") or d["id"] for d in report["datasets"]}
+    groups: dict[str, list[tuple[str, dict, dict]]] = {}
+    for task in report["tasks"]:
+        values = means(task)
+        if values:
+            groups.setdefault(analysis_of(task), []).append((names.get(task["dataset"], task["dataset"]), task, values))
+    rows = []
+    for analysis, items in groups.items():
+        labels = [name for name, _, _ in items]
+        # Fall back to the task label when one dataset has several tasks in a group.
+        rows.append((analysis, [
+            (name if labels.count(name) == 1 else task["label"], values) for name, task, values in items
+        ]))
+    return rows
+
+
+def compare(values: dict, versions: list[str]) -> tuple[str, str] | None:
+    """The oldest and newest versions with results."""
+    present = [v for v in versions if v in values]
+    if len(present) < 2:
+        return None
+    return present[0], present[-1]
+
+
+# Scorecard ---------------------------------------------------------------
+
+
+def plot_scorecard(report: dict, versions: list[str], out_dir: Path) -> Path:
+    """One row per task: how much faster and smaller the newest version is
+    than the oldest, colored on a diverging scale centered on no change."""
+    rows = grouped_rows(report, versions)
+    cmap = colormaps["RdBu"]
+    # log(old / new): positive is better (blue), negative worse (red).
+    norm = TwoSlopeNorm(vmin=-math.log(10), vcenter=0, vmax=math.log(10))
+    n_lines = sum(len(items) + 1 for _, items in rows)
+    fig, ax = plt.subplots(figsize=(10.5, 1.4 + 0.3 * n_lines))
     fig.patch.set_facecolor(SURFACE)
-    style_axes(ax)
-    max_ratio = 1.0
-    for t_idx, task in enumerate(tasks):
-        results = {r["version"]: r for r in task["results"]}
-        base = next((mean_of(results[v], metric) for v in versions if v in results and mean_of(results[v], metric)), None)
-        if not base:
-            continue
-        for v_idx, version in enumerate(versions):
-            value = mean_of(results.get(version, {}), metric)
-            if value is None:
+    ax.set_facecolor(SURFACE)
+    ax.axis("off")
+
+    # Column x positions: label | time cell | memory cell | time values | memory values
+    label_x, time_x, mem_x, cell_w, time_val_x, mem_val_x = 0.0, 3.0, 4.45, 1.35, 6.0, 7.75
+    y = 0.0
+    ax.text(time_x + cell_w / 2, y, "Time", ha="center", va="center", fontsize=9.5, color=INK_SECONDARY)
+    ax.text(mem_x + cell_w / 2, y, "Memory", ha="center", va="center", fontsize=9.5, color=INK_SECONDARY)
+    ax.text(time_val_x, y, "Time (s)", va="center", fontsize=9.5, color=INK_SECONDARY)
+    ax.text(mem_val_x, y, "Peak memory (MB)", va="center", fontsize=9.5, color=INK_SECONDARY)
+    compared = set()
+    for analysis, items in rows:
+        y += 1.25
+        ax.text(label_x, y, analysis, va="center", fontsize=10, fontweight="bold", color=INK)
+        for label, values in items:
+            y += 1
+            ax.text(label_x + 0.15, y, label, va="center", fontsize=9, color=INK)
+            pair = compare(values, versions)
+            if pair is None:
+                ax.text(time_x, y, "needs two versions", va="center", fontsize=8.5, color=INK_SECONDARY)
                 continue
-            ratio = value / base
-            max_ratio = max(max_ratio, ratio)
-            y = t_idx + (v_idx - (n_versions - 1) / 2) * bar_h
-            ax.barh(y, ratio, height=bar_h, color=colors[version], edgecolor=SURFACE, linewidth=2)
-            if v_idx == n_versions - 1 and n_versions > 1:
-                better = "faster" if metric == "wall_s" else "less memory"
-                label = f"{ratio:.2f}×" + (f"  ({1 / ratio:.1f}× {better})" if ratio < 0.95 else "")
-                ax.text(ratio, y, "  " + label, va="center", fontsize=8, color=INK)
-    ax.axvline(1.0, color=INK_SECONDARY, linewidth=1, linestyle="--")
-    ax.set_yticks(range(len(tasks)), [t["label"] for t in tasks], color=INK)
-    ax.invert_yaxis()
-    ax.set_xlim(0, max_ratio * 1.35)
-    ax.xaxis.grid(True, color=GRID, linewidth=0.8)
-    ax.set_xlabel(f"{title} relative to the oldest version (lower is better)", color=INK_SECONDARY)
-    fig.suptitle(f"{title} by version", x=0.01, ha="left", color=INK, fontsize=12)
-    add_legend(ax, versions, colors)
+            old_v, new_v = pair
+            compared.add(pair)
+            for idx, (x, val_x, unit) in enumerate(((time_x, time_val_x, "s"), (mem_x, mem_val_x, "MB"))):
+                old, new = values[old_v][idx], values[new_v][idx]
+                change = math.log(old / new)
+                color = cmap(norm(max(min(change, norm.vmax), norm.vmin)))
+                ax.add_patch(plt.Rectangle((x, y - 0.42), cell_w, 0.84, color=color, linewidth=0))
+                ax.text(x + cell_w / 2, y, change_text(old / new, idx), ha="center", va="center",
+                        fontsize=8.5, color=text_on(color))
+                ax.text(val_x, y, f"{fmt(old)} → {fmt(new)}", va="center", fontsize=8.5, color=INK)
+    ax.set_xlim(-0.1, 9.9)
+    ax.set_ylim(y + 0.8, -0.6)
+
+    pairs = ", ".join(f"{new} vs {old}" for old, new in sorted(compared))
+    fig.suptitle(f"Scorecard: {pairs or 'no comparison'}", x=0.01, ha="left", color=INK, fontsize=12)
+    fig.text(0.01, 0.955, "Blue is faster or smaller, red is slower or larger. Values are means, oldest → newest.",
+             fontsize=8, color=INK_SECONDARY, va="top")
     add_caption(fig, report)
-    fig.tight_layout(rect=(0, 0.02, 1, 0.97))
-    path = out_dir / ("time.png" if metric == "wall_s" else "memory.png")
+    fig.tight_layout(rect=(0, 0.02, 1, 0.94))
+    path = out_dir / "scorecard.png"
     fig.savefig(path, dpi=150, facecolor=SURFACE)
     plt.close(fig)
     return path
+
+
+def change_text(ratio: float, metric_idx: int) -> str:
+    """ratio = old / new, so above 1 means the newest version is better."""
+    if abs(math.log(ratio)) < math.log(1 + NO_CHANGE):
+        return "no change"
+    if ratio > 1:
+        return f"{ratio:.1f}× {'faster' if metric_idx == 0 else 'smaller'}"
+    return f"{1 / ratio:.1f}× {'slower' if metric_idx == 0 else 'larger'}"
+
+
+def text_on(color) -> str:
+    """Dark text on light cells and light text on dark cells."""
+    r, g, b = to_rgb(color)
+    luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return INK if luminance > 0.5 else SURFACE
+
+
+def fmt(value: float) -> str:
+    if value >= 100:
+        return f"{value:,.0f}"
+    if value >= 10:
+        return f"{value:.1f}"
+    return f"{value:.2f}"
+
+
+# Scatter -----------------------------------------------------------------
+
+
+def plot_scatter(report: dict, versions: list[str], out_dir: Path) -> Path:
+    """Time against memory, one panel per analysis. Each dataset has its own
+    color and marker; hollow markers are older versions and the arrow points
+    to the newest (filled). Lower left is better."""
+    rows = grouped_rows(report, versions)
+    datasets = []
+    for _, items in rows:
+        for label, _ in items:
+            if label not in datasets:
+                datasets.append(label)
+    colors = dataset_colors(datasets)
+    markers = {d: MARKERS[i % len(MARKERS)] for i, d in enumerate(datasets)}
+
+    ncols = 2 if len(rows) <= 4 else 3
+    nrows = max(1, -(-len(rows) // ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5.2 * ncols, 3.9 * nrows + 1.4), squeeze=False)
+    fig.patch.set_facecolor(SURFACE)
+    for ax, (analysis, items) in zip(axes.flat, rows):
+        style_axes(ax)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        xs, ys = [], []
+        for label, values in items:
+            present = [v for v in versions if v in values]
+            points = [values[v] for v in present]
+            xs += [p[0] for p in points]
+            ys += [p[1] for p in points]
+            color = colors[label]
+            for (x0, y0), (x1, y1) in zip(points, points[1:]):
+                ax.annotate("", (x1, y1), (x0, y0), arrowprops=dict(
+                    arrowstyle="-|>", color=color, alpha=0.55, lw=1.4, shrinkA=6, shrinkB=6, mutation_scale=11))
+            for idx, (x, y) in enumerate(points):
+                newest = idx == len(points) - 1
+                ax.scatter(x, y, s=58, marker=markers[label], zorder=3,
+                           facecolor=color if newest else SURFACE, edgecolor=color if not newest else SURFACE,
+                           linewidth=1.6 if not newest else 1.0)
+        set_log_ticks(ax.xaxis, xs)
+        set_log_ticks(ax.yaxis, ys)
+        ax.margins(0.15)
+        ax.grid(True, which="major", color=GRID, linewidth=0.8)
+        ax.set_title(analysis, loc="left", color=INK, fontsize=10.5)
+    for ax in list(axes.flat)[len(rows):]:
+        ax.set_visible(False)
+
+    fig.supylabel("Peak memory (MB, log scale)", color=INK_SECONDARY, fontsize=10)
+    fig.suptitle("Time and memory by analysis (lower left is better)", x=0.01, ha="left", color=INK, fontsize=12)
+
+    dataset_handles = [
+        plt.Line2D([], [], linestyle="none", marker=markers[d], markersize=8,
+                   markerfacecolor=colors[d], markeredgecolor=SURFACE)
+        for d in datasets
+    ]
+    older = [v for v in versions[:-1]]
+    version_handles = [
+        plt.Line2D([], [], linestyle="none", marker="o", markersize=8,
+                   markerfacecolor=SURFACE, markeredgecolor=INK_SECONDARY, markeredgewidth=1.6),
+        plt.Line2D([], [], linestyle="none", marker="o", markersize=8,
+                   markerfacecolor=INK_SECONDARY, markeredgecolor=SURFACE),
+    ]
+    version_labels = [f"Older: {', '.join(older)}" if older else "Older", f"Newest: {versions[-1]}"]
+    caption_h = 0.22 / fig.get_figheight()  # the caption line, in figure fraction
+    legend = fig.legend(
+        dataset_handles + version_handles, datasets + version_labels,
+        loc="lower center", ncol=min(4, len(datasets) + 2), frameon=False, fontsize=8.5,
+        bbox_to_anchor=(0.5, caption_h), columnspacing=1.6, handletextpad=0.4,
+    )
+    for text in legend.get_texts():
+        text.set_color(INK)
+    add_caption(fig, report)
+    # Stack from the bottom: caption, legend, x label, then the panels.
+    fig.canvas.draw()
+    legend_top = legend.get_window_extent().transformed(fig.transFigure.inverted()).y1
+    label_h = 0.3 / fig.get_figheight()
+    fig.supxlabel("Wall time (s, log scale)", color=INK_SECONDARY, fontsize=10, y=legend_top + 0.005, va="bottom")
+    fig.tight_layout(rect=(0.01, legend_top + label_h + 0.01, 1, 0.96))
+    path = out_dir / "scatter.png"
+    fig.savefig(path, dpi=150, facecolor=SURFACE)
+    plt.close(fig)
+    return path
+
+
+def dataset_colors(datasets: list[str]) -> dict[str, str]:
+    """ColorBrewer qualitative palettes: Dark2 (8 colors), then Paired (12)."""
+    name = "Dark2" if len(datasets) <= 8 else "Paired"
+    palette = colormaps[name].colors
+    return {d: to_hex(palette[i % len(palette)]) for i, d in enumerate(datasets)}
+
+
+# Per-task bars -----------------------------------------------------------
+
+
+def version_colors(versions: list[str]) -> dict[str, str]:
+    """ColorBrewer Blues, light (oldest) to dark (newest), skipping the
+    lightest steps that disappear on the surface."""
+    blues = colormaps["Blues"]
+    n = len(versions)
+    if n == 1:
+        return {versions[0]: to_hex(blues(0.85))}
+    return {v: to_hex(blues(0.4 + 0.55 * i / (n - 1))) for i, v in enumerate(versions)}
 
 
 def plot_task(task, versions, colors, out_dir) -> Path:
@@ -149,99 +335,33 @@ def plot_task(task, versions, colors, out_dir) -> Path:
     return path
 
 
-# Marker shapes per version, so versions are not told apart by color alone.
-MARKERS = ["o", "s", "^", "D", "v", "P", "X", "<", ">", "h"]
+# Shared ------------------------------------------------------------------
 
 
-def plot_combined(report, versions, colors, out_dir) -> Path:
-    """Time against memory for every task in one figure, as small multiples.
-
-    Each panel is a task with one point per version (mean, with SD bars), and
-    a line in version order shows how the task moved. Down and left is better.
-    Panels have their own scales because tasks differ in size; time uses a
-    log scale like the segul-bench paper figures.
-    """
-    tasks = report["tasks"]
-    ncols = 3
-    nrows = -(-len(tasks) // ncols)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(11, 0.6 + 2.9 * nrows), squeeze=False)
-    fig.patch.set_facecolor(SURFACE)
-    markers = {v: MARKERS[i % len(MARKERS)] for i, v in enumerate(versions)}
-    for ax, task in zip(axes.flat, tasks):
-        style_axes(ax)
-        results = {r["version"]: r for r in task["results"]}
-        points = []
-        for version in versions:
-            summary = results.get(version, {}).get("summary", {})
-            wall, rss = summary.get("wall_s"), summary.get("max_rss_mb")
-            if wall and rss:
-                points.append((version, wall, rss))
-        if len(points) > 1:
-            ax.plot([p[1]["mean"] for p in points], [p[2]["mean"] for p in points],
-                    color=GRID, linewidth=1.5, zorder=1)
-        for version, wall, rss in points:
-            # Older versions are drawn larger and underneath,
-            # so versions with nearly equal results stay visible.
-            size = 8 + 2.5 * (len(versions) - 1 - versions.index(version))
-            ax.errorbar(
-                wall["mean"], rss["mean"], xerr=wall["sd"], yerr=rss["sd"],
-                fmt=markers[version], markersize=size, color=colors[version],
-                markeredgecolor=SURFACE, markeredgewidth=1.5,
-                ecolor=INK_SECONDARY, elinewidth=0.8, capsize=0, zorder=2,
-            )
-        ax.set_xscale("log")
-        set_log_ticks(ax, [p[1]["mean"] for p in points])
-        ax.set_ylim(bottom=0, top=max((p[2]["mean"] + p[2]["sd"] for p in points), default=1) * 1.15)
-        ax.margins(x=0.25)
-        ax.grid(True, which="major", color=GRID, linewidth=0.8)
-        ax.set_title(task["label"], color=INK, fontsize=9.5)
-    for ax in list(axes.flat)[len(tasks):]:
-        ax.set_visible(False)
-    fig.supxlabel("Mean wall time (s, log scale)", color=INK_SECONDARY, fontsize=10, y=0.035)
-    fig.supylabel("Mean peak memory (MB)", color=INK_SECONDARY, fontsize=10)
-    fig.suptitle("Time and memory by version (lower left is better)", x=0.01, ha="left", color=INK, fontsize=12)
-    handles = [
-        plt.Line2D([], [], linestyle="none", marker=markers[v], markersize=8,
-                   color=colors[v], markeredgecolor=SURFACE)
-        for v in versions
-    ]
-    legend = fig.legend(handles, versions, loc="upper right", ncol=len(versions),
-                        frameon=False, fontsize=9, bbox_to_anchor=(0.99, 0.995))
-    for text in legend.get_texts():
-        text.set_color(INK)
-    add_caption(fig, report)
-    fig.tight_layout(rect=(0.01, 0.05, 1, 0.96))
-    path = out_dir / "combined.png"
-    fig.savefig(path, dpi=150, facecolor=SURFACE)
-    plt.close(fig)
-    return path
+def style_axes(ax) -> None:
+    ax.set_facecolor(SURFACE)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(GRID)
+    ax.tick_params(colors=INK_SECONDARY, labelsize=9)
+    ax.set_axisbelow(True)
 
 
-def set_log_ticks(ax, values: list[float]) -> None:
+def set_log_ticks(axis, values: list[float]) -> None:
     """Plain-number ticks on a log axis (0.5, 1, 2 instead of 5×10⁻¹).
-    Narrow ranges get 1-2-5 steps, wide ones only powers of ten."""
+    Narrow ranges get a few even ticks, wider ones 1-2-5 steps, and very
+    wide ones only powers of ten."""
     values = [v for v in values if v > 0]
     if not values:
         return
     spread = max(values) / min(values)
     if spread < 3:
-        # Too narrow for log steps: a few evenly spaced ticks.
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=4, min_n_ticks=2))
+        axis.set_major_locator(MaxNLocator(nbins=4, min_n_ticks=2))
     else:
-        ax.xaxis.set_major_locator(LogLocator(base=10, subs=(1, 2, 5) if spread < 100 else (1,)))
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
-    ax.xaxis.set_minor_formatter(NullFormatter())
-
-
-def add_legend(ax, versions, colors) -> None:
-    handles = [plt.Rectangle((0, 0), 1, 1, color=colors[v]) for v in versions]
-    # Above the plot area, so it never covers bars or labels.
-    legend = ax.legend(
-        handles, versions, loc="lower right", bbox_to_anchor=(1.0, 1.0),
-        ncol=len(versions), frameon=False, fontsize=9,
-    )
-    for text in legend.get_texts():
-        text.set_color(INK)
+        axis.set_major_locator(LogLocator(base=10, subs=(1, 2, 5) if spread < 100 else (1,)))
+    axis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+    axis.set_minor_formatter(NullFormatter())
 
 
 def add_caption(fig, report) -> None:

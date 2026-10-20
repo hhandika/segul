@@ -7,11 +7,18 @@ writes:
 - **JSON** results in `results/` (committed), used by the website to show
   performance across versions.
 - **PNG** charts in `figures/` (ignored by git), for checking results by eye:
-  - `combined.png`: time against memory for every task, one panel per task
-    and one point per version (lower left is better), like the scatter
-    figures in [segul-bench](https://github.com/hhandika/segul-bench).
-  - `time.png` and `memory.png`: each task relative to the oldest version.
-  - `<task>.png`: time and memory of one task per version.
+  - `scorecard.png`: how much faster and smaller the newest version is than
+    the oldest, per task, grouped by analysis, with the mean values. Cells
+    use the ColorBrewer RdBu scale: blue is better, red is worse.
+  - `scatter.png`: time against memory, one panel per analysis, like the
+    scatter figures in [segul-bench](https://github.com/hhandika/segul-bench).
+    Each dataset has its own ColorBrewer Dark2 color and marker, shown in the
+    legend. Hollow markers are older versions and arrows point to the newest
+    (filled). Lower left is better.
+  - `<task>.png`: time and memory of one task per version (ColorBrewer Blues).
+
+  Tasks are grouped into analyses by their segul command (`align concat`,
+  `align convert`, ...) and labeled by dataset name.
 
 ## Requirements
 
