@@ -1,0 +1,657 @@
+{
+  "schema_version": 1,
+  "created": "2026-10-20T04:03:41Z",
+  "machine": {
+    "os": "Linux",
+    "os_release": "7.0.0-38-generic",
+    "arch": "x86_64",
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "ram_gb": 62.7
+  },
+  "config": {
+    "replicates": 5,
+    "warmup": 1,
+    "scale": "full"
+  },
+  "versions": [
+    {
+      "id": "v0.22.1",
+      "source": "release",
+      "version": "0.22.1"
+    },
+    {
+      "id": "v0.23.2",
+      "source": "release",
+      "version": "0.23.2"
+    },
+    {
+      "id": "current",
+      "source": "build",
+      "version": "0.24.0",
+      "git": "v0.23.2-31-g39f6a94-dirty"
+    }
+  ],
+  "datasets": [
+    {
+      "id": "esselstyn-2021",
+      "kind": "real",
+      "description": "Esselstyn et al. 2021 (358.1 MBases, DNA)",
+      "size_mb": 373.4,
+      "files": 4040
+    }
+  ],
+  "tasks": [
+    {
+      "id": "esselstyn-2021-concat",
+      "label": "Concatenate Esselstyn et al. 2021",
+      "dataset": "esselstyn-2021",
+      "args": [
+        "align",
+        "concat",
+        "-d",
+        "{input}",
+        "-f",
+        "nexus",
+        "-o",
+        "{output}"
+      ],
+      "results": [
+        {
+          "version": "v0.22.1",
+          "replicates": [
+            {
+              "wall_s": 1.741,
+              "user_s": 2.2726,
+              "sys_s": 0.5268,
+              "max_rss_mb": 585.27,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 1.7639,
+              "user_s": 2.2136,
+              "sys_s": 0.486,
+              "max_rss_mb": 585.63,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 1.7485,
+              "user_s": 2.3221,
+              "sys_s": 0.5044,
+              "max_rss_mb": 591.16,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 1.7493,
+              "user_s": 2.1197,
+              "sys_s": 0.5174,
+              "max_rss_mb": 585.89,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 1.733,
+              "user_s": 2.323,
+              "sys_s": 0.5051,
+              "max_rss_mb": 586.39,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 1.7471,
+              "sd": 0.0115,
+              "min": 1.733,
+              "median": 1.7485,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 586.869,
+              "sd": 2.4333,
+              "min": 585.27,
+              "median": 585.895,
+              "n": 5
+            }
+          },
+          "output_hash": "bde43fefd3f33869"
+        },
+        {
+          "version": "v0.23.2",
+          "replicates": [
+            {
+              "wall_s": 2.3812,
+              "user_s": 2.9024,
+              "sys_s": 0.4963,
+              "max_rss_mb": 579.85,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 2.3858,
+              "user_s": 2.823,
+              "sys_s": 0.5125,
+              "max_rss_mb": 585.65,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 2.3871,
+              "user_s": 2.8844,
+              "sys_s": 0.5502,
+              "max_rss_mb": 585.5,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 2.458,
+              "user_s": 2.8846,
+              "sys_s": 0.4773,
+              "max_rss_mb": 585.44,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 2.3755,
+              "user_s": 2.917,
+              "sys_s": 0.518,
+              "max_rss_mb": 585.94,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 2.3975,
+              "sd": 0.0341,
+              "min": 2.3755,
+              "median": 2.3858,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 584.4768,
+              "sd": 2.5925,
+              "min": 579.852,
+              "median": 585.504,
+              "n": 5
+            }
+          },
+          "output_hash": "bde43fefd3f33869"
+        },
+        {
+          "version": "current",
+          "replicates": [
+            {
+              "wall_s": 0.6876,
+              "user_s": 1.1614,
+              "sys_s": 0.7571,
+              "max_rss_mb": 564.11,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6868,
+              "user_s": 1.171,
+              "sys_s": 0.788,
+              "max_rss_mb": 564.69,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6798,
+              "user_s": 1.1122,
+              "sys_s": 0.7736,
+              "max_rss_mb": 565.43,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6786,
+              "user_s": 1.2221,
+              "sys_s": 0.7388,
+              "max_rss_mb": 566.05,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6656,
+              "user_s": 1.2087,
+              "sys_s": 0.7366,
+              "max_rss_mb": 564.99,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 0.6797,
+              "sd": 0.0088,
+              "min": 0.6656,
+              "median": 0.6798,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 565.0548,
+              "sd": 0.7355,
+              "min": 564.113,
+              "median": 564.992,
+              "n": 5
+            }
+          },
+          "output_hash": "bde43fefd3f33869"
+        }
+      ]
+    },
+    {
+      "id": "esselstyn-2021-convert",
+      "label": "Convert Esselstyn et al. 2021",
+      "dataset": "esselstyn-2021",
+      "args": [
+        "align",
+        "convert",
+        "-d",
+        "{input}",
+        "-f",
+        "nexus",
+        "-F",
+        "fasta",
+        "-o",
+        "{output}"
+      ],
+      "results": [
+        {
+          "version": "v0.22.1",
+          "replicates": [
+            {
+              "wall_s": 0.1672,
+              "user_s": 2.6767,
+              "sys_s": 0.7157,
+              "max_rss_mb": 24.16,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.1711,
+              "user_s": 2.5873,
+              "sys_s": 0.776,
+              "max_rss_mb": 24.29,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.1898,
+              "user_s": 2.4707,
+              "sys_s": 0.6382,
+              "max_rss_mb": 23.93,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.1738,
+              "user_s": 2.6056,
+              "sys_s": 0.6772,
+              "max_rss_mb": 23.98,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.1924,
+              "user_s": 2.6456,
+              "sys_s": 0.6554,
+              "max_rss_mb": 22.89,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 0.1789,
+              "sd": 0.0114,
+              "min": 0.1672,
+              "median": 0.1738,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 23.8516,
+              "sd": 0.5532,
+              "min": 22.895,
+              "median": 23.984,
+              "n": 5
+            }
+          },
+          "output_hash": "5b846fb787eb082f"
+        },
+        {
+          "version": "v0.23.2",
+          "replicates": [
+            {
+              "wall_s": 0.2262,
+              "user_s": 3.5204,
+              "sys_s": 0.6953,
+              "max_rss_mb": 23.09,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.2323,
+              "user_s": 3.5861,
+              "sys_s": 0.7084,
+              "max_rss_mb": 24.54,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.2258,
+              "user_s": 3.6062,
+              "sys_s": 0.6599,
+              "max_rss_mb": 23.57,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.2239,
+              "user_s": 3.6008,
+              "sys_s": 0.7085,
+              "max_rss_mb": 23.54,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.2459,
+              "user_s": 3.5493,
+              "sys_s": 0.6947,
+              "max_rss_mb": 23.11,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 0.2308,
+              "sd": 0.009,
+              "min": 0.2239,
+              "median": 0.2262,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 23.571,
+              "sd": 0.5847,
+              "min": 23.094,
+              "median": 23.539,
+              "n": 5
+            }
+          },
+          "output_hash": "5b846fb787eb082f"
+        },
+        {
+          "version": "current",
+          "replicates": [
+            {
+              "wall_s": 0.1135,
+              "user_s": 0.3541,
+              "sys_s": 1.5572,
+              "max_rss_mb": 13.26,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.1109,
+              "user_s": 0.3701,
+              "sys_s": 1.6628,
+              "max_rss_mb": 12.64,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.1116,
+              "user_s": 0.3721,
+              "sys_s": 1.9097,
+              "max_rss_mb": 12.38,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.1126,
+              "user_s": 0.4041,
+              "sys_s": 1.3515,
+              "max_rss_mb": 12.96,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.1135,
+              "user_s": 0.388,
+              "sys_s": 1.5682,
+              "max_rss_mb": 13.31,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 0.1124,
+              "sd": 0.0012,
+              "min": 0.1109,
+              "median": 0.1126,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 12.908,
+              "sd": 0.4019,
+              "min": 12.375,
+              "median": 12.957,
+              "n": 5
+            }
+          },
+          "output_hash": "5b846fb787eb082f"
+        }
+      ]
+    },
+    {
+      "id": "esselstyn-2021-summary",
+      "label": "Summarize Esselstyn et al. 2021",
+      "dataset": "esselstyn-2021",
+      "args": [
+        "align",
+        "summary",
+        "-d",
+        "{input}",
+        "-f",
+        "nexus",
+        "-o",
+        "{output}"
+      ],
+      "results": [
+        {
+          "version": "v0.22.1",
+          "replicates": [
+            {
+              "wall_s": 0.6371,
+              "user_s": 11.5571,
+              "sys_s": 0.2493,
+              "max_rss_mb": 136.13,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6618,
+              "user_s": 11.7006,
+              "sys_s": 0.2969,
+              "max_rss_mb": 135.72,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6442,
+              "user_s": 11.6875,
+              "sys_s": 0.3087,
+              "max_rss_mb": 136.65,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.661,
+              "user_s": 11.8432,
+              "sys_s": 0.3159,
+              "max_rss_mb": 136.23,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6458,
+              "user_s": 11.6111,
+              "sys_s": 0.2796,
+              "max_rss_mb": 136.46,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 0.65,
+              "sd": 0.0109,
+              "min": 0.6371,
+              "median": 0.6458,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 136.2384,
+              "sd": 0.352,
+              "min": 135.723,
+              "median": 136.227,
+              "n": 5
+            }
+          },
+          "output_hash": "f280ca8ac752e4f2"
+        },
+        {
+          "version": "v0.23.2",
+          "replicates": [
+            {
+              "wall_s": 0.6818,
+              "user_s": 12.1009,
+              "sys_s": 0.2488,
+              "max_rss_mb": 135.28,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.7027,
+              "user_s": 12.1962,
+              "sys_s": 0.27,
+              "max_rss_mb": 136.27,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6741,
+              "user_s": 12.1645,
+              "sys_s": 0.2863,
+              "max_rss_mb": 136.11,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6795,
+              "user_s": 12.2003,
+              "sys_s": 0.3043,
+              "max_rss_mb": 136.18,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.6829,
+              "user_s": 12.2611,
+              "sys_s": 0.2941,
+              "max_rss_mb": 135.32,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 0.6842,
+              "sd": 0.0109,
+              "min": 0.6741,
+              "median": 0.6818,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 135.8328,
+              "sd": 0.4855,
+              "min": 135.285,
+              "median": 136.113,
+              "n": 5
+            }
+          },
+          "output_hash": "f280ca8ac752e4f2"
+        },
+        {
+          "version": "current",
+          "replicates": [
+            {
+              "wall_s": 0.4767,
+              "user_s": 7.9077,
+              "sys_s": 0.3201,
+              "max_rss_mb": 132.02,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.4805,
+              "user_s": 7.7791,
+              "sys_s": 0.3562,
+              "max_rss_mb": 132.65,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.4806,
+              "user_s": 7.8,
+              "sys_s": 0.3805,
+              "max_rss_mb": 132.28,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.4798,
+              "user_s": 7.905,
+              "sys_s": 0.3697,
+              "max_rss_mb": 132.67,
+              "ok": true,
+              "exit_code": 0
+            },
+            {
+              "wall_s": 0.4789,
+              "user_s": 7.9304,
+              "sys_s": 0.3463,
+              "max_rss_mb": 132.09,
+              "ok": true,
+              "exit_code": 0
+            }
+          ],
+          "summary": {
+            "wall_s": {
+              "mean": 0.4793,
+              "sd": 0.0016,
+              "min": 0.4767,
+              "median": 0.4798,
+              "n": 5
+            },
+            "max_rss_mb": {
+              "mean": 132.3408,
+              "sd": 0.3031,
+              "min": 132.02,
+              "median": 132.277,
+              "n": 5
+            }
+          },
+          "output_hash": "f280ca8ac752e4f2"
+        }
+      ]
+    }
+  ]
+}
