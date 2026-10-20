@@ -115,7 +115,7 @@ impl FileStats {
 /// use std::path::PathBuf;
 /// use segul_core::core::maf::summary::MafSummary;
 ///
-/// let output = tempdir::TempDir::new("maf-summary").unwrap();
+/// let output = tempfile::TempDir::with_prefix("maf-summary").unwrap();
 /// let files = vec![PathBuf::from("tests/files/maf/simple.maf")];
 /// MafSummary::new(&files, output.path(), None).summarize().unwrap();
 /// assert!(output.path().join("maf_summary_per_file.csv").exists());
@@ -372,7 +372,7 @@ fn ratio(numerator: usize, denominator: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     fn read_csv(path: &Path) -> Vec<HashMap<String, String>> {
         let mut reader = csv::Reader::from_path(path).unwrap();
@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_simple_summary() {
-        let output = TempDir::new("maf-summary").unwrap();
+        let output = TempDir::with_prefix("maf-summary").unwrap();
         let files = vec![PathBuf::from("tests/files/maf/simple.maf")];
         let (per_file, per_species) = MafSummary::new(&files, output.path(), Some("simple"))
             .summarize()
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_combined_rows_for_many_files() {
-        let output = TempDir::new("maf-summary-many").unwrap();
+        let output = TempDir::with_prefix("maf-summary-many").unwrap();
         let files = vec![
             PathBuf::from("tests/files/maf/simple.maf"),
             PathBuf::from("tests/files/maf/simple.maf"),

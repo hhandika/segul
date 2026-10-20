@@ -7,7 +7,7 @@ use std::path::Path;
 use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
 use lazy_static::lazy_static;
-use nom::{bytes::complete, character, sequence, IResult};
+use nom::{bytes::complete, character, sequence, IResult, Parser};
 use regex::Regex;
 
 use crate::helper::alphabet;
@@ -217,7 +217,7 @@ impl<'a> Nexus<'a> {
     #[inline]
     fn parse_datatype(&self, input: &str) -> String {
         let tag: IResult<&str, &str> =
-            sequence::preceded(complete::tag("datatype="), character::complete::alpha1)(input);
+            sequence::preceded(complete::tag("datatype="), character::complete::alpha1).parse(input);
         self.parse_string(tag)
     }
 
@@ -248,13 +248,13 @@ impl<'a> Nexus<'a> {
 
     fn parse_ntax(&self, input: &str) -> usize {
         let tag: IResult<&str, &str> =
-            sequence::preceded(complete::tag("ntax="), character::complete::digit1)(input);
+            sequence::preceded(complete::tag("ntax="), character::complete::digit1).parse(input);
         self.parse_usize(tag)
     }
 
     fn parse_characters(&self, input: &str) -> usize {
         let tag: IResult<&str, &str> =
-            sequence::preceded(complete::tag("nchar="), character::complete::digit1)(input);
+            sequence::preceded(complete::tag("nchar="), character::complete::digit1).parse(input);
         self.parse_usize(tag)
     }
 

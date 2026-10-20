@@ -6,7 +6,7 @@ use std::path::Path;
 
 use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
-use nom::{character::complete, sequence, IResult};
+use nom::{character::complete, sequence, IResult, Parser};
 
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
@@ -127,9 +127,8 @@ impl<'a> Phylip<'a> {
 
     fn parse_header(&mut self, header_line: &str) {
         let header: IResult<&str, (&str, &str)> =
-            sequence::separated_pair(complete::digit0, complete::space0, complete::digit0)(
-                header_line,
-            );
+            sequence::separated_pair(complete::digit0, complete::space0, complete::digit0)
+                .parse(header_line);
 
         match header {
             Ok((_, (tax, chars))) => self.parse_num(tax, chars),

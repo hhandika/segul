@@ -5,7 +5,7 @@
 //!
 //! ```
 //! use std::path::{Path, PathBuf};
-//! use tempdir::TempDir;
+//! use tempfile::TempDir;
 //! use segul_core::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
 //! use segul_core::core::align::unalign::UnalignAlignment;
 //! use segul_core::helper::finder::SeqFileFinder;
@@ -16,7 +16,7 @@
 //! // Find matching alignment files in the input directory
 //! let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
 //! // Replace the temp directory with your own directory.
-//! let output = TempDir::new("temp").unwrap();
+//! let output = TempDir::with_prefix("temp").unwrap();
 //! let output_dir = output.path();
 //! // Unalign feature only supports fasta or fasta-int output format
 //! let output_fmt = OutputFmt::Fasta;

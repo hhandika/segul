@@ -131,7 +131,7 @@ type FileRegions<K> = (
 /// use segul_core::core::maf::convert::MafConverter;
 /// use segul_core::helper::types::OutputFmt;
 ///
-/// let output = tempdir::TempDir::new("maf").unwrap();
+/// let output = tempfile::TempDir::with_prefix("maf").unwrap();
 /// let files = vec![PathBuf::from("tests/files/maf/simple.maf")];
 /// let report = MafConverter::new(&files, output.path(), &OutputFmt::Fasta)
 ///     .convert()
@@ -638,7 +638,7 @@ mod tests {
     use std::io::Write;
 
     use flate2::{Compression, write::GzEncoder};
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     const SIMPLE_MAF: &str = "tests/files/maf/simple.maf";
     const SIMPLE_REGIONS: &str = "tests/files/bed/simple_regions.bed";
@@ -676,7 +676,7 @@ mod tests {
 
     #[test]
     fn test_blocks_without_bed() {
-        let output = TempDir::new("maf-blocks").unwrap();
+        let output = TempDir::with_prefix("maf-blocks").unwrap();
         let files = vec![PathBuf::from(SIMPLE_MAF)];
         let report = MafConverter::new(&files, output.path(), &OutputFmt::Fasta)
             .convert()
@@ -697,7 +697,7 @@ mod tests {
 
     #[test]
     fn test_repeated_blocks_get_suffixes() {
-        let output = TempDir::new("maf-twice").unwrap();
+        let output = TempDir::with_prefix("maf-twice").unwrap();
         let files = vec![PathBuf::from(SIMPLE_MAF), PathBuf::from(SIMPLE_MAF)];
         let report = MafConverter::new(&files, output.path(), &OutputFmt::Fasta)
             .convert()
@@ -708,7 +708,7 @@ mod tests {
 
     #[test]
     fn test_group_by_chrom() {
-        let output = TempDir::new("maf-chrom").unwrap();
+        let output = TempDir::with_prefix("maf-chrom").unwrap();
         let files = vec![PathBuf::from(SIMPLE_MAF)];
         MafConverter::new(&files, output.path(), &OutputFmt::Fasta)
             .with_grouping(MafGrouping::Chrom)
@@ -721,7 +721,7 @@ mod tests {
 
     #[test]
     fn test_bed_regions() {
-        let output = TempDir::new("maf-bed").unwrap();
+        let output = TempDir::with_prefix("maf-bed").unwrap();
         let files = vec![PathBuf::from(SIMPLE_MAF)];
         let bed = PathBuf::from(SIMPLE_REGIONS);
         let report = MafConverter::new(&files, output.path(), &OutputFmt::Fasta)
@@ -761,7 +761,7 @@ mod tests {
 
     #[test]
     fn test_strand_aware_and_no_clip() {
-        let output = TempDir::new("maf-strand").unwrap();
+        let output = TempDir::with_prefix("maf-strand").unwrap();
         let files = vec![PathBuf::from(SIMPLE_MAF)];
         let bed = PathBuf::from(SIMPLE_REGIONS);
         MafConverter::new(&files, output.path(), &OutputFmt::Fasta)
@@ -778,7 +778,7 @@ mod tests {
 
     #[test]
     fn test_filters_and_unmatched() {
-        let output = TempDir::new("maf-filter").unwrap();
+        let output = TempDir::with_prefix("maf-filter").unwrap();
         let files = vec![PathBuf::from(SIMPLE_MAF)];
         let filter = BlockFilter {
             min_ref_len: Some(10),
@@ -794,7 +794,7 @@ mod tests {
         let ids: Vec<&str> = records.iter().map(|(id, _)| id.as_str()).collect();
         assert_eq!(ids, ["hg18", "mm4"]);
 
-        let output = TempDir::new("maf-unmatched").unwrap();
+        let output = TempDir::with_prefix("maf-unmatched").unwrap();
         let bed = output.path().join("other.bed");
         fs::write(&bed, "chr1\t0\t10\tx\n").unwrap();
         let out_dir = output.path().join("out");
@@ -809,7 +809,7 @@ mod tests {
 
     #[test]
     fn test_file_order_and_gzip_do_not_change_output() {
-        let input = TempDir::new("maf-order-input").unwrap();
+        let input = TempDir::with_prefix("maf-order-input").unwrap();
         let text = fs::read_to_string(SIMPLE_MAF).unwrap();
         let (first, rest) = text.split_at(text.find("a score=5062.0").unwrap());
         let file_a = input.path().join("a.maf");
@@ -831,7 +831,7 @@ mod tests {
         let forward = run(vec![file_a.clone(), file_b.clone()], "forward");
         let backward = run(vec![file_b, file_a], "backward");
         assert_eq!(forward, backward);
-        let whole = TempDir::new("maf-order-whole").unwrap();
+        let whole = TempDir::with_prefix("maf-order-whole").unwrap();
         let files = vec![PathBuf::from(SIMPLE_MAF)];
         MafConverter::new(&files, whole.path(), &OutputFmt::Fasta)
             .with_bed(&bed)
@@ -844,7 +844,7 @@ mod tests {
 
     #[test]
     fn test_nexus_output() {
-        let output = TempDir::new("maf-nexus").unwrap();
+        let output = TempDir::with_prefix("maf-nexus").unwrap();
         let files = vec![PathBuf::from(SIMPLE_MAF)];
         MafConverter::new(&files, output.path(), &OutputFmt::Nexus)
             .convert()

@@ -25,7 +25,7 @@ impl<'a> Archive<'a> {
     pub fn zip(&self) -> Result<(), Box<dyn std::error::Error>> {
         let mut archive = zip::ZipWriter::new(std::fs::File::create(self.output_path)?);
         let options =
-            zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+            zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
         for file in self.input_files {
             archive.start_file(

@@ -195,10 +195,10 @@ impl<'a> AlignmentDistance<'a> {
     /// use segul_core::core::align::distance::AlignmentDistance;
     /// use segul_core::helper::types::{DataType, InputFmt};
     /// use segul_core::stats::distance::DistanceModel;
-    /// use tempdir::TempDir;
+    /// use tempfile::TempDir;
     ///
     /// let files = vec![PathBuf::from("tests/files/alignments/gene_2.nex")];
-    /// let output = TempDir::new("temp").unwrap();
+    /// let output = TempDir::with_prefix("temp").unwrap();
     /// let handle = AlignmentDistance::new(
     ///     &InputFmt::Nexus,
     ///     &DataType::Dna,
@@ -721,7 +721,7 @@ impl LocusDistance {
 #[cfg(test)]
 mod tests {
     use assert_approx_eq::assert_approx_eq;
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::*;
 
@@ -750,7 +750,7 @@ mod tests {
     }
 
     fn compute_grouped(output: &Path, long_format: bool) {
-        let input = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
         let files = write_group_loci(input.path());
         AlignmentDistance::new(
             &InputFmt::Fasta,
@@ -773,7 +773,7 @@ mod tests {
 
     #[test]
     fn test_group_means() {
-        let output = TempDir::new("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         compute_grouped(output.path(), false);
         let locus_1 = output.path().join(PER_LOCUS_GROUP_DIR).join("locus_1.csv");
         assert_eq!(
@@ -800,8 +800,8 @@ mod tests {
 
     #[test]
     fn test_group_matrix_triangle() {
-        let input = TempDir::new("temp").unwrap();
-        let output = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let files = write_group_loci(input.path());
         AlignmentDistance::new(
             &InputFmt::Fasta,
@@ -836,8 +836,8 @@ mod tests {
                 ["sp1,0.250000,0.430556", "sp2,0.430556,0.166667"],
             ),
         ] {
-            let input = TempDir::new("temp").unwrap();
-            let output = TempDir::new("temp").unwrap();
+            let input = TempDir::with_prefix("temp").unwrap();
+            let output = TempDir::with_prefix("temp").unwrap();
             let files = write_group_loci(input.path());
             AlignmentDistance::new(
                 &InputFmt::Fasta,
@@ -866,7 +866,7 @@ mod tests {
 
     #[test]
     fn test_long_format() {
-        let output = TempDir::new("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         compute_grouped(output.path(), true);
         let lines = read_lines(&output.path().join("distance_pairwise_long.csv"));
         assert_eq!(lines.len(), 10);
@@ -888,8 +888,8 @@ mod tests {
 
     #[test]
     fn test_long_format_without_grouping() {
-        let input = TempDir::new("temp").unwrap();
-        let output = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let file = write_test_locus(input.path());
         AlignmentDistance::new(
             &InputFmt::Fasta,
@@ -915,8 +915,8 @@ mod tests {
 
     #[test]
     fn test_unassigned_samples_in_long_format() {
-        let input = TempDir::new("temp").unwrap();
-        let output = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let file = write_test_locus(input.path());
         AlignmentDistance::new(
             &InputFmt::Fasta,
@@ -938,7 +938,7 @@ mod tests {
 
     #[test]
     fn test_compute_distances() {
-        let input = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
         let file = write_test_locus(input.path());
         let (matrix, _) = SeqParser::new(&file, &DataType::Dna).get_alignment(&InputFmt::Fasta);
         let handle = AlignmentDistance::new(
@@ -958,8 +958,8 @@ mod tests {
 
     #[test]
     fn test_compute_output() {
-        let input = TempDir::new("temp").unwrap();
-        let output = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let file = write_test_locus(input.path());
         let handle = AlignmentDistance::new(
             &InputFmt::Fasta,
@@ -996,7 +996,7 @@ mod tests {
 
     #[test]
     fn test_matrix_triangle() {
-        let input = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
         let file = write_test_locus(input.path());
         for (triangle, expected) in [
             (
@@ -1016,7 +1016,7 @@ mod tests {
                 ],
             ),
         ] {
-            let output = TempDir::new("temp").unwrap();
+            let output = TempDir::with_prefix("temp").unwrap();
             AlignmentDistance::new(
                 &InputFmt::Fasta,
                 &DataType::Dna,
@@ -1034,7 +1034,7 @@ mod tests {
 
     #[test]
     fn test_matrix_diagonal() {
-        let input = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
         let file = write_test_locus(input.path());
         for (diagonal, expected) in [
             (
@@ -1054,7 +1054,7 @@ mod tests {
                 ],
             ),
         ] {
-            let output = TempDir::new("temp").unwrap();
+            let output = TempDir::with_prefix("temp").unwrap();
             AlignmentDistance::new(
                 &InputFmt::Fasta,
                 &DataType::Dna,
@@ -1100,7 +1100,7 @@ mod tests {
 
     #[test]
     fn test_single_taxon_locus() {
-        let output = TempDir::new("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let file = PathBuf::from("tests/files/alignments/gene_1.nex");
         let handle = AlignmentDistance::new(
             &InputFmt::Nexus,
@@ -1116,7 +1116,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "not valid")]
     fn test_invalid_model() {
-        let output = TempDir::new("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         AlignmentDistance::new(
             &InputFmt::Nexus,
             &DataType::Aa,

@@ -2,7 +2,7 @@ use std::io::Result;
 use std::path::Path;
 
 use assert_cmd::{Command, cargo};
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 pub const DIR: &str = "temp";
 
@@ -43,6 +43,6 @@ pub fn segul(dir: &Path) -> Command {
     cmd
 }
 pub fn create_tmp_dir() -> Result<TempDir> {
-    let tmp_dir = TempDir::new(DIR)?;
+    let tmp_dir = TempDir::with_prefix(DIR)?;
     Ok(tmp_dir)
 }

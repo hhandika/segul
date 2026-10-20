@@ -55,13 +55,13 @@ impl<'a> SequenceTranspose<'a> {
     /// use std::path::PathBuf;
     /// use segul_core::core::sequence::transpose::SequenceTranspose;
     /// use segul_core::helper::types::{DataType, InputFmt, OutputFmt};
-    /// use tempdir::TempDir;
+    /// use tempfile::TempDir;
     ///
     /// let files = vec![
     ///     PathBuf::from("tests/files/alignments/gene_1.nex"),
     ///     PathBuf::from("tests/files/alignments/gene_2.nex"),
     /// ];
-    /// let output = TempDir::new("temp").unwrap();
+    /// let output = TempDir::with_prefix("temp").unwrap();
     /// let handle = SequenceTranspose::new(
     ///     &InputFmt::Nexus,
     ///     &DataType::Dna,
@@ -142,7 +142,7 @@ impl<'a> SequenceTranspose<'a> {
 mod tests {
     use std::fs;
 
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::*;
 
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_collect_sequences_removes_gaps() {
-        let input = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
         let files = write_test_loci(input.path());
         let handle = SequenceTranspose::new(
             &InputFmt::Fasta,
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn test_collect_sequences_keeps_locus_order() {
-        let input = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
         let mut files = write_test_loci(input.path());
         files.reverse();
         let handle = SequenceTranspose::new(
@@ -285,8 +285,8 @@ mod tests {
 
     #[test]
     fn test_transpose_fasta_output() {
-        let input = TempDir::new("temp").unwrap();
-        let output = TempDir::new("temp").unwrap();
+        let input = TempDir::with_prefix("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let files = write_test_loci(input.path());
         let handle = SequenceTranspose::new(
             &InputFmt::Fasta,
@@ -313,7 +313,7 @@ mod tests {
 
     #[test]
     fn test_transpose_interleaved_fasta_output() {
-        let output = TempDir::new("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let files = vec![
             PathBuf::from("tests/files/alignments/gene_1.nex"),
             PathBuf::from("tests/files/alignments/gene_2.nex"),

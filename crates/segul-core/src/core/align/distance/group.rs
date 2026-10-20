@@ -301,7 +301,7 @@ mod tests {
     use std::fs;
 
     use assert_approx_eq::assert_approx_eq;
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::*;
 
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn test_map_file_grouping() {
-        let dir = TempDir::new("temp").unwrap();
+        let dir = TempDir::with_prefix("temp").unwrap();
         let path = dir.path().join("groups.tsv");
         fs::write(&path, "sample\tgroup\nA1\tNorth pop\nA2\tSouth\n").unwrap();
         let grouping = SampleGrouping::from_map_file(&path).unwrap();

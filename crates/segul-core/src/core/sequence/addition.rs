@@ -435,7 +435,7 @@ impl SequenceCounter {
 
 #[cfg(test)]
 mod tests {
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::*;
 
@@ -471,7 +471,7 @@ mod tests {
             PathBuf::from("tests/files/alignments/gene_1.nex"),
             PathBuf::from("tests/files/alignments/gene_2.nex"),
         ];
-        let output = TempDir::new("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let addition = SequenceAddition::new(
             &input_files,
             &InputFmt::Auto,
@@ -509,7 +509,7 @@ mod tests {
             PathBuf::from("tests/files/gappy/gene_1.nex"),
             PathBuf::from("tests/files/gappy/gene_2.nex"),
         ];
-        let output = TempDir::new("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
         let addition = SequenceAddition::new(
             &input_files,
             &InputFmt::Auto,
