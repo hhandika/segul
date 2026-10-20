@@ -51,6 +51,13 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
   - Read gzipped MAF and BED files directly and write NEXUS output.
 - New [`segul-core`](https://crates.io/crates/segul-core) library crate with Cargo features (`align`, `sequence`, `read`, `contig`, and `maf`) to enable only what you need.
 
+### Performance ⚡
+
+- About 5× faster alignment conversion for FASTA, NEXUS, and PHYLIP input, thanks to faster sequence validation.
+- NEXUS input now uses about 1× the file size in memory (was about 3×). Interleaved NEXUS and PHYLIP output no longer doubles memory use.
+- Faster `segul align concat`: alignments are parsed in parallel, and memory stays close to the size of the concatenated alignment.
+- 5–10× faster `segul contig summary`.
+
 ### Breaking Changes ⚠️
 
 - MAF conversion is now `segul maf convert` (was `segul maf maf`).
@@ -65,6 +72,8 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - Fix BED parsing issues with four-column files, CRLF line endings, and matching that ignored the chromosome.
 - Fix MAF blocks of the same locus overwriting each other instead of being joined.
 - Fix negative MAF block scores being ignored.
+- Fix the taxon order of `segul align concat` output changing between runs.
+- Update dependencies to resolve security advisories.
 
 See the [release notes](CHANGELOG.md) for full details.
 

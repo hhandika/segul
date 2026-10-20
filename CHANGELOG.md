@@ -42,7 +42,23 @@ New Features:
 - `segul align distance` group means: group samples into populations or species with `--group-delimiter` and `--group-fields` (e.g. `_` and 2 turn `Rattus_rattus_FMNH1` into `Rattus_rattus`), `--group-regex`, `--group-file` (a CSV/TSV with sample and group columns), or `--group-auto` to detect the delimiter and field count from sample IDs. Writes within- and between-group mean distances for each locus to `per_locus_group/`, and pooled over all sample pairs of all loci to `<prefix>_group_mean.csv`, with pair counts in `<prefix>_group_pairs.csv`. The group mean matrices hold the within-group mean on the diagonal by default. Use `--diagonal mean` or `max` for the mean or highest distance within each group, or `zero`, `blank`, or `na`.
 - `segul align distance --long`: write the pairwise distances of all loci to one long table, `<prefix>_pairwise_long.csv` (locus, samples, groups, compared sites, distance), and with grouping, group statistics (pairs, mean, SD, min, max) per locus and pooled to `<prefix>_group_long.csv`.
 
+Performance:
+
+- NEXUS files are now read line by line instead of loading whole blocks into memory. Peak memory for a NEXUS file drops from about 3× to 1× the file size. Commands that only need sample IDs (such as `segul sequence id` and the indexing step of `segul align concat`) stop reading after the IDs and use only a few MB.
+- Interleaved NEXUS and PHYLIP output is written directly from the alignment instead of copying it into chunks first. Peak memory drops from about 2.4× to 1× the alignment size.
+- DNA and amino acid validation uses a lookup table instead of searching the alphabet for every character. Converting alignments is about 5× faster for all input formats (for example, 2.5 s to 0.45 s for a 400 MB NEXUS file).
+- `segul contig summary` counts bases with a byte histogram and is 5–10× faster (2.1 s to 0.27 s for 400 MB of contigs).
+- `segul align concat` parses alignments in parallel and appends them without extra copies. In our tests, concatenating 2,000 loci took 0.37 s instead of 1.2 s, and 60 large loci (1.1 GB) took 1.1 s and 1.2 GB of memory instead of 8.0 s and 2.7 GB.
+- The FASTA and PHYLIP parsers reuse one line buffer and split sample IDs from sequences faster. Reading IDs from a PHYLIP file is about 4× faster.
+
+Dependencies:
+
+- Update dependencies, including `rand` and `time`, to resolve security advisories.
+- Replace the unmaintained `tempdir` crate with `tempfile`, which removes the vulnerable `remove_dir_all` dependency.
+
 Bug Fixes:
+
+- Fix the taxon order of `segul align concat` output changing between runs. Taxa now appear in the order they are first found in the sorted input files. The same fix applies to other commands that collect IDs across files.
 
 - Fix MAF conversion without a BED file failing when a reference has more than one block.
 - Fix BED files with four columns failing to parse because of the line ending. BED lines with CRLF endings, blank lines, or too few columns are handled or reported with the line number.
