@@ -151,6 +151,7 @@ def cmd_report(args, config) -> int:
 
 
 def cmd_plot(args, config) -> int:
+<<<<<<< HEAD
     report = load_report(args.results)
     # Plot only the tasks still in bench.toml, so removed tasks drop out of
     # the charts without rerunning the benchmark.
@@ -165,6 +166,9 @@ def cmd_plot(args, config) -> int:
             if dataset.bases:
                 d["bases"] = dataset.bases
     plot_files(report, args.output_dir)
+=======
+    plot_files(load_report(args.results), args.output_dir)
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
     return 0
 
 
