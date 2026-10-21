@@ -33,6 +33,70 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - **Bioconda (CLI):** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
 - **Python package:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Docs](https://www.segul.app/docs/api-usage/python/intro)
 
+## Installation
+
+### GUI Version
+
+#### Desktop
+
+<a href="https://apps.microsoft.com/detail/SEGUI/9NP1BQ6FW9PW?mode=direct"><img alt="Get it from Microsoft" src="https://get.microsoft.com/images/en-us%20dark.svg" height="48"></a>
+<a href="https://apps.apple.com/us/app/segui/id6447999874?mt=12&itsct=apps_box_badge&itscg=30200"><img alt="Download on the Mac App Store" src="https://tools.applemediaservices.com/api/badges/download-on-the-mac-app-store/black/en-us?size=250x83&amp;releaseDate=1716076800" height="48"></a>
+<a href="https://snapcraft.io/segui"><img alt="Get it from the Snap Store" src="https://snapcraft.io/static/images/badges/en/snap-store-black.svg" height="48"></a>
+
+#### Mobile
+
+<a href="https://apps.apple.com/us/app/segui/id6447999874?itsct=apps_box_badge&itscg=30200"><img alt="Download on the App Store" src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1716076800" height="48"></a>
+<a href="https://play.google.com/store/apps/details?id=com.hhandika.segui&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1"><img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="71"></a>
+
+Learn more about device requirements and GUI app installation in the [documentation](https://www.segul.app/docs/installation/install_gui).
+
+### CLI Version
+
+The CLI app may work in any Rust-supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). However, we only tested and officially support the following platforms:
+
+- Linux
+- MacOS
+- Windows
+- Windows Subsystem for Linux (WSL)
+
+> **Notes**: SEGUL v0.23.2 adds support for Windows on ARM64 architecture, bringing full support for both x86_64 and ARM64 architectures on Windows, Linux, and MacOS.
+
+#### Quick Install
+
+On Linux and macOS, install the latest release with one command:
+
+```bash
+curl -fsSL https://segul.app/install.sh | sh
+```
+
+The script picks the right binary for your system and installs it to `~/.local/bin` without root access. See the [installer options](https://www.segul.app/docs/installation/install_cli#installer-script). On Windows, use the pre-compiled binaries below.
+
+#### CLI Installation Methods
+
+- Pre-compiled binaries: [[Releases]](https://github.com/hhandika/segul/releases) [[Docs]](https://www.segul.app/docs/installation/install_binary)
+- Bioconda: [[Package]](https://anaconda.org/bioconda/segul) [[Docs]](https://www.segul.app/docs/installation/install_conda)
+- Package manager: [[Docs]](https://www.segul.app/docs/installation/install_cargo)
+- From source: [[Docs]](https://www.segul.app/docs/installation/install_source)
+- Beta version: [[Docs]](https://www.segul.app/docs/installation/install_dev)
+
+### API version
+
+The API version is available for Rust and other programming languages. For Rust users, you can install it via Cargo:
+
+```bash
+cargo add segul
+```
+
+#### Python
+
+We provide binding for Python (called [pysegul](https://pypi.org/project/pysegul/)). Use SEGUL just like any other Python package:
+
+```python
+pip install pysegul
+```
+
+Learn more about using SEGUL API in the [documentation](https://www.segul.app/docs/api-usage/python/intro).
+
 ## What's New in SEGUL 0.24.0
 
 ### New Features 🚀
@@ -97,84 +161,6 @@ Alignment partition formats:
 2. NEXUS
 
 The NEXUS partition can be written as a charset block embedded in NEXUS formatted sequences or a separate file.
-
-## Installation
-
-### GUI Version
-
-### Desktop
-
-[<img style="padding-left: 15" alt="Microsoft Store download" src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" />](https://apps.microsoft.com/detail/SEGUI/9NP1BQ6FW9PW?mode=direct)
-
-[<img
-    style="padding: 15"
-    src="https://tools.applemediaservices.com/api/badges/download-on-the-mac-app-store/black/en-us?size=250x83&amp;releaseDate=1716076800"
-    alt="Download on the Mac App Store"
-    width="220"
-  />](https://apps.apple.com/us/app/segui/id6447999874?mt=12&itsct=apps_box_badge&itscg=30200)
-
-[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/segui)
-
-### Mobile
-
-[<img style="padding-left: 15" src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1716076800" alt="Download on the App Store" width="180">](https://apps.apple.com/us/app/segui/id6447999874?itsct=apps_box_badge&itscg=30200)
-
-[<img
-    alt="Get it on Google Play"
-    src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-    height="80"
-  />](https://play.google.com/store/apps/details?id=com.hhandika.segui&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1)
-
-Learn more about device requirements and GUI app installation in the [documentation](https://www.segul.app/docs/installation/install_gui).
-
-### CLI Version
-
-The CLI app may work in any Rust-supported [platform](https://doc.rust-lang.org/nightly/rustc/platform-support.html). However, we only tested and officially support the following platforms:
-
-- Linux
-- MacOS
-- Windows
-- Windows Subsystem for Linux (WSL)
-
-> **Notes**: SEGUL v0.23.2 adds support for Windows on ARM64 architecture, bringing full support for both x86_64 and ARM64 architectures on Windows, Linux, and MacOS.
-
-#### Quick Install
-
-> **Note**: The one-line installer is coming with the v0.24 release. Until then, use one of the installation methods below.
-
-On Linux and macOS, install the latest release with one command:
-
-```bash
-curl -fsSL https://segul.app/install.sh | sh
-```
-
-The script picks the right binary for your system and installs it to `~/.local/bin` without root access. See the [installer options](https://www.segul.app/docs/installation/install_cli#installer-script). On Windows, use the pre-compiled binaries below.
-
-#### CLI Installation Methods
-
-- Pre-compiled binaries: [[Releases]](https://github.com/hhandika/segul/releases) [[Docs]](https://www.segul.app/docs/installation/install_binary)
-- Bioconda: [[Package]](https://anaconda.org/bioconda/segul) [[Docs]](https://www.segul.app/docs/installation/install_conda)
-- Package manager: [[Docs]](https://www.segul.app/docs/installation/install_cargo)
-- From source: [[Docs]](https://www.segul.app/docs/installation/install_source)
-- Beta version: [[Docs]](https://www.segul.app/docs/installation/install_dev)
-
-### API version
-
-The API version is available for Rust and other programming languages. For Rust users, you can install it via Cargo:
-
-```bash
-cargo add segul
-```
-
-#### Python
-
-We provide binding for Python (called [pysegul](https://pypi.org/project/pysegul/)). Use SEGUL just like any other Python package:
-
-```python
-pip install pysegul
-```
-
-Learn more about using SEGUL API in the [documentation](https://www.segul.app/docs/api-usage/python/intro).
 
 ## Features
 
