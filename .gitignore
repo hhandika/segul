@@ -18,3 +18,9 @@
 *.log
 
 *.snap
+# Benchmark (bench/): downloaded binaries, generated data, and charts
+bench/.cache/
+bench/figures/
+bench/.venv/
+__pycache__/
+*.py[cod]

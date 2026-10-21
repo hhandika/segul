@@ -3,10 +3,9 @@ use std::path::PathBuf;
 use clap::Subcommand;
 
 use clap::builder::TypedValueParser as _;
-use clap::{builder, Args};
+use clap::{Args, builder};
 
 use super::{CommonSeqInput, CommonSeqOutput, IOArgs};
-
 
 #[derive(Subcommand)]
 pub(crate) enum SequenceSubcommand {
@@ -60,13 +59,13 @@ pub(crate) struct SequenceAddArgs {
     #[cfg(not(target_os = "windows"))]
     #[arg(
         long,
-        help = "Add to matching files in standard input path (allow wildcard)",
+        help = "Add to matching files in standard input path (allow wildcard)"
     )]
     pub(crate) to_input: Option<Vec<PathBuf>>,
     #[cfg(target_os = "windows")]
     #[arg(
         long,
-        help = "Add to matching files in standard input path (allow wildcard)",
+        help = "Add to matching files in standard input path (allow wildcard)"
     )]
     pub(crate) to_input: Option<String>,
     #[arg(
@@ -81,22 +80,18 @@ pub(crate) struct SequenceAddArgs {
     #[arg(
         long,
         help = "Add to a single file. Output will be in an interleaved FASTA file",
-        required_unless_present("to_dir"),
+        required_unless_present("to_dir")
     )]
     pub(crate) to_file: Option<PathBuf>,
-    #[arg(
-        long,
-        help = "Only produce output that have added sequences",
-    )]
+    #[arg(long, help = "Only produce output that have added sequences")]
     pub(crate) added_only: bool,
     #[arg(
         long,
         help = "Include filename in sequence ID (for a single file output only)",
-        required_unless_present("to_dir"),
+        required_unless_present("to_dir")
     )]
     pub(crate) include_filename: bool,
 }
-
 
 #[derive(Args)]
 pub(crate) struct SequenceExtractArgs {
@@ -116,15 +111,15 @@ pub(crate) struct SequenceExtractArgs {
     )]
     pub(crate) re: Option<String>,
     #[arg(
-        long = "id", 
+        long = "id",
         help = "Input sequence IDa separated by semicolon",
         required_unless_present_any(["re", "file"]),
         require_equals = true,
     )]
     pub(crate) id: Option<String>,
     #[arg(
-        long = "file", 
-        help = "Specify file for extracting sequences", 
+        long = "file",
+        help = "Specify file for extracting sequences",
         conflicts_with_all(["re", "id"]),
     )]
     pub(crate) file: Option<PathBuf>,
@@ -138,16 +133,18 @@ pub(crate) struct SequenceFilterArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output directory", default_value = "Sequence-Filter")]
+    #[arg(
+        short,
+        long,
+        help = "Output directory",
+        default_value = "Sequence-Filter"
+    )]
     pub(crate) output: PathBuf,
     #[arg(long = "min-length", help = "Filter by minimal sequence length")]
     pub(crate) min_len: Option<usize>,
     #[arg(long = "max-length", help = "Filter by maximum sequence length")]
     pub(crate) max_len: Option<usize>,
-    #[arg(
-        long = "max-gap",
-        help = "Filter by maximum gap percentage",
-    )]
+    #[arg(long = "max-gap", help = "Filter by maximum gap percentage")]
     pub(crate) max_gap: Option<f64>,
 }
 
@@ -204,10 +201,7 @@ pub(crate) struct SequenceRenameArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "dry-run", help = "Dry run")]
     pub(crate) dry_run: bool,
-    #[arg(
-        long = "replace-id", 
-        help = "Rename using input IDs in a file",         
-    )]
+    #[arg(long = "replace-id", help = "Rename using input IDs in a file")]
     pub(crate) replace_id: Option<PathBuf>,
     #[arg(long = "remove", help = "Remove matching input string")]
     pub(crate) remove: Option<String>,
@@ -257,22 +251,24 @@ pub(crate) struct SequenceTranslateArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "Sequence-Translate")]
+    #[arg(
+        short,
+        long,
+        help = "Output path",
+        default_value = "Sequence-Translate"
+    )]
     pub(crate) output: PathBuf,
     #[arg(long = "show-tables", help = "Show supported NCBI translation tables")]
     pub(crate) show_tables: bool,
     #[arg(
-        long = "reading-frame", 
-        help = "Specify reading frame", 
+        long = "reading-frame",
+        help = "Specify reading frame",
         default_value_t = 1,
         value_parser = builder::PossibleValuesParser::new(["1", "2", "3"])
             .map(|x| x.parse::<usize>().unwrap_or(1)),
     )]
     pub(crate) reading_frame: usize,
-    #[arg(
-        long = "auto-read",
-        help = "Automatically detect reading frame",
-    )]
+    #[arg(long = "auto-read", help = "Automatically detect reading frame")]
     pub(crate) auto_read: bool,
     #[arg(
         long = "table",
@@ -303,7 +299,7 @@ pub(crate) struct SequenceTranslateArgs {
                 "29",
                 "30",
                 "33",
-            ]) 
+            ])
     )]
     pub(crate) table: String,
 }
@@ -323,6 +319,11 @@ pub(crate) struct SequenceTransposeArgs {
             ["fasta", "fasta-int"]),
     )]
     pub(crate) output_fmt: String,
-    #[arg(short, long, help = "Output directory", default_value = "Sequence-Transpose")]
+    #[arg(
+        short,
+        long,
+        help = "Output directory",
+        default_value = "Sequence-Transpose"
+    )]
     pub(crate) output: PathBuf,
 }

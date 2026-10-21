@@ -46,7 +46,7 @@ alphanumeric-sort.workspace = true
 csv.workspace = true
 
 [dev-dependencies]
-tempdir.workspace = true
+tempfile.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

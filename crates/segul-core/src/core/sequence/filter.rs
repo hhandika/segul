@@ -4,9 +4,9 @@
 //! the `sequence filter` will filter sequences within the alignment.
 //! The filtering criteria are:
 //! - Total percentage of gaps in a sequence. The sequence will be removed
-//!     if the percentage of gaps is higher than the threshold.
+//!   if the percentage of gaps is higher than the threshold.
 //! - Minimum sequence length. Filter sequence that has an equal or more sequence length
-//!     than the specified number.
+//!   than the specified number.
 
 use std::{
     path::{Path, PathBuf},
@@ -107,7 +107,7 @@ impl<'a> SequenceFiltering<'a> {
     /// Example:
     /// ```
     /// use std::path::{Path, PathBuf};
-    /// use tempdir::TempDir;
+    /// use tempfile::TempDir;
     /// use segul_core::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
     /// use segul_core::core::sequence::filter::{SequenceFiltering, SeqFilteringParameters};
     /// use segul_core::helper::finder::SeqFileFinder;
@@ -118,7 +118,7 @@ impl<'a> SequenceFiltering<'a> {
     /// let input_dir = Path::new("tests/files/alignments");
     /// let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
     /// // Replace the temp directory with your own directory.
-    /// let output = TempDir::new("tempt").unwrap();
+    /// let output = TempDir::with_prefix("tempt").unwrap();
     /// let output_fmt = OutputFmt::Nexus;
     /// let params = SeqFilteringParameters::MinSequenceLength(7);
     /// let handle = SequenceFiltering::new(&files, &input_fmt, &datatype, &output.path(), &output_fmt,  &params);
@@ -225,14 +225,14 @@ mod tests {
     use crate::helper::finder::SeqFileFinder;
 
     use super::*;
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     macro_rules! setup {
         ($input_dir: ident, $handle: ident, $params: ident, $output: ident) => {
             let files = SeqFileFinder::new($input_dir).find(&InputFmt::Nexus);
             let input_fmt = InputFmt::Nexus;
             let datatype = DataType::Dna;
-            let $output = TempDir::new("output").unwrap();
+            let $output = TempDir::with_prefix("output").unwrap();
             let $handle = SequenceFiltering::new(
                 &files,
                 &input_fmt,

@@ -81,7 +81,7 @@ impl CommonStats {
         let n = sorted_vec.len();
         let midpoint = n / 2;
 
-        if n % 2 == 0 {
+        if n.is_multiple_of(2) {
             self.median = (sorted_vec[midpoint - 1] + sorted_vec[midpoint]) as f64 / 2.0;
         } else {
             self.median = sorted_vec[midpoint] as f64;

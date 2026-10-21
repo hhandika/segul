@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use colored::Colorize;
 
 use crate::{
-    cli::{args::sequence::SequenceFilterArgs, collect_paths, AlignSeqInput, InputCli, OutputCli},
+    cli::{AlignSeqInput, InputCli, OutputCli, args::sequence::SequenceFilterArgs, collect_paths},
     core::sequence::filter::{SeqFilteringParameters, SequenceFiltering},
     helper::logger::AlignSeqLogger,
 };
@@ -65,7 +65,7 @@ impl<'a> SequenceFilterParser<'a> {
             self.counter_params += 1;
         }
         if let Some(max_gap) = self.args.max_gap {
-            log::info!("{:18}: {}\n", "Max gaps", format!("{}%", max_gap * 100.0));
+            log::info!("{:18}: {}%\n", "Max gaps", max_gap * 100.0);
             self.params = SeqFilteringParameters::PercentMaxGap(max_gap);
             self.counter_params += 1;
         }

@@ -318,17 +318,12 @@ impl std::str::FromStr for PartitionFmt {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub enum DnaStrand {
     Forward,
     Reverse,
+    #[default]
     Missing,
-}
-
-impl Default for DnaStrand {
-    fn default() -> Self {
-        Self::Missing
-    }
 }
 
 impl std::fmt::Display for DnaStrand {
@@ -604,41 +599,41 @@ pub enum SummaryOutput {
 pub enum GeneticCodes {
     /// Ncbi Table 1
     StandardCode,
-    /// Ncbi Table 2        
+    /// Ncbi Table 2
     VertMtDna,
-    /// Ncbi Table 3         
+    /// Ncbi Table 3
     YeastMtDna,
-    /// Ncbi Table 4      
+    /// Ncbi Table 4
     MoldProtCoelMtDna,
-    /// Ncbi Table 5   
+    /// Ncbi Table 5
     InvertMtDna,
-    /// Ncbi Table 6      
+    /// Ncbi Table 6
     CilDasHexNu,
-    /// Ncbi Table 9     
+    /// Ncbi Table 9
     EchiFlatwormMtDna,
-    /// Ncbi Table 10  
+    /// Ncbi Table 10
     EuplotidNu,
-    /// Ncbi Table 11     
+    /// Ncbi Table 11
     BacArchPlantPlast,
     /// Ncbi Table 12
     AltYeastNu,
-    /// Ncbi Table 13        
+    /// Ncbi Table 13
     AsciMtDna,
-    /// Ncbi Table 14     
+    /// Ncbi Table 14
     AltFlatwormMtDna,
     /// Ncbi Table 16
     ChlorMtDna,
     /// Ncbi Table 21
     TrematodeMtDna,
-    /// Ncbi Table 22  
+    /// Ncbi Table 22
     ScenedesmusMtDna,
     /// Ncbi Table 23
     ThrausMtDna,
-    /// Ncbi Table 24      
+    /// Ncbi Table 24
     RhabdopMtDna,
     /// Ncbi Table 25
     CaDivSR1GraciBac,
-    /// Ncbi Table 26   
+    /// Ncbi Table 26
     PachyNu,
     /// Ncbi Table 29
     MesodiniumNu,
@@ -654,7 +649,10 @@ impl std::fmt::Display for GeneticCodes {
             Self::StandardCode => write!(f, "Standard Code"),
             Self::VertMtDna => write!(f, "Vertebrate Mitochondrial DNA"),
             Self::YeastMtDna => write!(f, "Yeast Mitochondrial DNA"),
-            Self::MoldProtCoelMtDna => write!(f, "Mold, Protozoan, and Coelenterate Mitochondrial DNA and the Mycoplasma/Spiroplasma Code"),
+            Self::MoldProtCoelMtDna => write!(
+                f,
+                "Mold, Protozoan, and Coelenterate Mitochondrial DNA and the Mycoplasma/Spiroplasma Code"
+            ),
             Self::InvertMtDna => write!(f, "Invertebrate Mitochondrial DNA"),
             Self::CilDasHexNu => write!(f, "Ciliate, Dasycladacean and Hexamita Nuclear Code"),
             Self::EchiFlatwormMtDna => write!(f, "Echinoderm and Flatworm Mitochondrial DNA"),

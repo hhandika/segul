@@ -9,7 +9,13 @@ use segul::helper::types::InputFmt;
 
 #[test]
 fn test_rename() {
-    initiate_cmd!(cmd, "sequence", "rename", "crates/segul-core/tests/files/alignments/", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "sequence",
+        "rename",
+        "crates/segul-core/tests/files/alignments/",
+        tmp_dir
+    );
     cmd.arg("--remove=D").assert().success();
     test_results!(4, tmp_dir, "Sequence-Rename", Nexus);
 }

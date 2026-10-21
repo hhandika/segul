@@ -29,7 +29,7 @@ use crate::{
 /// 1. Minimal: read count only
 /// 2. Default: essential statistics, such as read counts, base counts, gc, at, and n content, and qscore statistics
 /// 3. Complete: all the essential plus summary
-///     statistics per position in read for each file.
+///    statistics per position in read for each file.
 pub struct GenomicReadSummary<'a> {
     /// Input path.
     pub inputs: &'a mut [PathBuf],
@@ -76,13 +76,13 @@ impl<'a> GenomicReadSummary<'a> {
     /// use std::path::{Path, PathBuf};
     /// use segul_core::core::read::summarize::GenomicReadSummary;
     /// use segul_core::helper::types::{SeqReadFmt, SummaryMode};
-    /// use tempdir::TempDir;
+    /// use tempfile::TempDir;
     ///
     /// let mut files = vec![
     ///    PathBuf::from("tests/files/raw/read_1.fastq"),
     ///    PathBuf::from("tests/files/raw/read_2.fastq"),
     /// ];
-    /// let output = TempDir::new("tempt").unwrap();
+    /// let output = TempDir::with_prefix("tempt").unwrap();
     /// let spinner = segul_core::helper::utils::set_spinner();
     /// let mut handle = GenomicReadSummary::new(
     ///     &mut files,
@@ -214,7 +214,7 @@ impl<'a> GenomicReadSummary<'a> {
 mod test {
     use std::path::PathBuf;
 
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use crate::core::read::summarize::GenomicReadSummary;
     use crate::helper::types::{SeqReadFmt, SummaryMode};
@@ -226,7 +226,7 @@ mod test {
             PathBuf::from("tests/files/raw/read_1.fastq"),
             PathBuf::from("tests/files/raw/read_2.fastq"),
         ];
-        let output = TempDir::new("tempt").unwrap();
+        let output = TempDir::with_prefix("tempt").unwrap();
         let handler = GenomicReadSummary::new(
             &mut files,
             &SeqReadFmt::Auto,
@@ -244,7 +244,7 @@ mod test {
             PathBuf::from("tests/files/raw/read_1.fastq"),
             PathBuf::from("tests/files/raw/read_2.fastq"),
         ];
-        let output = TempDir::new("tempt").unwrap();
+        let output = TempDir::with_prefix("tempt").unwrap();
         let handler = GenomicReadSummary::new(
             &mut files,
             &SeqReadFmt::Auto,

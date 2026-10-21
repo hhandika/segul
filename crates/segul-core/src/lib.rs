@@ -44,7 +44,7 @@
 //! ```rust
 //! use std::path::Path;
 //!
-//! use tempdir::TempDir;
+//! use tempfile::TempDir;
 //!
 //! use segul_core::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 //! use segul_core::helper::sequence::SeqParser;
@@ -55,7 +55,7 @@
 //! let datatype = DataType::Dna;
 //! // Replace binding with your output directory, for example:
 //! // let output_path = Path::new("output").join("my_output_alignment");
-//! let binding = TempDir::new("temp").unwrap();
+//! let binding = TempDir::with_prefix("temp").unwrap();
 //! let output_path = binding.path().join("my_output_alignment");
 //! let output_fmt = OutputFmt::Phylip;
 //! let (sequence_matrix, header) = SeqParser::new(input, &datatype).parse(&input_fmt);

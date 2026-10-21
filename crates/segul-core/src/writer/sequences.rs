@@ -1,5 +1,4 @@
 //! Write sequences to file
-use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::path::Path;
 
@@ -51,9 +50,9 @@ impl<'a> SeqWriter<'a> {
             if !interleave {
                 writeln!(writer, "{}", seq).unwrap();
             } else {
-                let chunks = self.chunk_seq(seq, n);
-                chunks.iter().for_each(|chunk| {
-                    writeln!(writer, "{}", chunk).unwrap();
+                seq.as_bytes().chunks(n).for_each(|chunk| {
+                    writer.write_all(chunk).unwrap();
+                    writeln!(writer).unwrap();
                 })
             }
         });
@@ -130,8 +129,9 @@ impl<'a> SeqWriter<'a> {
         // we insert newline for
         // the non-terminated new line matrix commmand.
         writeln!(writer)?;
+        self.get_max_id_len();
         self.matrix.iter().for_each(|(taxa, seq)| {
-            self.write_padded_seq(writer, taxa, seq)
+            self.write_padded_seq(writer, taxa, seq.as_bytes())
                 .expect("Failed writing nexus data matrix")
         });
 
@@ -139,102 +139,54 @@ impl<'a> SeqWriter<'a> {
     }
 
     fn write_matrix_nex_int<W: Write>(&mut self, writer: &mut W) {
-        let mat_int = self.get_matrix_int();
-        mat_int.values().for_each(|seq| {
-            writeln!(writer).unwrap(); // insert newline before each group.
-            seq.iter().for_each(|s| {
-                self.write_padded_seq(writer, &s.id, &s.seq)
-                    .expect("Failed writing nexus interleave data matrix");
-            });
-        });
+        self.get_max_id_len();
+        self.write_matrix_int(writer, true);
     }
 
     fn write_matrix_phy_int<W: Write>(&mut self, writer: &mut W) {
-        let mat_int = self.get_matrix_int();
-        mat_int.iter().for_each(|(idx, seq)| {
-            writeln!(writer).unwrap(); // insert newline before each group.
-            seq.iter().for_each(|s| match idx {
-                0 => self
-                    .write_padded_seq(writer, &s.id, &s.seq)
-                    .expect("Failed writing phylip data matrix"),
-                _ => writeln!(writer, "{}", s.seq).unwrap(),
-            });
-        });
-    }
-
-    fn get_matrix_int(&self) -> BTreeMap<usize, Vec<Sequence>> {
-        let mut vec: BTreeMap<usize, Vec<Sequence>> = BTreeMap::new();
-        let n = self.get_interleave_len();
-        self.matrix.iter().for_each(|(id, seq)| {
-            let chunks = self.chunk_seq(seq, n);
-            chunks.iter().enumerate().for_each(|(idx, seqs)| {
-                let mat = Sequence::new(id, seqs);
-                match vec.get_mut(&idx) {
-                    Some(value) => value.push(mat),
-                    None => {
-                        vec.insert(idx, vec![mat]);
-                    }
-                }
-            })
-        });
-
-        vec
-    }
-
-    fn chunk_seq(&self, seq: &str, n: usize) -> Vec<String> {
-        seq.as_bytes()
-            .chunks(n)
-            .map(|chunk| {
-                std::str::from_utf8(chunk)
-                    .expect("Failed chunking sequence")
-                    .to_string()
-            })
-            .collect()
-    }
-
-    fn write_padded_seq<W: Write>(&mut self, writer: &mut W, taxa: &str, seq: &str) -> Result<()> {
         self.get_max_id_len();
-        write!(writer, "{}", taxa)?;
-        write!(writer, "{}", self.insert_whitespaces(taxa, self.id_len))?;
-        writeln!(writer, "{}", seq)?;
+        self.write_matrix_int(writer, false);
+    }
+
+    /// Write interleaved blocks by slicing each sequence in place,
+    /// avoiding copying the matrix into chunks.
+    /// For phylip, the IDs are only written in the first block.
+    fn write_matrix_int<W: Write>(&self, writer: &mut W, id_every_block: bool) {
+        let n = self.get_interleave_len();
+        let longest = self.matrix.values().map(|s| s.len()).max().unwrap_or(0);
+        for (idx, start) in (0..longest).step_by(n).enumerate() {
+            writeln!(writer).unwrap(); // insert newline before each group.
+            self.matrix
+                .iter()
+                .filter(|(_, seq)| start < seq.len())
+                .for_each(|(id, seq)| {
+                    let end = (start + n).min(seq.len());
+                    let chunk = &seq.as_bytes()[start..end];
+                    if idx == 0 || id_every_block {
+                        self.write_padded_seq(writer, id, chunk)
+                            .expect("Failed writing interleaved data matrix");
+                    } else {
+                        writer.write_all(chunk).unwrap();
+                        writeln!(writer).unwrap();
+                    }
+                });
+        }
+    }
+
+    fn write_padded_seq<W: Write>(&self, writer: &mut W, taxa: &str, seq: &[u8]) -> Result<()> {
+        // Pad IDs to the longest ID plus one space.
+        write!(writer, "{:<width$} ", taxa, width = self.id_len)?;
+        writer.write_all(seq)?;
+        writeln!(writer)?;
         Ok(())
     }
 
     fn get_interleave_len(&self) -> usize {
-        if self.header.nchar < 2000 {
-            80
-        } else {
-            500
-        }
+        if self.header.nchar < 2000 { 80 } else { 500 }
     }
 
     fn get_max_id_len(&mut self) {
         self.id_len = self.matrix.keys().map(|id| id.len()).max().unwrap();
-    }
-
-    fn insert_whitespaces(&self, id: &str, max_len: usize) -> String {
-        let len = id.len();
-        let spaces = 1;
-        if len < max_len {
-            let inserts = (max_len - len) + spaces;
-            " ".repeat(inserts)
-        } else {
-            " ".repeat(spaces)
-        }
-    }
-}
-
-struct Sequence {
-    id: String,
-    seq: String,
-}
-
-impl Sequence {
-    fn new(id: &str, seq: &str) -> Self {
-        Self {
-            id: String::from(id),
-            seq: String::from(seq),
-        }
     }
 }
 
@@ -242,64 +194,42 @@ impl Sequence {
 mod test {
     use super::*;
 
-    #[test]
-    fn test_insert_whitespaces() {
-        let max_len = 10;
-        let id = "ABCDE";
-        let matrix = IndexMap::new();
+    fn write_int(matrix: &IndexMap<String, String>, id_every_block: bool) -> String {
         let header = Header::new();
-        let convert = SeqWriter::new(Path::new("."), &matrix, &header);
-        assert_eq!(6, convert.insert_whitespaces(id, max_len).len())
+        let mut convert = SeqWriter::new(Path::new("."), matrix, &header);
+        convert.get_max_id_len();
+        let mut out = Vec::new();
+        convert.write_matrix_int(&mut out, id_every_block);
+        String::from_utf8(out).unwrap()
     }
 
     #[test]
-    fn test_chunk_seq() {
-        let path = Path::new(".");
-        let matrix = IndexMap::new();
+    fn test_padded_seq() {
+        let mut matrix = IndexMap::new();
+        matrix.insert(String::from("ABCDEFGHIJ"), String::from("A"));
         let header = Header::new();
-        let convert = SeqWriter::new(path, &matrix, &header);
-        let seq = "AGTCAGTC";
-        let chunk = String::from("AGTC");
-        let chunk2 = String::from("AGTC");
-        let res = vec![chunk, chunk2];
-        assert_eq!(res, convert.chunk_seq(seq, 4));
+        let mut convert = SeqWriter::new(Path::new("."), &matrix, &header);
+        convert.get_max_id_len();
+        let mut out = Vec::new();
+        convert
+            .write_padded_seq(&mut out, "ABCDE", b"AGTC")
+            .unwrap();
+        assert_eq!("ABCDE      AGTC\n", String::from_utf8(out).unwrap());
     }
 
     #[test]
     fn test_matrix_int() {
-        let path = Path::new(".");
         let mut matrix = IndexMap::new();
-        let header = Header::new();
+        let seq = "ATGTGTGTGTGTGTGTAAAA".repeat(5);
+        matrix.insert(String::from("ABC"), seq);
+        matrix.insert(String::from("ABCD"), String::from("GG"));
 
-        let id = String::from("ABC");
-
-        let seq = String::from(
-            "ATGTGTGTGTGTGTGTAAAA\
-        ATGTGTGTGTGTGTGTAAAA\
-        ATGTGTGTGTGTGTGTAAAA\
-        ATGTGTGTGTGTGTGTAAAA\
-        ATGTGTGTGTGTGTGTAAAA",
-        );
-
-        // Expected result first chunk
-        let res0 = String::from(
-            "ATGTGTGTGTGTGTGTAAAA\
-        ATGTGTGTGTGTGTGTAAAA\
-        ATGTGTGTGTGTGTGTAAAA\
-        ATGTGTGTGTGTGTGTAAAA",
-        );
-
-        // Expected result second chunk
-        let res1 = String::from("ATGTGTGTGTGTGTGTAAAA");
-
-        matrix.insert(id.clone(), seq);
-        let convert = SeqWriter::new(path, &matrix, &header);
-        let int = convert.get_matrix_int();
-        let mat_int = int.get(&0).unwrap();
-        let mat_int1 = int.get(&1).unwrap();
-        assert_eq!(id, mat_int[0].id.to_string());
-        assert_eq!(id, mat_int1[0].id.to_string());
-        assert_eq!(res0, mat_int[0].seq.to_string());
-        assert_eq!(res1, mat_int1[0].seq.to_string());
+        // Header nchar is 0, so the interleave length is 80.
+        let res0 = "ATGTGTGTGTGTGTGTAAAA".repeat(4);
+        let res1 = "ATGTGTGTGTGTGTGTAAAA";
+        let nex = format!("\nABC  {}\nABCD GG\n\nABC  {}\n", res0, res1);
+        let phy = format!("\nABC  {}\nABCD GG\n\n{}\n", res0, res1);
+        assert_eq!(nex, write_int(&matrix, true));
+        assert_eq!(phy, write_int(&matrix, false));
     }
 }

@@ -30,7 +30,7 @@ use std::{
 
 use anyhow::{Context, anyhow, bail};
 use nom::{
-    IResult,
+    IResult, Parser,
     bytes::complete,
     character,
     combinator::{self},
@@ -86,7 +86,8 @@ impl MafHeader {
         let tag: IResult<&str, &str> = sequence::preceded(
             complete::tag("version="),
             character::complete::alphanumeric1,
-        )(value);
+        )
+        .parse(value);
         match tag {
             Ok((_, value)) => Ok(value.to_string()),
             Err(_) => Err("Error parsing version".into()),
@@ -97,7 +98,8 @@ impl MafHeader {
         let tag: IResult<&str, &str> = sequence::preceded(
             complete::tag("scoring="),
             complete::take_while(|c: char| c.is_alphanumeric() || c == '.'),
-        )(value);
+        )
+        .parse(value);
         match tag {
             Ok((_, value)) => Ok(value.to_string()),
             Err(_) => Err("Error parsing scoring".into()),
@@ -189,13 +191,14 @@ impl TrackLine {
 
     fn parse_track<'a>(&mut self, input: &'a str) -> IResult<&'a str, &'a str> {
         let track: IResult<&str, &str> =
-            sequence::preceded(complete::tag("track "), combinator::rest)(input);
+            sequence::preceded(complete::tag("track "), combinator::rest).parse(input);
         track
     }
 
     fn parse_name<'a>(&mut self, input: &'a str) -> IResult<&'a str, &'a str> {
         let name: IResult<&str, &str> =
-            sequence::preceded(complete::tag("name="), character::complete::alphanumeric1)(input);
+            sequence::preceded(complete::tag("name="), character::complete::alphanumeric1)
+                .parse(input);
         name
     }
 
@@ -207,7 +210,8 @@ impl TrackLine {
                 complete::take_while(|c: char| c != '"'),
                 character::complete::char('"'),
             ),
-        ))(input);
+        ))
+        .parse(input);
 
         description
     }
@@ -217,14 +221,16 @@ impl TrackLine {
         let frames: IResult<&str, Option<&str>> = combinator::opt(sequence::preceded(
             complete::tag("frames="),
             character::complete::alphanumeric1,
-        ))(input);
+        ))
+        .parse(input);
         frames
     }
 
     fn parse_maf_dot<'a>(&mut self, input: &'a str) -> IResult<&'a str, bool> {
         let (input, _) = character::complete::space0(input)?;
         let maf_dot: IResult<&str, &str> =
-            sequence::preceded(complete::tag("mafDot="), character::complete::alphanumeric1)(input);
+            sequence::preceded(complete::tag("mafDot="), character::complete::alphanumeric1)
+                .parse(input);
         match maf_dot {
             Ok((_, value)) => Ok((input, value == "on")),
             Err(_) => Ok((input, false)),
@@ -236,7 +242,8 @@ impl TrackLine {
         combinator::opt(sequence::preceded(
             complete::tag("visibility="),
             character::complete::alphanumeric1,
-        ))(input)
+        ))
+        .parse(input)
     }
 
     fn parse_species_order<'a>(&mut self, input: &'a str) -> IResult<&'a str, Option<&'a str>> {
@@ -248,7 +255,8 @@ impl TrackLine {
                 complete::take_until("\""),
                 character::complete::char('"'),
             ),
-        ))(input);
+        ))
+        .parse(input);
         species_order
     }
 

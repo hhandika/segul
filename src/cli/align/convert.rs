@@ -4,7 +4,7 @@ use crate::{core::align::convert::AlignmentConversion, helper::logger::AlignSeqL
 
 use crate::cli::args::align::AlignConvertArgs;
 
-use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
+use crate::cli::{AlignSeqInput, InputCli, OutputCli, collect_paths};
 
 impl InputCli for ConvertParser<'_> {}
 impl OutputCli for ConvertParser<'_> {}

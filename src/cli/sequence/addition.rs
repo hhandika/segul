@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use colored::Colorize;
 
 use crate::{
-    cli::{args::sequence::SequenceAddArgs, collect_paths, AlignSeqInput, InputCli, OutputCli},
+    cli::{AlignSeqInput, InputCli, OutputCli, args::sequence::SequenceAddArgs, collect_paths},
     core::sequence::addition::SequenceAddition,
     helper::{
         logger::AlignSeqLogger,

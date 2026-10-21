@@ -1,7 +1,6 @@
 //! Find input files and parse IDs from input files.
 
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::channel;
 
 use glob::glob;
 use indexmap::IndexSet;
@@ -18,14 +17,14 @@ use crate::parser::phylip::Phylip;
 
 use super::types::{self, ContigFmt};
 
+// Collect in file order so the resulting ID order is deterministic.
 macro_rules! id_non_fasta {
     ($self:ident,  $type: ident, $datatype:ident) => {{
-        let (sender, receiver) = channel();
-        $self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send($type::new(file, $self.$datatype).parse_only_id())
-                .expect("Failed parallel processing IDs");
-        });
-        receiver.iter().collect()
+        $self
+            .files
+            .par_iter()
+            .map(|file| $type::new(file, $self.$datatype).parse_only_id())
+            .collect()
     }};
 }
 
@@ -481,29 +480,22 @@ impl<'a> IDs<'a> {
     }
 
     fn id_auto(&self) -> Vec<IndexSet<String>> {
-        let (sender, receiver) = channel();
-        self.files.par_iter().for_each_with(sender, |s, file| {
-            let input_fmt = types::infer_input_auto(file);
-            match input_fmt {
-                InputFmt::Fasta => s.send(fasta::parse_only_id(file)).unwrap(),
-                InputFmt::Nexus => s
-                    .send(Nexus::new(file, self.datatype).parse_only_id())
-                    .unwrap(),
-                InputFmt::Phylip => s
-                    .send(Phylip::new(file, self.datatype).parse_only_id())
-                    .unwrap(),
+        self.files
+            .par_iter()
+            .map(|file| match types::infer_input_auto(file) {
+                InputFmt::Fasta => fasta::parse_only_id(file),
+                InputFmt::Nexus => Nexus::new(file, self.datatype).parse_only_id(),
+                InputFmt::Phylip => Phylip::new(file, self.datatype).parse_only_id(),
                 _ => unreachable!(),
-            }
-        });
-        receiver.iter().collect()
+            })
+            .collect()
     }
 
     fn id_from_fasta(&self) -> Vec<IndexSet<String>> {
-        let (sender, receiver) = channel();
-        self.files.par_iter().for_each_with(sender, |s, file| {
-            s.send(fasta::parse_only_id(file)).unwrap();
-        });
-        receiver.iter().collect()
+        self.files
+            .par_iter()
+            .map(|file| fasta::parse_only_id(file))
+            .collect()
     }
 }
 
@@ -590,6 +582,22 @@ mod test {
         let id = IDs::new(&files, &input_fmt, &datatype);
         let ids = id.id_unique();
         assert_eq!(3, ids.len());
+    }
+
+    #[test]
+    fn test_id_order_follows_file_order() {
+        input!(finder);
+        let input_fmt = InputFmt::Nexus;
+        let datatype = DataType::Dna;
+        let files = finder.find(&input_fmt);
+        let mut expected = IndexSet::new();
+        files.iter().for_each(|file| {
+            expected.extend(Nexus::new(file, &datatype).parse_only_id());
+        });
+        for _ in 0..20 {
+            let ids = IDs::new(&files, &input_fmt, &datatype).id_unique();
+            assert!(ids.iter().eq(expected.iter()));
+        }
     }
 
     #[test]

@@ -53,10 +53,10 @@ impl<'a> PartitionConverter<'a> {
     /// use segul_core::core::align::partition::PartitionConverter;
     /// use segul_core::helper::partition::construct_partition_path;
     /// use segul_core::helper::types::{DataType, PartitionFmt};
-    /// use tempdir::TempDir;
+    /// use tempfile::TempDir;
     ///
     /// let input = Path::new("tests/files/partition/partition.nex");
-    /// let output_dir = TempDir::new("temp").unwrap();
+    /// let output_dir = TempDir::with_prefix("temp").unwrap();
     /// let output_file = output_dir.path().join("partition");
     /// let final_output = construct_partition_path(&output_file, &PartitionFmt::Raxml);
     /// let mut handle = PartitionConverter::new(

@@ -1,7 +1,7 @@
 //! Parser for text files
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::prelude::*;
 use std::path::Path;
 
 /// Parse a text file by lines and return a vector of strings.

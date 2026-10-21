@@ -4,10 +4,9 @@ use std::io::prelude::*;
 use std::io::{BufReader, Result};
 use std::path::Path;
 
-use ahash::AHashMap as HashMap;
 use colored::Colorize;
 use indexmap::{IndexMap, IndexSet};
-use nom::{character::complete, sequence, IResult};
+use nom::{IResult, Parser, character::complete, sequence};
 
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
@@ -45,17 +44,19 @@ impl<'a> Phylip<'a> {
     }
 
     pub fn parse_only_id(&mut self) -> IndexSet<String> {
-        let buff = self.get_header().expect("Cannot read phylip file");
-        let records = Reader::new(buff, self.header.ntax);
+        let mut reader = self.get_header().expect("Cannot read phylip file");
+        let mut line = String::new();
         let mut ids = IndexSet::new();
-        records
-            .into_iter()
-            .take_while(|rec| !rec.interleave)
-            .for_each(|rec| {
-                if let Some(id) = rec.id {
-                    ids.insert(id);
-                }
-            });
+        let mut rows = 0;
+        // IDs are only in the first block, stop reading after it.
+        while rows < self.header.ntax && read_next_line(&mut reader, &mut line) {
+            let text = line.trim();
+            if !text.is_empty() {
+                let (id, _) = split_id_seq(text);
+                ids.insert(id.to_string());
+                rows += 1;
+            }
+        }
 
         parser::warn_duplicate_ids!(self, ids);
 
@@ -63,27 +64,53 @@ impl<'a> Phylip<'a> {
     }
 
     fn parse_matrix(&mut self) -> Result<()> {
-        let buff = self.get_header()?;
-        let records = Reader::new(buff, self.header.ntax);
-        let mut ids: HashMap<usize, String> = HashMap::new();
-        self.matrix.reserve(self.header.ntax);
-        records.into_iter().for_each(|rec| match rec.id {
-            Some(id) => {
-                alphabet::check_valid_seq(self.input, self.datatype, &id, &rec.seq);
-                ids.insert(rec.pos, id.clone());
-                self.insert_matrix(&id, &rec.seq);
+        let mut reader = self.get_header()?;
+        let ntax = self.header.ntax;
+        self.matrix.reserve(ntax);
+        let mut line = String::new();
+        // Row position within the current block.
+        // Rows keep the same order across blocks,
+        // so it matches the matrix index.
+        let mut pos = 0;
+        let mut interleave = false;
+        let mut reserved = false;
+        while read_next_line(&mut reader, &mut line) {
+            let text = line.trim();
+            if text.is_empty() {
+                continue;
             }
-            None => {
-                if let Some(id) = ids.get(&rec.pos) {
-                    alphabet::check_valid_seq(self.input, self.datatype, id, &rec.seq);
-                    if let Some(value) = self.matrix.get_mut(id) {
-                        value.push_str(&rec.seq);
-                    }
+            if !interleave {
+                let (id, seq) = split_id_seq(text);
+                alphabet::check_valid_seq(self.input, self.datatype, id, seq);
+                parser::insert_matrix!(self, id, seq);
+            } else {
+                if !reserved {
+                    self.reserve_full_length();
+                    reserved = true;
+                }
+                if let Some((id, seq)) = self.matrix.get_index_mut(pos) {
+                    alphabet::check_valid_seq(self.input, self.datatype, id, text);
+                    seq.push_str(text);
                 }
             }
-        });
+
+            pos += 1;
+            if pos == ntax {
+                pos = 0;
+                interleave = true;
+            }
+        }
 
         Ok(())
+    }
+
+    // Reserve the full sequence length once the file is known
+    // to be interleaved, avoiding repeated reallocations.
+    fn reserve_full_length(&mut self) {
+        let nchar = self.header.nchar.min(parser::MAX_RESERVE);
+        self.matrix
+            .values_mut()
+            .for_each(|seq| seq.reserve_exact(nchar.saturating_sub(seq.len())));
     }
 
     // We return the buffer after reading the header.
@@ -98,16 +125,10 @@ impl<'a> Phylip<'a> {
         Ok(buff)
     }
 
-    #[inline]
-    fn insert_matrix(&mut self, id: &str, seq: &str) {
-        parser::insert_matrix!(self, id, seq);
-    }
-
     fn parse_header(&mut self, header_line: &str) {
         let header: IResult<&str, (&str, &str)> =
-            sequence::separated_pair(complete::digit0, complete::space0, complete::digit0)(
-                header_line,
-            );
+            sequence::separated_pair(complete::digit0, complete::space0, complete::digit0)
+                .parse(header_line);
 
         match header {
             Ok((_, (tax, chars))) => self.parse_num(tax, chars),
@@ -171,82 +192,18 @@ impl<'a> Phylip<'a> {
     }
 }
 
-struct Records {
-    id: Option<String>,
-    seq: String,
-    pos: usize,
-    interleave: bool,
+/// Read the next line into a reused buffer.
+/// Returns false at the end of the file.
+fn read_next_line<R: BufRead>(reader: &mut R, line: &mut String) -> bool {
+    line.clear();
+    matches!(reader.read_line(line), Ok(n) if n > 0)
 }
 
-impl Records {
-    fn new() -> Self {
-        Self {
-            id: None,
-            seq: String::new(),
-            pos: 0,
-            interleave: false,
-        }
-    }
-}
-
-struct Reader<R> {
-    reader: BufReader<R>,
-    interleave: bool,
-    pos: usize,
-    ntax: usize,
-}
-
-impl<R: Read> Reader<R> {
-    fn new(file: R, ntax: usize) -> Self {
-        Self {
-            reader: BufReader::new(file),
-            interleave: false,
-            pos: 1,
-            ntax,
-        }
-    }
-
-    fn next_seq(&mut self) -> Option<Records> {
-        while let Some(Ok(lines)) = self.reader.by_ref().lines().next() {
-            let line = lines.trim();
-            if !line.is_empty() {
-                let mut records = Records::new();
-                if !self.interleave {
-                    let seq: Vec<&str> = line.split_whitespace().collect();
-                    assert!(
-                        seq.len() == 2,
-                        "An invalid sequence found. Check if IDs contain spaces."
-                    );
-                    records.id = Some(seq[0].to_string());
-                    records.seq = seq[1].to_string();
-                } else {
-                    records.id = None;
-                    records.seq = line.to_string();
-                    records.interleave = true;
-                }
-
-                records.pos = self.pos;
-                self.pos += 1;
-
-                if self.pos == self.ntax + 1 {
-                    self.pos = 1;
-                    self.interleave = true;
-                }
-
-                return Some(records);
-            }
-            continue;
-        }
-        None
-    }
-}
-
-impl<R: Read> Iterator for Reader<R> {
-    type Item = Records;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.next_seq()
-    }
+/// Split a sequential (or first interleaved block) line
+/// into its ID and sequence.
+fn split_id_seq(line: &str) -> (&str, &str) {
+    parser::split_id_seq(line)
+        .unwrap_or_else(|| panic!("An invalid sequence found. Check if IDs contain spaces."))
 }
 
 #[cfg(test)]
@@ -337,6 +294,23 @@ mod test {
         let mut phy = Phylip::new(path, &DNA);
         let res = phy.parse_only_id();
         assert_eq!(2, res.len());
+    }
+
+    #[test]
+    fn test_read_sequential_phylip_id() {
+        let path = Path::new("tests/files/simple.phy");
+        let mut phy = Phylip::new(path, &DNA);
+        let res = phy.parse_only_id();
+        assert_eq!(2, res.len());
+        assert!(phy.matrix.is_empty());
+    }
+
+    #[test]
+    fn test_interleave_phylip_capacity() {
+        let path = Path::new("tests/files/interleave.phy");
+        let mut phy = Phylip::new(path, &DNA);
+        phy.parse();
+        assert!(phy.matrix.values().all(|seq| seq.capacity() == 10));
     }
 
     #[test]

@@ -4,7 +4,7 @@ use std::{io::BufRead, path::Path};
 use crate::{
     helper::{
         files,
-        types::{infer_contig_fmt_auto, ContigFmt},
+        types::{ContigFmt, infer_contig_fmt_auto},
     },
     stats::common::{CommonStats, NStats},
 };
@@ -114,18 +114,30 @@ impl ContigSummary {
     fn count<R: BufRead>(&mut self, buff: &mut R) -> Vec<usize> {
         let reader = FastaReader::new(buff);
         let mut contigs = Vec::new();
+        // Byte histogram for the whole file, split into four lanes
+        // so consecutive identical bases do not update the same counter.
+        let mut counts = [[0usize; 256]; 4];
         reader.into_iter().for_each(|r| {
             contigs.push(r.seq.len());
-            r.seq.bytes().for_each(|s| match s {
-                b'G' | b'g' => self.g_count += 1,
-                b'C' | b'c' => self.c_count += 1,
-                b'A' | b'a' => self.a_count += 1,
-                b'T' | b't' => self.t_count += 1,
-                b'N' | b'n' => self.n_count += 1,
-                _ => self.unknown += 1,
-            })
+            count_bytes(r.seq.as_bytes(), &mut counts);
         });
+        self.tally_bases(&counts);
         contigs
+    }
+
+    fn tally_bases(&mut self, counts: &[[usize; 256]; 4]) {
+        let total = |b: u8| -> usize { counts.iter().map(|lane| lane[b as usize]).sum() };
+        let all: usize = counts.iter().flatten().sum();
+        self.g_count += total(b'G') + total(b'g');
+        self.c_count += total(b'C') + total(b'c');
+        self.a_count += total(b'A') + total(b'a');
+        self.t_count += total(b'T') + total(b't');
+        self.n_count += total(b'N') + total(b'n');
+        let known = [b'G', b'g', b'C', b'c', b'A', b'a', b'T', b't', b'N', b'n']
+            .iter()
+            .map(|&b| total(b))
+            .sum::<usize>();
+        self.unknown += all - known;
     }
 
     fn summarize_contigs(&mut self, contigs: &[usize]) {
@@ -182,6 +194,19 @@ impl ContigSummary {
     }
 }
 
+fn count_bytes(seq: &[u8], counts: &mut [[usize; 256]; 4]) {
+    let mut chunks = seq.chunks_exact(4);
+    for c in &mut chunks {
+        counts[0][c[0] as usize] += 1;
+        counts[1][c[1] as usize] += 1;
+        counts[2][c[2] as usize] += 1;
+        counts[3][c[3] as usize] += 1;
+    }
+    for &b in chunks.remainder() {
+        counts[0][b as usize] += 1;
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -211,5 +236,24 @@ mod test {
         assert_eq!(parser.contig1000, 0);
         assert_eq!(parser.contig1500, 0);
         assert_eq!(parser.contig750, 0);
+    }
+
+    #[test]
+    fn test_count_bytes_mixed_case_and_unknown() {
+        let mut parser = ContigSummary::new();
+        let mut counts = [[0usize; 256]; 4];
+        count_bytes(b"GgCcAaTtNnRY-", &mut counts);
+        parser.tally_bases(&counts);
+        assert_eq!(
+            (2, 2, 2, 2, 2, 3),
+            (
+                parser.g_count,
+                parser.c_count,
+                parser.a_count,
+                parser.t_count,
+                parser.n_count,
+                parser.unknown
+            )
+        );
     }
 }

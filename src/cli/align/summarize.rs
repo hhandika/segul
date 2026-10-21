@@ -4,7 +4,7 @@ use crate::core::align::summarize::AlignmentSummary;
 use crate::helper::logger::AlignSeqLogger;
 
 use crate::cli::args::align::AlignSummaryArgs;
-use crate::cli::{collect_paths, AlignSeqInput, InputCli, OutputCli};
+use crate::cli::{AlignSeqInput, InputCli, OutputCli, collect_paths};
 
 impl InputCli for SummaryParser<'_> {}
 impl OutputCli for SummaryParser<'_> {}

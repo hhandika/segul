@@ -1,0 +1,474 @@
+# segul-bench configuration.
+#
+# Versions are release tags (downloaded from GitHub releases) or `current`
+# (the working tree, built with `cargo build --release`), oldest first.
+# Results are reported relative to the first version.
+
+[defaults]
+<<<<<<< HEAD
+versions = ["v0.20.0", "v0.23.2", "current"]
+=======
+versions = ["v0.22.1", "v0.23.2", "current"]
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+replicates = 5
+warmup = 1
+scale = "full"
+# Flag `current` when it is this much slower or larger than the previous version.
+regression_threshold = 0.05
+
+# Datasets ---------------------------------------------------------------
+#
+# Synthetic datasets are generated once into .cache/data/<scale>/<id>/ with a
+# fixed seed. `params.small` is for quick checks, `params.full` for results.
+
+# [[datasets]]
+# id = "loci-nexus"
+# kind = "synthetic"
+# generator = "loci"
+# description = "Many NEXUS locus alignments with missing taxa"
+# params.small = { format = "nexus", loci = 200, taxa = 50, min_len = 500, max_len = 1500, missing = 0.15 }
+# params.full = { format = "nexus", loci = 2000, taxa = 100, min_len = 800, max_len = 2500, missing = 0.15 }
+
+# [[datasets]]
+# id = "loci-fasta"
+# kind = "synthetic"
+# generator = "loci"
+# description = "Many FASTA locus alignments with missing taxa"
+# params.small = { format = "fasta", loci = 200, taxa = 50, min_len = 500, max_len = 1500, missing = 0.15 }
+# params.full = { format = "fasta", loci = 2000, taxa = 100, min_len = 800, max_len = 2500, missing = 0.15 }
+
+# [[datasets]]
+# id = "big-nexus"
+# kind = "synthetic"
+# generator = "alignment"
+# description = "One large sequential NEXUS alignment"
+# params.small = { format = "nexus", taxa = 50, nchar = 400000 }
+# params.full = { format = "nexus", taxa = 200, nchar = 2000000 }
+
+# [[datasets]]
+# id = "big-nexus-int"
+# kind = "synthetic"
+# generator = "alignment"
+# description = "One large interleaved NEXUS alignment"
+# params.small = { format = "nexus", layout = "interleaved", width = 1000, taxa = 50, nchar = 400000 }
+# params.full = { format = "nexus", layout = "interleaved", width = 1000, taxa = 200, nchar = 2000000 }
+
+# [[datasets]]
+# id = "big-phylip-int"
+# kind = "synthetic"
+# generator = "alignment"
+# description = "One large interleaved PHYLIP alignment"
+# params.small = { format = "phylip", layout = "interleaved", width = 1000, taxa = 50, nchar = 400000 }
+# params.full = { format = "phylip", layout = "interleaved", width = 1000, taxa = 200, nchar = 2000000 }
+
+# [[datasets]]
+# id = "big-fasta-wrapped"
+# kind = "synthetic"
+# generator = "alignment"
+# description = "One large FASTA alignment wrapped at 80 bp"
+# params.small = { format = "fasta", layout = "wrapped", width = 80, taxa = 50, nchar = 400000 }
+# params.full = { format = "fasta", layout = "wrapped", width = 80, taxa = 200, nchar = 2000000 }
+
+# [[datasets]]
+# id = "contigs"
+# kind = "synthetic"
+# generator = "contigs"
+# description = "Assembly contigs in wrapped FASTA"
+# params.small = { files = 2, contigs = 2000, min_len = 200, max_len = 20000 }
+# params.full = { files = 4, contigs = 20000, min_len = 200, max_len = 20000 }
+
+# Real datasets are read from a local directory and skipped when it is missing.
+# These are the alignments used in the SEGUL paper (Handika and Esselstyn
+# 2024), kept in ~/Documents/segul-test-datasets. `name` is used in task labels,
+<<<<<<< HEAD
+# `datatype` is passed to tasks as {datatype}, `bases` is the total sequence
+# length (base pairs, or residues for AA) shown in plot labels, and `vars`
+# adds placeholders for task args (values may use {input}, the dataset folder).
+
+# Locus alignments (one NEXUS file per locus) -----------------------------
+#
+# As in segul-bench (Handika and Esselstyn 2024), concatenation, conversion,
+# and summary statistics run on folders of per-locus NEXUS files. The Chan et
+# al. 2020 loci were split from the combined alignment below.
+=======
+# `datatype` is passed to tasks as {datatype}, and `vars` adds placeholders
+# for task args (values may use {input}, the dataset folder).
+
+# Locus alignments (one NEXUS file per locus) -----------------------------
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+
+[[datasets]]
+id = "esselstyn-2021"
+name = "Esselstyn et al. 2021"
+kind = "real"
+datatype = "dna"
+<<<<<<< HEAD
+bases = 358100000
+=======
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+path = "~/Documents/segul-test-datasets/esselstyn_2021_nexus_trimmed"
+description = "Esselstyn et al. 2021 (358.1 MBases, DNA)"
+
+[[datasets]]
+id = "jarvis-2014"
+name = "Jarvis et al. 2014"
+kind = "real"
+datatype = "dna"
+<<<<<<< HEAD
+bases = 453300000
+=======
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+path = "~/Documents/segul-test-datasets/jarvis_2014_uce_filtered_w_gator"
+description = "Jarvis et al. 2014 (453.3 MBases, DNA)"
+
+[[datasets]]
+id = "oliveros-2019"
+name = "Oliveros et al. 2019"
+kind = "real"
+datatype = "dna"
+<<<<<<< HEAD
+bases = 522500000
+=======
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+path = "~/Documents/segul-test-datasets/oliveros_2019_80p_trimmed"
+description = "Oliveros et al. 2019 (522.5 MBases, DNA)"
+
+[[datasets]]
+<<<<<<< HEAD
+id = "chan-2020-loci"
+name = "Chan et al. 2020"
+kind = "real"
+datatype = "dna"
+bases = 239300000
+path = "~/Documents/segul-test-datasets/chan_2020_loci"
+description = "Chan et al. 2020 (239.3 MBases, DNA)"
+
+[[datasets]]
+=======
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+id = "shen-2018"
+name = "Shen et al. 2018"
+kind = "real"
+datatype = "aa"
+<<<<<<< HEAD
+bases = 398800000
+=======
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+path = "~/Documents/segul-test-datasets/shen_2018_loci_aa"
+description = "Shen et al. 2018 (398.8 MBases, AA)"
+
+[[datasets]]
+id = "wu-2018-loci"
+name = "Wu et al. 2018"
+kind = "real"
+datatype = "aa"
+<<<<<<< HEAD
+bases = 257100000
+=======
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+path = "~/Documents/segul-test-datasets/wu_2018_aa_loci"
+description = "Wu et al. 2018 (257.1 MBases, AA)"
+
+# Concatenated alignments with partitions ---------------------------------
+<<<<<<< HEAD
+# Used for splitting, as in segul-bench.
+=======
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+# These folders also hold macOS `._*` files, so tasks read the alignment
+# file with -i instead of scanning the folder with -d.
+
+[[datasets]]
+<<<<<<< HEAD
+id = "chan-2020-concat"
+name = "Chan et al. 2020"
+kind = "real"
+datatype = "dna"
+bases = 239300000
+path = "~/Documents/segul-test-datasets/chan_2020_all_combined"
+description = "Chan et al. 2020 (239.3 MBases, DNA), concatenated"
+=======
+id = "chan-2020"
+name = "Chan et al. 2020"
+kind = "real"
+datatype = "dna"
+path = "~/Documents/segul-test-datasets/chan_2020_all_combined"
+description = "Chan et al. 2020 (239.3 MBases, DNA)"
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+vars = { alignment = "{input}/alignment_all-combined.phy", format = "phylip", partition = "{input}/partitions_all-combined.txt", partition_format = "raxml" }
+
+[[datasets]]
+id = "wu-2018-concat"
+<<<<<<< HEAD
+name = "Wu et al. 2018"
+kind = "real"
+datatype = "aa"
+bases = 257100000
+=======
+name = "Wu et al. 2018 (concatenated)"
+kind = "real"
+datatype = "aa"
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+path = "~/Documents/segul-test-datasets/wu_2018_aa"
+description = "Wu et al. 2018 (257.1 MBases, AA), concatenated"
+vars = { alignment = "{input}/alignment.nex", format = "nexus", partition = "{input}/alignment_partition.nex", partition_format = "nexus" }
+
+# Tasks ------------------------------------------------------------------
+#
+# `args` are passed to segul. `{input}` is the dataset folder, `{output}` a
+# fresh output directory for each run, and `{datatype}` plus any dataset
+# `vars` come from the dataset. With `datasets = [...]`, the task runs once
+# per dataset, with id "<dataset>-<id>" and label "<label> <dataset name>".
+# `min_version` skips releases that lack the command.
+
+[[tasks]]
+id = "concat"
+label = "Concatenate"
+<<<<<<< HEAD
+datasets = [
+    "esselstyn-2021",
+    "jarvis-2014",
+    "oliveros-2019",
+    "chan-2020-loci",
+    "shen-2018",
+    "wu-2018-loci",
+]
+args = [
+    "align",
+    "concat",
+    "-d",
+    "{input}",
+    "-f",
+    "nexus",
+    "--datatype",
+    "{datatype}",
+    "-o",
+    "{output}",
+]
+=======
+datasets = ["esselstyn-2021", "jarvis-2014", "oliveros-2019", "shen-2018", "wu-2018-loci"]
+args = ["align", "concat", "-d", "{input}", "-f", "nexus", "--datatype", "{datatype}", "-o", "{output}"]
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+
+[[tasks]]
+id = "convert"
+label = "Convert"
+<<<<<<< HEAD
+datasets = [
+    "esselstyn-2021",
+    "jarvis-2014",
+    "oliveros-2019",
+    "chan-2020-loci",
+    "shen-2018",
+    "wu-2018-loci",
+]
+args = [
+    "align",
+    "convert",
+    "-d",
+    "{input}",
+    "-f",
+    "nexus",
+    "-F",
+    "fasta",
+    "--datatype",
+    "{datatype}",
+    "-o",
+    "{output}",
+]
+=======
+datasets = ["esselstyn-2021", "jarvis-2014", "oliveros-2019", "shen-2018", "wu-2018-loci"]
+args = ["align", "convert", "-d", "{input}", "-f", "nexus", "-F", "fasta", "--datatype", "{datatype}", "-o", "{output}"]
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+
+[[tasks]]
+id = "summary"
+label = "Summarize"
+<<<<<<< HEAD
+datasets = [
+    "esselstyn-2021",
+    "jarvis-2014",
+    "oliveros-2019",
+    "chan-2020-loci",
+    "shen-2018",
+    "wu-2018-loci",
+]
+args = [
+    "align",
+    "summary",
+    "-d",
+    "{input}",
+    "-f",
+    "nexus",
+    "--datatype",
+    "{datatype}",
+    "-o",
+    "{output}",
+]
+=======
+datasets = ["esselstyn-2021", "jarvis-2014", "oliveros-2019", "shen-2018", "wu-2018-loci"]
+args = ["align", "summary", "-d", "{input}", "-f", "nexus", "--datatype", "{datatype}", "-o", "{output}"]
+
+[[tasks]]
+id = "convert"
+label = "Convert"
+datasets = ["chan-2020", "wu-2018-concat"]
+args = ["align", "convert", "-i", "{alignment}", "-f", "{format}", "-F", "fasta", "--datatype", "{datatype}", "-o", "{output}"]
+
+[[tasks]]
+id = "summary"
+label = "Summarize"
+datasets = ["chan-2020", "wu-2018-concat"]
+args = ["align", "summary", "-i", "{alignment}", "-f", "{format}", "--datatype", "{datatype}", "-o", "{output}"]
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+
+[[tasks]]
+id = "split"
+label = "Split"
+<<<<<<< HEAD
+datasets = ["chan-2020-concat"]
+args = [
+    "align",
+    "split",
+    "-i",
+    "{alignment}",
+    "-f",
+    "{format}",
+    "-I",
+    "{partition}",
+    "-p",
+    "{partition_format}",
+    "--datatype",
+    "{datatype}",
+    "-o",
+    "{output}",
+]
+=======
+datasets = ["chan-2020"]
+args = ["align", "split", "-i", "{alignment}", "-f", "{format}", "-I", "{partition}", "-p", "{partition_format}", "--datatype", "{datatype}", "-o", "{output}"]
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+
+# The Wu et al. 2018 partition file lists charsets out of order, which the
+# default partition check rejects. Splitting does not need them in order.
+[[tasks]]
+id = "split"
+label = "Split"
+datasets = ["wu-2018-concat"]
+<<<<<<< HEAD
+args = [
+    "align",
+    "split",
+    "-i",
+    "{alignment}",
+    "-f",
+    "{format}",
+    "-I",
+    "{partition}",
+    "-p",
+    "{partition_format}",
+    "--skip-checking",
+    "--datatype",
+    "{datatype}",
+    "-o",
+    "{output}",
+]
+=======
+args = ["align", "split", "-i", "{alignment}", "-f", "{format}", "-I", "{partition}", "-p", "{partition_format}", "--skip-checking", "--datatype", "{datatype}", "-o", "{output}"]
+>>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+
+# [[tasks]]
+# id = "convert-nexus-fasta"
+# label = "Convert NEXUS to FASTA"
+# dataset = "big-nexus"
+# args = [
+#     "align",
+#     "convert",
+#     "-d",
+#     "{input}",
+#     "-f",
+#     "nexus",
+#     "-F",
+#     "fasta",
+#     "-o",
+#     "{output}",
+# ]
+
+# [[tasks]]
+# id = "convert-nexus-int-fasta"
+# label = "Convert interleaved NEXUS to FASTA"
+# dataset = "big-nexus-int"
+# args = [
+#     "align",
+#     "convert",
+#     "-d",
+#     "{input}",
+#     "-f",
+#     "nexus",
+#     "-F",
+#     "fasta",
+#     "-o",
+#     "{output}",
+# ]
+
+# [[tasks]]
+# id = "convert-phylip-int-nexus"
+# label = "Convert interleaved PHYLIP to NEXUS"
+# dataset = "big-phylip-int"
+# args = [
+#     "align",
+#     "convert",
+#     "-d",
+#     "{input}",
+#     "-f",
+#     "phylip",
+#     "-F",
+#     "nexus",
+#     "-o",
+#     "{output}",
+# ]
+
+# [[tasks]]
+# id = "convert-fasta-nexus-int"
+# label = "Convert wrapped FASTA to interleaved NEXUS"
+# dataset = "big-fasta-wrapped"
+# args = [
+#     "align",
+#     "convert",
+#     "-d",
+#     "{input}",
+#     "-f",
+#     "fasta",
+#     "-F",
+#     "nexus-int",
+#     "-o",
+#     "{output}",
+# ]
+
+# [[tasks]]
+# id = "concat-nexus"
+# label = "Concatenate NEXUS loci"
+# dataset = "loci-nexus"
+# args = ["align", "concat", "-d", "{input}", "-f", "nexus", "-o", "{output}"]
+
+# [[tasks]]
+# id = "concat-fasta"
+# label = "Concatenate FASTA loci"
+# dataset = "loci-fasta"
+# args = ["align", "concat", "-d", "{input}", "-f", "fasta", "-o", "{output}"]
+
+# [[tasks]]
+# id = "summary-nexus"
+# label = "Summarize NEXUS loci"
+# dataset = "loci-nexus"
+# args = ["align", "summary", "-d", "{input}", "-f", "nexus", "-o", "{output}"]
+
+# [[tasks]]
+# id = "id-nexus"
+# label = "Find sample IDs in NEXUS loci"
+# dataset = "loci-nexus"
+# args = ["sequence", "id", "-d", "{input}", "-f", "nexus", "-o", "{output}"]
+
+# [[tasks]]
+# id = "contig-summary"
+# label = "Summarize contigs"
+# dataset = "contigs"
+# args = ["contig", "summary", "-d", "{input}", "-o", "{output}"]

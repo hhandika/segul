@@ -24,8 +24,8 @@ impl<'a> Archive<'a> {
     /// Archive the input files into a single zip file.
     pub fn zip(&self) -> Result<(), Box<dyn std::error::Error>> {
         let mut archive = zip::ZipWriter::new(std::fs::File::create(self.output_path)?);
-        let options =
-            zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
 
         for file in self.input_files {
             archive.start_file(

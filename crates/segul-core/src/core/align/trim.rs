@@ -286,7 +286,7 @@ impl TrimmingSummary {
 
 #[cfg(test)]
 mod tests {
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::*;
 
@@ -308,7 +308,7 @@ mod tests {
     #[test]
     fn test_trim_missing_data() {
         let input_files = vec![PathBuf::from(INPUT_PATH)];
-        let output_dir = TempDir::new("test").expect("Failed to create temp dir");
+        let output_dir = TempDir::with_prefix("test").expect("Failed to create temp dir");
         let params = TrimmingParameters::MissingData(0.4);
         let align_trim = init_trimming!(&input_files, output_dir, &params);
         let summary = align_trim.trim_sites();
@@ -329,7 +329,7 @@ mod tests {
     #[test]
     fn test_trimming_results() {
         let input_files = vec![PathBuf::from(INPUT_PATH)];
-        let output_dir = TempDir::new("test").expect("Failed to create temp dir");
+        let output_dir = TempDir::with_prefix("test").expect("Failed to create temp dir");
         let params = TrimmingParameters::MissingData(0.4);
         let align_trim = init_trimming!(&input_files, output_dir, &params);
         align_trim.trim();

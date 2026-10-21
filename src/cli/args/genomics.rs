@@ -35,20 +35,20 @@ pub(crate) struct SeqReadSummaryArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[arg(
-        short = 'f', 
-        long ="input-format", 
-        help = "Specify input format", 
+        short = 'f',
+        long ="input-format",
+        help = "Specify input format",
         default_value_t = SeqReadFmt::Auto,
-        value_parser = 
+        value_parser =
             builder::PossibleValuesParser::new(["auto","fastq","gzip"])
             .map(|x| x.parse::<SeqReadFmt>().expect("Invalid input format")),
     )]
     pub(crate) input_format: SeqReadFmt,
     #[arg(
-        long = "mode", 
-        help = "Summary mode", 
+        long = "mode",
+        help = "Summary mode",
         default_value_t = SummaryMode::Default,
-        value_parser = 
+        value_parser =
             builder::PossibleValuesParser::new(["minimal", "default", "complete"])
             .map(|x| x.parse::<SummaryMode>().unwrap()))]
     pub(crate) mode: SummaryMode,
@@ -68,11 +68,11 @@ pub(crate) struct ContigSummaryArgs {
     #[command(flatten)]
     pub(crate) io: IOArgs,
     #[arg(
-        short = 'f', 
-        long ="input-format", 
-        help = "Specify input format", 
+        short = 'f',
+        long ="input-format",
+        help = "Specify input format",
         default_value_t = ContigFmt::Auto,
-        value_parser = 
+        value_parser =
             builder::PossibleValuesParser::new(["auto","fasta","gzip"])
             .map(|x| x.parse::<ContigFmt>().expect("Invalid input format")),
     )]

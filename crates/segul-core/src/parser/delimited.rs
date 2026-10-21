@@ -1,7 +1,7 @@
 //! Parser for comma or tab delimited files
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{prelude::*, BufReader};
+use std::io::{BufReader, prelude::*};
 use std::path::Path;
 
 /// Parse a delimited file and return a vector of tuples.

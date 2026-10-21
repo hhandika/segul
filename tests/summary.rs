@@ -2,7 +2,7 @@ mod utils;
 
 use std::env;
 use std::fs::File;
-use std::io::{prelude::*, BufReader};
+use std::io::{BufReader, prelude::*};
 use std::path::Path;
 
 use glob::glob;
@@ -39,7 +39,7 @@ macro_rules! generate_locus_test {
         let output_dir = $tmp_dir.path().join("Align-Summary");
         let files = glob(&format!("{}/*.csv", output_dir.display()))
             .expect("Failed globbing files")
-            .filter_map(|ok| ok.ok())
+            .map_while(Result::ok)
             .collect::<Vec<_>>();
         let cols = count_header_cols(&files[0]);
         assert!(pred.eval(&output_dir));
@@ -51,7 +51,13 @@ macro_rules! generate_locus_test {
 
 #[test]
 fn test_summary() {
-    initiate_cmd!(cmd, "align", "summary", "crates/segul-core/tests/files/long-aln", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "align",
+        "summary",
+        "crates/segul-core/tests/files/long-aln",
+        tmp_dir
+    );
     cmd.assert().success();
     let locus_counts = 4;
     let taxon_counts = 4;
@@ -62,7 +68,13 @@ fn test_summary() {
 
 #[test]
 fn test_summary_aa() {
-    initiate_cmd!(cmd, "align", "summary", "crates/segul-core/tests/files/concat-aa", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "align",
+        "summary",
+        "crates/segul-core/tests/files/concat-aa",
+        tmp_dir
+    );
     cmd.arg("--datatype").arg("aa").assert().success();
     let locus_counts = 4;
     let taxon_counts = 3;
@@ -73,7 +85,13 @@ fn test_summary_aa() {
 
 #[test]
 fn test_locus_summary() {
-    initiate_cmd!(cmd, "align", "summary", "crates/segul-core/tests/files/long-aln", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "align",
+        "summary",
+        "crates/segul-core/tests/files/long-aln",
+        tmp_dir
+    );
     cmd.arg("--per-locus").assert().success();
     let fcount = 4;
     let cols = 25;
@@ -82,7 +100,13 @@ fn test_locus_summary() {
 
 #[test]
 fn test_locus_summary_aa() {
-    initiate_cmd!(cmd, "align", "summary", "crates/segul-core/tests/files/concat-aa", tmp_dir);
+    initiate_cmd!(
+        cmd,
+        "align",
+        "summary",
+        "crates/segul-core/tests/files/concat-aa",
+        tmp_dir
+    );
     cmd.arg("--datatype")
         .arg("aa")
         .arg("--per-locus")
@@ -97,13 +121,10 @@ fn parse_csv(fpath: &Path) -> Vec<String> {
     let file = File::open(fpath).expect("Unable to open file");
     let buff = BufReader::new(file);
     let mut result = Vec::new();
-    buff.lines()
-        .filter_map(|ok| ok.ok())
-        .skip(1)
-        .for_each(|line| {
-            let parts: Vec<&str> = line.split(',').map(|e| e.trim()).collect();
-            result.push(parts[0].to_string());
-        });
+    buff.lines().map_while(Result::ok).skip(1).for_each(|line| {
+        let parts: Vec<&str> = line.split(',').map(|e| e.trim()).collect();
+        result.push(parts[0].to_string());
+    });
 
     result
 }
@@ -112,13 +133,10 @@ fn count_header_cols(fpath: &Path) -> usize {
     let file = File::open(fpath).expect("Unable to open file");
     let buff = BufReader::new(file);
     let mut result = 0;
-    buff.lines()
-        .filter_map(|ok| ok.ok())
-        .take(1)
-        .for_each(|line| {
-            let parts: Vec<&str> = line.split(',').map(|e| e.trim()).collect();
-            result = parts.len();
-        });
+    buff.lines().map_while(Result::ok).take(1).for_each(|line| {
+        let parts: Vec<&str> = line.split(',').map(|e| e.trim()).collect();
+        result = parts.len();
+    });
 
     result
 }
