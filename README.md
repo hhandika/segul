@@ -33,7 +33,7 @@ Learn more about SEGUL in the [documentation](https://www.segul.app/). We welcom
 - **Bioconda (CLI):** [Package](https://anaconda.org/bioconda/segul) • [Docs](https://www.segul.app/docs/installation/install_conda)
 - **Python package:** [Source code](https://github.com/hhandika/pysegul) • [PyPI](https://pypi.org/project/pysegul/) • [Docs](https://www.segul.app/docs/api-usage/python/intro)
 
-## What's New in SEGUL 0.24.0 (Coming Soon)
+## What's New in SEGUL 0.24.0
 
 ### New Features 🚀
 
