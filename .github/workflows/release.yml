@@ -29,6 +29,7 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-Linux-x86_64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
           body: |
             ## Install
@@ -71,6 +72,7 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-Linux-musl-x86_64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   linux_arm:
@@ -96,6 +98,7 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-Linux-arm64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   macos:
@@ -121,6 +124,7 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-macOS-x86_64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   macos_arm:
@@ -146,6 +150,7 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-macOS-arm64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   windows:
@@ -171,6 +176,7 @@ jobs:
           file: segul.zip
           asset_name: segul-Windows-x86_64.zip
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   windows_arm:
@@ -199,4 +205,5 @@ jobs:
           file: segul.zip
           asset_name: segul-Windows-arm64.zip
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true

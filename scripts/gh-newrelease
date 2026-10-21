@@ -3,4 +3,4 @@ TAG=$(git describe --tags --abbrev=0)
 
 echo "Tag found: ${TAG}"
 
-gh release create $TAG
+gh release create "$TAG" --title "$TAG"
