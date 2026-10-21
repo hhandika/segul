@@ -151,7 +151,20 @@ def cmd_report(args, config) -> int:
 
 
 def cmd_plot(args, config) -> int:
-    plot_files(load_report(args.results), args.output_dir)
+    report = load_report(args.results)
+    # Plot only the tasks still in bench.toml, so removed tasks drop out of
+    # the charts without rerunning the benchmark.
+    task_ids = {t.id for t in config.tasks}
+    report["tasks"] = [t for t in report["tasks"] if t["id"] in task_ids]
+    # Use the dataset names and sizes in bench.toml, which may have changed
+    # after the run.
+    for d in report["datasets"]:
+        dataset = config.datasets.get(d["id"])
+        if dataset:
+            d["name"] = dataset.name
+            if dataset.bases:
+                d["bases"] = dataset.bases
+    plot_files(report, args.output_dir)
     return 0
 
 

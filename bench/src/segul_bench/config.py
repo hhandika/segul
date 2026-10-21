@@ -24,6 +24,7 @@ class Dataset:
     description: str
     name: str = ""  # short name used in task labels, e.g. "Esselstyn et al. 2021"
     datatype: str = "dna"  # passed to tasks as {datatype}
+    bases: int | None = None  # total sequence length, shown in plot labels
     generator: str | None = None
     params: dict[str, dict] = field(default_factory=dict)
     path: Path | None = None
@@ -65,6 +66,7 @@ def load_config(path: Path = DEFAULT_CONFIG) -> Config:
             description=d.get("description", ""),
             name=d.get("name", d["id"]),
             datatype=d.get("datatype", "dna"),
+            bases=d.get("bases"),
             generator=d.get("generator"),
             params=d.get("params", {}),
             path=dataset_path,

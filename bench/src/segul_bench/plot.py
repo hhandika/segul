@@ -60,8 +60,9 @@ def plot_report(report: dict, out_dir: Path) -> list[Path]:
     versions = [v["id"] for v in report["versions"]]
     written = [plot_scorecard(report, versions, out_dir), plot_scatter(report, versions, out_dir)]
     colors = version_colors(versions)
+    labels = {d["id"]: dataset_label(d) for d in report["datasets"]}
     for task in report["tasks"]:
-        written.append(plot_task(task, versions, colors, out_dir))
+        written.append(plot_task(task, versions, colors, labels.get(task["dataset"], task["dataset"]), out_dir))
     return written
 
 
@@ -86,7 +87,7 @@ def means(task: dict) -> dict[str, tuple[float, float]]:
 def grouped_rows(report: dict, versions: list[str]) -> list[tuple[str, list[tuple[str, dict]]]]:
     """Tasks grouped by analysis, in first-seen order, labeled by dataset.
     Tasks without results for at least one version are left out."""
-    names = {d["id"]: d.get("name") or d["id"] for d in report["datasets"]}
+    names = {d["id"]: dataset_label(d) for d in report["datasets"]}
     groups: dict[str, list[tuple[str, dict, dict]]] = {}
     for task in report["tasks"]:
         values = means(task)
@@ -100,6 +101,17 @@ def grouped_rows(report: dict, versions: list[str]) -> list[tuple[str, list[tupl
             (name if labels.count(name) == 1 else task["label"], values) for name, task, values in items
         ]))
     return rows
+
+
+def dataset_label(dataset: dict) -> str:
+    """Dataset name with its total sequence length, e.g.
+    "Esselstyn et al. 2021 (358.1 Mbp)"."""
+    name = dataset.get("name") or dataset["id"]
+    bases = dataset.get("bases")
+    if not bases:
+        return name
+    size = f"{bases / 1e6:.1f} {'M aa' if dataset.get('datatype') == 'aa' else 'Mbp'}"
+    return f"{name} ({size})"
 
 
 def compare(values: dict, versions: list[str]) -> tuple[str, str] | None:
@@ -121,13 +133,13 @@ def plot_scorecard(report: dict, versions: list[str], out_dir: Path) -> Path:
     # log(old / new): positive is better (blue), negative worse (red).
     norm = TwoSlopeNorm(vmin=-math.log(10), vcenter=0, vmax=math.log(10))
     n_lines = sum(len(items) + 1 for _, items in rows)
-    fig, ax = plt.subplots(figsize=(10.5, 1.4 + 0.3 * n_lines))
+    fig, ax = plt.subplots(figsize=(7.6, 1.0 + 0.22 * n_lines))
     fig.patch.set_facecolor(SURFACE)
     ax.set_facecolor(SURFACE)
     ax.axis("off")
 
     # Column x positions: label | time cell | memory cell | time values | memory values
-    label_x, time_x, mem_x, cell_w, time_val_x, mem_val_x = 0.0, 3.0, 4.45, 1.35, 6.0, 7.75
+    label_x, time_x, mem_x, cell_w, time_val_x, mem_val_x = 0.0, 2.7, 3.95, 1.2, 5.3, 6.45
     y = 0.0
     ax.text(time_x + cell_w / 2, y, "Time", ha="center", va="center", fontsize=9.5, color=INK_SECONDARY)
     ax.text(mem_x + cell_w / 2, y, "Memory", ha="center", va="center", fontsize=9.5, color=INK_SECONDARY)
@@ -135,7 +147,7 @@ def plot_scorecard(report: dict, versions: list[str], out_dir: Path) -> Path:
     ax.text(mem_val_x, y, "Peak memory (MB)", va="center", fontsize=9.5, color=INK_SECONDARY)
     compared = set()
     for analysis, items in rows:
-        y += 1.25
+        y += 1.15
         ax.text(label_x, y, analysis, va="center", fontsize=10, fontweight="bold", color=INK)
         for label, values in items:
             y += 1
@@ -154,15 +166,15 @@ def plot_scorecard(report: dict, versions: list[str], out_dir: Path) -> Path:
                 ax.text(x + cell_w / 2, y, change_text(old / new, idx), ha="center", va="center",
                         fontsize=8.5, color=text_on(color))
                 ax.text(val_x, y, f"{fmt(old)} → {fmt(new)}", va="center", fontsize=8.5, color=INK)
-    ax.set_xlim(-0.1, 9.9)
+    ax.set_xlim(-0.1, 7.9)
     ax.set_ylim(y + 0.8, -0.6)
 
     pairs = ", ".join(f"{new} vs {old}" for old, new in sorted(compared))
     fig.suptitle(f"Scorecard: {pairs or 'no comparison'}", x=0.01, ha="left", color=INK, fontsize=12)
-    fig.text(0.01, 0.955, "Blue is faster or smaller, red is slower or larger. Values are means, oldest → newest.",
+    fig.text(0.01, 0.945, "Blue is faster or smaller, red is slower or larger. Values are means, oldest → newest.",
              fontsize=8, color=INK_SECONDARY, va="top")
     add_caption(fig, report)
-    fig.tight_layout(rect=(0, 0.02, 1, 0.94))
+    fig.tight_layout(rect=(0, 0.02, 1, 0.93), pad=0.4)
     path = out_dir / "scorecard.png"
     fig.savefig(path, dpi=150, facecolor=SURFACE)
     plt.close(fig)
@@ -297,7 +309,7 @@ def version_colors(versions: list[str]) -> dict[str, str]:
     return {v: to_hex(blues(0.4 + 0.55 * i / (n - 1))) for i, v in enumerate(versions)}
 
 
-def plot_task(task, versions, colors, out_dir) -> Path:
+def plot_task(task, versions, colors, dataset, out_dir) -> Path:
     """Absolute values for one task: time and memory side by side,
     each on its own axis."""
     results = {r["version"]: r for r in task["results"]}
@@ -327,7 +339,7 @@ def plot_task(task, versions, colors, out_dir) -> Path:
         ax.set_ylabel(unit, color=INK_SECONDARY)
         ax.set_title(title, loc="left", color=INK, fontsize=10)
         ax.margins(y=0.15)
-    fig.suptitle(f"{task['label']}  [{task['dataset']}]", x=0.01, ha="left", color=INK, fontsize=11)
+    fig.suptitle(f"{task['label']}  [{dataset}]", x=0.01, ha="left", color=INK, fontsize=11)
     fig.tight_layout()
     path = out_dir / f"{slug(task['id'])}.png"
     fig.savefig(path, dpi=150, facecolor=SURFACE)

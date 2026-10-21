@@ -70,6 +70,8 @@ def describe(dataset: Dataset, path: Path | None) -> dict:
         "datatype": dataset.datatype,
         "description": dataset.description,
     }
+    if dataset.bases:
+        info["bases"] = dataset.bases
     if path is not None:
         # Top-level files only: real dataset folders may hold copies in subfolders.
         files = [p for p in path.iterdir() if p.is_file() and not p.name.startswith(".")]
