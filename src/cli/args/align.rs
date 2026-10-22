@@ -4,7 +4,7 @@ use clap::Subcommand;
 use clap::builder::TypedValueParser as _;
 use clap::{Args, builder};
 
-use super::{CommonConcatArgs, CommonSeqInput, CommonSeqOutput, IOArgs};
+use super::{CommonConcatArgs, CommonSeqInput, CommonSeqOutput, IOArgs, PlotFlags};
 
 #[derive(Subcommand)]
 pub(crate) enum AlignmentSubcommand {
@@ -130,6 +130,8 @@ pub(crate) struct AlignDistanceArgs {
         help = "Detect the group delimiter and field count from sample IDs"
     )]
     pub(crate) group_auto: bool,
+    #[command(flatten)]
+    pub(crate) plot: PlotFlags,
 }
 
 #[derive(Args)]
@@ -222,8 +224,14 @@ pub(crate) struct AlignSummaryArgs {
             .map(|x| x.parse::<usize>().unwrap_or(5)),
     )]
     pub(crate) interval: usize,
-    #[arg(long = "per-locus", help = "Generate summary statistic for each locus")]
+    #[arg(
+        long = "per-locus",
+        help = "Generate summary statistic for each locus",
+        conflicts_with = "plot"
+    )]
     pub(crate) per_locus: bool,
+    #[command(flatten)]
+    pub(crate) plot: PlotFlags,
 }
 
 #[derive(Args)]

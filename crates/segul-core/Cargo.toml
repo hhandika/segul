@@ -12,12 +12,14 @@ keywords = ["alignment", "genomics", "phylogenomics", "bioinformatics"]
 categories = ["science"]
 
 [features]
-default = ["align", "sequence", "read", "contig", "maf"]
+default = ["align", "sequence", "read", "contig", "maf", "plot", "pdf"]
 align = []
 sequence = []
 read = ["dep:noodles", "noodles/fastq"]
 contig = []
 maf = []
+plot = ["dep:plotters", "dep:resvg", "dep:usvg", "dep:colorous"]
+pdf = ["plot", "dep:svg2pdf"]
 
 [dependencies]
 ahash.workspace = true
@@ -44,6 +46,11 @@ assert_approx_eq.workspace = true
 zip.workspace = true
 alphanumeric-sort.workspace = true
 csv.workspace = true
+plotters = { workspace = true, optional = true }
+resvg = { workspace = true, optional = true }
+usvg = { workspace = true, optional = true }
+svg2pdf = { workspace = true, optional = true }
+colorous = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true

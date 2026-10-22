@@ -21,6 +21,16 @@ use crate::{
     writer::read::{ReadPosSummaryWriter, ReadSummaryWriter},
 };
 
+/// Files written by [`GenomicReadSummary::summarize`].
+#[derive(Debug, Clone)]
+pub struct ReadSummaryFiles {
+    /// Per-file summary. Its columns depend on `mode`.
+    pub summary: PathBuf,
+    pub mode: SummaryMode,
+    /// Per-position archive (`read-pos-summary.zip`), written in Complete mode.
+    pub positions: Option<PathBuf>,
+}
+
 /// Generate read summary statistics.
 ///
 /// It accept input in FASTQ or compressed FASTQ (.gzip).
@@ -93,27 +103,34 @@ impl<'a> GenomicReadSummary<'a> {
     /// );
     /// handle.summarize();
     /// ```
-    pub fn summarize(&self) {
+    pub fn summarize(&self) -> ReadSummaryFiles {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
-        match self.mode {
+        let (summary, positions) = match self.mode {
             SummaryMode::Minimal => {
                 let mut records = self.par_summarize_minimal();
-                self.write_record_min(&spin, &mut records);
+                (self.write_record_min(&spin, &mut records), None)
             }
             SummaryMode::Default => {
                 let mut records = self.par_summarize_default();
-                self.write_record_default(&spin, &mut records);
+                (self.write_record_default(&spin, &mut records), None)
             }
             SummaryMode::Complete => {
                 let all_records = self.par_summarize_complete();
                 let (mut records, read_records): (Vec<FastqSummary>, Vec<FastqMappedRead>) =
                     all_records.into_iter().unzip();
-                self.write_record_complete(&spin, &mut records, &read_records);
+                let (summary, positions) =
+                    self.write_record_complete(&spin, &mut records, &read_records);
+                (summary, Some(positions))
             }
-        }
+        };
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_output_info();
+        ReadSummaryFiles {
+            summary,
+            mode: *self.mode,
+            positions,
+        }
     }
 
     fn par_summarize_default(&self) -> Vec<FastqSummary> {
@@ -170,20 +187,20 @@ impl<'a> GenomicReadSummary<'a> {
         summary
     }
 
-    fn write_record_min(&self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) {
+    fn write_record_min(&self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) -> PathBuf {
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
         spin.set_message("Writing records\n");
         writer
             .write_read_count_only(records)
-            .expect("Failed writing to file");
+            .expect("Failed writing to file")
     }
 
-    fn write_record_default(&self, spin: &ProgressBar, records: &mut [FastqSummary]) {
+    fn write_record_default(&self, spin: &ProgressBar, records: &mut [FastqSummary]) -> PathBuf {
         // Sort records by file name
         records.sort_by(|a, b| a.path.cmp(&b.path));
         spin.set_message("Writing records\n");
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
-        writer.write(records).expect("Failed writing to file");
+        writer.write(records).expect("Failed writing to file")
     }
 
     fn write_record_complete(
@@ -191,17 +208,18 @@ impl<'a> GenomicReadSummary<'a> {
         spin: &ProgressBar,
         records: &mut [FastqSummary],
         read_records: &[FastqMappedRead],
-    ) {
+    ) -> (PathBuf, PathBuf) {
         // Sort records by file name
         records.sort_by(|a, b| a.path.cmp(&b.path));
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
-        writer.write(records).expect("Failed writing to file");
+        let summary = writer.write(records).expect("Failed writing to file");
 
         spin.set_message("Writing records\n");
         let pos_writer = ReadPosSummaryWriter::new(self.output, self.prefix);
-        pos_writer
+        let positions = pos_writer
             .write(read_records)
             .expect("Failed writing to file");
+        (summary, positions)
     }
 
     fn print_output_info(&self) {

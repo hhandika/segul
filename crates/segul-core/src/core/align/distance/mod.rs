@@ -121,6 +121,19 @@ impl std::str::FromStr for MatrixDiagonal {
     }
 }
 
+/// Files written by [`AlignmentDistance::compute`].
+#[derive(Debug, Clone)]
+pub struct DistanceFiles {
+    /// Per-locus summary (`<prefix>_summary.csv`).
+    pub summary: PathBuf,
+    /// Directory of per-locus distance matrices (`per_locus/<locus>.csv`).
+    pub per_locus_dir: PathBuf,
+    /// Pooled group mean matrix, written with grouping.
+    pub group_mean: Option<PathBuf>,
+    /// Long-format pairwise distances, written with the long format.
+    pub pairwise_long: Option<PathBuf>,
+}
+
 /// Compute pairwise distances for alignments.
 pub struct AlignmentDistance<'a> {
     /// The input format of the alignment files.
@@ -209,7 +222,7 @@ impl<'a> AlignmentDistance<'a> {
     /// assert!(output.path().join("per_locus").join("gene_2.csv").exists());
     /// assert!(output.path().join("distance_summary.csv").exists());
     /// ```
-    pub fn compute(&self, files: &[PathBuf], prefix: Option<&str>) {
+    pub fn compute(&self, files: &[PathBuf], prefix: Option<&str>) -> DistanceFiles {
         assert!(
             self.model.is_valid_for(self.datatype),
             "The {} model is not valid for {} data",
@@ -223,24 +236,35 @@ impl<'a> AlignmentDistance<'a> {
         results.sort_by(|a, b| alphanumeric_sort::compare_path(&a.summary.path, &b.summary.path));
         spin.set_message("Writing summary...");
         let summaries: Vec<&LocusDistance> = results.iter().map(|r| &r.summary).collect();
-        let mut outputs = vec![("Summary", self.write_summary(&summaries, prefix))];
+        let summary = self.write_summary(&summaries, prefix);
+        let mut outputs = vec![("Summary", summary.clone())];
+        let mut group_mean = None;
         if self.grouping.is_some() {
             spin.set_message("Writing group mean distances...");
-            outputs.extend(
-                self.write_group_outputs(&results, prefix)
-                    .expect("Failed to write group mean distances"),
-            );
+            let group_outputs = self
+                .write_group_outputs(&results, prefix)
+                .expect("Failed to write group mean distances");
+            group_mean = group_outputs.first().map(|(_, path)| path.clone());
+            outputs.extend(group_outputs);
         }
+        let mut pairwise_long = None;
         if self.long_format {
             spin.set_message("Writing long-format pairwise distances...");
             let path = self
                 .write_pairwise_long(&results, prefix)
                 .expect("Failed to write long-format pairwise distances");
+            pairwise_long = Some(path.clone());
             outputs.push(("Pairwise long", path));
         }
         spin.finish_with_message("Finished computing pairwise distances!\n");
         self.log_unassigned(&results);
         self.print_output_info(results.len(), &outputs);
+        DistanceFiles {
+            summary,
+            per_locus_dir: self.output_dir.join(PER_LOCUS_DIR),
+            group_mean,
+            pairwise_long,
+        }
     }
 
     fn par_compute(&self, files: &[PathBuf]) -> Vec<LocusResult> {

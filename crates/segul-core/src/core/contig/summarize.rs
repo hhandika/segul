@@ -37,15 +37,17 @@ impl<'a> ContigSummaryHandler<'a> {
         }
     }
 
-    pub fn summarize(&self) {
+    /// Summarize the contig files. Returns the path of the summary file.
+    pub fn summarize(&self) -> PathBuf {
         let spin = set_spinner();
         spin.set_message("Calculating summary of contig files");
         let contig_summary = self.summarize_contigs();
         let writer = ContigSummaryWriter::new(&contig_summary, self.output, self.prefix);
         spin.set_message("Writing records\n");
-        writer.write().expect("Failed writing to file");
+        let output = writer.write().expect("Failed writing to file");
         spin.finish_with_message("Finished processing contig files\n");
         self.print_input_info();
+        output
     }
 
     fn summarize_contigs(&self) -> Vec<ContigSummary> {

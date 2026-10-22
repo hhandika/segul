@@ -1,0 +1,5 @@
+locus,path,model,ntax,nchar,pairs,undefined_pairs,min,max,mean,median,sd,mean_compared_sites
+gene_1,crates/segul-core/tests/files/alignments/gene_1.nex,p-distance,1,6,0,0,,,,,,
+gene_2,crates/segul-core/tests/files/alignments/gene_2.nex,p-distance,2,8,1,0,0.125,0.125,0.125,0.125,,8.0
+gene_3,crates/segul-core/tests/files/alignments/gene_3.nex,p-distance,2,6,1,0,0.16666666666666666,0.16666666666666666,0.16666666666666666,0.16666666666666666,,6.0
+gene_4,crates/segul-core/tests/files/alignments/gene_4.nexus,p-distance,2,6,1,0,0.3333333333333333,0.3333333333333333,0.3333333333333333,0.3333333333333333,,6.0

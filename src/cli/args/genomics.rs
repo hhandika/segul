@@ -5,7 +5,7 @@ use clap::{Args, Subcommand, builder};
 
 use crate::helper::types::{ContigFmt, SeqReadFmt, SummaryMode};
 
-use super::IOArgs;
+use super::{IOArgs, PlotFlags};
 
 #[derive(Subcommand)]
 pub(crate) enum SeqReadSubcommand {
@@ -61,6 +61,8 @@ pub(crate) struct SeqReadSummaryArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,
+    #[command(flatten)]
+    pub(crate) plot: PlotFlags,
 }
 
 #[derive(Args)]
@@ -86,6 +88,8 @@ pub(crate) struct ContigSummaryArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,
+    #[command(flatten)]
+    pub(crate) plot: PlotFlags,
 }
 
 #[derive(Args)]
@@ -211,4 +215,6 @@ pub(crate) struct MafSummaryArgs {
     pub(crate) output: PathBuf,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<String>,
+    #[command(flatten)]
+    pub(crate) plot: PlotFlags,
 }

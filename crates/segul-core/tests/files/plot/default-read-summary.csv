@@ -1,0 +1,5 @@
+file_path,file_name,read_count,base_count,mean_read_length,min_read_length,max_read_length,GC_count,GC_content,AT_count,AT_content,N_content,G,C,A,T,N,low_QScore,mean_QScore,min_QScore,max_QScore
+crates/segul-core/tests/files/raw/read2_1.fq,read2_1.fq,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+crates/segul-core/tests/files/raw/read2_2.fq,read2_2.fq,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+crates/segul-core/tests/files/raw/read_1.fastq,read_1.fastq,2,72,36,36,36,37,0.5138888888888888,35,0.4861111111111111,0,21,16,16,19,0,0,39.083333333333336,21,40
+crates/segul-core/tests/files/raw/read_2.fastq,read_2.fastq,2,72,36,36,36,25,0.3472222222222222,47,0.6527777777777778,0,13,12,25,22,0,3,38.166666666666664,8,40

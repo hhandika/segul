@@ -4,6 +4,7 @@ mod args;
 mod commands;
 mod contig;
 mod maf;
+mod plot;
 mod read;
 mod sequence;
 

@@ -3,12 +3,16 @@ use std::path::PathBuf;
 use crate::core::align::summarize::AlignmentSummary;
 use crate::helper::logger::AlignSeqLogger;
 
+use segul_core::plot::align::plot_alignment_summary;
+
 use crate::cli::args::align::AlignSummaryArgs;
+use crate::cli::plot::PlotCli;
 use crate::cli::{AlignSeqInput, InputCli, OutputCli, collect_paths};
 
 impl InputCli for SummaryParser<'_> {}
 impl OutputCli for SummaryParser<'_> {}
 impl AlignSeqInput for SummaryParser<'_> {}
+impl PlotCli for SummaryParser<'_> {}
 
 pub(in crate::cli) struct SummaryParser<'a> {
     args: &'a AlignSummaryArgs,
@@ -39,10 +43,14 @@ impl<'a> SummaryParser<'a> {
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut summary =
             AlignmentSummary::new(&input_fmt, &self.args.output, self.args.interval, &datatype);
+        let prefix = self.args.prefix.as_deref();
         if self.args.per_locus {
-            summary.summarize_locus(&files, self.args.prefix.as_deref());
+            summary.summarize_locus(&files, prefix);
         } else {
-            summary.summarize_all(&files, self.args.prefix.as_deref());
+            let outputs = summary.summarize_all(&files, prefix);
+            self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
+                plot_alignment_summary(&outputs, writer)
+            });
         }
     }
 }

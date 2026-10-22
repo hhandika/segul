@@ -2,6 +2,9 @@ use std::path::PathBuf;
 
 use crate::{core::read::summarize::GenomicReadSummary, helper::logger::ReadLogger};
 
+use segul_core::plot::read::plot_read_summary;
+
+use crate::cli::plot::PlotCli;
 use crate::cli::{
     InputCli, OutputCli, RawInputCli, args::genomics::SeqReadSummaryArgs, collect_paths,
 };
@@ -9,6 +12,7 @@ use crate::cli::{
 impl InputCli for ReadSummaryCliParser<'_> {}
 impl OutputCli for ReadSummaryCliParser<'_> {}
 impl RawInputCli for ReadSummaryCliParser<'_> {}
+impl PlotCli for ReadSummaryCliParser<'_> {}
 
 pub(in crate::cli) struct ReadSummaryCliParser<'a> {
     args: &'a SeqReadSummaryArgs,
@@ -31,13 +35,17 @@ impl<'a> ReadSummaryCliParser<'a> {
         let task = "Summarize raw read sequences";
         ReadLogger::new(self.input_dir.as_deref(), input_fmt, fcounts).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        GenomicReadSummary::new(
+        let prefix = self.args.prefix.as_deref();
+        let outputs = GenomicReadSummary::new(
             &mut files,
             &self.args.input_format,
             &self.args.mode,
             &self.args.output,
-            self.args.prefix.as_deref(),
+            prefix,
         )
         .summarize();
+        self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
+            plot_read_summary(&outputs, writer)
+        });
     }
 }

@@ -42,7 +42,7 @@ impl<'a> ReadSummaryWriter<'a> {
         Self { output, prefix }
     }
 
-    pub fn write(&self, records: &[FastqSummary]) -> Result<()> {
+    pub fn write(&self, records: &[FastqSummary]) -> Result<PathBuf> {
         let final_path = self.create_final_output_path(DEFAULT_READ_SUFFIX);
         let mut writer = self
             .create_output_file(&final_path)
@@ -50,10 +50,10 @@ impl<'a> ReadSummaryWriter<'a> {
         self.write_records(&mut writer, records)?;
         writer.flush()?;
 
-        Ok(())
+        Ok(final_path)
     }
 
-    pub fn write_read_count_only(&self, records: &[FastqSummaryMin]) -> Result<()> {
+    pub fn write_read_count_only(&self, records: &[FastqSummaryMin]) -> Result<PathBuf> {
         let output_path = self.create_final_output_path(MINIMAL_READ_SUFFIX);
         let mut writer = self
             .create_output_file(&output_path)
@@ -69,7 +69,7 @@ impl<'a> ReadSummaryWriter<'a> {
             )?;
         }
         writer.flush()?;
-        Ok(())
+        Ok(output_path)
     }
 
     fn create_final_output_path(&self, suffix: &str) -> PathBuf {
@@ -136,7 +136,7 @@ impl<'a> ReadPosSummaryWriter<'a> {
         Self { output, prefix }
     }
 
-    pub fn write(&self, reads: &[FastqMappedRead]) -> Result<()> {
+    pub fn write(&self, reads: &[FastqMappedRead]) -> Result<PathBuf> {
         let zip_path = self.create_final_output_path();
         let mut zip = self
             .create_zip_writer(&zip_path)
@@ -161,7 +161,7 @@ impl<'a> ReadPosSummaryWriter<'a> {
         });
 
         zip.finish().expect("Failed writing to file");
-        Ok(())
+        Ok(zip_path)
     }
 
     fn write_content<W: Write>(

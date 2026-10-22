@@ -1,5 +1,25 @@
 # Release Notes
 
+## Unreleased
+
+New Features:
+
+- Summary commands can now write charts next to their comma-delimited output. Add `--plot` to `segul align summary`, `segul align distance`, `segul read summary`, `segul contig summary`, or `segul maf summary`, and every chart that applies is written to `<OUTPUT>/plots`.
+- Charts include histograms, scatter plots, grouped and stacked bar charts, line charts, box plots, and heatmaps. For example, the alignment summary plots matrix completeness, parsimony informative sites vs alignment length, and missing data per taxon. The distance summary plots a heatmap for each locus (up to 50 loci). The complete read summary plots quality and base composition along the read for each sample.
+- `--plot-format` picks SVG or PNG (default). PNG text uses the system fonts, or a font file given with `--font`.
+- Colors are colorblind-safe by default (Okabe-Ito for categories, viridis for heatmaps). Choose others with `--palette` and `--colormap`, and preview the charts as seen with protanopia, deuteranopia, tritanopia, or achromatopsia with `--cvd`.
+- `--plot` does not work with `align summary --per-locus`, which writes no locus or taxon summary.
+
+Library Changes:
+
+- New `plot` feature in `segul-core`, on by default. Presets in `plot::align`, `plot::distance`, `plot::read`, `plot::contig`, and `plot::maf` build a `PlotSpec` from a summary file, which `PlotRenderer` writes as SVG or PNG. `PlotSpec` serializes with serde, so apps can draw their own interactive charts from the same data.
+- `plot::batch::PlotWriter` writes many charts into one directory. `plot_alignment_summary`, `plot_distance`, `plot_read_summary`, `plot_contig_summary`, and `plot_maf_summary` write every chart for a summary.
+- The summary functions now return the files they wrote: `AlignmentSummary::summarize_all` returns `AlignSummaryFiles`, `GenomicReadSummary::summarize` returns `ReadSummaryFiles`, `ContigSummaryHandler::summarize` returns the summary path, and `AlignmentDistance::compute` returns `DistanceFiles`. The summary, read, and contig writers return the path they wrote. Code that calls them as statements keeps compiling.
+- New `pdf` feature, on by default, adds PDF output to `PlotRenderer`. PDF is only available through the library.
+- PNG and PDF draw text with fonts from `PlotFonts`: font files passed by the app (`PlotFonts::from_data`), the system fonts (`PlotFonts::system`), or both. No font is bundled. SVG output needs no fonts.
+- New `parser::summary_csv::SummaryCsv` reads segul summary files, including the per-position read archive.
+- The `plot` feature adds `plotters`, `resvg`, `usvg`, and `colorous`, and `pdf` adds `svg2pdf`. All are pure Rust. Turn off default features to leave them out.
+
 ## v0.24.0
 
 Installation:

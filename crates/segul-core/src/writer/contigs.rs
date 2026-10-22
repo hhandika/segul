@@ -28,14 +28,14 @@ impl<'a> ContigSummaryWriter<'a> {
         }
     }
 
-    pub fn write(&self) -> Result<()> {
+    pub fn write(&self) -> Result<PathBuf> {
         let output_path = self.create_final_output_path();
         let mut writer = self
             .create_output_file(&output_path)
             .expect("Failed writing to file");
         self.write_records(&mut writer)?;
         writer.flush()?;
-        Ok(())
+        Ok(output_path)
     }
 
     fn create_final_output_path(&self) -> PathBuf {

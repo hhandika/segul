@@ -41,6 +41,11 @@ csv = "1.4.0"
 assert_cmd = "2.*"
 predicates = "3.*"
 tempfile = "3.27.0"
+plotters = { version = "0.3.7", default-features = false, features = ["svg_backend", "line_series", "point_series", "area_series", "histogram"] }
+resvg = { version = "0.45.1", default-features = false, features = ["text"] }
+usvg = { version = "0.45.1", default-features = false, features = ["text", "system-fonts"] }
+svg2pdf = { version = "0.13.0", default-features = false, features = ["text"] }
+colorous = "1.0.16"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(docsrs)'] }
@@ -60,7 +65,7 @@ categories = ["command-line-utilities", "science"]
 exclude = ["crates/", "bench/"]
 
 [dependencies]
-segul-core = { workspace = true, features = ["align", "sequence", "read", "contig", "maf"] }
+segul-core = { workspace = true, features = ["align", "sequence", "read", "contig", "maf", "plot"] }
 clap.workspace = true
 colored.workspace = true
 dialoguer.workspace = true

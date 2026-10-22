@@ -14,6 +14,17 @@ use crate::helper::utils;
 use crate::stats::sequence::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::writer::summary::{CsvWriter, SummaryWriter};
 
+/// Files written by [`AlignmentSummary::summarize_all`].
+#[derive(Debug, Clone)]
+pub struct AlignSummaryFiles {
+    /// Per-locus statistics (`locus_summary.csv`).
+    pub locus: PathBuf,
+    /// Per-taxon statistics (`taxon_summary.csv`).
+    pub taxon: PathBuf,
+    /// Text summary (`alignment_summary.txt`).
+    pub text: PathBuf,
+}
+
 pub struct AlignmentSummary<'a> {
     input_fmt: &'a InputFmt,
     output: &'a Path,
@@ -38,7 +49,8 @@ impl<'a> AlignmentSummary<'a> {
         }
     }
 
-    pub fn summarize_all(&mut self, files: &[PathBuf], prefix: Option<&str>) {
+    /// Write the text, taxon, and locus summaries. Returns the written files.
+    pub fn summarize_all(&mut self, files: &[PathBuf], prefix: Option<&str>) -> AlignSummaryFiles {
         self.check_datatype();
         let spin = utils::set_spinner();
         spin.set_message("Indexing alignments...");
@@ -51,13 +63,17 @@ impl<'a> AlignmentSummary<'a> {
         let taxon_records = self.summarize_taxa(&ids, &stats);
         spin.finish_with_message("Finished computing summary stats!\n");
         let sum = SummaryWriter::new(&sites, &dna, &complete, self.datatype);
-        sum.write(self.output, prefix)
+        let text = sum
+            .write(self.output, prefix)
             .expect("Failed writing to stdout");
         let csv = CsvWriter::new(self.output, prefix, self.datatype);
-        csv.write_taxon_summary(&taxon_records)
+        let taxon = csv
+            .write_taxon_summary(&taxon_records)
             .expect("Failed writing to csv");
-        csv.write_locus_summary(&stats)
+        let locus = csv
+            .write_locus_summary(&stats)
             .expect("Failed writing a per locus csv file");
+        AlignSummaryFiles { locus, taxon, text }
     }
 
     pub fn summarize_locus(&mut self, files: &[PathBuf], prefix: Option<&str>) {

@@ -1,0 +1,2 @@
+path,ref_species,blocks,blocks_no_ref,species,ref_chromosomes,ref_chrom_size_total,ref_bases,ref_genome_coverage,aligned_columns,mean_block_columns,min_block_columns,max_block_columns,mean_block_ref_len,mean_species_per_block,mean_score,gap_proportion,duplicate_rows
+crates/segul-core/tests/files/maf/simple.maf,hg18,3,0,5,1,158545518,57,3.5952e-7,61,20.3333,6,42,19.0000,4.6667,11653.3333,0.0616,0

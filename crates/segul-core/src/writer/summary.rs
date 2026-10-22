@@ -101,7 +101,7 @@ impl<'a> CsvWriter<'a> {
     pub fn write_taxon_summary(
         &self,
         taxon_summary: &BTreeMap<String, TaxonRecords>,
-    ) -> Result<()> {
+    ) -> Result<PathBuf> {
         let default_prefix = "taxon_summary";
         let output = self.create_output_fname(default_prefix);
         let mut writer = self.create_output_file(&output)?;
@@ -154,10 +154,10 @@ impl<'a> CsvWriter<'a> {
             writeln!(writer).expect("Failed taxon summary stats");
         });
         writer.flush()?;
-        Ok(())
+        Ok(output)
     }
 
-    pub fn write_locus_summary(&self, stats: &[(Sites, CharMatrix, Taxa)]) -> Result<()> {
+    pub fn write_locus_summary(&self, stats: &[(Sites, CharMatrix, Taxa)]) -> Result<PathBuf> {
         let default_prefix = "locus_summary";
         let output = self.create_output_fname(default_prefix);
         let mut writer = self.create_output_file(&output)?;
@@ -171,7 +171,7 @@ impl<'a> CsvWriter<'a> {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Output dir", self.output.display());
 
-        Ok(())
+        Ok(output)
     }
 
     fn create_output_fname(&self, default_prefix: &str) -> PathBuf {
@@ -313,7 +313,7 @@ impl<'s> SummaryWriter<'s> {
         }
     }
 
-    pub fn write(&self, output_path: &Path, prefix: Option<&str>) -> Result<()> {
+    pub fn write(&self, output_path: &Path, prefix: Option<&str>) -> Result<PathBuf> {
         let default_prefix = "alignment_summary";
         let output = match prefix {
             Some(fname) => {
@@ -325,7 +325,7 @@ impl<'s> SummaryWriter<'s> {
         let mut writer = self.create_output_file(&output)?;
         self.write_to_file(&mut writer)?;
         writer.flush()?;
-        Ok(())
+        Ok(output)
     }
 
     fn write_to_file<W: Write>(&self, writer: &mut W) -> Result<()> {
