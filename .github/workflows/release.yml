@@ -5,10 +5,15 @@ on:
     tags:
       - "*"
 
+permissions:
+  contents: read
+
 jobs:
   linux:
     name: Linux x86_64 GNU
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -47,6 +52,8 @@ jobs:
   linux_musl:
     name: Linux x86_64 Static
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -78,6 +85,8 @@ jobs:
   linux_arm:
     name: Linux arm64 GNU
     runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -104,6 +113,8 @@ jobs:
   macos:
     name: macOS x86_64
     runs-on: macos-15-intel
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -130,6 +141,8 @@ jobs:
   macos_arm:
     name: macOS arm64
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -156,6 +169,8 @@ jobs:
   windows:
     name: Windows x86_64
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -182,6 +197,8 @@ jobs:
   windows_arm:
     name: Windows arm64
     runs-on: windows-11-arm
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
