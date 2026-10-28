@@ -9,6 +9,15 @@ New Features:
 - `--plot-format` picks SVG or PNG (default). PNG text uses the system fonts, or a font file given with `--font`.
 - Colors are colorblind-safe by default (Okabe-Ito for categories, viridis for heatmaps). Choose others with `--palette` and `--colormap`, and preview the charts as seen with protanopia, deuteranopia, tritanopia, or achromatopsia with `--cvd`.
 - `--plot` does not work with `align summary --per-locus`, which writes no locus or taxon summary.
+- `segul read summary` is much faster. Each file is read once in large blocks that are summarized on all cores, so a single large FASTQ file no longer runs on one core. On a 2-million-read test file, complete mode went from 8.5 s to 0.3 s for plain FASTQ, from 9.3 s to 0.9 s for gzip, and from 9.2 s to 0.3 s for BGZF, which is also decompressed in parallel.
+- The read summary adds median, standard deviation, and N50 of read length, Q20 and Q30 bases, the mean quality per read, reads with mean quality below 20, and the detected quality offset. The new columns are added after the existing ones.
+- Complete mode adds quality quartiles and N content per read position, length, per-read quality, and GC distributions (with the theoretical GC curve), duplication across every read of each file, overrepresented sequences among all reads, and adapter content for Illumina Universal, Nextera, small RNA, poly-A, and poly-G. The distributions are written to `read-dist-summary.zip`, and all statistics to `read-report.json`.
+- Duplication compares the full sequence of every read. By default it keeps a uniform sample of 100,000 distinct sequences, about 3 MB per file, and counts their copies across the whole file, which estimates the duplicate share within about 0.3% and gives the same result with any number of threads. Set the sample size with `--dup-sketch-size`, or use `0` to count every distinct sequence exactly.
+- Overrepresented sequences are found among all reads with a heavy-hitter summary, so every read start above 0.1% of reads is listed. Counts can be short by up to 0.025% of reads, given as `max_error_pct` in `read-report.json`.
+- Running many FASTQ files at once uses smaller read blocks for each file, so memory stays low. On 25 files, complete mode used 214 MB.
+- New read charts with `--plot`: `q30-pct`, `pos-qscore-box`, `length-dist`, `read-qscore-dist`, `gc-dist`, `pos-n-content`, `adapter-content`, and `duplication`.
+- The quality offset (Phred+33 or Phred+64) is detected from the reads. Set it with `--phred 33` or `--phred 64`. Quality scores above 'J', such as PacBio HiFi scores, no longer stop the run.
+- Gzip and BGZF files are recognized from their content, so files with other extensions work. Malformed records now stop the run with the file name and read number instead of being skipped.
 
 Library Changes:
 
@@ -19,6 +28,18 @@ Library Changes:
 - PNG and PDF draw text with fonts from `PlotFonts`: font files passed by the app (`PlotFonts::from_data`), the system fonts (`PlotFonts::system`), or both. No font is bundled. SVG output needs no fonts.
 - New `parser::summary_csv::SummaryCsv` reads segul summary files, including the per-position read archive.
 - The `plot` feature adds `plotters`, `resvg`, `usvg`, and `colorous`, and `pdf` adds `svg2pdf`. All are pure Rust. Turn off default features to leave them out.
+- New `stats::fastq::FastqAnalyzer` computes all read statistics for one file in a single pass and returns a `stats::fastq::report::SampleReadReport`. `ReadReport::from_path` reads `read-report.json`, and every report type serializes with serde.
+- `GenomicReadSummary::try_summarize` returns errors from invalid input instead of panicking, and `GenomicReadSummary::with_phred` sets the quality offset. `ReadSummaryFiles` gains `distributions` and `report`.
+- `FastqSummary` gains a `report` field with all statistics. Its existing fields are still filled.
+- New writers `ReadDistSummaryWriter` and `ReadReportWriter`, and `ReadSummaryWriter::write_summary` writes the Complete mode columns.
+- `FastqAnalyzer::with_dup_sketch_size` and `GenomicReadSummary::with_dup_sketch_size` set the duplication sample size, with `stats::fastq::DEFAULT_DUP_SKETCH_SIZE` as the default.
+- The `read` feature uses `noodles` for BGZF instead of FASTQ, adds `memchr` and `xxhash-rust`, and gzip decoding uses the faster `zlib-rs` backend.
+
+Breaking Changes:
+
+- Library: `FastqMappedRead` and `FastqSummary::summarize_map` are removed. Per-position statistics are in `SampleReadReport::positions`. `ReadPosSummaryWriter::write` takes `&[SampleReadReport]`.
+- Library: code that builds `ReadSummaryFiles` directly must set the new `distributions` and `report` fields.
+- `SeqReadFmt` no longer decides how a file is decompressed. The compression is read from the file content.
 
 ## v0.24.0
 

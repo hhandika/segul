@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use clap::builder::TypedValueParser as _;
 use clap::{Args, Subcommand, builder};
 
-use crate::helper::types::{ContigFmt, SeqReadFmt, SummaryMode};
+use crate::helper::types::{ContigFmt, PhredOffset, SeqReadFmt, SummaryMode};
+use crate::stats::fastq::DEFAULT_DUP_SKETCH_SIZE;
 
 use super::{IOArgs, PlotFlags};
 
@@ -52,6 +53,22 @@ pub(crate) struct SeqReadSummaryArgs {
             builder::PossibleValuesParser::new(["minimal", "default", "complete"])
             .map(|x| x.parse::<SummaryMode>().unwrap()))]
     pub(crate) mode: SummaryMode,
+    #[arg(
+        long = "phred",
+        help = "Quality score offset. Auto detects it from the first reads",
+        default_value_t = PhredOffset::Auto,
+        value_parser =
+            builder::PossibleValuesParser::new(["auto", "33", "64"])
+            .map(|x| x.parse::<PhredOffset>().unwrap()))]
+    pub(crate) phred: PhredOffset,
+    #[arg(
+        long = "dup-sketch-size",
+        help = "Distinct sequences kept to estimate duplication in complete mode. \
+            Larger is more accurate and uses about 30 bytes per sequence per thread. \
+            0 counts every sequence exactly",
+        default_value_t = DEFAULT_DUP_SKETCH_SIZE
+    )]
+    pub(crate) dup_sketch_size: usize,
     #[arg(
         short = 'o',
         long = "output",

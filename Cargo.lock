@@ -211,6 +211,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytes"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
+
+[[package]]
 name = "cc"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -340,6 +346,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01a7799fd6b852db0e61728dde9a204c423b44d689dbd432522543614b490e78"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "crossbeam-channel"
+version = "0.5.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98b0cc327b5bc766e7fda9c9260cc0fa81b43a8e240440422dff70788e3f9ef1"
+dependencies = [
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -877,17 +892,19 @@ version = "0.118.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fbc48a82baed442e5cb56837d5d6896d825a60612460562fb6e3e0229e375b3"
 dependencies = [
- "noodles-fastq",
+ "noodles-bgzf",
 ]
 
 [[package]]
-name = "noodles-fastq"
-version = "0.24.0"
+name = "noodles-bgzf"
+version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b749d3b5ce244ad38790b0d1193f199244bada983fd5316fb1d3bcda162b3e97"
+checksum = "950a8570bb43a68697bb34ba39a44f1171faacceb852104d4a35701b86d7ef29"
 dependencies = [
- "bstr",
- "memchr",
+ "bytes",
+ "crossbeam-channel",
+ "rayon",
+ "zlib-rs",
 ]
 
 [[package]]
@@ -1320,6 +1337,7 @@ dependencies = [
  "predicates",
  "segul-core",
  "tempfile",
+ "zip",
 ]
 
 [[package]]
@@ -1342,6 +1360,7 @@ dependencies = [
  "lazy_static",
  "log",
  "log4rs",
+ "memchr",
  "nom",
  "noodles",
  "num-format",
@@ -1355,6 +1374,7 @@ dependencies = [
  "tempfile",
  "usvg",
  "walkdir",
+ "xxhash-rust",
  "zip",
 ]
 
@@ -2012,6 +2032,12 @@ name = "xmlwriter"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "550a2b930b62486a393c52d5c3b84bff264b28aa437ed64694d31e93b1757af7"
 
 [[package]]
 name = "zerocopy"

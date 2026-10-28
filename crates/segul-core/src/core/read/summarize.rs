@@ -2,24 +2,30 @@
 //!
 //! Support FASTQ and compressed FASTQ in gunzip format.
 
-use std::{
-    path::{Path, PathBuf},
-    sync::mpsc::channel,
-};
+use std::path::{Path, PathBuf};
 
+use anyhow::Result;
 use colored::Colorize;
-
 use indicatif::ProgressBar;
 use rayon::prelude::*;
 
 use crate::{
     helper::{
-        types::{SeqReadFmt, SummaryMode},
+        types::{PhredOffset, SeqReadFmt, SummaryMode},
         utils::set_spinner,
     },
-    stats::fastq::{FastqMappedRead, FastqSummary, FastqSummaryMin},
-    writer::read::{ReadPosSummaryWriter, ReadSummaryWriter},
+    stats::fastq::{
+        DEFAULT_DUP_SKETCH_SIZE, FastqAnalyzer, FastqSummary, FastqSummaryMin, count_reads,
+        report::{ReadReport, SampleReadReport},
+    },
+    writer::read::{
+        ReadDistSummaryWriter, ReadPosSummaryWriter, ReadReportWriter, ReadSummaryWriter,
+    },
 };
+
+// More threads than this per file rarely speed up BGZF decoding,
+// and each one adds blocks held in memory.
+const MAX_FILE_THREADS: usize = 8;
 
 /// Files written by [`GenomicReadSummary::summarize`].
 #[derive(Debug, Clone)]
@@ -29,6 +35,10 @@ pub struct ReadSummaryFiles {
     pub mode: SummaryMode,
     /// Per-position archive (`read-pos-summary.zip`), written in Complete mode.
     pub positions: Option<PathBuf>,
+    /// Distribution archive (`read-dist-summary.zip`), written in Complete mode.
+    pub distributions: Option<PathBuf>,
+    /// All statistics as JSON (`read-report.json`), written in Complete mode.
+    pub report: Option<PathBuf>,
 }
 
 /// Generate read summary statistics.
@@ -38,8 +48,12 @@ pub struct ReadSummaryFiles {
 /// It accepts three mode to generate summary statistics:
 /// 1. Minimal: read count only
 /// 2. Default: essential statistics, such as read counts, base counts, gc, at, and n content, and qscore statistics
-/// 3. Complete: all the essential plus summary
-///    statistics per position in read for each file.
+/// 3. Complete: all the essential statistics plus statistics per read
+///    position, read length, quality, and GC distributions, duplication,
+///    overrepresented sequences, and adapter content for each file.
+///
+/// Each file is read once. Large files are split into blocks that are
+/// summarized in parallel.
 pub struct GenomicReadSummary<'a> {
     /// Input path.
     pub inputs: &'a mut [PathBuf],
@@ -55,6 +69,11 @@ pub struct GenomicReadSummary<'a> {
     pub output: &'a Path,
     /// Output file prefix
     pub prefix: Option<&'a str>,
+    /// Quality score encoding. Detected from the reads by default.
+    pub phred: PhredOffset,
+    /// Distinct sequences kept to estimate duplication in Complete mode.
+    /// Zero counts every distinct sequence.
+    pub dup_sketch_size: usize,
 }
 
 impl<'a> GenomicReadSummary<'a> {
@@ -72,7 +91,22 @@ impl<'a> GenomicReadSummary<'a> {
             mode,
             output,
             prefix,
+            phred: PhredOffset::Auto,
+            dup_sketch_size: DEFAULT_DUP_SKETCH_SIZE,
         }
+    }
+
+    /// Keep this many distinct sequences to estimate duplication, or zero
+    /// to count every one. See [`FastqAnalyzer::with_dup_sketch_size`].
+    pub fn with_dup_sketch_size(mut self, size: usize) -> Self {
+        self.dup_sketch_size = size;
+        self
+    }
+
+    /// Use a fixed quality score offset instead of detecting it.
+    pub fn with_phred(mut self, phred: PhredOffset) -> Self {
+        self.phred = phred;
+        self
     }
 
     /// Generate summary statistics for fastq files.
@@ -104,90 +138,87 @@ impl<'a> GenomicReadSummary<'a> {
     /// handle.summarize();
     /// ```
     pub fn summarize(&self) -> ReadSummaryFiles {
+        self.try_summarize()
+            .unwrap_or_else(|error| panic!("Failed summarizing reads: {:#}", error))
+    }
+
+    /// Same as [`Self::summarize`], but returns errors from invalid input files.
+    pub fn try_summarize(&self) -> Result<ReadSummaryFiles> {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
-        let (summary, positions) = match self.mode {
+        let files = match self.mode {
             SummaryMode::Minimal => {
-                let mut records = self.par_summarize_minimal();
-                (self.write_record_min(&spin, &mut records), None)
+                let records = self.par_summarize_minimal()?;
+                ReadSummaryFiles {
+                    summary: self.write_record_min(&spin, &records),
+                    mode: *self.mode,
+                    positions: None,
+                    distributions: None,
+                    report: None,
+                }
             }
             SummaryMode::Default => {
-                let mut records = self.par_summarize_default();
-                (self.write_record_default(&spin, &mut records), None)
+                let records = self.par_summarize(false)?;
+                ReadSummaryFiles {
+                    summary: self.write_record_default(&spin, &records, false),
+                    mode: *self.mode,
+                    positions: None,
+                    distributions: None,
+                    report: None,
+                }
             }
             SummaryMode::Complete => {
-                let all_records = self.par_summarize_complete();
-                let (mut records, read_records): (Vec<FastqSummary>, Vec<FastqMappedRead>) =
-                    all_records.into_iter().unzip();
-                let (summary, positions) =
-                    self.write_record_complete(&spin, &mut records, &read_records);
-                (summary, Some(positions))
+                let records = self.par_summarize(true)?;
+                self.write_record_complete(&spin, records)?
             }
         };
         spin.finish_with_message("Finished processing fastq files\n");
         self.print_output_info();
-        ReadSummaryFiles {
-            summary,
-            mode: *self.mode,
-            positions,
-        }
+        Ok(files)
     }
 
-    fn par_summarize_default(&self) -> Vec<FastqSummary> {
-        let (sender, receiver) = channel();
-
-        self.inputs.par_iter().for_each_with(sender, |s, p| {
-            let record = self.summarize_default(p);
-            s.send(record)
-                .expect("Failed parallel processing fastq files");
-        });
-
-        receiver.iter().collect()
+    /// Threads for each file when the pool is shared between files.
+    fn file_threads(&self) -> usize {
+        (rayon::current_num_threads() / self.inputs.len().max(1)).clamp(1, MAX_FILE_THREADS)
     }
 
-    fn summarize_default(&self, path: &Path) -> FastqSummary {
-        let mut summary = FastqSummary::new(path);
-        summary.summarize(self.input_fmt);
-        summary
+    fn par_summarize(&self, complete: bool) -> Result<Vec<FastqSummary>> {
+        let threads = self.file_threads();
+        let mut records = self
+            .inputs
+            .par_iter()
+            .map(|path| {
+                FastqAnalyzer::new(path, self.phred, complete, threads)
+                    .with_dup_sketch_size(self.dup_sketch_size)
+                    .analyze()
+                    .map(|report| FastqSummary::from_report(path, report))
+            })
+            .collect::<Result<Vec<FastqSummary>>>()?;
+        records.sort_by(|a, b| a.path.cmp(&b.path));
+        self.print_totals(
+            records
+                .iter()
+                .map(|r| (r.metrics().read_count, r.metrics().base_count)),
+        );
+        Ok(records)
     }
 
-    fn par_summarize_complete(&self) -> Vec<(FastqSummary, FastqMappedRead)> {
-        let (sender, receiver) = channel();
-
-        self.inputs.par_iter().for_each_with(sender, |s, p| {
-            let record = self.summarize_complete(p);
-            s.send(record)
-                .expect("Failed parallel processing fastq files");
-        });
-
-        receiver.iter().collect()
+    fn par_summarize_minimal(&self) -> Result<Vec<FastqSummaryMin>> {
+        let threads = self.file_threads();
+        let mut records = self
+            .inputs
+            .par_iter()
+            .map(|path| {
+                let mut summary = FastqSummaryMin::new(path);
+                summary.read_count = count_reads(path, threads)?;
+                Ok(summary)
+            })
+            .collect::<Result<Vec<FastqSummaryMin>>>()?;
+        records.sort_by(|a, b| a.path.cmp(&b.path));
+        Ok(records)
     }
 
-    fn summarize_complete(&self, path: &Path) -> (FastqSummary, FastqMappedRead) {
-        let mut summary = FastqSummary::new(path);
-        let mapped_records = summary.summarize_map(self.input_fmt);
-        (summary, mapped_records)
-    }
-
-    fn par_summarize_minimal(&self) -> Vec<FastqSummaryMin> {
-        let (sender, receiver) = channel();
-
-        self.inputs.par_iter().for_each_with(sender, |s, p| {
-            let summary = self.summarize_minimal(p, self.input_fmt);
-            s.send(summary)
-                .expect("Failed parallel processing fastq files");
-        });
-
-        receiver.iter().collect()
-    }
-
-    fn summarize_minimal(&self, p: &Path, input_fmt: &SeqReadFmt) -> FastqSummaryMin {
-        let mut summary = FastqSummaryMin::new(p);
-        summary.summarize(input_fmt);
-        summary
-    }
-
-    fn write_record_min(&self, spin: &ProgressBar, records: &mut [FastqSummaryMin]) -> PathBuf {
+    fn write_record_min(&self, spin: &ProgressBar, records: &[FastqSummaryMin]) -> PathBuf {
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
         spin.set_message("Writing records\n");
         writer
@@ -195,31 +226,45 @@ impl<'a> GenomicReadSummary<'a> {
             .expect("Failed writing to file")
     }
 
-    fn write_record_default(&self, spin: &ProgressBar, records: &mut [FastqSummary]) -> PathBuf {
-        // Sort records by file name
-        records.sort_by(|a, b| a.path.cmp(&b.path));
+    fn write_record_default(
+        &self,
+        spin: &ProgressBar,
+        records: &[FastqSummary],
+        complete: bool,
+    ) -> PathBuf {
         spin.set_message("Writing records\n");
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
-        writer.write(records).expect("Failed writing to file")
+        writer
+            .write_summary(records, complete)
+            .expect("Failed writing to file")
     }
 
     fn write_record_complete(
         &self,
         spin: &ProgressBar,
-        records: &mut [FastqSummary],
-        read_records: &[FastqMappedRead],
-    ) -> (PathBuf, PathBuf) {
-        // Sort records by file name
-        records.sort_by(|a, b| a.path.cmp(&b.path));
-        let writer = ReadSummaryWriter::new(self.output, self.prefix);
-        let summary = writer.write(records).expect("Failed writing to file");
+        records: Vec<FastqSummary>,
+    ) -> Result<ReadSummaryFiles> {
+        let summary = self.write_record_default(spin, &records, true);
+        let report = ReadReport {
+            samples: records.into_iter().map(|r| r.report).collect(),
+        };
+        let samples: &[SampleReadReport] = &report.samples;
+        let positions = ReadPosSummaryWriter::new(self.output, self.prefix).write(samples)?;
+        let distributions = ReadDistSummaryWriter::new(self.output, self.prefix).write(samples)?;
+        let report = ReadReportWriter::new(self.output, self.prefix).write(&report)?;
+        Ok(ReadSummaryFiles {
+            summary,
+            mode: *self.mode,
+            positions: Some(positions),
+            distributions: Some(distributions),
+            report: Some(report),
+        })
+    }
 
-        spin.set_message("Writing records\n");
-        let pos_writer = ReadPosSummaryWriter::new(self.output, self.prefix);
-        let positions = pos_writer
-            .write(read_records)
-            .expect("Failed writing to file");
-        (summary, positions)
+    fn print_totals(&self, counts: impl Iterator<Item = (u64, u64)>) {
+        let (reads, bases) = counts.fold((0, 0), |(r, b), (reads, bases)| (r + reads, b + bases));
+        log::info!("{:18}: {}", "Total reads", reads);
+        log::info!("{:18}: {}", "Total bases", bases);
     }
 
     fn print_output_info(&self) {
@@ -236,7 +281,7 @@ mod test {
 
     use crate::core::read::summarize::GenomicReadSummary;
     use crate::helper::types::{SeqReadFmt, SummaryMode};
-    use crate::stats::fastq::{FastqMappedRead, FastqSummary};
+    use crate::stats::fastq::report::ReadReport;
 
     #[test]
     fn test_summarize() {
@@ -270,13 +315,32 @@ mod test {
             output.path(),
             None,
         );
-        let records = handler.par_summarize_complete();
-        let (_, pos): (Vec<FastqSummary>, Vec<FastqMappedRead>) = records.into_iter().unzip();
-        pos.iter().for_each(|p| {
-            assert_eq!(p.reads.len(), 36);
-            assert_eq!(p.qscores.len(), 36);
-        });
+        let records = handler.par_summarize_minimal().unwrap();
+        assert_eq!(records.len(), 2);
+        assert!(records.iter().all(|r| r.read_count == 2));
+    }
 
-        assert_eq!(pos.len(), 2);
+    #[test]
+    fn test_complete_outputs() {
+        let mut files = vec![
+            PathBuf::from("tests/files/raw/read_2.fastq"),
+            PathBuf::from("tests/files/raw/read_1.fastq"),
+        ];
+        let output = TempDir::with_prefix("tempt").unwrap();
+        let handler = GenomicReadSummary::new(
+            &mut files,
+            &SeqReadFmt::Auto,
+            &SummaryMode::Complete,
+            output.path(),
+            Some("run"),
+        );
+        let files = handler.try_summarize().unwrap();
+        assert!(files.summary.ends_with("run_default-read-summary.csv"));
+        assert!(files.positions.unwrap().exists());
+        assert!(files.distributions.unwrap().exists());
+        let report = ReadReport::from_path(&files.report.unwrap()).unwrap();
+        // Samples are sorted by path.
+        assert_eq!(report.samples[0].sample, "read_1");
+        assert_eq!(report.samples[0].positions.len(), 36);
     }
 }

@@ -60,7 +60,11 @@ test_summary_plot!(
         "read-count.png",
         "base-composition.png",
         "pos-qscore_read_1.png",
-        "pos-composition_read_1.png"
+        "pos-composition_read_1.png",
+        "q30-pct.png",
+        "length-dist.png",
+        "pos-qscore-box_read_1.png",
+        "adapter-content_read_1.png"
     ]
 );
 

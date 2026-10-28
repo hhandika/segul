@@ -1,7 +1,8 @@
 //! Raw read summary plots.
 //!
 //! Sample charts read `default-read-summary.csv`. Per-position charts read
-//! `read-pos-summary.zip` (or one CSV extracted from it), written by
+//! `read-pos-summary.zip` (or one CSV extracted from it). Distribution charts
+//! read `read-report.json`. The last two are written by
 //! `segul read summary --mode complete`.
 use std::path::{Path, PathBuf};
 
@@ -10,15 +11,18 @@ use anyhow::{Result, bail};
 use super::PlotPreset;
 use super::batch::PlotWriter;
 use super::preset::{bar_spec, plot_presets, scatter_spec};
-use super::spec::{ChartKind, PlotSpec, PlotStyle, Series};
+use super::spec::{BoxStats, ChartKind, PlotSpec, PlotStyle, Series};
 use crate::core::read::summarize::ReadSummaryFiles;
 use crate::helper::types::SummaryMode;
 use crate::parser::summary_csv::SummaryCsv;
+use crate::stats::fastq::report::{ReadReport, SampleReadReport};
 
 const BASES: [&str; 5] = ["G", "C", "A", "T", "N"];
 const POSITION_BASES: [&str; 4] = ["G", "C", "A", "T"];
 // Above this many samples, an all-sample quality chart is too crowded to read.
 const MAX_OVERVIEW_SAMPLES: usize = 8;
+// Box plots with more positions than this show every n-th position.
+const MAX_POSITION_BOXES: usize = 75;
 
 plot_presets! {
     /// Charts available for raw read summaries.
@@ -31,6 +35,14 @@ plot_presets! {
         GcVsReads => ("gc-vs-reads", "GC content vs number of reads (default-read-summary.csv)"),
         PositionQuality => ("pos-qscore", "Quality score by read position (read-pos-summary.zip)"),
         PositionComposition => ("pos-composition", "Base composition by read position for one sample (read-pos-summary.zip)"),
+        Q30Percent => ("q30-pct", "Bases with quality 30 or higher per sample (default-read-summary.csv)"),
+        PositionQualityBox => ("pos-qscore-box", "Quality score distribution by read position for one sample (read-report.json)"),
+        LengthDistribution => ("length-dist", "Read length distribution (read-report.json)"),
+        ReadQualityDistribution => ("read-qscore-dist", "Mean quality score per read distribution (read-report.json)"),
+        GcDistribution => ("gc-dist", "GC content per read with the theoretical distribution for one sample (read-report.json)"),
+        PositionNContent => ("pos-n-content", "N content by read position (read-report.json)"),
+        AdapterContent => ("adapter-content", "Cumulative adapter content by read position for one sample (read-report.json)"),
+        Duplication => ("duplication", "Sequence duplication levels for one sample (read-report.json)"),
     }
 }
 
@@ -41,12 +53,33 @@ pub enum ReadSource {
     Sample,
     /// Per-position archive (`read-pos-summary.zip`).
     Position,
+    /// Complete statistics (`read-report.json`).
+    Report,
 }
 
 impl ReadPlot {
+    /// Whether the chart shows one sample at a time.
+    pub fn is_per_sample(&self) -> bool {
+        matches!(
+            self,
+            Self::PositionComposition
+                | Self::PositionQualityBox
+                | Self::GcDistribution
+                | Self::AdapterContent
+                | Self::Duplication
+        )
+    }
+
     pub fn source(&self) -> ReadSource {
         match self {
             Self::PositionQuality | Self::PositionComposition => ReadSource::Position,
+            Self::PositionQualityBox
+            | Self::LengthDistribution
+            | Self::ReadQualityDistribution
+            | Self::GcDistribution
+            | Self::PositionNContent
+            | Self::AdapterContent
+            | Self::Duplication => ReadSource::Report,
             _ => ReadSource::Sample,
         }
     }
@@ -57,7 +90,8 @@ impl ReadPlot {
 /// Minimal summaries only have read counts. Complete summaries also get
 /// quality and base composition by position for each sample, named
 /// `pos-qscore_<sample>` and `pos-composition_<sample>`, plus an
-/// all-sample `pos-qscore` chart when there are few samples.
+/// all-sample `pos-qscore` chart when there are few samples. When the run
+/// wrote `read-report.json`, distribution charts are added the same way.
 pub fn plot_read_summary(files: &ReadSummaryFiles, writer: &PlotWriter) -> Vec<PathBuf> {
     let presets: Vec<ReadPlot> = match files.mode {
         SummaryMode::Minimal => vec![ReadPlot::ReadCount],
@@ -74,6 +108,44 @@ pub fn plot_read_summary(files: &ReadSummaryFiles, writer: &PlotWriter) -> Vec<P
         .collect();
     if let Some(positions) = &files.positions {
         written.extend(plot_positions(positions, writer));
+    }
+    if let Some(report) = &files.report {
+        written.extend(plot_report(report, writer));
+    }
+    written
+}
+
+fn plot_report(path: &Path, writer: &PlotWriter) -> Vec<PathBuf> {
+    let samples: Vec<String> = match ReadReport::from_path(path) {
+        Ok(report) => report
+            .samples
+            .into_iter()
+            .filter(|s| s.metrics.read_count > 0)
+            .map(|s| s.sample)
+            .collect(),
+        Err(error) => {
+            log::warn!("Skipped read distribution charts: {:#}", error);
+            return Vec::new();
+        }
+    };
+    let presets: Vec<ReadPlot> = ReadPlot::all()
+        .iter()
+        .filter(|p| p.source() == ReadSource::Report)
+        .copied()
+        .collect();
+    let mut written = Vec::new();
+    if !samples.is_empty() && samples.len() <= MAX_OVERVIEW_SAMPLES {
+        let plotter = ReadPlotter::new(path, None, writer.style());
+        for preset in presets.iter().filter(|p| !p.is_per_sample()) {
+            written.extend(writer.write(preset.name(), plotter.build(preset)));
+        }
+    }
+    for sample in &samples {
+        let plotter = ReadPlotter::new(path, Some(sample), writer.style());
+        for preset in presets.iter().filter(|p| p.is_per_sample()) {
+            let name = format!("{}_{}", preset.name(), sample);
+            written.extend(writer.write(&name, plotter.build(preset)));
+        }
     }
     written
 }
@@ -127,6 +199,7 @@ impl<'a> ReadPlotter<'a> {
         match preset {
             ReadPlot::PositionQuality => return self.position_quality(),
             ReadPlot::PositionComposition => return self.position_composition(),
+            preset if preset.source() == ReadSource::Report => return self.report_chart(preset),
             _ => (),
         }
         let csv = SummaryCsv::from_path(self.input)?;
@@ -145,6 +218,9 @@ impl<'a> ReadPlotter<'a> {
                 self.sample_bar(&csv, samples, "mean_QScore", "Mean quality score")?
             }
             ReadPlot::GcContent => self.sample_bar(&csv, samples, "GC_content", "GC content")?,
+            ReadPlot::Q30Percent => {
+                self.sample_bar(&csv, samples, "Q30_pct", "Bases with Q30 or higher (%)")?
+            }
             ReadPlot::BaseComposition => self.base_composition(&csv, samples)?,
             ReadPlot::GcVsReads => scatter_spec(
                 "GC content vs number of reads",
@@ -153,7 +229,7 @@ impl<'a> ReadPlotter<'a> {
                 csv.column_f64("GC_content")?,
                 self.style,
             ),
-            ReadPlot::PositionQuality | ReadPlot::PositionComposition => unreachable!(),
+            _ => unreachable!("Chart reads another summary file"),
         };
         Ok(spec)
     }
@@ -251,6 +327,81 @@ impl<'a> ReadPlotter<'a> {
         Ok(spec)
     }
 
+    fn report_chart(&self, preset: &ReadPlot) -> Result<PlotSpec> {
+        let samples = self.report_samples(preset.is_per_sample())?;
+        let mut spec = match preset {
+            ReadPlot::PositionQualityBox => position_quality_box(&samples[0]),
+            ReadPlot::LengthDistribution => overlay(
+                "Read length distribution",
+                ("Read length (bp)", "Number of reads"),
+                &samples,
+                |s| {
+                    s.length_distribution
+                        .iter()
+                        .map(|l| (l.length as f64, l.reads as f64))
+                        .collect()
+                },
+            ),
+            ReadPlot::ReadQualityDistribution => overlay(
+                "Mean quality score per read",
+                ("Mean quality score", "Number of reads"),
+                &samples,
+                |s| indexed(&s.read_quality_distribution),
+            ),
+            ReadPlot::GcDistribution => gc_distribution(&samples[0]),
+            ReadPlot::PositionNContent => overlay(
+                "N content by read position",
+                ("Position in read (bp)", "N content (%)"),
+                &samples,
+                |s| {
+                    s.positions
+                        .iter()
+                        .map(|p| {
+                            let share = p.n_count as f64 / p.base_count().max(1) as f64;
+                            (p.start as f64, 100.0 * share)
+                        })
+                        .collect()
+                },
+            ),
+            ReadPlot::AdapterContent => adapter_content(&samples[0])?,
+            ReadPlot::Duplication => duplication(&samples[0])?,
+            _ => unreachable!("Chart reads another summary file"),
+        };
+        spec.style = self.style.clone();
+        Ok(spec)
+    }
+
+    /// Samples with reads in `read-report.json`, filtered by sample.
+    fn report_samples(&self, single: bool) -> Result<Vec<SampleReadReport>> {
+        let report = ReadReport::from_path(self.input)?;
+        let names: Vec<String> = report.samples.iter().map(|s| s.sample.clone()).collect();
+        let samples: Vec<SampleReadReport> = match self.sample {
+            Some(sample) => match report.samples.into_iter().find(|s| s.sample == sample) {
+                Some(found) => vec![found],
+                None => bail!(
+                    "Sample '{}' not found. Available samples: {}",
+                    sample,
+                    names.join(", ")
+                ),
+            },
+            None => report
+                .samples
+                .into_iter()
+                .filter(|s| s.metrics.read_count > 0)
+                .collect(),
+        };
+        if samples.is_empty() {
+            bail!("No reads in {}", self.input.display());
+        }
+        if single && samples.len() > 1 {
+            bail!(
+                "This chart plots one sample at a time. Choose one of: {}",
+                names.join(", ")
+            );
+        }
+        Ok(samples)
+    }
+
     /// Per-position tables with at least one row, filtered by sample.
     fn position_tables(&self) -> Result<Vec<(String, SummaryCsv)>> {
         let is_zip = self
@@ -288,6 +439,121 @@ impl<'a> ReadPlotter<'a> {
     }
 }
 
+/// Line chart with one series per sample.
+fn overlay(
+    title: &str,
+    labels: (&str, &str),
+    samples: &[SampleReadReport],
+    points: impl Fn(&SampleReadReport) -> Vec<(f64, f64)>,
+) -> PlotSpec {
+    let mut spec = PlotSpec::new(title, ChartKind::Line, labels.0, labels.1);
+    spec.series = samples
+        .iter()
+        .map(|s| {
+            let (x, y) = points(s).into_iter().unzip();
+            Series::xy(&s.sample, x, y)
+        })
+        .collect();
+    spec
+}
+
+fn indexed(counts: &[u64]) -> Vec<(f64, f64)> {
+    counts
+        .iter()
+        .enumerate()
+        .map(|(i, c)| (i as f64, *c as f64))
+        .collect()
+}
+
+/// Box per position with 10th and 90th percentile whiskers, like FastQC.
+fn position_quality_box(sample: &SampleReadReport) -> PlotSpec {
+    let mut spec = PlotSpec::new(
+        &format!("Quality score by read position: {}", sample.sample),
+        ChartKind::BoxPlot,
+        "Position in read (bp)",
+        "Quality score",
+    );
+    let step = sample.positions.len().div_ceil(MAX_POSITION_BOXES).max(1);
+    spec.boxes = sample
+        .positions
+        .iter()
+        .step_by(step)
+        .map(|p| BoxStats {
+            label: p.start.to_string(),
+            lower_whisker: p.p10_qscore as f64,
+            q1: p.q1_qscore as f64,
+            median: p.median_qscore as f64,
+            q3: p.q3_qscore as f64,
+            upper_whisker: p.p90_qscore as f64,
+            outliers: Vec::new(),
+        })
+        .collect();
+    spec
+}
+
+fn gc_distribution(sample: &SampleReadReport) -> PlotSpec {
+    let mut spec = PlotSpec::new(
+        &format!("GC content per read: {}", sample.sample),
+        ChartKind::Line,
+        "GC content (%)",
+        "Number of reads",
+    );
+    let x: Vec<f64> = (0..sample.gc_distribution.len())
+        .map(|i| i as f64)
+        .collect();
+    let y = sample.gc_distribution.clone();
+    spec.series.push(Series::xy("Observed", x.clone(), y));
+    spec.series
+        .push(Series::xy("Theoretical", x, sample.gc_theoretical.clone()));
+    spec
+}
+
+fn adapter_content(sample: &SampleReadReport) -> Result<PlotSpec> {
+    if sample.adapters.is_empty() {
+        bail!("No adapter content for {}", sample.sample);
+    }
+    let mut spec = PlotSpec::new(
+        &format!("Adapter content: {}", sample.sample),
+        ChartKind::Line,
+        "Position in read (bp)",
+        "Reads with adapter (%)",
+    );
+    let positions: Vec<f64> = sample.positions.iter().map(|p| p.start as f64).collect();
+    spec.series = sample
+        .adapters
+        .iter()
+        .map(|a| Series::xy(&a.name, positions.clone(), a.cumulative_pct.clone()))
+        .collect();
+    Ok(spec)
+}
+
+fn duplication(sample: &SampleReadReport) -> Result<PlotSpec> {
+    let Some(duplication) = &sample.duplication else {
+        bail!("No duplication estimate for {}", sample.sample);
+    };
+    let estimate = if duplication.exact { "" } else { ", estimated" };
+    let spec = bar_spec(
+        &format!(
+            "Sequence duplication: {} ({:.1}% duplicate{})",
+            sample.sample, duplication.duplicate_pct, estimate
+        ),
+        ("Copies of a sequence", "Share (%)"),
+        duplication.levels.iter().map(|l| l.label.clone()).collect(),
+        vec![
+            Series::categorical(
+                "Distinct sequences",
+                duplication.levels.iter().map(|l| l.distinct_pct).collect(),
+            ),
+            Series::categorical(
+                "Reads",
+                duplication.levels.iter().map(|l| l.reads_pct).collect(),
+            ),
+        ],
+        &PlotStyle::default(),
+    );
+    Ok(spec)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -296,6 +562,7 @@ mod test {
 
     const SUMMARY: &str = "tests/files/plot/default-read-summary.csv";
     const POSITIONS: &str = "tests/files/plot/read-pos-summary.zip";
+    const REPORT: &str = "tests/files/plot/read-report.json";
 
     fn build(input: &str, sample: Option<&str>, preset: ReadPlot) -> Result<PlotSpec> {
         let style = PlotStyle::default();
@@ -355,6 +622,8 @@ mod test {
             summary: PathBuf::from(SUMMARY),
             mode,
             positions: positions.map(PathBuf::from),
+            distributions: None,
+            report: positions.map(|_| PathBuf::from(REPORT)),
         };
         plot_read_summary(&files, &writer)
             .iter()
@@ -379,5 +648,28 @@ mod test {
         assert!(names.contains(&"pos-composition_read_2.svg".to_string()));
         // Empty samples get no per-position charts.
         assert!(!names.iter().any(|n| n.contains("read2_1")));
+        assert!(names.contains(&"length-dist.svg".to_string()));
+        assert!(names.contains(&"pos-qscore-box_read_1.svg".to_string()));
+        assert!(names.contains(&"duplication_read_2.svg".to_string()));
+    }
+
+    #[test]
+    fn test_report_presets_build() {
+        for preset in ReadPlot::all()
+            .iter()
+            .filter(|p| p.source() == ReadSource::Report)
+        {
+            let sample = preset.is_per_sample().then_some("read_1");
+            build(REPORT, sample, *preset).unwrap().validate().unwrap();
+        }
+    }
+
+    #[test]
+    fn test_report_per_sample_needs_sample() {
+        assert!(build(REPORT, None, ReadPlot::PositionQualityBox).is_err());
+        let spec = build(REPORT, Some("read_1"), ReadPlot::PositionQualityBox).unwrap();
+        assert_eq!(spec.boxes.len(), 36);
+        let spec = build(REPORT, Some("read_1"), ReadPlot::GcDistribution).unwrap();
+        assert_eq!(spec.series.len(), 2);
     }
 }

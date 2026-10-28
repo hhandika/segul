@@ -15,7 +15,7 @@ categories = ["science"]
 default = ["align", "sequence", "read", "contig", "maf", "plot", "pdf"]
 align = []
 sequence = []
-read = ["dep:noodles", "noodles/fastq"]
+read = ["dep:noodles", "noodles/bgzf", "dep:memchr", "dep:xxhash-rust"]
 contig = []
 maf = []
 plot = ["dep:plotters", "dep:resvg", "dep:usvg", "dep:colorous"]
@@ -33,6 +33,7 @@ indicatif.workspace = true
 lazy_static.workspace = true
 log.workspace = true
 log4rs.workspace = true
+memchr = { workspace = true, optional = true }
 nom.workspace = true
 num-format.workspace = true
 rayon.workspace = true
@@ -42,6 +43,7 @@ flate2.workspace = true
 serde_json.workspace = true
 serde.workspace = true
 walkdir.workspace = true
+xxhash-rust = { workspace = true, optional = true }
 assert_approx_eq.workspace = true
 zip.workspace = true
 alphanumeric-sort.workspace = true
