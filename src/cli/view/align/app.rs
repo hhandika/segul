@@ -228,21 +228,32 @@ impl<'a> App<'a> {
             KeyCode::Char('=' | '+') => self.zoom_by(1),
             KeyCode::Char('-' | '_') => self.zoom_by(-1),
             KeyCode::Char(' ') => self.toggle_row(self.row),
-            KeyCode::F(1) => self.overlay = Overlay::Help,
+            // Option+← and Option+→ in macOS terminals that send Esc+b and Esc+f.
+            KeyCode::Char('b') if alt => self.move_site(-(JUMP_SITES as isize)),
+            KeyCode::Char('f') if alt => self.move_site(JUMP_SITES as isize),
+            KeyCode::Char('[') => self.step_chunk(-1),
+            KeyCode::Char(']') => self.step_chunk(1),
+            KeyCode::Char('<' | ',') => self.resize_names(-2),
+            KeyCode::Char('>' | '.') => self.resize_names(2),
+            KeyCode::Char('?') | KeyCode::F(1) => self.overlay = Overlay::Help,
             KeyCode::F(2) => self.color = self.color.next(),
             KeyCode::F(3) if shift => self.find_next(false),
             KeyCode::F(3) => self.find_next(true),
             KeyCode::F(4) => self.letters = !self.letters,
             KeyCode::Left if ctrl && shift => self.resize_names(-2),
             KeyCode::Right if ctrl && shift => self.resize_names(2),
-            KeyCode::Left if alt => self.step_chunk(-1),
-            KeyCode::Right if alt => self.step_chunk(1),
-            KeyCode::Left if ctrl => self.move_site(-(JUMP_SITES as isize)),
-            KeyCode::Right if ctrl => self.move_site(JUMP_SITES as isize),
+            KeyCode::Left if alt && shift => self.move_site(-(self.grid_sites() as isize)),
+            KeyCode::Right if alt && shift => self.move_site(self.grid_sites() as isize),
+            // Ctrl+arrows on Windows and Linux, Option+arrows on macOS.
+            KeyCode::Left if ctrl || alt => self.move_site(-(JUMP_SITES as isize)),
+            KeyCode::Right if ctrl || alt => self.move_site(JUMP_SITES as isize),
             KeyCode::Left => self.move_site(-1),
             KeyCode::Right => self.move_site(1),
             KeyCode::Up if shift => self.extend_selection(-1),
             KeyCode::Down if shift => self.extend_selection(1),
+            // Option+↑ and Option+↓, for Mac keyboards without page keys.
+            KeyCode::Up if alt => self.move_row(-(page as isize)),
+            KeyCode::Down if alt => self.move_row(page as isize),
             KeyCode::Up => self.move_row(-1),
             KeyCode::Down => self.move_row(1),
             KeyCode::Home if ctrl => self.set_cursor(0, self.site_range().0),
@@ -733,6 +744,23 @@ mod test {
     }
 
     #[test]
+    fn test_mac_keys() {
+        let files = [PathBuf::from(FILE)];
+        let mut app = app(&files);
+        // Option+→ as an Alt arrow and as Esc+f.
+        app.handle_key(with(KeyCode::Right, KeyModifiers::ALT));
+        assert_eq!(app.site, 5);
+        app.handle_key(with(KeyCode::Char('b'), KeyModifiers::ALT));
+        assert_eq!(app.site, 0);
+        app.handle_key(with(KeyCode::Down, KeyModifiers::ALT));
+        assert_eq!(app.row, 1);
+        app.handle_key(key(KeyCode::Char('>')));
+        assert_eq!(app.name_width, DEFAULT_NAME_WIDTH + 2);
+        app.handle_key(key(KeyCode::Char('?')));
+        assert_eq!(app.overlay, Overlay::Help);
+    }
+
+    #[test]
     fn test_go_to() {
         let files = [PathBuf::from(FILE)];
         let mut app = app(&files);
@@ -794,7 +822,7 @@ mod test {
         let files = [PathBuf::from(FILE)];
         let mut app = app(&files);
         assert_eq!(app.chunk_count(), 3);
-        app.handle_key(with(KeyCode::Right, KeyModifiers::ALT));
+        app.handle_key(key(KeyCode::Char(']')));
         assert_eq!((app.chunk(), app.site), (1, 2));
         app.handle_key(with(KeyCode::Char('k'), KeyModifiers::CONTROL));
         app.handle_key(key(KeyCode::Char('p')));
@@ -803,7 +831,7 @@ mod test {
         app.handle_key(key(KeyCode::Right));
         app.handle_key(key(KeyCode::Right));
         assert_eq!(app.site, 3);
-        app.handle_key(with(KeyCode::Right, KeyModifiers::ALT));
+        app.handle_key(key(KeyCode::Char(']')));
         assert_eq!(app.site, 4);
         assert!(app.paged);
     }

@@ -397,7 +397,7 @@ fn render_status(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     if !app.selected.is_empty() {
         right.push(Span::from(format!("{} selected · ", app.selected.len())));
     }
-    right.push(Span::from("F1 Help ").dim());
+    right.push(Span::from("? Help ").dim());
     let right = Line::from(right).right_aligned();
     frame.render_widget(left, area);
     frame.render_widget(right, area);
@@ -424,41 +424,63 @@ fn cursor_status(app: &App) -> String {
     )
 }
 
-const HELP: &[(&str, &str)] = &[
-    ("←↑→↓", "Move"),
-    ("Ctrl+← / Ctrl+→", "Jump 10 sites"),
-    ("Home / End", "Row start / end"),
-    ("Ctrl+Home / Ctrl+End", "First / last taxon"),
-    ("PgUp / PgDn", "Page rows"),
-    ("Alt+PgUp / Alt+PgDn", "Page sites"),
-    ("Alt+← / Alt+→", "Previous / next chunk"),
-    ("Ctrl+G", "Go to site, taxon, or taxon:site"),
-    ("Ctrl+F", "Find taxon (Enter, F3 next; Shift previous)"),
-    ("+ / - / Ctrl+0", "Zoom in / out / reset"),
-    ("F2 or Ctrl+K C", "Cycle color mode"),
-    ("F4 or Ctrl+K L", "Toggle letters"),
-    ("Ctrl+K P", "Toggle paged chunks"),
-    ("Ctrl+B", "Toggle chunk sidebar"),
-    ("Ctrl+Shift+← / →", "Resize names"),
-    ("Space / Shift+↑↓", "Select row / extend"),
-    ("Ctrl+A", "Select all"),
-    ("Ctrl+C", "Copy selected as FASTA"),
-    ("Ctrl+S", "Save selected as FASTA"),
-    ("Ctrl+PgUp / Ctrl+PgDn", "Previous / next file"),
-    ("Ctrl+P", "Pick a file"),
-    ("Mouse", "Wheel rows · Shift sites · Ctrl zoom"),
-    ("Ctrl+Q or Esc", "Quit"),
+// Keys for Windows and Linux, keys for macOS, and the action. macOS
+// terminals do not pass Command to programs, and Control+arrows switch
+// spaces, so the Mac keys use Option and fn instead.
+const HELP: &[(&str, &str, &str)] = &[
+    ("←↑→↓", "←↑→↓", "Move"),
+    ("Ctrl+← / →", "Option+← / →", "Jump 10 sites"),
+    ("Home / End", "fn+← / →", "Row start / end"),
+    ("Ctrl+Home / End", "Ctrl+fn+← / →", "First / last taxon"),
+    ("PgUp / PgDn", "Option+↑ / ↓", "Page rows"),
+    ("Alt+PgUp / PgDn", "Option+Shift+← / →", "Page sites"),
+    ("[ / ]", "[ / ]", "Previous / next chunk"),
+    ("Ctrl+G", "Ctrl+G", "Go to site, taxon, or taxon:site"),
+    (
+        "Ctrl+F, F3",
+        "Ctrl+F, fn+F3",
+        "Find taxon; Enter or F3 next, Shift back",
+    ),
+    ("+ / - / Ctrl+0", "+ / - / Ctrl+0", "Zoom in / out / reset"),
+    ("F2 or Ctrl+K C", "Ctrl+K C", "Cycle color mode"),
+    ("F4 or Ctrl+K L", "Ctrl+K L", "Toggle letters"),
+    ("Ctrl+K P", "Ctrl+K P", "Toggle paged chunks"),
+    ("Ctrl+B", "Ctrl+B", "Toggle chunk sidebar"),
+    ("< / >", "< / >", "Narrow / widen names"),
+    (
+        "Space, Shift+↑↓, Ctrl+A",
+        "Space, Shift+↑↓, Ctrl+A",
+        "Select row / extend / all",
+    ),
+    (
+        "Ctrl+C / Ctrl+S",
+        "Ctrl+C / Ctrl+S",
+        "Copy / save selected as FASTA",
+    ),
+    (
+        "Ctrl+PgUp / PgDn, Ctrl+P",
+        "Ctrl+fn+↑ / ↓, Ctrl+P",
+        "Previous / next / pick file",
+    ),
+    ("Mouse", "Mouse", "Wheel rows · Shift sites · Ctrl zoom"),
+    ("F1 or ?", "?", "Show this help"),
+    ("Ctrl+Q or Esc", "Ctrl+Q or Esc", "Quit"),
 ];
 
 fn render_help(frame: &mut Frame, area: Rect) {
-    let width = 64.min(area.width);
+    let width = 78.min(area.width);
     let height = (HELP.len() as u16 + 2).min(area.height);
     let popup = centered(area, width, height);
     let lines: Vec<Line> = HELP
         .iter()
-        .map(|(keys, action)| {
+        .map(|(keys, mac_keys, action)| {
+            let keys = if cfg!(target_os = "macos") {
+                mac_keys
+            } else {
+                keys
+            };
             Line::from(vec![
-                Span::from(format!(" {:24}", keys)).bold(),
+                Span::from(format!(" {:25}", keys)).bold(),
                 Span::from(*action),
             ])
         })
@@ -479,7 +501,7 @@ fn render_files(
     index: usize,
     palette: &Palette,
 ) {
-    let width = 72.min(area.width);
+    let width = 78.min(area.width);
     let height = 16.min(area.height);
     let popup = centered(area, width, height);
     let block = Block::bordered()
@@ -582,13 +604,17 @@ mod test {
         assert!(text.contains("ABCD"));
         assert!(text.contains("AGTATG"));
         assert!(text.contains("ABCD · site 1 · ungapped 1 · A"));
-        assert!(text.contains("F1 Help"));
+        assert!(text.contains("? Help"));
 
         app.show_sidebar = true;
-        app.overlay = Overlay::Help;
         let text = screen(&mut app, &palette);
         assert!(text.contains("Chunks"));
+
+        // The whole help fits a standard 80x24 terminal.
+        app.overlay = Overlay::Help;
+        let text = screen(&mut app, &palette);
         assert!(text.contains("Keyboard shortcuts"));
+        assert!(text.contains("Quit"));
     }
 
     #[test]
