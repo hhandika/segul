@@ -19,11 +19,13 @@ use super::args::MainSubcommand;
 use super::args::align::{AlignmentSubcommand, PartitionSubcommand};
 use super::args::genomics::{ContigSubcommand, MafSubcommand, SeqReadSubcommand};
 use super::args::sequence::SequenceSubcommand;
+use super::args::view::ViewSubcommand;
 use super::contig::summarize::ContigCliParser;
 use super::maf::convert::MafConvertParser;
 use super::maf::summary::MafSummaryParser;
 use super::sequence::addition::AdditionParser;
 use super::sequence::filter::SequenceFilterParser;
+use super::view::align::AlignViewParser;
 
 pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
     match subcommand {
@@ -33,6 +35,7 @@ pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
         MainSubcommand::Alignment(subcommand) => match_alignment_subcommand(subcommand),
         MainSubcommand::Partition(subcommand) => match_partition_subcommand(subcommand),
         MainSubcommand::Sequence(subcommand) => match_sequence_subcommand(subcommand),
+        MainSubcommand::View(subcommand) => match_view_subcommand(subcommand),
     }
 }
 
@@ -88,5 +91,11 @@ fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
             TransposeParser::new(transpose_args).transpose()
         }
         SequenceSubcommand::Add(add_args) => AdditionParser::new(add_args).add(),
+    };
+}
+
+pub(crate) fn match_view_subcommand(subcommand: &ViewSubcommand) {
+    match subcommand {
+        ViewSubcommand::Align(args) => AlignViewParser::new(args).view(),
     };
 }

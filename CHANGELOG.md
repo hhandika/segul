@@ -4,6 +4,9 @@
 
 New Features:
 
+- New `segul view align` opens alignments in an interactive terminal viewer, laid out like the SEGUI alignment viewer: a summary toolbar, an overview strip, a residue legend, taxon names, a site ruler, the colored residue grid, and a status bar showing the taxon, site, ungapped position, and residue under the cursor. Pass one or more files with `-i`, or a folder with `-d`, and switch between them with Ctrl+PgUp/Ctrl+PgDn or pick one with Ctrl+P.
+- The viewer uses VS Code-style keys: arrows, Ctrl+arrows to jump 10 sites, Home/End, PgUp/PgDn, Ctrl+G to go to a site or taxon, Ctrl+F to find a taxon, +/- to zoom, F2 to cycle base, mono, and difference-to-first colors, Ctrl+B for a chunk sidebar with gap and variable-site shares, Ctrl+C to copy the selected sequences as FASTA, and F1 for the full list. The mouse scrolls, zooms, moves the cursor, and resizes the name column.
+- DNA and amino acids are detected from the residues; set them with `--datatype`. Use `--theme light` on a light terminal. Large FASTA files open quickly because they are memory-mapped and only the part in view is read.
 - Summary commands can now write charts next to their comma-delimited output. Add `--plot` to `segul align summary`, `segul align distance`, `segul read summary`, `segul contig summary`, or `segul maf summary`, and every chart that applies is written to `<OUTPUT>/plots`.
 - Charts include histograms, scatter plots, grouped and stacked bar charts, line charts, box plots, and heatmaps. For example, the alignment summary plots matrix completeness, parsimony informative sites vs alignment length, and missing data per taxon. The distance summary plots a heatmap for each locus (up to 50 loci). The complete read summary plots quality and base composition along the read for each sample.
 - `--plot-format` picks SVG or PNG (default). PNG text uses the system fonts, or a font file given with `--font`.
@@ -21,6 +24,7 @@ New Features:
 
 Library Changes:
 
+- New `core::align::view::AlignmentView` reads alignments in tiles for interactive viewers, with data type detection, an overview sample, per-chunk gap and variable-site shares, ungapped positions, and FASTA export of chosen rows. It is part of the `align` feature, which now also uses `memchr` and `memmap2`.
 - New `plot` feature in `segul-core`, on by default. Presets in `plot::align`, `plot::distance`, `plot::read`, `plot::contig`, and `plot::maf` build a `PlotSpec` from a summary file, which `PlotRenderer` writes as SVG or PNG. `PlotSpec` serializes with serde, so apps can draw their own interactive charts from the same data.
 - `plot::batch::PlotWriter` writes many charts into one directory. `plot_alignment_summary`, `plot_distance`, `plot_read_summary`, `plot_contig_summary`, and `plot_maf_summary` write every chart for a summary.
 - The summary functions now return the files they wrote: `AlignmentSummary::summarize_all` returns `AlignSummaryFiles`, `GenomicReadSummary::summarize` returns `ReadSummaryFiles`, `ContigSummaryHandler::summarize` returns the summary path, and `AlignmentDistance::compute` returns `DistanceFiles`. The summary, read, and contig writers return the path they wrote. Code that calls them as statements keeps compiling.

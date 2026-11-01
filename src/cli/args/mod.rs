@@ -14,12 +14,14 @@ use segul_core::plot::color::{Colormap, CvdKind, Palette};
 use segul_core::plot::spec::PlotFormat;
 
 use super::args::sequence::SequenceSubcommand;
+use super::args::view::ViewSubcommand;
 use crate::helper::logger;
 use clap::{crate_authors, crate_description, crate_name, crate_version};
 
 pub(crate) mod align;
 pub(crate) mod genomics;
 pub(crate) mod sequence;
+pub(crate) mod view;
 
 #[derive(Parser)]
 #[command(name = crate_name!())]
@@ -60,6 +62,12 @@ pub(crate) enum MainSubcommand {
     Partition(PartitionSubcommand),
     #[command(subcommand, about = "Sequence analyses", name = "sequence")]
     Sequence(SequenceSubcommand),
+    #[command(
+        subcommand,
+        about = "Interactive viewers in the terminal",
+        name = "view"
+    )]
+    View(ViewSubcommand),
 }
 
 #[derive(Args)]

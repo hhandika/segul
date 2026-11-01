@@ -25,6 +25,7 @@ lazy_static = "1.*"
 log = "0.*"
 log4rs = "1.*"
 memchr = "2.*"
+memmap2 = "0.9.*"
 nom = "8.*"
 num-format = "0.*"
 rayon = "1.*"
@@ -48,6 +49,8 @@ resvg = { version = "0.45.1", default-features = false, features = ["text"] }
 usvg = { version = "0.45.1", default-features = false, features = ["text", "system-fonts"] }
 svg2pdf = { version = "0.13.0", default-features = false, features = ["text"] }
 colorous = "1.0.16"
+ratatui = "0.30.*"
+crossterm = { version = "0.29.*", features = ["osc52"] }
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(docsrs)'] }
@@ -73,6 +76,8 @@ colored.workspace = true
 dialoguer.workspace = true
 glob.workspace = true
 log.workspace = true
+ratatui.workspace = true
+crossterm.workspace = true
 
 [dev-dependencies]
 assert_cmd.workspace = true

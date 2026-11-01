@@ -7,6 +7,7 @@ mod maf;
 mod plot;
 mod read;
 mod sequence;
+mod view;
 
 #[cfg(target_os = "windows")]
 use glob::glob;
@@ -21,7 +22,7 @@ use clap::Parser;
 use colored::Colorize;
 use dialoguer::{Confirm, theme::ColorfulTheme};
 
-use crate::cli::args::Cli;
+use crate::cli::args::{Cli, MainSubcommand};
 use crate::helper::finder::{ContigFileFinder, SeqFileFinder, SeqReadFinder};
 use crate::helper::types::{ContigFmt, DataType, InputFmt, OutputFmt, PartitionFmt, SeqReadFmt};
 use crate::helper::{logger, utils};
@@ -30,6 +31,11 @@ use crate::helper::{logger, utils};
 pub fn parse_cli() {
     let time = Instant::now();
     let args = Cli::parse();
+    // Viewers take over the screen, so skip the banner and log file.
+    if let MainSubcommand::View(subcommand) = &args.subcommand {
+        commands::match_view_subcommand(subcommand);
+        return;
+    }
     logger::init_logger(&args.log).expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
     commands::match_cli_subcommand(&args.subcommand);
