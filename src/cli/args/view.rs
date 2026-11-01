@@ -48,7 +48,7 @@ pub(crate) struct ViewAlignArgs {
     pub(crate) theme: String,
     #[arg(
         long = "residue-colors",
-        help = "Residue color scheme. Colorblind-safe uses Okabe-Ito and Paul Tol hues",
+        help = "Residue color scheme",
         default_value = "clustal",
         value_parser = builder::PossibleValuesParser::new(["clustal", "colorblind-safe"]),
     )]

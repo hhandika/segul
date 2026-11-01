@@ -99,6 +99,8 @@ Match the code around you. In particular:
 - Doc comments: `//!` module headers describing what the module does, `///`
   on public items. Comments explain why, briefly. Keep comment density similar
   to neighboring code.
+- User-facing text (help strings, log messages, viewer labels) is concise:
+  say what something does in a few words, without implementation details.
 - Names are descriptive and spelled out (`input_fmt`, `output_fmt`,
   `datatype`, `part_path`). Formats use the existing enums, not strings.
 

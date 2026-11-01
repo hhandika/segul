@@ -29,22 +29,24 @@ const TOL_MUTED: [u32; 9] = [
     0xCC6677, 0x332288, 0xDDCC77, 0x117733, 0x88CCEE, 0x882255, 0x44AA99, 0x999933, 0xAA4499,
 ];
 
-/// Categorical palettes.
+/// Categorical palettes. ColorBrewer Dark2 is the default.
 ///
 /// Okabe-Ito and the Paul Tol schemes are designed to stay distinct with
 /// common color vision deficiencies. The ColorBrewer schemes
-/// (<https://colorbrewer2.org>, Apache-2.0) are only colorblind safe for
-/// their first few colors; see [`Palette::colorblind_safe_classes`].
+/// (<https://colorbrewer2.org>, Apache-2.0), Dark2 included, are only
+/// colorblind safe for their first few colors; see
+/// [`Palette::colorblind_safe_classes`]. Choose Okabe-Ito or a Tol scheme
+/// for charts with many series that must stay distinct.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Palette {
-    #[default]
     OkabeIto,
     TolBright,
     TolMuted,
     /// ColorBrewer Set2.
     Set2,
-    /// ColorBrewer Dark2.
+    /// ColorBrewer Dark2. The default.
+    #[default]
     Dark2,
     /// ColorBrewer Paired.
     Paired,
@@ -55,11 +57,11 @@ pub enum Palette {
 impl Palette {
     pub fn all() -> &'static [Self] {
         &[
+            Self::Dark2,
             Self::OkabeIto,
             Self::TolBright,
             Self::TolMuted,
             Self::Set2,
-            Self::Dark2,
             Self::Paired,
             Self::Set1,
         ]
@@ -167,6 +169,11 @@ mod test {
         assert_eq!(colors.len(), 10);
         assert_eq!(colors[0], colors[8]);
         assert_eq!(colors[0].to_hex(), "#0072B2");
+    }
+
+    #[test]
+    fn test_default_is_dark2() {
+        assert_eq!(Palette::default(), Palette::Dark2);
     }
 
     #[test]

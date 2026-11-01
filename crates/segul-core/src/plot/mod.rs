@@ -9,8 +9,9 @@
 //!
 //! Front ends that draw their own interactive charts (such as the segui app)
 //! can use the spec directly and call the renderer only for export.
-//! Default colors are colorblind-safe, and [`color::simulate_cvd`] previews
-//! a plot as seen with a color vision deficiency.
+//! Series default to ColorBrewer Dark2 and heatmaps to viridis. Okabe-Ito
+//! and the Paul Tol palettes stay distinct with color vision deficiencies,
+//! and [`color::simulate_cvd`] previews a plot as seen with one.
 //!
 //! ## Example
 //! ```rust

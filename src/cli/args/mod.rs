@@ -165,19 +165,17 @@ pub(crate) struct PlotFlags {
     pub(crate) font: Option<PathBuf>,
     #[arg(
         long,
-        help = "Palette for categories. Okabe-Ito and Tol are colorblind safe; \
-        ColorBrewer set2, dark2, and paired only for their first 3 to 4 colors; set1 is not",
+        help = "Palette for categories",
         requires = "plot",
-        default_value_t = Palette::OkabeIto,
+        default_value_t = Palette::Dark2,
         value_parser = builder::PossibleValuesParser::new(
-            ["okabe-ito", "tol-bright", "tol-muted", "set2", "dark2", "paired", "set1"])
+            ["dark2", "okabe-ito", "tol-bright", "tol-muted", "set2", "paired", "set1"])
             .map(|x| x.parse::<Palette>().expect("Invalid palette")),
     )]
     pub(crate) palette: Palette,
     #[arg(
         long,
-        help = "Colormap for heatmaps: viridis family or ColorBrewer \
-        sequential (blues, greens, ylgnbu, ylorrd) and diverging (rdbu, puor, brbg)",
+        help = "Colormap for heatmaps",
         requires = "plot",
         default_value_t = Colormap::Viridis,
         value_parser = builder::PossibleValuesParser::new([

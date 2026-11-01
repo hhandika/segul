@@ -173,7 +173,7 @@ impl SummaryData {
             },
             Chart {
                 title: String::from("Characters"),
-                labels: report.chars.keys().cloned().collect(),
+                labels: report.chars.keys().map(|c| character_label(c)).collect(),
                 values: report.chars.values().map(|&c| c as f64).collect(),
                 format: Format::Count,
             },
@@ -373,12 +373,29 @@ impl SummaryData {
     }
 }
 
+/// Chart label of an alignment character, naming gaps (`-`) and missing
+/// data (`?`).
+fn character_label(character: &str) -> String {
+    match character {
+        "-" => String::from("- (gap)"),
+        "?" => String::from("? (missing)"),
+        _ => character.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
     const ALIGN: &str = "crates/segul-core/tests/files/plot/alignment-report.json";
     const READS: &str = "crates/segul-core/tests/files/plot/read-report.json";
+
+    #[test]
+    fn test_character_label() {
+        assert_eq!(character_label("-"), "- (gap)");
+        assert_eq!(character_label("?"), "? (missing)");
+        assert_eq!(character_label("A"), "A");
+    }
 
     #[test]
     fn test_alignment_report() {

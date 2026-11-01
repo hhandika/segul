@@ -20,7 +20,7 @@
 //! 16. Sequence translation
 //! 17. Sequence transposition
 //! 18. Sequence unique ID parsing
-//! 19. Plots of summary statistics with colorblind-safe palettes
+//! 19. Plots of summary statistics with ColorBrewer, Okabe-Ito, and Paul Tol palettes
 //! 20. A shared color library with ColorBrewer and viridis colormaps and WCAG contrast checks
 //!
 //! ## Cargo features

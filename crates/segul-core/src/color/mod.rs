@@ -4,8 +4,8 @@
 //! Every color segul draws comes from this module, so charts, tables, and
 //! alignment viewers look the same in every front end:
 //!
-//! - [`Palette`]: categorical palettes for chart series. Okabe-Ito (default),
-//!   Paul Tol, and ColorBrewer qualitative schemes.
+//! - [`Palette`]: categorical palettes for chart series. ColorBrewer
+//!   qualitative schemes (default Dark2), Okabe-Ito, and Paul Tol.
 //! - [`Colormap`]: continuous colormaps for heatmaps. Viridis-family maps
 //!   (default viridis) and ColorBrewer sequential and diverging schemes.
 //! - [`residue::ResiduePalette`]: residue colors for alignment viewers.

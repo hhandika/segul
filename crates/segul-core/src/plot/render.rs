@@ -40,6 +40,10 @@ const COLORBAR_SPACE: u32 = 110;
 const COLORBAR_WIDTH: i32 = 20;
 // Heatmaps with more cells than this skip value annotations.
 const MAX_ANNOTATED_CELLS: usize = 144;
+// Corner radius of bar ends in pixels, matching SEGUI chart bars.
+const BAR_RADIUS: f64 = 4.0;
+// Line segments per rounded corner.
+const CORNER_STEPS: u32 = 6;
 
 type Area<'b> = DrawingArea<SVGBackend<'b>, Shift>;
 
@@ -288,16 +292,24 @@ impl<'a> PlotRenderer<'a> {
             group_width / n_series as f64
         };
         let mut bases = vec![0.0; spec.categories.len()];
+        // Stacks round only their top segment.
+        let top_series: Vec<Option<usize>> = (0..spec.categories.len())
+            .map(|i| {
+                spec.series
+                    .iter()
+                    .rposition(|s| s.y[i].is_finite() && s.y[i] != 0.0)
+            })
+            .collect();
         for (j, ((series, color), line)) in spec.series.iter().zip(colors).zip(lines).enumerate() {
             let (color, line) = (to_rgb(color), to_rgb(line));
-            let bars: Vec<[(f64, f64); 2]> = series
+            let bars: Vec<(usize, [(f64, f64); 2])> = series
                 .y
                 .iter()
                 .enumerate()
                 .filter(|(_, y)| y.is_finite())
                 .map(|(i, y)| {
                     let center = i as f64;
-                    if stacked {
+                    let corners = if stacked {
                         let base = bases[i];
                         bases[i] += y;
                         [
@@ -307,14 +319,17 @@ impl<'a> PlotRenderer<'a> {
                     } else {
                         let x0 = center - group_width / 2.0 + bar_width * j as f64;
                         [(x0, 0.0), (x0 + bar_width, *y)]
-                    }
+                    };
+                    (i, corners)
                 })
                 .collect();
+            for (i, corners) in &bars {
+                let is_rounded = !stacked || top_series[*i] == Some(j);
+                draw_bar(root, &chart, corners, is_rounded, color, line)?;
+            }
+            // Bars are drawn above; this empty series carries the legend entry.
             chart
-                .draw_series(
-                    bars.iter()
-                        .map(|corners| Rectangle::new(*corners, color.filled())),
-                )
+                .draw_series(std::iter::empty::<Rectangle<(f64, f64)>>())
                 .map_err(draw_error)?
                 .label(&series.name)
                 .legend(move |(x, y)| {
@@ -324,12 +339,6 @@ impl<'a> PlotRenderer<'a> {
                         + Rectangle::new(corners, color.filled())
                         + Rectangle::new(corners, line.stroke_width(1))
                 });
-            chart
-                .draw_series(
-                    bars.into_iter()
-                        .map(|corners| Rectangle::new(corners, line.stroke_width(1))),
-                )
-                .map_err(draw_error)?;
         }
         if n_series > 1 {
             chart
@@ -378,18 +387,9 @@ impl<'a> PlotRenderer<'a> {
             .zip(&series.y)
             .map(|(edge, count)| [(edge[0], 0.0), (edge[1], *count)])
             .collect();
-        chart
-            .draw_series(
-                bins.iter()
-                    .map(|corners| Rectangle::new(*corners, color.filled())),
-            )
-            .map_err(draw_error)?;
-        chart
-            .draw_series(
-                bins.iter()
-                    .map(|corners| Rectangle::new(*corners, line.stroke_width(1))),
-            )
-            .map_err(draw_error)?;
+        for corners in &bins {
+            draw_bar(root, &chart, corners, true, color, line)?;
+        }
         Ok(())
     }
 
@@ -768,6 +768,69 @@ fn label_width(labels: &[String]) -> u32 {
     chars as u32 * CHAR_WIDTH
 }
 
+/// Draw a bar from `corners[0]` (base) to `corners[1]` (value end) in data
+/// coordinates: the fill, then an outline in the line color. Rounded bars
+/// get rounded corners at the value end, like SEGUI chart bars.
+fn draw_bar<X, Y>(
+    root: &Area,
+    chart: &ChartContext<SVGBackend, Cartesian2d<X, Y>>,
+    corners: &[(f64, f64); 2],
+    is_rounded: bool,
+    fill: RGBColor,
+    line: RGBColor,
+) -> Result<()>
+where
+    X: Ranged<ValueType = f64>,
+    Y: Ranged<ValueType = f64>,
+{
+    let (x0, base) = chart.backend_coord(&corners[0]);
+    let (x1, end) = chart.backend_coord(&corners[1]);
+    let radius = if is_rounded { BAR_RADIUS } else { 0.0 };
+    let mut points = bar_outline(x0, x1, base, end, radius);
+    root.draw(&Polygon::new(points.clone(), fill.filled()))
+        .map_err(draw_error)?;
+    points.push(points[0]);
+    root.draw(&PathElement::new(points, line.stroke_width(1)))
+        .map_err(draw_error)
+}
+
+/// Outline of a bar in pixels, from `base` to `end`, with the two corners
+/// at `end` rounded by up to `radius`. The radius shrinks to fit narrow or
+/// short bars, and bars hanging below the base round their lower end.
+fn bar_outline(x0: i32, x1: i32, base: i32, end: i32, radius: f64) -> Vec<(i32, i32)> {
+    let (left, right) = (x0.min(x1) as f64, x0.max(x1) as f64);
+    let (base, end) = (base as f64, end as f64);
+    let r = radius.min((right - left) / 2.0).min((end - base).abs());
+    let point = |x: f64, y: f64| (x.round() as i32, y.round() as i32);
+    if r < 1.0 {
+        return vec![
+            point(left, base),
+            point(left, end),
+            point(right, end),
+            point(right, base),
+        ];
+    }
+    // Pixel y grows downward, so the corners bend from `end` toward `base`.
+    let toward_base = if end < base { 1.0 } else { -1.0 };
+    let mut points = vec![point(left, base)];
+    for k in 0..=CORNER_STEPS {
+        let a = std::f64::consts::FRAC_PI_2 * k as f64 / CORNER_STEPS as f64;
+        points.push(point(
+            left + r * (1.0 - a.cos()),
+            end + toward_base * r * (1.0 - a.sin()),
+        ));
+    }
+    for k in 0..=CORNER_STEPS {
+        let a = std::f64::consts::FRAC_PI_2 * k as f64 / CORNER_STEPS as f64;
+        points.push(point(
+            right - r * (1.0 - a.sin()),
+            end + toward_base * r * (1.0 - a.cos()),
+        ));
+    }
+    points.push(point(right, base));
+    points
+}
+
 /// Chart chrome in plotters colors.
 struct Chrome {
     background: RGBColor,
@@ -837,6 +900,33 @@ mod test {
     use super::*;
     use crate::plot::color::CvdKind;
     use crate::plot::spec::{BoxStats, HeatmapData, Series};
+
+    #[test]
+    fn test_bar_outline_rounds_value_end() {
+        // A bar from y = 100 (base) up to y = 20, 10 pixels wide.
+        let points = bar_outline(0, 10, 100, 20, BAR_RADIUS);
+        assert_eq!(points.first(), Some(&(0, 100)));
+        assert_eq!(points.last(), Some(&(10, 100)));
+        assert!(points.contains(&(0, 24)));
+        assert!(points.contains(&(4, 20)));
+        assert!(points.contains(&(6, 20)));
+        assert!(points.contains(&(10, 24)));
+        // The base corners stay square.
+        assert!(points.iter().all(|&(_, y)| (20..=100).contains(&y)));
+    }
+
+    #[test]
+    fn test_bar_outline_below_base_and_small() {
+        // Negative bars hang below the base and round their lower end.
+        let points = bar_outline(0, 10, 50, 90, BAR_RADIUS);
+        assert!(points.contains(&(0, 86)));
+        assert!(points.contains(&(4, 90)));
+        // Narrow bars shrink the radius; square bars keep four corners.
+        let narrow = bar_outline(0, 4, 100, 20, BAR_RADIUS);
+        assert!(narrow.contains(&(2, 20)));
+        assert_eq!(bar_outline(0, 10, 100, 20, 0.0).len(), 4);
+        assert_eq!(bar_outline(0, 10, 100, 100, BAR_RADIUS).len(), 4);
+    }
 
     fn scatter() -> PlotSpec {
         let mut spec = PlotSpec::new("Scatter", ChartKind::Scatter, "x", "y");

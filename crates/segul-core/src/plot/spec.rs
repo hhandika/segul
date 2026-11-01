@@ -278,7 +278,7 @@ pub struct PlotStyle {
 impl Default for PlotStyle {
     fn default() -> Self {
         Self {
-            palette: Palette::OkabeIto,
+            palette: Palette::Dark2,
             colormap: Colormap::Viridis,
             cvd: None,
             width: DEFAULT_WIDTH,
