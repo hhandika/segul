@@ -26,6 +26,7 @@ use super::maf::summary::MafSummaryParser;
 use super::sequence::addition::AdditionParser;
 use super::sequence::filter::SequenceFilterParser;
 use super::view::align::AlignViewParser;
+use super::view::summary::SummaryViewParser;
 
 pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand) {
     match subcommand {
@@ -97,5 +98,6 @@ fn match_sequence_subcommand(subcommand: &SequenceSubcommand) {
 pub(crate) fn match_view_subcommand(subcommand: &ViewSubcommand) {
     match subcommand {
         ViewSubcommand::Align(args) => AlignViewParser::new(args).view(),
+        ViewSubcommand::Summary(args) => SummaryViewParser::new(args).view(),
     };
 }

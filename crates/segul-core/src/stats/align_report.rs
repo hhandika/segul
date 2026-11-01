@@ -59,7 +59,8 @@ pub struct AlignOverview {
 /// Conserved, variable, or parsimony informative sites across alignments.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SiteTypeSummary {
-    /// Loci with at least one site of this type.
+    /// Loci with no variable sites for conserved sites, or with at least
+    /// one site of this type for variable and informative sites.
     pub loci: usize,
     pub prop_loci: f64,
     pub sites: usize,

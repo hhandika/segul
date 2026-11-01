@@ -1,4 +1,6 @@
 use clap::builder::TypedValueParser as _;
+use std::path::PathBuf;
+
 use clap::{Args, Subcommand, builder};
 
 use super::IOArgs;
@@ -10,6 +12,11 @@ pub(crate) enum ViewSubcommand {
         name = "align"
     )]
     Align(ViewAlignArgs),
+    #[command(
+        about = "View a summary report in an interactive terminal viewer, as tables or plots",
+        name = "summary"
+    )]
+    Summary(ViewSummaryArgs),
 }
 
 #[derive(Args)]
@@ -47,4 +54,16 @@ pub(crate) struct ViewAlignArgs {
             .map(|s| s.parse::<usize>().expect("Failed parsing chunk size")),
     )]
     pub(crate) chunk: usize,
+}
+
+#[derive(Args)]
+pub(crate) struct ViewSummaryArgs {
+    #[arg(
+        short = 'i',
+        long = "input",
+        value_name = "REPORT",
+        help = "alignment-report.json from `segul align summary` or read-report.json \
+        from `segul read summary --mode complete`"
+    )]
+    pub(crate) input: PathBuf,
 }

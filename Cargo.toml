@@ -71,6 +71,7 @@ exclude = ["crates/", "bench/"]
 
 [dependencies]
 segul-core = { workspace = true, features = ["align", "sequence", "read", "contig", "maf", "plot"] }
+anyhow.workspace = true
 clap.workspace = true
 colored.workspace = true
 dialoguer.workspace = true
