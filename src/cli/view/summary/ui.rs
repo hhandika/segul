@@ -24,8 +24,8 @@ const NAME_WIDTH: [usize; 2] = [6, 28];
 const MAX_BINS: usize = 20;
 /// Widest histogram bar, so a few bins do not fill the screen.
 const MAX_BAR_WIDTH: usize = 9;
-// Eighths of a cell, for smooth bar ends.
-const PARTIAL: [&str; 8] = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉"];
+// Lower three quarters of a cell, so bars on neighboring rows stay apart.
+const BAR: &str = "▆";
 
 const HELP: &[(&str, &str)] = &[
     ("Tab / Shift+Tab", "Next or previous section"),
@@ -340,7 +340,7 @@ fn render_histogram(frame: &mut Frame, area: Rect, app: &mut App) {
         .enumerate()
         .map(|(i, &count)| {
             let style = if Some(i) == selected {
-                Style::new().fg(accent()).add_modifier(Modifier::REVERSED)
+                selected_bar()
             } else {
                 Style::new().fg(accent())
             };
@@ -510,31 +510,39 @@ fn bar_lines_scaled<'a>(
         .map(|(i, (label, (value, text)))| {
             let bar = value.map_or_else(String::new, |v| bar(v, largest, bar_width));
             let pad = bar_width.saturating_sub(bar.chars().count());
-            let line = Line::from(vec![
-                Span::from(format!(" {:label_width$} ", truncate(label, label_width))),
-                Span::from(bar).fg(accent()),
-                Span::from(" ".repeat(pad + 1)),
-                Span::from(format!("{:>value_width$}", text)),
-            ]);
+            let label = Span::from(format!(" {:label_width$} ", truncate(label, label_width)));
+            let value = Span::from(format!("{:>value_width$}", text));
+            let pad = Span::from(" ".repeat(pad + 1));
+            // Reversing the whole line would draw the bar's blocks in the
+            // background color, so only the label and value are reversed.
             if Some(i) == highlight {
-                line.add_modifier(Modifier::REVERSED)
+                Line::from(vec![
+                    label.add_modifier(Modifier::REVERSED),
+                    Span::from(bar).style(selected_bar()),
+                    pad,
+                    value.add_modifier(Modifier::REVERSED),
+                ])
             } else {
-                line
+                Line::from(vec![label, Span::from(bar).fg(accent()), pad, value])
             }
         })
         .collect()
 }
 
-/// A bar of [value] out of [largest] in [width] cells, with eighths at
-/// the end.
+/// The selected item's bar, in the terminal's text color to match the
+/// reversed selection.
+fn selected_bar() -> Style {
+    Style::new().fg(Color::Reset)
+}
+
+/// A bar of [value] out of [largest] in [width] cells. Any value above
+/// zero gets at least one cell, so small values stay visible.
 fn bar(value: f64, largest: f64, width: usize) -> String {
     if largest <= 0.0 || value <= 0.0 || width == 0 {
         return String::new();
     }
-    let eighths = ((value / largest).min(1.0) * width as f64 * 8.0).round() as usize;
-    let mut text = "█".repeat(eighths / 8);
-    text.push_str(PARTIAL[eighths % 8]);
-    text
+    let cells = ((value / largest).min(1.0) * width as f64).round() as usize;
+    BAR.repeat(cells.max(1))
 }
 
 fn show(column: &Column, item: usize) -> String {
@@ -742,7 +750,7 @@ mod test {
         press(&mut app, KeyCode::Char('v'));
         let text = screen(&mut app);
         assert!(text.contains("Taxa by locus"));
-        assert!(text.contains("█"));
+        assert!(text.contains(BAR));
 
         press(&mut app, KeyCode::Char('h'));
         let text = screen(&mut app);
@@ -778,6 +786,28 @@ mod test {
     }
 
     #[test]
+    fn test_selected_bar_visible() {
+        let lines = bar_lines(
+            &["a", "b"],
+            &[Some(4.0), Some(2.0)],
+            Format::Count,
+            20,
+            Some(0),
+        );
+        let bar = &lines[0].spans[1];
+        assert!(bar.content.contains(BAR));
+        assert!(!bar.style.add_modifier.contains(Modifier::REVERSED));
+        assert_eq!(bar.style.fg, Some(Color::Reset));
+        assert!(
+            lines[0].spans[0]
+                .style
+                .add_modifier
+                .contains(Modifier::REVERSED)
+        );
+        assert_eq!(lines[1].spans[1].style.fg, Some(accent()));
+    }
+
+    #[test]
     fn test_histogram() {
         let bins = Histogram::of(&[2.0, 3.0, 3.0, 4.0], 10);
         assert_eq!(bins.counts, vec![1, 2, 1]);
@@ -794,8 +824,9 @@ mod test {
 
     #[test]
     fn test_bar() {
-        assert_eq!(bar(10.0, 10.0, 4), "████");
-        assert_eq!(bar(5.0, 10.0, 3), "█▌");
+        assert_eq!(bar(10.0, 10.0, 4), "▆▆▆▆");
+        assert_eq!(bar(5.0, 10.0, 4), "▆▆");
+        assert_eq!(bar(0.1, 10.0, 4), "▆");
         assert_eq!(bar(0.0, 10.0, 4), "");
         assert_eq!(truncate("sample_long", 6), "sampl…");
     }
