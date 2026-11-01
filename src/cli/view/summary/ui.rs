@@ -1,19 +1,25 @@
 //! Draws the summary viewer: toolbar, section tabs, the overview or a
 //! table as rows or a plot, then the status bar.
 
+use std::sync::OnceLock;
+
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Bar, BarChart, BarGroup, Block, BorderType, Clear, Paragraph, Wrap};
+use segul_core::color::Theme;
+use segul_core::color::residue::{ResiduePalette, ResidueScheme};
+use segul_core::helper::types::DataType;
 
 use super::app::{App, Mode, PlotKind};
 use super::data::{Column, Format, SummaryTable};
+use crate::cli::view::align::palette::{is_truecolor, to_color};
 
 const MIN_WIDTH: u16 = 40;
 const MIN_HEIGHT: u16 = 10;
-/// Named colors read well on dark and light terminals alike.
-const ACCENT: Color = Color::Cyan;
+/// Accent for labels, bars, and messages, set once by [`set_accent`].
+static ACCENT: OnceLock<Color> = OnceLock::new();
 const NAME_WIDTH: [usize; 2] = [6, 28];
 const MAX_BINS: usize = 20;
 /// Widest histogram bar, so a few bins do not fill the screen.
@@ -35,6 +41,24 @@ const HELP: &[(&str, &str)] = &[
     ("? or F1", "This help"),
     ("q or Esc", "Quit"),
 ];
+
+/// Use the accent of the shared color library for `theme`. It reaches 4.5:1
+/// on black (dark) or white (light) backgrounds. Terminals without 24-bit
+/// color get the nearest xterm-256 color on light themes and ANSI cyan on
+/// dark ones, which every terminal theme keeps readable.
+pub(super) fn set_accent(theme: Theme) {
+    let source = ResiduePalette::new(&ResidueScheme::Clustal, &theme, &DataType::Dna);
+    let accent = match (theme, is_truecolor()) {
+        (_, true) => to_color(source.accent, true),
+        (Theme::Light, false) => to_color(source.accent, false),
+        (Theme::Dark, false) => Color::Cyan,
+    };
+    let _ = ACCENT.set(accent);
+}
+
+fn accent() -> Color {
+    ACCENT.get().copied().unwrap_or(Color::Cyan)
+}
 
 pub(super) fn render(frame: &mut Frame, app: &mut App) {
     let area = frame.area();
@@ -98,7 +122,7 @@ fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
     if app.section > 0 {
         let pick = |label: &'static str, on: bool| {
             if on {
-                Span::from(label).fg(ACCENT).bold()
+                Span::from(label).fg(accent()).bold()
             } else {
                 Span::from(label).dim()
             }
@@ -208,7 +232,7 @@ fn render_table(frame: &mut Frame, area: Rect, app: &mut App) {
             width = widths[c]
         );
         head.push(if c == state.column {
-            Span::from(label).fg(ACCENT).bold()
+            Span::from(label).fg(accent()).bold()
         } else {
             Span::from(label).bold()
         });
@@ -228,7 +252,7 @@ fn render_table(frame: &mut Frame, area: Rect, app: &mut App) {
             for (c, column) in table.columns.iter().enumerate().take(last + 1).skip(first) {
                 let text = format!("{:>width$}", show(column, item), width = widths[c]);
                 spans.push(if c == state.column {
-                    Span::from(text).fg(ACCENT)
+                    Span::from(text).fg(accent())
                 } else {
                     Span::from(text)
                 });
@@ -316,9 +340,9 @@ fn render_histogram(frame: &mut Frame, area: Rect, app: &mut App) {
         .enumerate()
         .map(|(i, &count)| {
             let style = if Some(i) == selected {
-                Style::new().fg(ACCENT).add_modifier(Modifier::REVERSED)
+                Style::new().fg(accent()).add_modifier(Modifier::REVERSED)
             } else {
-                Style::new().fg(ACCENT)
+                Style::new().fg(accent())
             };
             Bar::default()
                 .value(count)
@@ -345,7 +369,7 @@ fn render_histogram(frame: &mut Frame, area: Rect, app: &mut App) {
 
 fn render_status(frame: &mut Frame, area: Rect, app: &App) {
     let left = match (&app.message, app.table()) {
-        (Some(message), _) => Line::from(format!(" {message}")).fg(ACCENT),
+        (Some(message), _) => Line::from(format!(" {message}")).fg(accent()),
         (None, Some((table, state))) => match (app.selected(), app.column()) {
             (Some(item), Some(column)) => Line::from(format!(
                 " {} · {}: {} · {} of {}",
@@ -488,7 +512,7 @@ fn bar_lines_scaled<'a>(
             let pad = bar_width.saturating_sub(bar.chars().count());
             let line = Line::from(vec![
                 Span::from(format!(" {:label_width$} ", truncate(label, label_width))),
-                Span::from(bar).fg(ACCENT),
+                Span::from(bar).fg(accent()),
                 Span::from(" ".repeat(pad + 1)),
                 Span::from(format!("{:>value_width$}", text)),
             ]);

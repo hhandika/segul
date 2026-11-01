@@ -21,6 +21,7 @@
 //! 17. Sequence transposition
 //! 18. Sequence unique ID parsing
 //! 19. Plots of summary statistics with colorblind-safe palettes
+//! 20. A shared color library with ColorBrewer and viridis colormaps and WCAG contrast checks
 //!
 //! ## Cargo features
 //!
@@ -67,6 +68,7 @@
 //! ```
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod color;
 pub mod core;
 pub mod helper;
 pub mod parser;

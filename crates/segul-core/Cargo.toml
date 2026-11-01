@@ -18,7 +18,7 @@ sequence = []
 read = ["dep:noodles", "noodles/bgzf", "dep:memchr", "dep:xxhash-rust"]
 contig = []
 maf = []
-plot = ["dep:plotters", "dep:resvg", "dep:usvg", "dep:colorous"]
+plot = ["dep:plotters", "dep:resvg", "dep:usvg"]
 pdf = ["plot", "dep:svg2pdf"]
 
 [dependencies]
@@ -53,7 +53,7 @@ plotters = { workspace = true, optional = true }
 resvg = { workspace = true, optional = true }
 usvg = { workspace = true, optional = true }
 svg2pdf = { workspace = true, optional = true }
-colorous = { workspace = true, optional = true }
+colorous.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

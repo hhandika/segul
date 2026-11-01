@@ -1,12 +1,12 @@
-//! Residue colors, matching the SEGUI alignment viewer.
+//! Residue colors for the terminal. The colors come from
+//! `segul_core::color::residue`, shared with the SEGUI alignment viewer.
 
 use ratatui::style::Color;
+use segul_core::color::Rgb;
+use segul_core::color::residue::{ResiduePalette, ResidueScheme};
+use segul_core::helper::types::DataType;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(super) enum Theme {
-    Dark,
-    Light,
-}
+pub(super) use segul_core::color::Theme;
 
 /// How residues are colored.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -37,36 +37,7 @@ impl ColorMode {
     }
 }
 
-const DNA_GROUPS: &[(&str, &[u8], [u32; 2])] = &[
-    ("A", b"A", [0x97C459, 0x3B6D11]),
-    ("C", b"C", [0x85B7EB, 0x185FA5]),
-    ("G", b"G", [0xFAC775, 0x854F0B]),
-    ("T", b"TU", [0xF09595, 0xA32D2D]),
-];
-
-// Clustal X groups.
-const AA_GROUPS: &[(&str, &[u8], [u32; 2])] = &[
-    ("Hydrophobic", b"AILMFWV", [0x85B7EB, 0x185FA5]),
-    ("Positive", b"KR", [0xF09595, 0xA32D2D]),
-    ("Negative", b"DE", [0xED93B1, 0x993556]),
-    ("Polar", b"NQST", [0x97C459, 0x3B6D11]),
-    ("Aromatic", b"HY", [0x5DCAA5, 0x0F6E56]),
-    ("G", b"G", [0xFAC775, 0x854F0B]),
-    ("P", b"P", [0xFAEEDA, 0x633806]),
-    ("C", b"C", [0xF5C4B3, 0x993C1D]),
-];
-
-// Light and dark values of the colors shared by both palettes.
-const FALLBACK: [u32; 2] = [0xB4B2A9, 0x5F5E5A];
-const GAP: [u32; 2] = [0xE6E4DC, 0x2C2C2A];
-const ON_RESIDUE: [u32; 2] = [0x2C2C2A, 0xF1EFE8];
-const MONO: [u32; 2] = [0xD3D1C7, 0x444441];
-const IDENTITY: [u32; 2] = [0xF1EFE8, 0x242422];
-const ON_IDENTITY: [u32; 2] = [0x888780, 0x8A8984];
-const ACCENT: [u32; 2] = [0x0F6E56, 0x5DCAA5];
-const TERTIARY: [u32; 2] = [0x993556, 0xED93B1];
-
-/// Colors for one theme and data type.
+/// Residue colors from `segul_core::color::residue`, as terminal colors.
 pub(super) struct Palette {
     residues: [Option<Color>; 128],
     pub(super) legend: Vec<(&'static str, Color)>,
@@ -78,39 +49,42 @@ pub(super) struct Palette {
     pub(super) on_identity: Color,
     pub(super) accent: Color,
     pub(super) tertiary: Color,
+    selection: Color,
     is_truecolor: bool,
 }
 
 impl Palette {
-    pub(super) fn new(theme: Theme, is_dna: bool, is_truecolor: bool) -> Self {
-        let pick = |hex: [u32; 2]| -> Color {
-            let rgb = match theme {
-                Theme::Light => hex[0],
-                Theme::Dark => hex[1],
-            };
-            to_color(rgb, is_truecolor)
-        };
-        let groups = if is_dna { DNA_GROUPS } else { AA_GROUPS };
+    pub(super) fn new(
+        scheme: ResidueScheme,
+        theme: Theme,
+        is_dna: bool,
+        is_truecolor: bool,
+    ) -> Self {
+        let datatype = if is_dna { DataType::Dna } else { DataType::Aa };
+        let source = ResiduePalette::new(&scheme, &theme, &datatype);
+        let pick = |rgb: Rgb| to_color(rgb, is_truecolor);
         let mut residues = [None; 128];
-        let mut legend = Vec::with_capacity(groups.len());
-        for (label, codes, hex) in groups {
-            let color = pick(*hex);
-            codes
+        let mut legend = Vec::with_capacity(source.groups.len());
+        for group in &source.groups {
+            let color = pick(group.color);
+            group
+                .codes
                 .iter()
                 .for_each(|&c| residues[c as usize] = Some(color));
-            legend.push((*label, color));
+            legend.push((group.label, color));
         }
         Self {
             residues,
             legend,
-            fallback: pick(FALLBACK),
-            gap: pick(GAP),
-            on_residue: pick(ON_RESIDUE),
-            mono: pick(MONO),
-            identity: pick(IDENTITY),
-            on_identity: pick(ON_IDENTITY),
-            accent: pick(ACCENT),
-            tertiary: pick(TERTIARY),
+            fallback: pick(source.fallback),
+            gap: pick(source.gap),
+            on_residue: pick(source.on_residue),
+            mono: pick(source.mono),
+            identity: pick(source.identity),
+            on_identity: pick(source.on_identity),
+            accent: pick(source.accent),
+            tertiary: pick(source.tertiary),
+            selection: pick(source.selection),
             is_truecolor,
         }
     }
@@ -127,10 +101,10 @@ impl Palette {
             .unwrap_or(self.fallback)
     }
 
-    /// `color` mixed with the accent by `amount` (0 to 1), for selection and
-    /// cursor washes. Indexed colors are returned unchanged.
+    /// `color` mixed with the selection color by `amount` (0 to 0.25), for
+    /// selection and cursor washes. Indexed colors are returned unchanged.
     pub(super) fn wash(&self, color: Color, amount: f32) -> Color {
-        match (color, self.accent) {
+        match (color, self.selection) {
             (Color::Rgb(r, g, b), Color::Rgb(ar, ag, ab)) if self.is_truecolor => {
                 let mix = |c: u8, a: u8| (c as f32 + (a as f32 - c as f32) * amount).round() as u8;
                 Color::Rgb(mix(r, ar), mix(g, ag), mix(b, ab))
@@ -141,14 +115,14 @@ impl Palette {
 }
 
 /// Whether the terminal reports 24-bit color support.
-pub(super) fn is_truecolor() -> bool {
+pub(in crate::cli::view) fn is_truecolor() -> bool {
     std::env::var("COLORTERM")
         .map(|v| v.eq_ignore_ascii_case("truecolor") || v.eq_ignore_ascii_case("24bit"))
         .unwrap_or(false)
 }
 
-fn to_color(rgb: u32, is_truecolor: bool) -> Color {
-    let (r, g, b) = ((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8);
+pub(in crate::cli::view) fn to_color(rgb: Rgb, is_truecolor: bool) -> Color {
+    let Rgb { r, g, b } = rgb;
     if is_truecolor {
         Color::Rgb(r, g, b)
     } else {
@@ -189,7 +163,7 @@ mod test {
 
     #[test]
     fn test_dna_palette() {
-        let palette = Palette::new(Theme::Light, true, true);
+        let palette = Palette::new(ResidueScheme::Clustal, Theme::Light, true, true);
         assert_eq!(palette.residue(b'A'), Color::Rgb(0x97, 0xC4, 0x59));
         assert_eq!(palette.residue(b'U'), palette.residue(b'T'));
         assert_eq!(palette.residue(b'-'), palette.gap);
@@ -199,9 +173,33 @@ mod test {
 
     #[test]
     fn test_aa_palette() {
-        let palette = Palette::new(Theme::Dark, false, true);
+        let palette = Palette::new(ResidueScheme::Clustal, Theme::Dark, false, true);
         assert_eq!(palette.residue(b'K'), Color::Rgb(0xA3, 0x2D, 0x2D));
         assert_eq!(palette.residue(b'X'), palette.fallback);
+    }
+
+    #[test]
+    fn test_washed_letters_meet_wcag_aa() {
+        use segul_core::color::{AA_TEXT, contrast_ratio};
+
+        let to_rgb = |c: Color| match c {
+            Color::Rgb(r, g, b) => Rgb::new(r, g, b),
+            _ => unreachable!(),
+        };
+        for scheme in ResidueScheme::all() {
+            for theme in Theme::all() {
+                for is_dna in [true, false] {
+                    let palette = Palette::new(*scheme, *theme, is_dna, true);
+                    let cells = palette.legend.iter().map(|(_, c)| *c);
+                    for cell in cells.chain([palette.fallback, palette.mono]) {
+                        // Selected rows wash cells 25% toward the accent.
+                        let washed = to_rgb(palette.wash(cell, 0.25));
+                        let ratio = contrast_ratio(to_rgb(palette.on_residue), washed);
+                        assert!(ratio >= AA_TEXT, "{:?} {:?}: {:.2}", scheme, theme, ratio);
+                    }
+                }
+            }
+        }
     }
 
     #[test]

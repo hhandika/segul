@@ -572,6 +572,8 @@ mod test {
     use crate::core::align::view::AlignmentView;
     use crate::helper::types::{DataType, InputFmt};
 
+    use segul_core::color::residue::ResidueScheme;
+
     use super::super::palette::Theme;
 
     fn screen(app: &mut App, palette: &Palette) -> String {
@@ -597,7 +599,7 @@ mod test {
         let view = AlignmentView::open(&files[0], &InputFmt::Auto, &DataType::Ignore)
             .expect("Failed opening fixture");
         let mut app = App::new(&files, &InputFmt::Auto, &DataType::Ignore, view, 1000);
-        let palette = Palette::new(Theme::Dark, true, true);
+        let palette = Palette::new(ResidueScheme::Clustal, Theme::Dark, true, true);
         let text = screen(&mut app, &palette);
         assert!(text.contains("simple.fas"));
         assert!(text.contains("2 taxa · 6 sites · DNA"));

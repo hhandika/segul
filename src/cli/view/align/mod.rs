@@ -1,6 +1,6 @@
 //! Interactive alignment viewer in the terminal.
 mod app;
-mod palette;
+pub(super) mod palette;
 mod ui;
 
 use std::io::{self, stdout};
@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use crossterm::clipboard::CopyToClipboard;
 use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyEventKind};
 use crossterm::execute;
+use segul_core::color::residue::ResidueScheme;
 
 use crate::{
     cli::{AlignSeqInput, InputCli, args::view::ViewAlignArgs, collect_paths},
@@ -50,16 +51,18 @@ impl<'a> AlignViewParser<'a> {
                 std::process::exit(1);
             }
         };
-        let theme = match self.args.theme.as_str() {
-            "light" => Theme::Light,
-            _ => Theme::Dark,
-        };
+        let theme = self.args.theme.parse::<Theme>().unwrap_or(Theme::Dark);
+        let scheme = self
+            .args
+            .residue_colors
+            .parse::<ResidueScheme>()
+            .unwrap_or_default();
         let mut app = App::new(&files, &input_fmt, &datatype, view, self.args.chunk);
-        run(&mut app, theme).expect("Failed running the alignment viewer");
+        run(&mut app, theme, scheme).expect("Failed running the alignment viewer");
     }
 }
 
-fn run(app: &mut App, theme: Theme) -> io::Result<()> {
+fn run(app: &mut App, theme: Theme, scheme: ResidueScheme) -> io::Result<()> {
     let is_truecolor = palette::is_truecolor();
     // `ratatui::init` restores the screen on panic; also release the mouse.
     let hook = std::panic::take_hook();
@@ -70,12 +73,12 @@ fn run(app: &mut App, theme: Theme) -> io::Result<()> {
     let mut terminal = ratatui::init();
     execute!(stdout(), EnableMouseCapture)?;
     let result = (|| -> io::Result<()> {
-        let mut palette = Palette::new(theme, app.view.is_dna(), is_truecolor);
+        let mut palette = Palette::new(scheme, theme, app.view.is_dna(), is_truecolor);
         let mut is_dna = app.view.is_dna();
         while !app.should_quit {
             if app.view.is_dna() != is_dna {
                 is_dna = app.view.is_dna();
-                palette = Palette::new(theme, is_dna, is_truecolor);
+                palette = Palette::new(scheme, theme, is_dna, is_truecolor);
             }
             terminal.draw(|frame| ui::render(frame, app, &palette))?;
             match event::read()? {

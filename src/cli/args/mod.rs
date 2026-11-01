@@ -10,7 +10,7 @@ use clap::builder::TypedValueParser as _;
 use genomics::ContigSubcommand;
 use genomics::MafSubcommand;
 use genomics::SeqReadSubcommand;
-use segul_core::plot::color::{Colormap, CvdKind, Palette};
+use segul_core::color::{Colormap, CvdKind, Palette};
 use segul_core::plot::spec::PlotFormat;
 
 use super::args::sequence::SequenceSubcommand;
@@ -165,19 +165,25 @@ pub(crate) struct PlotFlags {
     pub(crate) font: Option<PathBuf>,
     #[arg(
         long,
-        help = "Colorblind-safe palette for categories",
+        help = "Palette for categories. Okabe-Ito and Tol are colorblind safe; \
+        ColorBrewer set2, dark2, and paired only for their first 3 to 4 colors; set1 is not",
         requires = "plot",
         default_value_t = Palette::OkabeIto,
-        value_parser = builder::PossibleValuesParser::new(["okabe-ito", "tol-bright", "tol-muted"])
+        value_parser = builder::PossibleValuesParser::new(
+            ["okabe-ito", "tol-bright", "tol-muted", "set2", "dark2", "paired", "set1"])
             .map(|x| x.parse::<Palette>().expect("Invalid palette")),
     )]
     pub(crate) palette: Palette,
     #[arg(
         long,
-        help = "Colormap for heatmaps",
+        help = "Colormap for heatmaps: viridis family or ColorBrewer \
+        sequential (blues, greens, ylgnbu, ylorrd) and diverging (rdbu, puor, brbg)",
         requires = "plot",
         default_value_t = Colormap::Viridis,
-        value_parser = builder::PossibleValuesParser::new(["viridis", "cividis", "magma", "inferno"])
+        value_parser = builder::PossibleValuesParser::new([
+            "viridis", "cividis", "magma", "inferno", "plasma", "blues", "greens",
+            "ylgnbu", "ylorrd", "rdbu", "puor", "brbg",
+        ])
             .map(|x| x.parse::<Colormap>().expect("Invalid colormap")),
     )]
     pub(crate) colormap: Colormap,

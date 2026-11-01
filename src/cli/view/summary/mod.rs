@@ -8,6 +8,7 @@ use std::path::Path;
 
 use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyEventKind};
 use crossterm::execute;
+use segul_core::color::Theme;
 
 use crate::cli::args::view::ViewSummaryArgs;
 
@@ -36,6 +37,8 @@ impl<'a> SummaryViewParser<'a> {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
+        let theme = self.args.theme.parse::<Theme>().unwrap_or(Theme::Dark);
+        ui::set_accent(theme);
         let mut app = App::new(data, file_name);
         run(&mut app).expect("Failed running the summary viewer");
     }

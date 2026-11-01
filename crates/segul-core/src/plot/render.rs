@@ -15,7 +15,8 @@ use plotters::prelude::*;
 use plotters::style::text_anchor::{HPos, Pos, VPos};
 use resvg::tiny_skia;
 
-use super::color::Rgb;
+use super::color::ui::ChartTokens;
+use super::color::{Rgb, best_text_on};
 use super::fonts::PlotFonts;
 use super::spec::{ChartKind, PlotFormat, PlotSpec, finite_range};
 
@@ -39,9 +40,6 @@ const COLORBAR_SPACE: u32 = 110;
 const COLORBAR_WIDTH: i32 = 20;
 // Heatmaps with more cells than this skip value annotations.
 const MAX_ANNOTATED_CELLS: usize = 144;
-const MISSING_CELL: RGBColor = RGBColor(220, 220, 220);
-const GRID: RGBColor = RGBColor(225, 225, 225);
-const AXIS: RGBColor = RGBColor(90, 90, 90);
 
 type Area<'b> = DrawingArea<SVGBackend<'b>, Shift>;
 
@@ -91,11 +89,16 @@ impl Ranged for CategoryCoord {
 pub struct PlotRenderer<'a> {
     spec: &'a PlotSpec,
     fonts: &'a PlotFonts,
+    chrome: Chrome,
 }
 
 impl<'a> PlotRenderer<'a> {
     pub fn new(spec: &'a PlotSpec, fonts: &'a PlotFonts) -> Self {
-        Self { spec, fonts }
+        Self {
+            spec,
+            fonts,
+            chrome: Chrome::new(&ChartTokens::default()),
+        }
     }
 
     /// Render the plot and write it to `output`, creating parent directories.
@@ -136,7 +139,7 @@ impl<'a> PlotRenderer<'a> {
         let mut svg = String::new();
         {
             let root = SVGBackend::with_string(&mut svg, size).into_drawing_area();
-            root.fill(&WHITE).map_err(draw_error)?;
+            root.fill(&self.chrome.background).map_err(draw_error)?;
             match self.spec.kind {
                 ChartKind::Scatter | ChartKind::Line => self.draw_xy(&root)?,
                 ChartKind::Bar | ChartKind::StackedBar => self.draw_bars(&root)?,
@@ -177,15 +180,16 @@ impl<'a> PlotRenderer<'a> {
             .y_label_formatter(&format_tick)
             .label_style((FONT, LABEL_SIZE))
             .axis_desc_style((FONT, AXIS_TITLE_SIZE))
-            .axis_style(AXIS)
-            .bold_line_style(GRID)
+            .axis_style(self.chrome.axis)
+            .bold_line_style(self.chrome.grid)
             .light_line_style(TRANSPARENT)
             .draw()
             .map_err(draw_error)?;
 
         let colors = spec.style.series_colors(spec.series.len());
-        for (series, color) in spec.series.iter().zip(colors) {
-            let color = to_rgb(color);
+        let lines = spec.style.line_colors(spec.series.len());
+        for ((series, color), line) in spec.series.iter().zip(colors).zip(lines) {
+            let (color, line) = (to_rgb(color), to_rgb(line));
             let points: Vec<(f64, f64)> = series
                 .x
                 .iter()
@@ -212,27 +216,41 @@ impl<'a> PlotRenderer<'a> {
                             .map_err(draw_error)?;
                     }
                     chart
-                        .draw_series(LineSeries::new(points, color.stroke_width(2)))
+                        .draw_series(LineSeries::new(points, line.stroke_width(2)))
                         .map_err(draw_error)?
                 }
-                _ => chart
-                    .draw_series(
-                        points
-                            .into_iter()
-                            .map(|p| Circle::new(p, 4, color.mix(0.8).filled())),
-                    )
-                    .map_err(draw_error)?,
+                _ => {
+                    // Outlined in the line color so pale fills reach 3:1.
+                    chart
+                        .draw_series(
+                            points
+                                .iter()
+                                .map(|p| Circle::new(*p, 4, line.stroke_width(1))),
+                        )
+                        .map_err(draw_error)?;
+                    chart
+                        .draw_series(
+                            points
+                                .into_iter()
+                                .map(|p| Circle::new(p, 4, color.mix(0.8).filled())),
+                        )
+                        .map_err(draw_error)?
+                }
             };
             anno.label(&series.name).legend(move |(x, y)| {
-                Rectangle::new([(x, y - 5), (x + 12, y + 5)], color.filled())
+                // Fill outlined in the line color, like the marks.
+                let corners = [(0, -5), (12, 5)];
+                EmptyElement::at((x, y))
+                    + Rectangle::new(corners, color.filled())
+                    + Rectangle::new(corners, line.stroke_width(1))
             });
         }
         if spec.series.len() > 1 {
             chart
                 .configure_series_labels()
                 .position(SeriesLabelPosition::UpperRight)
-                .background_style(WHITE.mix(0.85))
-                .border_style(AXIS.mix(0.4))
+                .background_style(self.chrome.legend.mix(0.85))
+                .border_style(self.chrome.axis.mix(0.4))
                 .label_font((FONT, LABEL_SIZE))
                 .draw()
                 .map_err(draw_error)?;
@@ -262,6 +280,7 @@ impl<'a> PlotRenderer<'a> {
         let mut chart = self.categorical_chart(root, &spec.categories, y_range)?;
 
         let colors = spec.style.series_colors(n_series);
+        let lines = spec.style.line_colors(n_series);
         let group_width = 0.8;
         let bar_width = if stacked {
             group_width
@@ -269,8 +288,8 @@ impl<'a> PlotRenderer<'a> {
             group_width / n_series as f64
         };
         let mut bases = vec![0.0; spec.categories.len()];
-        for (j, (series, color)) in spec.series.iter().zip(colors).enumerate() {
-            let color = to_rgb(color);
+        for (j, ((series, color), line)) in spec.series.iter().zip(colors).zip(lines).enumerate() {
+            let (color, line) = (to_rgb(color), to_rgb(line));
             let bars: Vec<[(f64, f64); 2]> = series
                 .y
                 .iter()
@@ -293,21 +312,31 @@ impl<'a> PlotRenderer<'a> {
                 .collect();
             chart
                 .draw_series(
-                    bars.into_iter()
-                        .map(|corners| Rectangle::new(corners, color.filled())),
+                    bars.iter()
+                        .map(|corners| Rectangle::new(*corners, color.filled())),
                 )
                 .map_err(draw_error)?
                 .label(&series.name)
                 .legend(move |(x, y)| {
-                    Rectangle::new([(x, y - 5), (x + 12, y + 5)], color.filled())
+                    // Fill outlined in the line color, like the marks.
+                    let corners = [(0, -5), (12, 5)];
+                    EmptyElement::at((x, y))
+                        + Rectangle::new(corners, color.filled())
+                        + Rectangle::new(corners, line.stroke_width(1))
                 });
+            chart
+                .draw_series(
+                    bars.into_iter()
+                        .map(|corners| Rectangle::new(corners, line.stroke_width(1))),
+                )
+                .map_err(draw_error)?;
         }
         if n_series > 1 {
             chart
                 .configure_series_labels()
                 .position(SeriesLabelPosition::UpperRight)
-                .background_style(WHITE.mix(0.85))
-                .border_style(AXIS.mix(0.4))
+                .background_style(self.chrome.legend.mix(0.85))
+                .border_style(self.chrome.axis.mix(0.4))
                 .label_font((FONT, LABEL_SIZE))
                 .draw()
                 .map_err(draw_error)?;
@@ -336,12 +365,13 @@ impl<'a> PlotRenderer<'a> {
             .y_label_formatter(&format_tick)
             .label_style((FONT, LABEL_SIZE))
             .axis_desc_style((FONT, AXIS_TITLE_SIZE))
-            .axis_style(AXIS)
-            .bold_line_style(GRID)
+            .axis_style(self.chrome.axis)
+            .bold_line_style(self.chrome.grid)
             .light_line_style(TRANSPARENT)
             .draw()
             .map_err(draw_error)?;
         let color = to_rgb(spec.style.series_colors(1)[0]);
+        let line = to_rgb(spec.style.line_colors(1)[0]);
         let bins: Vec<[(f64, f64); 2]> = series
             .x
             .windows(2)
@@ -357,7 +387,7 @@ impl<'a> PlotRenderer<'a> {
         chart
             .draw_series(
                 bins.iter()
-                    .map(|corners| Rectangle::new(*corners, WHITE.stroke_width(1))),
+                    .map(|corners| Rectangle::new(*corners, line.stroke_width(1))),
             )
             .map_err(draw_error)?;
         Ok(())
@@ -394,27 +424,27 @@ impl<'a> PlotRenderer<'a> {
                 .draw_series(
                     lines
                         .into_iter()
-                        .map(|l| PathElement::new(l, AXIS.stroke_width(1))),
+                        .map(|l| PathElement::new(l, self.chrome.axis.stroke_width(1))),
                 )
                 .map_err(draw_error)?;
             let body = [(x - half, b.q1), (x + half, b.q3)];
             chart
                 .draw_series([
                     Rectangle::new(body, color.mix(0.75).filled()),
-                    Rectangle::new(body, AXIS.stroke_width(1)),
+                    Rectangle::new(body, self.chrome.axis.stroke_width(1)),
                 ])
                 .map_err(draw_error)?;
             chart
                 .draw_series(std::iter::once(PathElement::new(
                     vec![(x - half, b.median), (x + half, b.median)],
-                    BLACK.stroke_width(2),
+                    self.chrome.text.stroke_width(2),
                 )))
                 .map_err(draw_error)?;
             chart
                 .draw_series(
                     b.outliers
                         .iter()
-                        .map(|y| Circle::new((x, *y), 3, AXIS.stroke_width(1))),
+                        .map(|y| Circle::new((x, *y), 3, self.chrome.axis.stroke_width(1))),
                 )
                 .map_err(draw_error)?;
         }
@@ -448,7 +478,7 @@ impl<'a> PlotRenderer<'a> {
             .x_label_formatter(&|_| String::new())
             .y_label_formatter(&|_| String::new())
             .axis_desc_style((FONT, AXIS_TITLE_SIZE))
-            .axis_style(AXIS)
+            .axis_style(self.chrome.axis)
             .draw()
             .map_err(draw_error)?;
 
@@ -461,15 +491,25 @@ impl<'a> PlotRenderer<'a> {
                 let value = heatmap.get(row, col);
                 let fill = value.map(|v| spec.style.colormap_at((v - min) / span));
                 let cell = [(x - 0.5, y - 0.5), (x + 0.5, y + 0.5)];
-                let fill_color = fill.map(to_rgb).unwrap_or(MISSING_CELL);
+                let fill_color = fill.map(to_rgb).unwrap_or(self.chrome.missing);
                 chart
                     .draw_series([
                         Rectangle::new(cell, fill_color.filled()),
-                        Rectangle::new(cell, WHITE.stroke_width(1)),
+                        Rectangle::new(cell, self.chrome.background.stroke_width(1)),
                     ])
                     .map_err(draw_error)?;
+                if fill.is_none() {
+                    // Missing cells are pale, so outline them to reach 3:1.
+                    let inset = [(x - 0.45, y - 0.45), (x + 0.45, y + 0.45)];
+                    chart
+                        .draw_series(std::iter::once(Rectangle::new(
+                            inset,
+                            self.chrome.axis.stroke_width(1),
+                        )))
+                        .map_err(draw_error)?;
+                }
                 if let (true, Some(v), Some(fill)) = (annotate, value, fill) {
-                    let text_color = if fill.luminance() > 0.4 { BLACK } else { WHITE };
+                    let text_color = to_rgb(best_text_on(fill));
                     let style = TextStyle::from((FONT, LABEL_SIZE).into_font())
                         .color(&text_color)
                         .pos(Pos::new(HPos::Center, VPos::Center));
@@ -483,7 +523,7 @@ impl<'a> PlotRenderer<'a> {
         let (x_start, y_start) = (-0.5, -0.5);
         self.draw_x_categories(root, &chart, &heatmap.cols, y_start)?;
         let style = TextStyle::from((FONT, LABEL_SIZE).into_font())
-            .color(&BLACK)
+            .color(&self.chrome.text)
             .pos(Pos::new(HPos::Right, VPos::Center));
         for (row, label) in heatmap.rows.iter().enumerate() {
             let y = (n_rows - 1 - row) as f64;
@@ -524,11 +564,11 @@ impl<'a> PlotRenderer<'a> {
         }
         root.draw(&Rectangle::new(
             [(x0, top), (x0 + COLORBAR_WIDTH, bottom)],
-            AXIS.stroke_width(1),
+            self.chrome.axis.stroke_width(1),
         ))
         .map_err(draw_error)?;
         let style = TextStyle::from((FONT, LABEL_SIZE).into_font())
-            .color(&BLACK)
+            .color(&self.chrome.text)
             .pos(Pos::new(HPos::Left, VPos::Center));
         let ticks = if max > min { 5 } else { 1 };
         for i in 0..ticks {
@@ -542,7 +582,7 @@ impl<'a> PlotRenderer<'a> {
             let tick_end = x0 + COLORBAR_WIDTH + 4;
             root.draw(&PathElement::new(
                 vec![(x0 + COLORBAR_WIDTH, y), (tick_end, y)],
-                AXIS.stroke_width(1),
+                self.chrome.axis.stroke_width(1),
             ))
             .map_err(draw_error)?;
             root.draw(&Text::new(
@@ -580,8 +620,8 @@ impl<'a> PlotRenderer<'a> {
             .y_label_formatter(&format_tick)
             .label_style((FONT, LABEL_SIZE))
             .axis_desc_style((FONT, AXIS_TITLE_SIZE))
-            .axis_style(AXIS)
-            .bold_line_style(GRID)
+            .axis_style(self.chrome.axis)
+            .bold_line_style(self.chrome.grid)
             .light_line_style(TRANSPARENT)
             .draw()
             .map_err(draw_error)?;
@@ -597,7 +637,7 @@ impl<'a> PlotRenderer<'a> {
         y_start: f64,
     ) -> Result<()> {
         let rotate = self.rotate_labels(categories);
-        let base = TextStyle::from((FONT, LABEL_SIZE).into_font()).color(&BLACK);
+        let base = TextStyle::from((FONT, LABEL_SIZE).into_font()).color(&self.chrome.text);
         let style = if rotate {
             base.transform(FontTransform::Rotate270)
                 .pos(Pos::new(HPos::Right, VPos::Center))
@@ -726,6 +766,29 @@ fn label_width(labels: &[String]) -> u32 {
         .max()
         .unwrap_or(0);
     chars as u32 * CHAR_WIDTH
+}
+
+/// Chart chrome in plotters colors.
+struct Chrome {
+    background: RGBColor,
+    text: RGBColor,
+    axis: RGBColor,
+    grid: RGBColor,
+    missing: RGBColor,
+    legend: RGBColor,
+}
+
+impl Chrome {
+    fn new(tokens: &ChartTokens) -> Self {
+        Self {
+            background: to_rgb(tokens.background),
+            text: to_rgb(tokens.text),
+            axis: to_rgb(tokens.axis),
+            grid: to_rgb(tokens.grid),
+            missing: to_rgb(tokens.missing),
+            legend: to_rgb(tokens.legend_background),
+        }
+    }
 }
 
 fn to_rgb(color: Rgb) -> RGBColor {

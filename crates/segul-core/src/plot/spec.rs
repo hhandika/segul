@@ -10,6 +10,7 @@ use std::path::Path;
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 
+use super::color::ui::ChartTokens;
 use super::color::{Colormap, CvdKind, Palette, Rgb, simulate_cvd};
 
 /// Default chart width in pixels.
@@ -294,6 +295,18 @@ impl PlotStyle {
             .colors(n)
             .into_iter()
             .map(|c| self.apply_cvd(c))
+            .collect()
+    }
+
+    /// Series colors for lines, points, and outlines: [`series_colors`]
+    /// adjusted to reach the WCAG 3:1 non-text contrast on the chart background.
+    ///
+    /// [`series_colors`]: Self::series_colors
+    pub fn line_colors(&self, n: usize) -> Vec<Rgb> {
+        let tokens = ChartTokens::default();
+        self.series_colors(n)
+            .into_iter()
+            .map(|c| tokens.line(c))
             .collect()
     }
 

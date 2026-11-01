@@ -35,10 +35,12 @@
 //! assert!(AlignPlot::all().contains(&"completeness".parse().unwrap()));
 //! ```
 pub mod batch;
-pub mod color;
 pub mod fonts;
 pub mod render;
 pub mod spec;
+
+/// Moved to [`crate::color`]. Kept so `plot::color` paths keep working.
+pub use crate::color;
 
 #[cfg(feature = "align")]
 pub mod align;
