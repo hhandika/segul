@@ -304,6 +304,7 @@ mod test {
             locus: PathBuf::from(LOCUS),
             taxon: PathBuf::from(TAXON),
             text: PathBuf::new(),
+            report: PathBuf::new(),
         };
         let written = plot_alignment_summary(&files, &writer);
         assert_eq!(written.len(), AlignPlot::all().len());

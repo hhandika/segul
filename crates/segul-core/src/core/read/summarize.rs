@@ -11,11 +11,13 @@ use rayon::prelude::*;
 
 use crate::{
     helper::{
+        progress::{self, ProgressReporter},
         types::{PhredOffset, SeqReadFmt, SummaryMode},
         utils::set_spinner,
     },
     stats::fastq::{
-        DEFAULT_DUP_SKETCH_SIZE, FastqAnalyzer, FastqSummary, FastqSummaryMin, count_reads,
+        DEFAULT_DUP_SKETCH_SIZE, FastqAnalyzer, FastqSummary, FastqSummaryMin,
+        count_reads_with_progress,
         report::{ReadReport, SampleReadReport},
     },
     writer::read::{
@@ -74,6 +76,8 @@ pub struct GenomicReadSummary<'a> {
     /// Distinct sequences kept to estimate duplication in Complete mode.
     /// Zero counts every distinct sequence.
     pub dup_sketch_size: usize,
+    /// Receives per-file progress and can cancel the run.
+    progress: Option<&'a dyn ProgressReporter>,
 }
 
 impl<'a> GenomicReadSummary<'a> {
@@ -93,6 +97,7 @@ impl<'a> GenomicReadSummary<'a> {
             prefix,
             phred: PhredOffset::Auto,
             dup_sketch_size: DEFAULT_DUP_SKETCH_SIZE,
+            progress: None,
         }
     }
 
@@ -106,6 +111,12 @@ impl<'a> GenomicReadSummary<'a> {
     /// Use a fixed quality score offset instead of detecting it.
     pub fn with_phred(mut self, phred: PhredOffset) -> Self {
         self.phred = phred;
+        self
+    }
+
+    /// Report per-file progress to `reporter`, which can also cancel the run.
+    pub fn with_progress(mut self, reporter: &'a dyn ProgressReporter) -> Self {
+        self.progress = Some(reporter);
         self
     }
 
@@ -146,6 +157,7 @@ impl<'a> GenomicReadSummary<'a> {
     pub fn try_summarize(&self) -> Result<ReadSummaryFiles> {
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
+        progress::report_start(self.progress, self.inputs.len());
         let files = match self.mode {
             SummaryMode::Minimal => {
                 let records = self.par_summarize_minimal()?;
@@ -188,10 +200,13 @@ impl<'a> GenomicReadSummary<'a> {
             .inputs
             .par_iter()
             .map(|path| {
-                FastqAnalyzer::new(path, self.phred, complete, threads)
-                    .with_dup_sketch_size(self.dup_sketch_size)
-                    .analyze()
-                    .map(|report| FastqSummary::from_report(path, report))
+                progress::track(self.progress, path, || {
+                    FastqAnalyzer::new(path, self.phred, complete, threads)
+                        .with_dup_sketch_size(self.dup_sketch_size)
+                        .with_progress(self.progress)
+                        .analyze()
+                        .map(|report| FastqSummary::from_report(path, report))
+                })
             })
             .collect::<Result<Vec<FastqSummary>>>()?;
         records.sort_by(|a, b| a.path.cmp(&b.path));
@@ -209,9 +224,11 @@ impl<'a> GenomicReadSummary<'a> {
             .inputs
             .par_iter()
             .map(|path| {
-                let mut summary = FastqSummaryMin::new(path);
-                summary.read_count = count_reads(path, threads)?;
-                Ok(summary)
+                progress::track(self.progress, path, || {
+                    let mut summary = FastqSummaryMin::new(path);
+                    summary.read_count = count_reads_with_progress(path, threads, self.progress)?;
+                    Ok(summary)
+                })
             })
             .collect::<Result<Vec<FastqSummaryMin>>>()?;
         records.sort_by(|a, b| a.path.cmp(&b.path));
@@ -221,6 +238,7 @@ impl<'a> GenomicReadSummary<'a> {
     fn write_record_min(&self, spin: &ProgressBar, records: &[FastqSummaryMin]) -> PathBuf {
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
         spin.set_message("Writing records\n");
+        progress::report_stage(self.progress, "Writing records");
         writer
             .write_read_count_only(records)
             .expect("Failed writing to file")
@@ -233,6 +251,7 @@ impl<'a> GenomicReadSummary<'a> {
         complete: bool,
     ) -> PathBuf {
         spin.set_message("Writing records\n");
+        progress::report_stage(self.progress, "Writing records");
         let writer = ReadSummaryWriter::new(self.output, self.prefix);
         writer
             .write_summary(records, complete)
@@ -275,11 +294,13 @@ impl<'a> GenomicReadSummary<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     use tempfile::TempDir;
 
     use crate::core::read::summarize::GenomicReadSummary;
+    use crate::helper::progress::{CancelAfter, Cancelled, ProgressReporter};
     use crate::helper::types::{SeqReadFmt, SummaryMode};
     use crate::stats::fastq::report::ReadReport;
 
@@ -299,6 +320,88 @@ mod test {
         );
         handler.summarize();
         assert!(output.path().exists());
+    }
+
+    #[derive(Default)]
+    struct CountingReporter {
+        total: AtomicUsize,
+        finished: AtomicUsize,
+        cancelled: bool,
+    }
+
+    impl ProgressReporter for CountingReporter {
+        fn on_start(&self, total_files: usize) {
+            self.total.store(total_files, Ordering::Relaxed);
+        }
+
+        fn on_file_finished(&self, _path: &Path) {
+            self.finished.fetch_add(1, Ordering::Relaxed);
+        }
+
+        fn is_cancelled(&self) -> bool {
+            self.cancelled
+        }
+    }
+
+    #[test]
+    fn test_progress() {
+        let mut files = vec![
+            PathBuf::from("tests/files/raw/read_1.fastq"),
+            PathBuf::from("tests/files/raw/read_2.fastq"),
+        ];
+        let output = TempDir::with_prefix("tempt").unwrap();
+        let reporter = CountingReporter::default();
+        GenomicReadSummary::new(
+            &mut files,
+            &SeqReadFmt::Auto,
+            &SummaryMode::Default,
+            output.path(),
+            None,
+        )
+        .with_progress(&reporter)
+        .try_summarize()
+        .unwrap();
+        assert_eq!(reporter.total.load(Ordering::Relaxed), 2);
+        assert_eq!(reporter.finished.load(Ordering::Relaxed), 2);
+    }
+
+    #[test]
+    fn test_progress_cancelled() {
+        let mut files = vec![PathBuf::from("tests/files/raw/read_1.fastq")];
+        let output = TempDir::with_prefix("tempt").unwrap();
+        let reporter = CountingReporter {
+            cancelled: true,
+            ..Default::default()
+        };
+        let error = GenomicReadSummary::new(
+            &mut files,
+            &SeqReadFmt::Auto,
+            &SummaryMode::Default,
+            output.path(),
+            None,
+        )
+        .with_progress(&reporter)
+        .try_summarize()
+        .unwrap_err();
+        assert!(error.downcast_ref::<Cancelled>().is_some());
+        assert_eq!(reporter.finished.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn test_progress_cancelled_mid_file() {
+        for mode in [SummaryMode::Minimal, SummaryMode::Complete] {
+            let mut files = vec![PathBuf::from("tests/files/raw/read_1.fastq")];
+            let output = TempDir::with_prefix("tempt").unwrap();
+            // The first check lets the file start; the next one is inside the file.
+            let reporter = CancelAfter::new(1);
+            let error =
+                GenomicReadSummary::new(&mut files, &SeqReadFmt::Auto, &mode, output.path(), None)
+                    .with_progress(&reporter)
+                    .try_summarize()
+                    .unwrap_err();
+            assert!(error.downcast_ref::<Cancelled>().is_some());
+            assert_eq!(reporter.finished.load(Ordering::Relaxed), 0);
+        }
     }
 
     #[test]

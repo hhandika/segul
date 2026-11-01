@@ -13,6 +13,7 @@ New Features:
 - `--plot-format` picks SVG or PNG (default). PNG text uses the system fonts, or a font file given with `--font`.
 - Colors are colorblind-safe by default (Okabe-Ito for categories, viridis for heatmaps). Choose others with `--palette` and `--colormap`, and preview the charts as seen with protanopia, deuteranopia, tritanopia, or achromatopsia with `--cvd`.
 - `--plot` does not work with `align summary --per-locus`, which writes no locus or taxon summary.
+- `segul align summary` also writes `alignment-report.json` with every statistic of the run: totals, matrix completeness, character counts, and one entry per locus and per taxon. Apps can read it to draw their own charts instead of parsing the CSV and text outputs. With `--prefix`, it is named `<PREFIX>_alignment-report.json`.
 - `segul read summary` is much faster. Each file is read once in large blocks that are summarized on all cores, so a single large FASTQ file no longer runs on one core. On a 2-million-read test file, complete mode went from 8.5 s to 0.3 s for plain FASTQ, from 9.3 s to 0.9 s for gzip, and from 9.2 s to 0.3 s for BGZF, which is also decompressed in parallel.
 - The read summary adds median, standard deviation, and N50 of read length, Q20 and Q30 bases, the mean quality per read, reads with mean quality below 20, and the detected quality offset. The new columns are added after the existing ones.
 - Complete mode adds quality quartiles and N content per read position, length, per-read quality, and GC distributions (with the theoretical GC curve), duplication across every read of each file, overrepresented sequences among all reads, and adapter content for Illumina Universal, Nextera, small RNA, poly-A, and poly-G. The distributions are written to `read-dist-summary.zip`, and all statistics to `read-report.json`.
@@ -38,6 +39,9 @@ Library Changes:
 - `FastqSummary` gains a `report` field with all statistics. Its existing fields are still filled.
 - New writers `ReadDistSummaryWriter` and `ReadReportWriter`, and `ReadSummaryWriter::write_summary` writes the Complete mode columns.
 - `FastqAnalyzer::with_dup_sketch_size` and `GenomicReadSummary::with_dup_sketch_size` set the duplication sample size, with `stats::fastq::DEFAULT_DUP_SKETCH_SIZE` as the default.
+- New `stats::align_report::AlignReport` holds every alignment summary statistic and serializes with serde. `AlignmentSummary::summarize_all` writes it, `AlignSummaryFiles` gains a `report` field with its path, and `AlignReport::from_path` reads it back. Code that builds `AlignSummaryFiles` itself needs to set the new field.
+- New `helper::progress::ProgressReporter` lets apps follow long-running tasks file by file and stop them between files. Pass it with `with_progress` on `GenomicReadSummary`, `ContigSummaryHandler`, `MafConverter`, and `MafSummary`. A cancelled run returns the `helper::progress::Cancelled` error. FASTQ and MAF files that are already running stop at their next block of reads or alignment block, so cancelling takes effect within moments. Without a reporter, tasks behave as before. `FastqAnalyzer::with_progress` adds the same check to a single file.
+- New `ContigSummaryHandler::try_summarize` returns errors instead of panicking. Contig summary rows now follow the order of the input files.
 - The `read` feature uses `noodles` for BGZF instead of FASTQ, adds `memchr` and `xxhash-rust`, and gzip decoding uses the faster `zlib-rs` backend.
 
 Breaking Changes:
@@ -45,6 +49,10 @@ Breaking Changes:
 - Library: `FastqMappedRead` and `FastqSummary::summarize_map` are removed. Per-position statistics are in `SampleReadReport::positions`. `ReadPosSummaryWriter::write` takes `&[SampleReadReport]`.
 - Library: code that builds `ReadSummaryFiles` directly must set the new `distributions` and `report` fields.
 - `SeqReadFmt` no longer decides how a file is decompressed. The compression is read from the file content.
+
+Bug Fixes:
+
+- Fix a missing input file given with `-i` on Windows stopping with "Empty folders!" instead of naming the file. Paths without wildcards are now passed on as given, as on other platforms, and a pattern that matches no files names the pattern.
 
 ## v0.24.0
 

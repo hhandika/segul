@@ -14,6 +14,7 @@ macro_rules! generate_test {
         let output_dir = $tmp_dir.path().join("Align-Summary");
         let locus_path = output_dir.join("locus_summary.csv");
         let taxon_path = output_dir.join("taxon_summary.csv");
+        let report_path = output_dir.join("alignment-report.json");
 
         // Check column counts
         let locus_cols = count_header_cols(&locus_path);
@@ -24,6 +25,7 @@ macro_rules! generate_test {
         let taxon = parse_csv(&taxon_path);
 
         assert!(pred.eval(&output_dir));
+        assert!(report_path.is_file());
         assert_eq!($loc_count, loci.len());
         assert_eq!($taxon_count, taxon.len());
         assert_eq!($loc_cols, locus_cols); // DNA chars = 18

@@ -39,7 +39,7 @@ pub fn parse_cli() {
     logger::init_logger(&args.log).expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
     commands::match_cli_subcommand(&args.subcommand);
-    log::info!("{:18}: {}", "Log file", &args.log.display());
+    log::info!("{:18}: {}", "Log file", args.log.display());
     let duration = time.elapsed();
     println!();
     utils::print_execution_time(duration);
@@ -95,13 +95,24 @@ trait InputCli {
         let files: Vec<PathBuf> = inputs
             .iter()
             .flat_map(|i| {
-                glob(i)
+                let matches = glob(i)
                     .expect("Failed finding files")
                     .filter_map(|ok| ok.ok())
-                    .collect::<Vec<PathBuf>>()
+                    .collect::<Vec<PathBuf>>();
+                // A plain path that matches nothing is kept, so the task
+                // reports the missing file as it does on other platforms.
+                if matches.is_empty() && !i.contains(['*', '?', '[']) {
+                    vec![PathBuf::from(i.to_string())]
+                } else {
+                    matches
+                }
             })
             .collect();
-        assert!(!files.is_empty(), "Empty folders!");
+        assert!(
+            !files.is_empty(),
+            "No input files match {}",
+            inputs.join(", ")
+        );
         files
     }
 

@@ -20,6 +20,7 @@ use std::thread;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 
+use crate::helper::progress::{self, ProgressReporter};
 use crate::helper::types::{PhredOffset, SeqReadFmt};
 use crate::stats::common::StreamStats;
 use crate::stats::qscores::ReadQScore;
@@ -46,6 +47,8 @@ pub struct FastqAnalyzer<'a> {
     /// Distinct sequences kept to estimate duplication. Zero keeps all.
     dup_sketch_size: usize,
     chunk_size: usize,
+    /// Checked before each block, so a cancelled run stops mid-file.
+    progress: Option<&'a dyn ProgressReporter>,
 }
 
 impl<'a> FastqAnalyzer<'a> {
@@ -57,7 +60,14 @@ impl<'a> FastqAnalyzer<'a> {
             threads,
             dup_sketch_size: DEFAULT_DUP_SKETCH_SIZE,
             chunk_size: chunk_size_for(threads),
+            progress: None,
         }
+    }
+
+    /// Stop reading with [`progress::Cancelled`] once `reporter` is cancelled.
+    pub fn with_progress(mut self, reporter: Option<&'a dyn ProgressReporter>) -> Self {
+        self.progress = reporter;
+        self
     }
 
     /// Keep this many distinct sequences to estimate duplication, or zero
@@ -95,6 +105,7 @@ impl<'a> FastqAnalyzer<'a> {
             PhredOffset::Phred64 => 64,
         };
         let complete = self.complete;
+        let reporter = self.progress;
         // Files summarized together share the memory budget.
         let capacity = self.threads.max(1) * QUEUED_CHUNKS_PER_THREAD;
         let (sender, receiver) = sync_channel(capacity);
@@ -112,6 +123,7 @@ impl<'a> FastqAnalyzer<'a> {
                 .try_fold(
                     || ReadAccumulator::new(complete, offset),
                     |mut acc, chunk| {
+                        progress::check_cancelled(reporter)?;
                         acc.add_chunk(&chunk.data, chunk.first_read, duplicates)?;
                         recycle(&recycle_sender, chunk.data);
                         Ok::<_, anyhow::Error>(acc)
@@ -141,11 +153,22 @@ impl<'a> FastqAnalyzer<'a> {
 
 /// Count the reads in a FASTQ file without parsing them.
 pub fn count_reads(path: &Path, decode_threads: usize) -> Result<usize> {
+    count_reads_with_progress(path, decode_threads, None)
+}
+
+/// Same as [`count_reads`], but stops with [`progress::Cancelled`] once
+/// `reporter` is cancelled.
+pub(crate) fn count_reads_with_progress(
+    path: &Path,
+    decode_threads: usize,
+    reporter: Option<&dyn ProgressReporter>,
+) -> Result<usize> {
     let mut reader = open_fastq(path, decode_threads)?;
     let mut buffer = vec![0u8; chunk_size_for(decode_threads)];
     let mut lines = 0;
     let mut last = None;
     loop {
+        progress::check_cancelled(reporter)?;
         let n = match reader.read(&mut buffer) {
             Ok(0) => break,
             Ok(n) => n,

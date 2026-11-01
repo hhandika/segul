@@ -448,7 +448,7 @@ impl<'s> SummaryWriter<'s> {
         );
         writeln!(writer, "{}", max_site)?;
 
-        let mean_site = format!("{:18}: {:.2} bp", "Mean length", &self.site.mean_sites);
+        let mean_site = format!("{:18}: {:.2} bp", "Mean length", self.site.mean_sites);
 
         writeln!(writer, "{}", mean_site)?;
 
@@ -551,7 +551,7 @@ impl<'s> SummaryWriter<'s> {
 
         writeln!(writer, "{}", max_cons_site)?;
 
-        let mean_cons_site = format!("{:18}: {:.2}", "Mean con. sites", &self.site.mean_cons_site);
+        let mean_cons_site = format!("{:18}: {:.2}", "Mean con. sites", self.site.mean_cons_site);
 
         writeln!(writer, "{}", mean_cons_site)?;
 
@@ -611,7 +611,7 @@ impl<'s> SummaryWriter<'s> {
 
         writeln!(writer, "{}", max_var_site)?;
 
-        let mean_var_site = format!("{:18}: {:.2}", "Mean var. sites", &self.site.mean_var_site);
+        let mean_var_site = format!("{:18}: {:.2}", "Mean var. sites", self.site.mean_var_site);
 
         writeln!(writer, "{}", mean_var_site)?;
 
@@ -670,7 +670,7 @@ impl<'s> SummaryWriter<'s> {
 
         writeln!(writer, "{}", max_inf_site)?;
 
-        let mean_inf_site = format!("{:18}: {:.2}", "Mean inf. sites", &self.site.mean_inf_site);
+        let mean_inf_site = format!("{:18}: {:.2}", "Mean inf. sites", self.site.mean_inf_site);
         writeln!(writer, "{}", mean_inf_site)?;
 
         log::info!("");

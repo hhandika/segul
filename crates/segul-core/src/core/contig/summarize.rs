@@ -1,13 +1,17 @@
 //! Handler for summarizing contig files
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::channel;
 
+use anyhow::{Result, bail};
 use colored::Colorize;
 use rayon::prelude::*;
 
 use crate::writer::contigs::ContigSummaryWriter;
 use crate::{
-    helper::{types::ContigFmt, utils::set_spinner},
+    helper::{
+        progress::{self, ProgressReporter},
+        types::ContigFmt,
+        utils::set_spinner,
+    },
     stats::contigs::ContigSummary,
 };
 
@@ -20,6 +24,8 @@ pub struct ContigSummaryHandler<'a> {
     output: &'a Path,
     /// Output file prefix
     prefix: Option<&'a str>,
+    /// Receives per-file progress and can cancel the run.
+    progress: Option<&'a dyn ProgressReporter>,
 }
 
 impl<'a> ContigSummaryHandler<'a> {
@@ -34,39 +40,46 @@ impl<'a> ContigSummaryHandler<'a> {
             input_fmt,
             output,
             prefix,
+            progress: None,
         }
+    }
+
+    /// Report per-file progress to `reporter`, which can also cancel the run.
+    pub fn with_progress(mut self, reporter: &'a dyn ProgressReporter) -> Self {
+        self.progress = Some(reporter);
+        self
     }
 
     /// Summarize the contig files. Returns the path of the summary file.
     pub fn summarize(&self) -> PathBuf {
-        let spin = set_spinner();
-        spin.set_message("Calculating summary of contig files");
-        let contig_summary = self.summarize_contigs();
-        let writer = ContigSummaryWriter::new(&contig_summary, self.output, self.prefix);
-        spin.set_message("Writing records\n");
-        let output = writer.write().expect("Failed writing to file");
-        spin.finish_with_message("Finished processing contig files\n");
-        self.print_input_info();
-        output
+        self.try_summarize()
+            .unwrap_or_else(|error| panic!("Failed summarizing contigs: {:#}", error))
     }
 
-    fn summarize_contigs(&self) -> Vec<ContigSummary> {
+    /// Same as [`Self::summarize`], but returns errors, including
+    /// [`progress::Cancelled`] when the progress reporter stops the run.
+    pub fn try_summarize(&self) -> Result<PathBuf> {
+        let spin = set_spinner();
+        spin.set_message("Calculating summary of contig files");
+        let contig_summary = self.summarize_contigs()?;
+        let writer = ContigSummaryWriter::new(&contig_summary, self.output, self.prefix);
+        spin.set_message("Writing records\n");
+        progress::report_stage(self.progress, "Writing records");
+        let output = writer.write()?;
+        spin.finish_with_message("Finished processing contig files\n");
+        self.print_input_info();
+        Ok(output)
+    }
+
+    fn summarize_contigs(&self) -> Result<Vec<ContigSummary>> {
         if self.files.is_empty() {
-            panic!("No contig files found")
+            bail!("No contig files found")
         }
-
-        if self.files.len() == 1 {
-            return vec![self.process_contigs(&self.files[0])];
-        }
-
-        let (sender, receiver) = channel();
-
-        self.files.par_iter().for_each_with(sender, |s, p| {
-            let summary = self.process_contigs(p);
-            s.send(summary).expect("Failed sending data");
-        });
-
-        receiver.iter().collect()
+        progress::report_start(self.progress, self.files.len());
+        self.files
+            .par_iter()
+            .map(|path| progress::track(self.progress, path, || Ok(self.process_contigs(path))))
+            .collect()
     }
 
     fn process_contigs(&self, input: &Path) -> ContigSummary {

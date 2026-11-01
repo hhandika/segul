@@ -160,7 +160,7 @@ impl<'a> SequenceAddition<'a> {
                     }
                 }
                 None => {
-                    log::warn!("No destination file found for {}. Skipping...", &input_stem);
+                    log::warn!("No destination file found for {}. Skipping...", input_stem);
                     counter
                         .lock()
                         .expect("Failed to lock counter.")

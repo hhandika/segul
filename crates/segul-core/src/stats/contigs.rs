@@ -133,10 +133,7 @@ impl ContigSummary {
         self.a_count += total(b'A') + total(b'a');
         self.t_count += total(b'T') + total(b't');
         self.n_count += total(b'N') + total(b'n');
-        let known = [b'G', b'g', b'C', b'c', b'A', b'a', b'T', b't', b'N', b'n']
-            .iter()
-            .map(|&b| total(b))
-            .sum::<usize>();
+        let known = b"GgCcAaTtNn".iter().map(|&b| total(b)).sum::<usize>();
         self.unknown += all - known;
     }
 
@@ -195,14 +192,14 @@ impl ContigSummary {
 }
 
 fn count_bytes(seq: &[u8], counts: &mut [[usize; 256]; 4]) {
-    let mut chunks = seq.chunks_exact(4);
-    for c in &mut chunks {
+    let (chunks, remainder) = seq.as_chunks::<4>();
+    for c in chunks {
         counts[0][c[0] as usize] += 1;
         counts[1][c[1] as usize] += 1;
         counts[2][c[2] as usize] += 1;
         counts[3][c[3] as usize] += 1;
     }
-    for &b in chunks.remainder() {
+    for &b in remainder {
         counts[0][b as usize] += 1;
     }
 }

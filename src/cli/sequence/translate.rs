@@ -55,7 +55,7 @@ impl<'a> TranslateParser<'a> {
         let translate = SequenceTranslation::new(&input_fmt, &table, &datatype, &output_fmt);
         match frame {
             Some(num) => {
-                log::info!("{:18}: {}\n", "Reading frame", &num);
+                log::info!("{:18}: {}\n", "Reading frame", num);
                 translate.translate(&files, num, &self.args.output);
             }
             None => {

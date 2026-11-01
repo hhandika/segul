@@ -63,7 +63,7 @@ impl<'a> ExtractParser<'a> {
 
         if let Some(id) = &self.args.id {
             let id_list = self.parse_id_opts(id);
-            log::info!("{:18}: {:?}\n", "IDs", &id_list);
+            log::info!("{:18}: {:?}\n", "IDs", id_list);
             self.params = SeqExtractionParameters::Id(id_list);
         }
 
