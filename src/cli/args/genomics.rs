@@ -62,13 +62,13 @@ pub(crate) struct SeqReadSummaryArgs {
             .map(|x| x.parse::<PhredOffset>().unwrap()))]
     pub(crate) phred: PhredOffset,
     #[arg(
-        long = "dup-sketch-size",
+        long = "dup-size",
         help = "Distinct sequences kept to estimate duplication in complete mode. \
             Larger is more accurate and uses about 30 bytes per sequence per thread. \
             0 counts every sequence exactly",
         default_value_t = DEFAULT_DUP_SKETCH_SIZE
     )]
-    pub(crate) dup_sketch_size: usize,
+    pub(crate) dup_size: usize,
     #[arg(
         short = 'o',
         long = "output",

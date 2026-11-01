@@ -44,7 +44,7 @@ impl<'a> ReadSummaryCliParser<'a> {
             prefix,
         )
         .with_phred(self.args.phred)
-        .with_dup_sketch_size(self.args.dup_sketch_size)
+        .with_dup_sketch_size(self.args.dup_size)
         .summarize();
         self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
             plot_read_summary(&outputs, writer)

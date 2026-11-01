@@ -104,10 +104,10 @@ fn test_read_summary_malformed() {
 }
 
 #[test]
-fn test_read_summary_dup_sketch_size() {
+fn test_read_summary_dup_size() {
     for size in ["0", "2"] {
         initiate_raw_cmd!(cmd, tmp_dir, QC_DIR);
-        cmd.args(["--mode", "complete", "--dup-sketch-size", size])
+        cmd.args(["--mode", "complete", "--dup-size", size])
             .assert()
             .success();
         let report =
