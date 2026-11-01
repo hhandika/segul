@@ -8,3 +8,4 @@ pub mod split;
 pub mod summarize;
 pub mod trim;
 pub mod unalign;
+pub mod view;
