@@ -1,6 +1,7 @@
 //! State and key handling of the summary viewer.
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
+use segul_core::color::Colormap;
 
 use super::data::{Column, SummaryData, SummaryTable};
 
@@ -18,6 +19,8 @@ pub(super) enum PlotKind {
     Bars,
     /// Items counted in ranges of the column's values.
     Histogram,
+    /// Every column, colored by value, one row per item.
+    Heatmap,
 }
 
 /// Selection and order of one table.
@@ -54,6 +57,8 @@ pub(super) struct App {
     pub(super) section: usize,
     pub(super) mode: Mode,
     pub(super) plot: PlotKind,
+    /// Colors of the heatmap.
+    pub(super) colormap: Colormap,
     pub(super) tables: Vec<TableState>,
     pub(super) show_help: bool,
     pub(super) should_quit: bool,
@@ -63,7 +68,7 @@ pub(super) struct App {
 }
 
 impl App {
-    pub(super) fn new(data: SummaryData, file_name: String) -> Self {
+    pub(super) fn new(data: SummaryData, file_name: String, colormap: Colormap) -> Self {
         let tables = data.tables.iter().map(TableState::new).collect();
         Self {
             data,
@@ -72,6 +77,7 @@ impl App {
             section: 1,
             mode: Mode::Table,
             plot: PlotKind::Bars,
+            colormap,
             tables,
             show_help: false,
             should_quit: false,
@@ -170,7 +176,8 @@ impl App {
         }
         self.plot = match self.plot {
             PlotKind::Bars => PlotKind::Histogram,
-            PlotKind::Histogram => PlotKind::Bars,
+            PlotKind::Histogram => PlotKind::Heatmap,
+            PlotKind::Heatmap => PlotKind::Bars,
         };
     }
 
@@ -292,7 +299,7 @@ mod test {
 
     #[test]
     fn test_sections_and_modes() {
-        let mut app = App::new(data(), String::from("report.json"));
+        let mut app = App::new(data(), String::from("report.json"), Colormap::Viridis);
         assert_eq!(app.section, 1);
         app.handle_key(key(KeyCode::Tab));
         assert_eq!(app.section, 0);
@@ -306,6 +313,10 @@ mod test {
         assert_eq!(app.mode, Mode::Plot);
         app.handle_key(key(KeyCode::Char('h')));
         assert_eq!(app.plot, PlotKind::Histogram);
+        app.handle_key(key(KeyCode::Char('h')));
+        assert_eq!(app.plot, PlotKind::Heatmap);
+        app.handle_key(key(KeyCode::Char('h')));
+        assert_eq!(app.plot, PlotKind::Bars);
         app.handle_key(key(KeyCode::F(1)));
         assert!(app.show_help);
         app.handle_key(key(KeyCode::Esc));
@@ -316,7 +327,7 @@ mod test {
 
     #[test]
     fn test_sort_keeps_selection() {
-        let mut app = App::new(data(), String::from("report.json"));
+        let mut app = App::new(data(), String::from("report.json"), Colormap::Viridis);
         app.page_rows = 10;
         app.handle_key(key(KeyCode::Down));
         assert_eq!(app.selected(), Some(1));
@@ -338,7 +349,7 @@ mod test {
 
     #[test]
     fn test_scroll() {
-        let mut app = App::new(data(), String::from("report.json"));
+        let mut app = App::new(data(), String::from("report.json"), Colormap::Viridis);
         app.page_rows = 2;
         app.handle_key(key(KeyCode::End));
         assert_eq!(app.tables[0].row, 2);

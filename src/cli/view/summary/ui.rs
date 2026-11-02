@@ -26,12 +26,17 @@ const MAX_BINS: usize = 20;
 const MAX_BAR_WIDTH: usize = 9;
 // Lower three quarters of a cell, so bars on neighboring rows stay apart.
 const BAR: &str = "▆";
+/// Light line between table columns, so the chosen column stands apart.
+const SEPARATOR: &str = "│";
+/// Narrowest and widest heatmap cell, including the separator.
+const CELL_WIDTH: [usize; 2] = [3, 10];
+const HEAT: &str = "█";
 
 const HELP: &[(&str, &str)] = &[
     ("Tab / Shift+Tab", "Next or previous section"),
     ("1 to 9", "Go to a section"),
     ("v or F2", "Switch between table and plot"),
-    ("h", "Switch the plot between bars and histogram"),
+    ("h", "Cycle the plot: bars, histogram, heatmap"),
     ("Left / Right", "Choose a column"),
     ("s", "Sort by the column: highest, lowest, report order"),
     ("Up / Down", "Move the selection"),
@@ -82,6 +87,7 @@ pub(super) fn render(frame: &mut Frame, app: &mut App) {
         (_, Mode::Plot) => match app.plot {
             PlotKind::Bars => render_bars(frame, main, app),
             PlotKind::Histogram => render_histogram(frame, main, app),
+            PlotKind::Heatmap => render_heatmap(frame, main, app),
         },
     }
     render_status(frame, status, app);
@@ -136,6 +142,7 @@ fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
             mode.push(Span::from(match app.plot {
                 PlotKind::Bars => " (bars)",
                 PlotKind::Histogram => " (histogram)",
+                PlotKind::Heatmap => " (heatmap)",
             }));
         }
         frame.render_widget(Paragraph::new(Line::from(mode).right_aligned()), right);
@@ -227,10 +234,11 @@ fn render_table(frame: &mut Frame, area: Rect, app: &mut App) {
             _ => "",
         };
         let label = format!(
-            "{:>width$}",
+            "{:>width$} ",
             format!("{arrow}{}", column.label),
-            width = widths[c]
+            width = widths[c] - 2
         );
+        head.push(Span::from(SEPARATOR).dim());
         head.push(if c == state.column {
             Span::from(label).fg(accent()).bold()
         } else {
@@ -250,7 +258,8 @@ fn render_table(frame: &mut Frame, area: Rect, app: &mut App) {
                 truncate(&table.names[item], name_width)
             ))];
             for (c, column) in table.columns.iter().enumerate().take(last + 1).skip(first) {
-                let text = format!("{:>width$}", show(column, item), width = widths[c]);
+                let text = format!("{:>width$} ", show(column, item), width = widths[c] - 2);
+                spans.push(Span::from(SEPARATOR).dim());
                 spans.push(if c == state.column {
                     Span::from(text).fg(accent())
                 } else {
@@ -367,6 +376,111 @@ fn render_histogram(frame: &mut Frame, area: Rect, app: &mut App) {
     }
 }
 
+fn render_heatmap(frame: &mut Frame, area: Rect, app: &mut App) {
+    let [title, header, rows, legend] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(1),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    app.page_rows = rows.height as usize;
+    app.keep_row_visible();
+    let Some((table, state)) = app.table() else {
+        return;
+    };
+    if table.columns.is_empty() {
+        return;
+    }
+    let truecolor = is_truecolor();
+    let name_width = name_width(table);
+    let used = name_width + 1;
+    let cell = (area.width as usize)
+        .saturating_sub(used)
+        .checked_div(table.columns.len())
+        .unwrap_or(0)
+        .clamp(CELL_WIDTH[0], CELL_WIDTH[1]);
+    let widths = vec![cell; table.columns.len()];
+    let first = first_visible_column(&widths, used, area.width as usize, state.column);
+    let last = last_visible_column(&widths, used, area.width as usize, first);
+    let more = match widths.len().saturating_sub(last + 1) + first {
+        0 => String::new(),
+        1 => String::from(" · 1 more column"),
+        n => format!(" · {n} more columns"),
+    };
+    let heading = Line::from(vec![
+        Span::from(format!(" {} by column", table.name)).bold(),
+        Span::from(format!("{more} · ← → column · s sort · h bars · v table")).dim(),
+    ]);
+    frame.render_widget(Paragraph::new(heading), title);
+    let mut head = vec![Span::from(format!(" {:name_width$}", table.item)).bold()];
+    for (c, column) in table.columns.iter().enumerate().take(last + 1).skip(first) {
+        let label = format!(
+            "{:cell$}",
+            truncate(column.label, cell - 1),
+            cell = cell - 1
+        );
+        head.push(Span::from(SEPARATOR).dim());
+        head.push(if c == state.column {
+            Span::from(label).fg(accent()).bold()
+        } else {
+            Span::from(label).bold()
+        });
+    }
+    frame.render_widget(Paragraph::new(Line::from(head)), header);
+    let ranges: Vec<Option<(f64, f64)>> = table.columns.iter().map(value_range).collect();
+    let lines: Vec<Line> = state
+        .order
+        .iter()
+        .enumerate()
+        .skip(state.offset)
+        .take(rows.height as usize)
+        .map(|(position, &item)| {
+            let name = Span::from(format!(
+                " {:name_width$}",
+                truncate(&table.names[item], name_width)
+            ));
+            let mut spans = vec![if position == state.row {
+                name.add_modifier(Modifier::REVERSED)
+            } else {
+                name
+            }];
+            for (c, column) in table.columns.iter().enumerate().take(last + 1).skip(first) {
+                spans.push(Span::from(SEPARATOR).dim());
+                spans.push(match (column.values[item], ranges[c]) {
+                    (Some(value), Some((min, max))) => {
+                        let color = app.colormap.at(scale(value, min, max));
+                        Span::from(HEAT.repeat(cell - 1)).fg(to_color(color, truecolor))
+                    }
+                    _ => Span::from(format!("{:^width$}", "·", width = cell - 1)).dim(),
+                });
+            }
+            Line::from(spans)
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(lines), rows);
+    let mut key = vec![Span::from(" low ").dim()];
+    key.extend(
+        app.colormap
+            .stops(8)
+            .into_iter()
+            .map(|color| Span::from(HEAT).fg(to_color(color, truecolor))),
+    );
+    key.push(Span::from(" high · scaled per column").dim());
+    if let (Some(item), Some(column)) = (app.selected(), app.column()) {
+        key.push(
+            Span::from(format!(
+                " · {} {}: {}",
+                table.names[item],
+                column.label,
+                show(column, item)
+            ))
+            .dim(),
+        );
+    }
+    frame.render_widget(Paragraph::new(Line::from(key)), legend);
+}
+
 fn render_status(frame: &mut Frame, area: Rect, app: &App) {
     let left = match (&app.message, app.table()) {
         (Some(message), _) => Line::from(format!(" {message}")).fg(accent()),
@@ -447,7 +561,8 @@ fn plot_title<'a>(app: &App, table: &'a SummaryTable, column: &'a Column) -> Lin
     };
     let hint = match app.plot {
         PlotKind::Bars => " · h histogram · v table",
-        PlotKind::Histogram => " · h bars · v table",
+        PlotKind::Histogram => " · h heatmap · v table",
+        PlotKind::Heatmap => " · h bars · v table",
     };
     Line::from(vec![
         Span::from(format!(
@@ -543,6 +658,23 @@ fn bar(value: f64, largest: f64, width: usize) -> String {
     }
     let cells = ((value / largest).min(1.0) * width as f64).round() as usize;
     BAR.repeat(cells.max(1))
+}
+
+/// Lowest and highest value of [column], or none if it has no values.
+fn value_range(column: &Column) -> Option<(f64, f64)> {
+    let mut values = column.values.iter().flatten().copied();
+    let first = values.next()?;
+    Some(values.fold((first, first), |(min, max), v| (min.min(v), max.max(v))))
+}
+
+/// Position of [value] from [min] (0) to [max] (1). Columns with one value
+/// throughout sit in the middle of the colormap.
+fn scale(value: f64, min: f64, max: f64) -> f64 {
+    if max > min {
+        (value - min) / (max - min)
+    } else {
+        0.5
+    }
 }
 
 fn show(column: &Column, item: usize) -> String {
@@ -708,6 +840,7 @@ mod test {
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
+    use segul_core::color::Colormap;
 
     use super::super::data::SummaryData;
 
@@ -738,7 +871,11 @@ mod test {
             "crates/segul-core/tests/files/plot/alignment-report.json",
         ))
         .unwrap();
-        let mut app = App::new(data, String::from("alignment-report.json"));
+        let mut app = App::new(
+            data,
+            String::from("alignment-report.json"),
+            Colormap::Viridis,
+        );
         let text = screen(&mut app);
         assert!(text.contains("alignment-report.json"));
         assert!(text.contains("3 taxa · 4 loci · DNA"));
@@ -746,6 +883,7 @@ mod test {
         assert!(text.contains("gene_1"));
         assert!(text.contains("Informative"));
         assert!(text.contains("gene_1 · Taxa: 1 · 1 of 4"));
+        assert!(text.contains(SEPARATOR));
 
         press(&mut app, KeyCode::Char('v'));
         let text = screen(&mut app);
@@ -756,6 +894,13 @@ mod test {
         let text = screen(&mut app);
         assert!(text.contains("(histogram)"));
         assert!(text.contains("Selected gene_1"));
+
+        press(&mut app, KeyCode::Char('h'));
+        let text = screen(&mut app);
+        assert!(text.contains("(heatmap)"));
+        assert!(text.contains("Loci by column"));
+        assert!(text.contains("scaled per column"));
+        assert!(text.contains(HEAT));
 
         press(&mut app, KeyCode::Char('1'));
         let text = screen(&mut app);
@@ -773,7 +918,7 @@ mod test {
             "crates/segul-core/tests/files/plot/read-report.json",
         ))
         .unwrap();
-        let mut app = App::new(data, String::from("read-report.json"));
+        let mut app = App::new(data, String::from("read-report.json"), Colormap::Viridis);
         let text = screen(&mut app);
         assert!(text.contains("Read summary"));
         assert!(text.contains("Samples ("));
@@ -820,6 +965,19 @@ mod test {
         let bins = Histogram::of(&[0.5, 1.2, 9.9], 5);
         assert_eq!(bins.label(0, Format::Decimal), "0-2");
         assert_eq!(bins.counts.iter().sum::<u64>(), 3);
+    }
+
+    #[test]
+    fn test_scale() {
+        assert_eq!(scale(5.0, 0.0, 10.0), 0.5);
+        assert_eq!(scale(10.0, 0.0, 10.0), 1.0);
+        assert_eq!(scale(3.0, 3.0, 3.0), 0.5);
+        let column = Column {
+            label: "GC %",
+            values: vec![Some(40.0), None, Some(45.0), Some(30.0)],
+            format: Format::Decimal,
+        };
+        assert_eq!(value_range(&column), Some((30.0, 45.0)));
     }
 
     #[test]

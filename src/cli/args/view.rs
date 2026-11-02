@@ -2,6 +2,7 @@ use clap::builder::TypedValueParser as _;
 use std::path::PathBuf;
 
 use clap::{Args, Subcommand, builder};
+use segul_core::color::Colormap;
 
 use super::IOArgs;
 
@@ -80,4 +81,15 @@ pub(crate) struct ViewSummaryArgs {
         value_parser = builder::PossibleValuesParser::new(["dark", "light"]),
     )]
     pub(crate) theme: String,
+    #[arg(
+        long,
+        help = "Colormap for the heatmap",
+        default_value_t = Colormap::Viridis,
+        value_parser = builder::PossibleValuesParser::new([
+            "viridis", "cividis", "magma", "inferno", "plasma", "blues", "greens",
+            "ylgnbu", "ylorrd", "rdbu", "puor", "brbg",
+        ])
+            .map(|x| x.parse::<Colormap>().expect("Invalid colormap")),
+    )]
+    pub(crate) colormap: Colormap,
 }

@@ -39,7 +39,7 @@ impl<'a> SummaryViewParser<'a> {
             .unwrap_or_default();
         let theme = self.args.theme.parse::<Theme>().unwrap_or(Theme::Dark);
         ui::set_accent(theme);
-        let mut app = App::new(data, file_name);
+        let mut app = App::new(data, file_name, self.args.colormap);
         run(&mut app).expect("Failed running the summary viewer");
     }
 }
