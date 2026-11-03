@@ -6,10 +6,14 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 
 use crate::stats::align_report::{AlignReport, SiteTypeSummary};
+use crate::stats::distance_report::{DistanceReport, PairStats};
 use crate::stats::fastq::report::ReadReport;
 
-/// A report ready to show: overview values and charts, and one table per
-/// kind of item, such as loci and taxa.
+/// Most bars in the pairwise distance histogram.
+const DISTANCE_BINS: usize = 20;
+
+/// A report ready to show: overview values and charts, one table per
+/// kind of item, such as loci and taxa, and any square matrices.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct SummaryData {
     /// What the report summarizes, such as "Alignment summary".
@@ -19,6 +23,21 @@ pub(super) struct SummaryData {
     pub(super) overview: Vec<(String, String)>,
     pub(super) charts: Vec<Chart>,
     pub(super) tables: Vec<SummaryTable>,
+    /// Shown after the tables.
+    pub(super) matrices: Vec<SummaryMatrix>,
+}
+
+/// Values for every pair of items, such as distances between samples.
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct SummaryMatrix {
+    /// Name of the matrix, such as "Matrix".
+    pub(super) name: &'static str,
+    /// Plural name of the items, such as "samples".
+    pub(super) item: &'static str,
+    pub(super) names: Vec<String>,
+    /// `values[i][j]` is the value of items `i` and `j`.
+    pub(super) values: Vec<Vec<Option<f64>>>,
+    pub(super) format: Format,
 }
 
 /// Labeled values drawn as bars on the overview.
@@ -57,6 +76,8 @@ pub(super) enum Format {
     Count,
     /// One decimal.
     Decimal,
+    /// Four decimals, for genetic distances.
+    Distance,
 }
 
 impl Format {
@@ -64,6 +85,7 @@ impl Format {
         match self {
             Format::Count => thousands(value.round() as i128),
             Format::Decimal => format!("{:.1}", value),
+            Format::Distance => format!("{:.4}", value),
         }
     }
 }
@@ -85,7 +107,8 @@ pub(super) fn thousands(value: i128) -> String {
 }
 
 impl SummaryData {
-    /// Read an alignment or read report, telling them apart by content.
+    /// Read an alignment, read, or distance report, telling them apart by
+    /// content.
     pub(super) fn from_path(path: &Path) -> Result<Self> {
         let text = fs::read_to_string(path)
             .with_context(|| format!("Failed reading {}", path.display()))?;
@@ -95,10 +118,14 @@ impl SummaryData {
         if let Ok(report) = ReadReport::from_json(&text) {
             return Ok(Self::from_reads(&report));
         }
+        if let Ok(report) = DistanceReport::from_json(&text) {
+            return Ok(Self::from_distance(&report));
+        }
         bail!(
             "{} is not a segul summary report. Use alignment-report.json from \
-            `segul align summary` or read-report.json from \
-            `segul read summary --mode complete`.",
+            `segul align summary`, read-report.json from \
+            `segul read summary --mode complete`, or distance-report.json from \
+            `segul align distance`.",
             path.display()
         )
     }
@@ -273,6 +300,7 @@ impl SummaryData {
                     columns: taxa_columns,
                 },
             ],
+            matrices: Vec::new(),
         }
     }
 
@@ -369,9 +397,259 @@ impl SummaryData {
                 names: samples.iter().map(|s| s.sample.clone()).collect(),
                 columns,
             }],
+            matrices: Vec::new(),
+        }
+    }
+
+    pub(super) fn from_distance(report: &DistanceReport) -> Self {
+        let s = &report.summary;
+        let is_dna = report.datatype == "dna";
+        let count = |n: usize| thousands(n as i128);
+        let distance = |d: Option<f64>| d.map_or_else(|| String::from("-"), |d| format!("{d:.4}"));
+        let mut overview = vec![
+            (
+                String::from("Data type"),
+                String::from(if is_dna { "DNA" } else { "Amino acid" }),
+            ),
+            (String::from("Model"), report.model.clone()),
+            (String::from("Loci"), count(s.loci)),
+            (String::from("Samples"), count(s.samples)),
+            (String::from("Pairs"), count(s.pairs)),
+            (String::from("Undefined pairs"), count(s.undefined_pairs)),
+            (
+                String::from("Distance"),
+                format!(
+                    "{} to {}, mean {} (SD {})",
+                    distance(s.min),
+                    distance(s.max),
+                    distance(s.mean),
+                    distance(s.sd)
+                ),
+            ),
+            (
+                String::from("Median locus mean"),
+                distance(s.median_locus_mean),
+            ),
+            (
+                String::from("Compared sites"),
+                s.mean_compared_sites
+                    .map_or_else(|| String::from("-"), |n| format!("{n:.1} per pair")),
+            ),
+        ];
+        if let Some(groups) = s.groups {
+            overview.push((String::from("Groups"), count(groups)));
+            overview.push((String::from("Unassigned samples"), count(s.unassigned)));
+        }
+        let (labels, values) = distance_bars(report);
+        let charts = vec![Chart {
+            title: String::from("Pairwise distances, all loci"),
+            labels,
+            values,
+            format: Format::Count,
+        }];
+        let counts = |values: Vec<usize>| values.into_iter().map(|v| Some(v as f64)).collect();
+        let column = |label: &'static str, values: Vec<Option<f64>>| Column {
+            label,
+            values,
+            format: Format::Distance,
+        };
+        let loci = &report.loci;
+        let loci_columns = vec![
+            Column {
+                label: "Samples",
+                values: counts(loci.iter().map(|l| l.ntax).collect()),
+                format: Format::Count,
+            },
+            Column {
+                label: "Sites",
+                values: counts(loci.iter().map(|l| l.nchar).collect()),
+                format: Format::Count,
+            },
+            Column {
+                label: "Pairs",
+                values: counts(loci.iter().map(|l| l.pairs).collect()),
+                format: Format::Count,
+            },
+            Column {
+                label: "Undefined",
+                values: counts(loci.iter().map(|l| l.undefined_pairs).collect()),
+                format: Format::Count,
+            },
+            column("Mean", loci.iter().map(|l| l.mean).collect()),
+            column("Median", loci.iter().map(|l| l.median).collect()),
+            column("SD", loci.iter().map(|l| l.sd).collect()),
+            column("Min", loci.iter().map(|l| l.min).collect()),
+            column("Max", loci.iter().map(|l| l.max).collect()),
+            Column {
+                label: "Compared sites",
+                values: loci.iter().map(|l| l.mean_compared_sites).collect(),
+                format: Format::Decimal,
+            },
+        ];
+        let samples = &report.samples;
+        let mut sample_columns = vec![
+            Column {
+                label: "Loci",
+                values: counts(samples.iter().map(|s| s.loci).collect()),
+                format: Format::Count,
+            },
+            Column {
+                label: "Pairs",
+                values: counts(samples.iter().map(|s| s.stats.pairs).collect()),
+                format: Format::Count,
+            },
+            column("Mean", samples.iter().map(|s| s.stats.mean).collect()),
+            column("SD", samples.iter().map(|s| s.stats.sd).collect()),
+            column("Min", samples.iter().map(|s| s.stats.min).collect()),
+            column("Max", samples.iter().map(|s| s.stats.max).collect()),
+        ];
+        if report.matrix.is_some() {
+            sample_columns.push(column(
+                "Nearest",
+                samples.iter().map(|s| s.nearest_distance).collect(),
+            ));
+        }
+        if report.matrix.is_some() && report.groups.is_some() {
+            sample_columns.push(column(
+                "Max within",
+                samples.iter().map(|s| s.max_within).collect(),
+            ));
+            sample_columns.push(column(
+                "Min between",
+                samples.iter().map(|s| s.min_between).collect(),
+            ));
+        }
+        let mut tables = vec![
+            SummaryTable {
+                name: "Loci",
+                item: "Locus",
+                names: loci.iter().map(|l| l.name.clone()).collect(),
+                columns: loci_columns,
+            },
+            SummaryTable {
+                name: "Samples",
+                item: "Sample",
+                names: samples.iter().map(|s| s.name.clone()).collect(),
+                columns: sample_columns,
+            },
+        ];
+        let mut matrices = Vec::new();
+        if let Some(matrix) = &report.matrix {
+            matrices.push(SummaryMatrix {
+                name: "Matrix",
+                item: "samples",
+                names: matrix.names.clone(),
+                values: matrix.mean.clone(),
+                format: Format::Distance,
+            });
+        }
+        if let Some(groups) = &report.groups {
+            let names: Vec<String> = groups.groups.iter().map(|g| g.name.clone()).collect();
+            let mut means = vec![vec![None; names.len()]; names.len()];
+            let position = |name: &str| names.iter().position(|n| n == name);
+            for pair in &groups.pairs {
+                if let (Some(i), Some(j)) = (position(&pair.group_1), position(&pair.group_2)) {
+                    means[i][j] = pair.stats.mean;
+                    means[j][i] = pair.stats.mean;
+                }
+            }
+            // Lowest mean distance to any other group.
+            let nearest: Vec<Option<f64>> = (0..names.len())
+                .map(|i| {
+                    (0..names.len())
+                        .filter(|&j| j != i)
+                        .filter_map(|j| means[i][j])
+                        .reduce(f64::min)
+                })
+                .collect();
+            let within = |value: fn(&PairStats) -> Option<f64>| {
+                groups.groups.iter().map(|g| value(&g.within)).collect()
+            };
+            tables.push(SummaryTable {
+                name: "Groups",
+                item: "Group",
+                names: names.clone(),
+                columns: vec![
+                    Column {
+                        label: "Samples",
+                        values: counts(groups.groups.iter().map(|g| g.samples).collect()),
+                        format: Format::Count,
+                    },
+                    Column {
+                        label: "Pairs",
+                        values: counts(groups.groups.iter().map(|g| g.within.pairs).collect()),
+                        format: Format::Count,
+                    },
+                    column("Mean within", within(|w| w.mean)),
+                    column("SD within", within(|w| w.sd)),
+                    column("Max within", within(|w| w.max)),
+                    column("Nearest group", nearest),
+                ],
+            });
+            matrices.push(SummaryMatrix {
+                name: "Group matrix",
+                item: "groups",
+                names,
+                values: means,
+                format: Format::Distance,
+            });
+        }
+        Self {
+            kind: "Distance summary",
+            headline: format!(
+                "{} samples · {} loci · {}",
+                count(s.samples),
+                count(s.loci),
+                report.model
+            ),
+            overview,
+            charts,
+            tables,
+            matrices,
         }
     }
 }
+
+/// Labels and counts of the pairwise distance histogram in at most
+/// [`DISTANCE_BINS`] bars of a round width.
+fn distance_bars(report: &DistanceReport) -> (Vec<String>, Vec<f64>) {
+    let histogram = &report.histogram;
+    let counts = &histogram.counts;
+    if counts.is_empty() || histogram.bin_width <= 0.0 {
+        return (Vec::new(), Vec::new());
+    }
+    let width = histogram.bin_width;
+    let step = round_step(counts.len() as f64 * width / DISTANCE_BINS as f64).max(width);
+    let per_bar = (step / width).round().max(1.0) as usize;
+    let decimals = (-step.log10().floor()).max(0.0) as usize;
+    counts
+        .chunks(per_bar)
+        .enumerate()
+        .map(|(i, bins)| {
+            let from = i as f64 * per_bar as f64 * width;
+            let to = from + per_bar as f64 * width;
+            (
+                format!("{from:.decimals$}-{to:.decimals$}"),
+                bins.iter().sum::<usize>() as f64,
+            )
+        })
+        .unzip()
+}
+
+/// A width of 1, 2, or 5 times a power of ten, at least [raw].
+pub(super) fn round_step(raw: f64) -> f64 {
+    if raw <= 0.0 {
+        return 1.0;
+    }
+    let scale = 10_f64.powf(raw.log10().floor());
+    [1.0, 2.0, 5.0, 10.0]
+        .into_iter()
+        .map(|s| s * scale)
+        .find(|&s| s >= raw)
+        .unwrap_or(10.0 * scale)
+}
+
+impl SummaryData {}
 
 /// Chart label of an alignment character, naming gaps (`-`) and missing
 /// data (`?`).
@@ -389,6 +667,7 @@ mod test {
 
     const ALIGN: &str = "crates/segul-core/tests/files/plot/alignment-report.json";
     const READS: &str = "crates/segul-core/tests/files/plot/read-report.json";
+    const DISTANCE: &str = "crates/segul-core/tests/files/plot/distance-report.json";
 
     #[test]
     fn test_character_label() {
@@ -423,6 +702,32 @@ mod test {
     }
 
     #[test]
+    fn test_distance_report() {
+        let data = SummaryData::from_path(Path::new(DISTANCE)).expect("Failed reading fixture");
+        assert_eq!(data.kind, "Distance summary");
+        assert_eq!(data.headline, "6 samples · 3 loci · K2P");
+        let names: Vec<&str> = data.tables.iter().map(|t| t.name).collect();
+        assert_eq!(names, ["Loci", "Samples", "Groups"]);
+        let samples = &data.tables[1];
+        assert_eq!(samples.names[0], "Mus_musculus_A");
+        assert_eq!(samples.columns.last().unwrap().label, "Min between");
+        let groups = &data.tables[2];
+        assert_eq!(groups.names.len(), 3);
+        assert_eq!(data.matrices.len(), 2);
+        let matrix = &data.matrices[0];
+        assert_eq!(matrix.names.len(), 6);
+        assert_eq!(matrix.values[0][0], Some(0.0));
+        let means = &data.matrices[1];
+        assert_eq!(means.values[0][1], means.values[1][0]);
+        assert!(means.values[0][0].is_some());
+        let chart = &data.charts[0];
+        assert!(chart.values.len() <= DISTANCE_BINS);
+        assert_eq!(chart.values.iter().sum::<f64>(), 31.0);
+        assert_eq!(chart.labels[0], "0.00-0.05");
+        assert!(data.overview.iter().any(|(k, v)| k == "Groups" && v == "3"));
+    }
+
+    #[test]
     fn test_other_json() {
         let dir = tempfile::TempDir::with_prefix("view").unwrap();
         let path = dir.path().join("other.json");
@@ -438,5 +743,7 @@ mod test {
         assert_eq!(thousands(1_234_567), "1,234,567");
         assert_eq!(thousands(-1_000), "-1,000");
         assert_eq!(Format::Decimal.show(2.345), "2.3");
+        assert_eq!(Format::Distance.show(0.123456), "0.1235");
+        assert_eq!(round_step(0.04), 0.05);
     }
 }

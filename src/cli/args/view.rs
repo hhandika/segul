@@ -70,8 +70,9 @@ pub(crate) struct ViewSummaryArgs {
         short = 'i',
         long = "input",
         value_name = "REPORT",
-        help = "alignment-report.json from `segul align summary` or read-report.json \
-        from `segul read summary --mode complete`"
+        help = "alignment-report.json from `segul align summary`, read-report.json \
+        from `segul read summary --mode complete`, or distance-report.json from \
+        `segul align distance`"
     )]
     pub(crate) input: PathBuf,
     #[arg(

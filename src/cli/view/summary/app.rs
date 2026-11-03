@@ -3,7 +3,7 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use segul_core::color::Colormap;
 
-use super::data::{Column, SummaryData, SummaryTable};
+use super::data::{Column, SummaryData, SummaryMatrix, SummaryTable};
 
 /// How a table section shows its items.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -50,26 +50,48 @@ impl TableState {
     }
 }
 
+/// Cursor and scroll of one matrix.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub(super) struct MatrixState {
+    pub(super) row: usize,
+    pub(super) column: usize,
+    /// First visible row and column.
+    pub(super) row_offset: usize,
+    pub(super) column_offset: usize,
+}
+
+/// What the open section shows.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) enum Section {
+    Overview,
+    Table(usize),
+    Matrix(usize),
+}
+
 pub(super) struct App {
     pub(super) data: SummaryData,
     pub(super) file_name: String,
-    /// 0 is the overview; tables follow.
+    /// 0 is the overview; tables follow, then matrices.
     pub(super) section: usize,
     pub(super) mode: Mode,
     pub(super) plot: PlotKind,
     /// Colors of the heatmap.
     pub(super) colormap: Colormap,
     pub(super) tables: Vec<TableState>,
+    pub(super) matrices: Vec<MatrixState>,
     pub(super) show_help: bool,
     pub(super) should_quit: bool,
     pub(super) message: Option<String>,
     /// Items that fit in the table or plot, set while drawing.
     pub(super) page_rows: usize,
+    /// Matrix columns that fit, set while drawing.
+    pub(super) page_columns: usize,
 }
 
 impl App {
     pub(super) fn new(data: SummaryData, file_name: String, colormap: Colormap) -> Self {
         let tables = data.tables.iter().map(TableState::new).collect();
+        let matrices = vec![MatrixState::default(); data.matrices.len()];
         Self {
             data,
             file_name,
@@ -79,21 +101,42 @@ impl App {
             plot: PlotKind::Bars,
             colormap,
             tables,
+            matrices,
             show_help: false,
             should_quit: false,
             message: None,
             page_rows: 1,
+            page_columns: 1,
         }
     }
 
     pub(super) fn sections(&self) -> usize {
-        self.data.tables.len() + 1
+        self.data.tables.len() + self.data.matrices.len() + 1
     }
 
-    /// The open table and its state, or none on the overview.
+    pub(super) fn open_section(&self) -> Section {
+        let tables = self.data.tables.len();
+        match self.section {
+            0 => Section::Overview,
+            s if s <= tables => Section::Table(s - 1),
+            s => Section::Matrix(s - 1 - tables),
+        }
+    }
+
+    /// The open table and its state, or none on other sections.
     pub(super) fn table(&self) -> Option<(&SummaryTable, &TableState)> {
-        let i = self.section.checked_sub(1)?;
+        let Section::Table(i) = self.open_section() else {
+            return None;
+        };
         Some((self.data.tables.get(i)?, self.tables.get(i)?))
+    }
+
+    /// The open matrix and its state, or none on other sections.
+    pub(super) fn matrix(&self) -> Option<(&SummaryMatrix, &MatrixState)> {
+        let Section::Matrix(i) = self.open_section() else {
+            return None;
+        };
+        Some((self.data.matrices.get(i)?, self.matrices.get(i)?))
     }
 
     /// The chosen column of the open table.
@@ -159,6 +202,10 @@ impl App {
     }
 
     fn toggle_mode(&mut self) {
+        if self.matrix().is_some() {
+            self.message = Some(String::from("A matrix has a single view"));
+            return;
+        }
         if self.table().is_none() {
             self.message = Some(String::from("Open a table with Tab to switch views"));
             return;
@@ -182,7 +229,14 @@ impl App {
     }
 
     fn move_column(&mut self, delta: isize) {
-        let Some(i) = self.section.checked_sub(1) else {
+        if let Section::Matrix(i) = self.open_section() {
+            let last = self.data.matrices[i].names.len().saturating_sub(1) as isize;
+            let state = &mut self.matrices[i];
+            state.column = (state.column as isize).saturating_add(delta).clamp(0, last) as usize;
+            self.keep_cell_visible();
+            return;
+        }
+        let Section::Table(i) = self.open_section() else {
             return;
         };
         let columns = self.data.tables[i].columns.len();
@@ -194,7 +248,14 @@ impl App {
     }
 
     fn move_row(&mut self, delta: isize) {
-        let Some(i) = self.section.checked_sub(1) else {
+        if let Section::Matrix(i) = self.open_section() {
+            let last = self.data.matrices[i].names.len().saturating_sub(1) as isize;
+            let state = &mut self.matrices[i];
+            state.row = (state.row as isize).saturating_add(delta).clamp(0, last) as usize;
+            self.keep_cell_visible();
+            return;
+        }
+        let Section::Table(i) = self.open_section() else {
             return;
         };
         let state = &mut self.tables[i];
@@ -206,7 +267,7 @@ impl App {
     /// Sorts by the chosen column, highest first, then lowest first, then
     /// back to the report order. The selected item stays selected.
     fn cycle_sort(&mut self) {
-        let Some(i) = self.section.checked_sub(1) else {
+        let Section::Table(i) = self.open_section() else {
             return;
         };
         let table = &self.data.tables[i];
@@ -246,7 +307,7 @@ impl App {
 
     /// Scrolls the open table so the selected item is in view.
     pub(super) fn keep_row_visible(&mut self) {
-        let Some(i) = self.section.checked_sub(1) else {
+        let Section::Table(i) = self.open_section() else {
             return;
         };
         let rows = self.page_rows.max(1);
@@ -258,6 +319,28 @@ impl App {
         }
         let last_page = state.order.len().saturating_sub(rows);
         state.offset = state.offset.min(last_page);
+    }
+
+    /// Scrolls the open matrix so the cursor cell is in view.
+    pub(super) fn keep_cell_visible(&mut self) {
+        let Section::Matrix(i) = self.open_section() else {
+            return;
+        };
+        let items = self.data.matrices[i].names.len();
+        let state = &mut self.matrices[i];
+        let scroll = |cursor: usize, offset: usize, page: usize| {
+            let page = page.max(1);
+            let offset = if cursor < offset {
+                cursor
+            } else if cursor >= offset + page {
+                cursor + 1 - page
+            } else {
+                offset
+            };
+            offset.min(items.saturating_sub(page))
+        };
+        state.row_offset = scroll(state.row, state.row_offset, self.page_rows);
+        state.column_offset = scroll(state.column, state.column_offset, self.page_columns);
     }
 }
 
@@ -290,6 +373,17 @@ mod test {
                     },
                 ],
             }],
+            matrices: vec![SummaryMatrix {
+                name: "Matrix",
+                item: "samples",
+                names: vec![String::from("a"), String::from("b"), String::from("c")],
+                values: vec![
+                    vec![Some(0.0), Some(0.1), None],
+                    vec![Some(0.1), Some(0.0), Some(0.2)],
+                    vec![None, Some(0.2), Some(0.0)],
+                ],
+                format: Format::Distance,
+            }],
         }
     }
 
@@ -301,6 +395,8 @@ mod test {
     fn test_sections_and_modes() {
         let mut app = App::new(data(), String::from("report.json"), Colormap::Viridis);
         assert_eq!(app.section, 1);
+        app.handle_key(key(KeyCode::Tab));
+        assert_eq!(app.section, 2);
         app.handle_key(key(KeyCode::Tab));
         assert_eq!(app.section, 0);
         // The overview has no plot of its own.
@@ -345,6 +441,30 @@ mod test {
         assert_eq!(app.tables[0].order, vec![2, 0, 1]);
         app.handle_key(key(KeyCode::Char('s')));
         assert_eq!(app.tables[0].order, vec![0, 2, 1]);
+    }
+
+    #[test]
+    fn test_matrix_cursor() {
+        let mut app = App::new(data(), String::from("report.json"), Colormap::Viridis);
+        app.handle_key(key(KeyCode::Char('3')));
+        assert_eq!(app.open_section(), Section::Matrix(0));
+        assert!(app.table().is_none());
+        app.page_rows = 2;
+        app.page_columns = 2;
+        app.handle_key(key(KeyCode::Right));
+        app.handle_key(key(KeyCode::Right));
+        app.handle_key(key(KeyCode::Down));
+        assert_eq!((app.matrices[0].row, app.matrices[0].column), (1, 2));
+        assert_eq!(app.matrices[0].column_offset, 1);
+        app.handle_key(key(KeyCode::End));
+        assert_eq!(app.matrices[0].row, 2);
+        assert_eq!(app.matrices[0].row_offset, 1);
+        app.handle_key(key(KeyCode::Char('v')));
+        assert_eq!(app.mode, Mode::Table);
+        assert!(app.message.is_some());
+        // Sorting does not apply to a matrix.
+        app.handle_key(key(KeyCode::Char('s')));
+        assert_eq!(app.tables[0].sort, None);
     }
 
     #[test]

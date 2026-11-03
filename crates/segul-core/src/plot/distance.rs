@@ -223,6 +223,7 @@ mod test {
             per_locus_dir: per_locus,
             group_mean: None,
             pairwise_long: Some(PathBuf::from("tests/files/plot/distance_pairwise_long.csv")),
+            report: dir.path().join("distance-report.json"),
         };
         let written = plot_distance(&files, &writer);
         assert_eq!(written.len(), 5);

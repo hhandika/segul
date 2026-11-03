@@ -18,13 +18,18 @@
 //! With long format enabled, all pairwise distances across loci are written to
 //! `output_dir/<prefix>_pairwise_long.csv`, and with grouping, all group
 //! statistics to `output_dir/<prefix>_group_long.csv`.
+//!
+//! Every statistic, pooled across loci, is written as JSON to
+//! `output_dir/distance-report.json`, see
+//! [`DistanceReport`](crate::stats::distance_report::DistanceReport).
 pub mod group;
+mod report;
 
 use std::collections::HashSet;
 use std::fs::{self, File};
 use std::io::{self, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use std::sync::mpsc;
+use std::sync::{Mutex, mpsc};
 
 use anyhow::{Context, Result};
 use colored::Colorize;
@@ -37,6 +42,7 @@ use crate::helper::utils;
 use crate::stats::distance::{self, BaseFreqs, DistanceModel, DistanceSummary, PairCounts};
 
 use group::{GroupAssignment, GroupDistances, SampleGrouping};
+use report::{MAX_MATRIX_SAMPLES, ReportAccumulator};
 
 const PER_LOCUS_DIR: &str = "per_locus";
 const PER_LOCUS_GROUP_DIR: &str = "per_locus_group";
@@ -44,6 +50,8 @@ const LONG_TMP_DIR: &str = ".pairwise_long_tmp";
 const DEFAULT_PREFIX: &str = "distance";
 /// Locus name of the pooled rows in the long group table.
 const ALL_LOCI: &str = "all";
+/// File name of the JSON report, after the output prefix if any.
+const REPORT_NAME: &str = "distance-report.json";
 
 /// Which part of the distance matrix to write.
 /// The diagonal is always written, see [`MatrixDiagonal`].
@@ -132,6 +140,8 @@ pub struct DistanceFiles {
     pub group_mean: Option<PathBuf>,
     /// Long-format pairwise distances, written with the long format.
     pub pairwise_long: Option<PathBuf>,
+    /// Every statistic as JSON (`distance-report.json`).
+    pub report: PathBuf,
 }
 
 /// Compute pairwise distances for alignments.
@@ -229,20 +239,26 @@ impl<'a> AlignmentDistance<'a> {
             self.model,
             self.datatype
         );
+        let report_path = self.output_dir.join(match prefix {
+            Some(prefix) => format!("{}_{}", prefix, REPORT_NAME),
+            None => REPORT_NAME.to_string(),
+        });
         let prefix = prefix.unwrap_or(DEFAULT_PREFIX);
         let spin = utils::set_spinner();
         spin.set_message("Computing pairwise distances...");
-        let mut results = self.par_compute(files);
+        let accumulator = Mutex::new(ReportAccumulator::new(MAX_MATRIX_SAMPLES));
+        let mut results = self.par_compute(files, &accumulator);
         results.sort_by(|a, b| alphanumeric_sort::compare_path(&a.summary.path, &b.summary.path));
         spin.set_message("Writing summary...");
         let summaries: Vec<&LocusDistance> = results.iter().map(|r| &r.summary).collect();
         let summary = self.write_summary(&summaries, prefix);
         let mut outputs = vec![("Summary", summary.clone())];
         let mut group_mean = None;
-        if self.grouping.is_some() {
+        let pooled = self.grouping.as_ref().map(|_| pool_groups(&results));
+        if let Some(pooled) = &pooled {
             spin.set_message("Writing group mean distances...");
             let group_outputs = self
-                .write_group_outputs(&results, prefix)
+                .write_group_outputs(&results, pooled, prefix)
                 .expect("Failed to write group mean distances");
             group_mean = group_outputs.first().map(|(_, path)| path.clone());
             outputs.extend(group_outputs);
@@ -256,6 +272,26 @@ impl<'a> AlignmentDistance<'a> {
             pairwise_long = Some(path.clone());
             outputs.push(("Pairwise long", path));
         }
+        spin.set_message("Writing report...");
+        let accumulator = accumulator
+            .into_inner()
+            .expect("Failed to collect distance statistics");
+        if accumulator.has_no_matrix() {
+            log::info!(
+                "The report leaves out the sample matrix for more than {} samples",
+                utils::fmt_num(&MAX_MATRIX_SAMPLES)
+            );
+        }
+        accumulator
+            .into_report(
+                self.datatype,
+                self.model,
+                &summaries,
+                self.grouping.as_ref().zip(pooled.as_ref()),
+            )
+            .write(&report_path)
+            .expect("Failed writing the distance report");
+        outputs.push(("Report", report_path.clone()));
         spin.finish_with_message("Finished computing pairwise distances!\n");
         self.log_unassigned(&results);
         self.print_output_info(results.len(), &outputs);
@@ -264,10 +300,15 @@ impl<'a> AlignmentDistance<'a> {
             per_locus_dir: self.output_dir.join(PER_LOCUS_DIR),
             group_mean,
             pairwise_long,
+            report: report_path,
         }
     }
 
-    fn par_compute(&self, files: &[PathBuf]) -> Vec<LocusResult> {
+    fn par_compute(
+        &self,
+        files: &[PathBuf],
+        accumulator: &Mutex<ReportAccumulator>,
+    ) -> Vec<LocusResult> {
         let matrix_dir = self.output_dir.join(PER_LOCUS_DIR);
         fs::create_dir_all(&matrix_dir).expect("Failed to create output directory");
         if self.grouping.is_some() {
@@ -283,13 +324,19 @@ impl<'a> AlignmentDistance<'a> {
             .par_iter()
             .enumerate()
             .for_each_with(tx, |tx, (index, file)| {
-                let result = self.compute_locus(index, file, &matrix_dir);
+                let result = self.compute_locus(index, file, &matrix_dir, accumulator);
                 tx.send(result).expect("Failed to send summary");
             });
         rx.iter().collect()
     }
 
-    fn compute_locus(&self, index: usize, file: &Path, matrix_dir: &Path) -> LocusResult {
+    fn compute_locus(
+        &self,
+        index: usize,
+        file: &Path,
+        matrix_dir: &Path,
+        accumulator: &Mutex<ReportAccumulator>,
+    ) -> LocusResult {
         let (matrix, header) = SeqParser::new(file, self.datatype).get_alignment(self.input_fmt);
         let distances = self.compute_distances(&matrix);
         let locus = self.get_locus_id(file);
@@ -303,6 +350,10 @@ impl<'a> AlignmentDistance<'a> {
                 )
             });
         let ids: Vec<String> = matrix.keys().cloned().collect();
+        accumulator
+            .lock()
+            .expect("Failed to pool distance statistics")
+            .add(&ids, &distances);
         let assignment = self.grouping.as_ref().map(|g| g.assign(&ids));
         let groups = assignment
             .as_ref()
@@ -485,21 +536,17 @@ impl<'a> AlignmentDistance<'a> {
     fn write_group_outputs(
         &self,
         results: &[LocusResult],
+        pooled: &GroupDistances,
         prefix: &str,
     ) -> Result<Vec<(&'static str, PathBuf)>> {
-        let mut pooled = GroupDistances::default();
-        results
-            .iter()
-            .filter_map(|r| r.groups.as_ref())
-            .for_each(|g| pooled.merge(g));
         let mean_path = self.prefixed_path(prefix, "group_mean");
-        self.write_group_mean_matrix(&mean_path, &pooled)?;
+        self.write_group_mean_matrix(&mean_path, pooled)?;
         let pairs_path = self.prefixed_path(prefix, "group_pairs");
-        self.write_group_matrix(&pairs_path, &pooled, |a, b| groups_pairs(&pooled, a, b))?;
+        self.write_group_matrix(&pairs_path, pooled, |a, b| groups_pairs(pooled, a, b))?;
         let mut outputs = vec![("Group mean", mean_path), ("Group pairs", pairs_path)];
         if self.long_format {
             let long_path = self.prefixed_path(prefix, "group_long");
-            self.write_group_long(&long_path, results, &pooled)?;
+            self.write_group_long(&long_path, results, pooled)?;
             outputs.push(("Group long", long_path));
         }
         Ok(outputs)
@@ -649,6 +696,16 @@ impl<'a> AlignmentDistance<'a> {
     }
 }
 
+/// Group statistics of every locus, merged.
+fn pool_groups(results: &[LocusResult]) -> GroupDistances {
+    let mut pooled = GroupDistances::default();
+    results
+        .iter()
+        .filter_map(|r| r.groups.as_ref())
+        .for_each(|g| pooled.merge(g));
+    pooled
+}
+
 fn groups_pairs(groups: &GroupDistances, a: &str, b: &str) -> String {
     groups.get(a, b).n_pairs.to_string()
 }
@@ -748,6 +805,7 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::stats::distance_report::DistanceReport;
 
     /// Write a FASTA alignment to `dir` and return its path.
     /// ABCD vs ABCE: 1 diff over 6 sites. ABCF has a gap, so
@@ -1132,9 +1190,96 @@ mod tests {
             &DistanceModel::Kimura2P,
             output.path(),
         );
-        let results = handle.par_compute(&[file]);
+        let accumulator = Mutex::new(ReportAccumulator::new(MAX_MATRIX_SAMPLES));
+        let results = handle.par_compute(&[file], &accumulator);
         assert_eq!(results[0].summary.pairs, 0);
         assert_eq!(results[0].summary.mean, None);
+    }
+
+    #[test]
+    fn test_report() {
+        let output = TempDir::with_prefix("temp").unwrap();
+        compute_grouped(output.path(), false);
+        let report = DistanceReport::from_path(&output.path().join(REPORT_NAME)).unwrap();
+        assert_eq!(report.datatype, "dna");
+        assert_eq!(report.model, "p-distance");
+        let summary = &report.summary;
+        assert_eq!((summary.loci, summary.samples, summary.pairs), (2, 4, 9));
+        assert_eq!(summary.groups, Some(2));
+        assert_eq!(summary.unassigned, 0);
+        assert_approx_eq!(summary.max.unwrap(), 0.75);
+        assert_eq!(report.histogram.counts.iter().sum::<usize>(), 9);
+        assert_eq!(report.histogram.counts[166], 3);
+        assert_eq!(report.loci[0].name, "locus_1");
+
+        let sp1_a = &report.samples[0];
+        assert_eq!(sp1_a.name, "sp1_a");
+        assert_eq!(sp1_a.group.as_deref(), Some("sp1"));
+        assert_eq!((sp1_a.loci, sp1_a.stats.pairs), (2, 5));
+        assert_eq!(sp1_a.nearest.as_deref(), Some("sp1_b"));
+        assert_approx_eq!(sp1_a.nearest_distance.unwrap(), (1.0 / 6.0 + 0.25) / 2.0);
+        assert_approx_eq!(sp1_a.max_within.unwrap(), (1.0 / 6.0 + 0.25) / 2.0);
+        assert_approx_eq!(sp1_a.min_between.unwrap(), 1.0 / 3.0);
+        let sp2_b = &report.samples[3];
+        assert_eq!(sp2_b.loci, 1);
+        assert_eq!(sp2_b.nearest.as_deref(), Some("sp2_a"));
+
+        let matrix = report.matrix.unwrap();
+        assert_eq!(matrix.names, ["sp1_a", "sp1_b", "sp2_a", "sp2_b"]);
+        assert_eq!(matrix.mean[2][2], Some(0.0));
+        assert_approx_eq!(matrix.mean[1][2].unwrap(), (1.0 / 3.0 + 0.75) / 2.0);
+        assert_eq!(matrix.mean[1][2], matrix.mean[2][1]);
+
+        let groups = report.groups.unwrap();
+        assert_eq!(groups.groups[0].name, "sp1");
+        assert_eq!(groups.groups[0].samples, 2);
+        assert_eq!(groups.groups[0].within.pairs, 2);
+        assert_eq!(groups.pairs.len(), 3);
+        assert_eq!(groups.pairs[1].group_2, "sp2");
+        assert_eq!(groups.pairs[1].stats.pairs, 6);
+    }
+
+    #[test]
+    fn test_report_without_matrix() {
+        let input = TempDir::with_prefix("temp").unwrap();
+        let file = write_test_locus(input.path());
+        let (matrix, _) = SeqParser::new(&file, &DataType::Dna).get_alignment(&InputFmt::Fasta);
+        let handle = AlignmentDistance::new(
+            &InputFmt::Fasta,
+            &DataType::Dna,
+            &DistanceModel::Uncorrected,
+            Path::new("."),
+        );
+        let distances = handle.compute_distances(&matrix);
+        let ids: Vec<String> = matrix.keys().cloned().collect();
+        let mut accumulator = ReportAccumulator::new(2);
+        accumulator.add(&ids, &distances);
+        assert!(accumulator.has_no_matrix());
+        let report =
+            accumulator.into_report(&DataType::Dna, &DistanceModel::Uncorrected, &[], None);
+        assert!(report.matrix.is_none());
+        assert!(report.groups.is_none());
+        assert_eq!(report.samples[0].nearest, None);
+        assert_eq!(report.samples[0].stats.pairs, 2);
+    }
+
+    #[test]
+    fn test_report_prefix() {
+        let input = TempDir::with_prefix("temp").unwrap();
+        let output = TempDir::with_prefix("temp").unwrap();
+        let file = write_test_locus(input.path());
+        let files = AlignmentDistance::new(
+            &InputFmt::Fasta,
+            &DataType::Dna,
+            &DistanceModel::Uncorrected,
+            output.path(),
+        )
+        .compute(&[file], Some("test"));
+        assert_eq!(
+            files.report,
+            output.path().join("test_distance-report.json")
+        );
+        assert!(files.report.is_file());
     }
 
     #[test]

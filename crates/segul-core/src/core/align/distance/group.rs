@@ -221,7 +221,7 @@ impl GroupStats {
         Some(variance.max(0.0).sqrt())
     }
 
-    fn add(&mut self, distance: f64) {
+    pub(crate) fn add(&mut self, distance: f64) {
         self.n_pairs += 1;
         self.sum += distance;
         self.sum_sq += distance * distance;
@@ -229,7 +229,7 @@ impl GroupStats {
         self.max = Some(self.max.map_or(distance, |m| m.max(distance)));
     }
 
-    fn merge(&mut self, other: &Self) {
+    pub(crate) fn merge(&mut self, other: &Self) {
         self.n_pairs += other.n_pairs;
         self.sum += other.sum;
         self.sum_sq += other.sum_sq;

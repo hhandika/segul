@@ -1,5 +1,5 @@
-//! Draws the summary viewer: toolbar, section tabs, the overview or a
-//! table as rows or a plot, then the status bar.
+//! Draws the summary viewer: toolbar, section tabs, the overview, a table
+//! as rows or a plot, or a matrix, then the status bar.
 
 use std::sync::OnceLock;
 
@@ -8,12 +8,12 @@ use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Bar, BarChart, BarGroup, Block, BorderType, Clear, Paragraph, Wrap};
-use segul_core::color::Theme;
 use segul_core::color::residue::{ResiduePalette, ResidueScheme};
+use segul_core::color::{Theme, best_text_on};
 use segul_core::helper::types::DataType;
 
-use super::app::{App, Mode, PlotKind};
-use super::data::{Column, Format, SummaryTable};
+use super::app::{App, Mode, PlotKind, Section};
+use super::data::{Column, Format, SummaryTable, round_step};
 use crate::cli::view::align::palette::{is_truecolor, to_color};
 
 const MIN_WIDTH: u16 = 40;
@@ -31,6 +31,8 @@ const SEPARATOR: &str = "│";
 /// Narrowest and widest heatmap cell, including the separator.
 const CELL_WIDTH: [usize; 2] = [3, 10];
 const HEAT: &str = "█";
+/// Width of a matrix cell, including the separator.
+const MATRIX_CELL: usize = 8;
 
 const HELP: &[(&str, &str)] = &[
     ("Tab / Shift+Tab", "Next or previous section"),
@@ -42,6 +44,7 @@ const HELP: &[(&str, &str)] = &[
     ("Up / Down", "Move the selection"),
     ("PgUp / PgDn", "Move a page"),
     ("Home / End", "First or last item"),
+    ("Arrows in a matrix", "Move between cells"),
     ("Mouse wheel", "Scroll"),
     ("? or F1", "This help"),
     ("q or Esc", "Quit"),
@@ -81,10 +84,11 @@ pub(super) fn render(frame: &mut Frame, app: &mut App) {
     .areas(area);
     render_toolbar(frame, toolbar, app);
     render_tabs(frame, tabs, app);
-    match (app.section, app.mode) {
-        (0, _) => render_overview(frame, main, app),
-        (_, Mode::Table) => render_table(frame, main, app),
-        (_, Mode::Plot) => match app.plot {
+    match (app.open_section(), app.mode) {
+        (Section::Overview, _) => render_overview(frame, main, app),
+        (Section::Matrix(_), _) => render_matrix(frame, main, app),
+        (Section::Table(_), Mode::Table) => render_table(frame, main, app),
+        (Section::Table(_), Mode::Plot) => match app.plot {
             PlotKind::Bars => render_bars(frame, main, app),
             PlotKind::Histogram => render_histogram(frame, main, app),
             PlotKind::Heatmap => render_heatmap(frame, main, app),
@@ -108,8 +112,29 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
+    let mode_width = if app.table().is_some() { 24 } else { 0 };
+    let [left, right] =
+        Layout::horizontal([Constraint::Min(1), Constraint::Length(mode_width)]).areas(area);
+    let tab_labels = |counts: bool| {
+        let mut labels = vec![String::from("Overview")];
+        labels.extend(app.data.tables.iter().map(|t| {
+            if counts {
+                format!("{} ({})", t.name, t.names.len())
+            } else {
+                t.name.to_string()
+            }
+        }));
+        labels.extend(app.data.matrices.iter().map(|m| m.name.to_string()));
+        labels
+    };
+    // Item counts are left out when the tabs would not fit.
+    let mut labels = tab_labels(true);
+    let width: usize = labels.iter().map(|l| l.chars().count() + 5).sum();
+    if width > left.width as usize {
+        labels = tab_labels(false);
+    }
     let mut spans = vec![Span::from(" ")];
-    let mut tab = |index: usize, label: String| {
+    for (index, label) in labels.iter().enumerate() {
         let text = format!(" {} {} ", index + 1, label);
         spans.push(if index == app.section {
             Span::from(text).add_modifier(Modifier::REVERSED | Modifier::BOLD)
@@ -117,15 +142,9 @@ fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
             Span::from(text)
         });
         spans.push(Span::from(" "));
-    };
-    tab(0, String::from("Overview"));
-    for (i, table) in app.data.tables.iter().enumerate() {
-        tab(i + 1, format!("{} ({})", table.name, table.names.len()));
     }
-    let [left, right] =
-        Layout::horizontal([Constraint::Min(1), Constraint::Length(24)]).areas(area);
     frame.render_widget(Paragraph::new(Line::from(spans)), left);
-    if app.section > 0 {
+    if app.table().is_some() {
         let pick = |label: &'static str, on: bool| {
             if on {
                 Span::from(label).fg(accent()).bold()
@@ -481,9 +500,142 @@ fn render_heatmap(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_widget(Paragraph::new(Line::from(key)), legend);
 }
 
+fn render_matrix(frame: &mut Frame, area: Rect, app: &mut App) {
+    let [title, header, rows, legend] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(1),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    let Some((matrix, _)) = app.matrix() else {
+        return;
+    };
+    // Columns are headed by row number, since names rarely fit a cell.
+    let number_width = matrix.names.len().to_string().len();
+    let name_width = matrix
+        .names
+        .iter()
+        .map(|n| n.chars().count())
+        .max()
+        .unwrap_or(0)
+        .clamp(NAME_WIDTH[0], NAME_WIDTH[1])
+        + number_width
+        + 1;
+    app.page_rows = rows.height as usize;
+    app.page_columns = ((area.width as usize).saturating_sub(name_width + 1) / MATRIX_CELL).max(1);
+    app.keep_cell_visible();
+    let Some((matrix, state)) = app.matrix() else {
+        return;
+    };
+    let items = matrix.names.len();
+    let heading = Line::from(vec![
+        Span::from(format!(" {} · {} {}", matrix.name, items, matrix.item)).bold(),
+        Span::from(" · arrows move · PgUp PgDn page").dim(),
+    ]);
+    frame.render_widget(Paragraph::new(heading), title);
+    let columns: Vec<usize> = (state.column_offset..items)
+        .take(app.page_columns)
+        .collect();
+    let mut head = vec![Span::from(format!(" {:name_width$}", ""))];
+    for &c in &columns {
+        let label = format!("{:>width$}", c + 1, width = MATRIX_CELL - 1);
+        head.push(Span::from(SEPARATOR).dim());
+        head.push(if c == state.column {
+            Span::from(label).fg(accent()).bold()
+        } else {
+            Span::from(label).bold()
+        });
+    }
+    frame.render_widget(Paragraph::new(Line::from(head)), header);
+    // One scale for every pair, leaving out each item with itself.
+    let off_diagonal = matrix.values.iter().enumerate().flat_map(|(i, row)| {
+        row.iter()
+            .enumerate()
+            .filter(move |&(j, _)| j != i)
+            .filter_map(|(_, v)| *v)
+    });
+    let range = off_diagonal.fold(None, |range: Option<(f64, f64)>, v| {
+        Some(range.map_or((v, v), |(min, max)| (min.min(v), max.max(v))))
+    });
+    let truecolor = is_truecolor();
+    let lines: Vec<Line> = (state.row_offset..items)
+        .take(rows.height as usize)
+        .map(|r| {
+            let name = format!(
+                " {:>number_width$} {:width$}",
+                r + 1,
+                truncate(&matrix.names[r], name_width - number_width - 1),
+                width = name_width - number_width - 1
+            );
+            let mut spans = vec![if r == state.row {
+                Span::from(name).fg(accent()).bold()
+            } else {
+                Span::from(name)
+            }];
+            for &c in &columns {
+                spans.push(Span::from(SEPARATOR).dim());
+                let text = matrix.values[r][c].map_or_else(
+                    || format!("{:^width$}", "·", width = MATRIX_CELL - 1),
+                    |v| format!("{:>width$}", matrix.format.show(v), width = MATRIX_CELL - 1),
+                );
+                let cell = match (matrix.values[r][c], range) {
+                    (Some(value), Some((min, max))) if r != c => {
+                        let bg = app.colormap.at(scale(value, min, max));
+                        Span::from(text)
+                            .bg(to_color(bg, truecolor))
+                            .fg(to_color(best_text_on(bg), truecolor))
+                    }
+                    _ => Span::from(text).dim(),
+                };
+                spans.push(if r == state.row && c == state.column {
+                    cell.add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                } else {
+                    cell
+                });
+            }
+            Line::from(spans)
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(lines), rows);
+    let mut key = vec![Span::from(" low ").dim()];
+    key.extend(
+        app.colormap
+            .stops(8)
+            .into_iter()
+            .map(|color| Span::from(HEAT).fg(to_color(color, truecolor))),
+    );
+    key.push(Span::from(" high").dim());
+    if let Some((min, max)) = range {
+        key.push(
+            Span::from(format!(
+                " · {} to {}",
+                matrix.format.show(min),
+                matrix.format.show(max)
+            ))
+            .dim(),
+        );
+    }
+    frame.render_widget(Paragraph::new(Line::from(key)), legend);
+}
+
 fn render_status(frame: &mut Frame, area: Rect, app: &App) {
     let left = match (&app.message, app.table()) {
         (Some(message), _) => Line::from(format!(" {message}")).fg(accent()),
+        (None, None) if app.matrix().is_some() => {
+            let (matrix, state) = app.matrix().expect("Failed finding the matrix");
+            let value = matrix.values[state.row][state.column]
+                .map_or_else(|| String::from("-"), |v| matrix.format.show(v));
+            Line::from(format!(
+                " {} × {}: {} · row {}, column {} of {}",
+                matrix.names[state.row],
+                matrix.names[state.column],
+                value,
+                state.row + 1,
+                state.column + 1,
+                matrix.names.len()
+            ))
+        }
         (None, Some((table, state))) => match (app.selected(), app.column()) {
             (Some(item), Some(column)) => Line::from(format!(
                 " {} · {}: {} · {} of {}",
@@ -530,7 +682,9 @@ fn render_help(frame: &mut Frame, area: Rect) {
 /// Name, order, and keys of the open table. [hidden] columns do not fit
 /// and scroll into view with the arrow keys.
 fn table_title<'a>(app: &App, table: &'a SummaryTable, hidden: usize) -> Line<'a> {
-    let state = &app.tables[app.section - 1];
+    let Some((_, state)) = app.table() else {
+        return Line::default();
+    };
     let order = match state.sort {
         Some((c, true)) => format!("sorted by {}, highest first", table.columns[c].label),
         Some((c, false)) => format!("sorted by {}, lowest first", table.columns[c].label),
@@ -700,7 +854,7 @@ fn column_width(column: &Column) -> usize {
         .max()
         .unwrap_or(1);
     // Room for the sort arrow and a gap before the column.
-    longest.max(column.label.chars().count() + 1) + 2
+    (longest + 1).max(column.label.chars().count() + 1) + 2
 }
 
 /// First value column to draw so the chosen one fits beside the names.
@@ -813,22 +967,13 @@ impl Histogram {
             // Bounds of round steps need no forced decimal.
             Format::Decimal if v.fract() == 0.0 => format!("{v}"),
             Format::Decimal => format!("{v:.1}"),
+            Format::Distance => {
+                let decimals = (-self.step.log10().floor()).max(0.0) as usize;
+                format!("{v:.decimals$}")
+            }
         };
         format!("{}-{}", show(from), show(to))
     }
-}
-
-/// A width of 1, 2, or 5 times a power of ten, at least [raw].
-fn round_step(raw: f64) -> f64 {
-    if raw <= 0.0 {
-        return 1.0;
-    }
-    let scale = 10_f64.powf(raw.log10().floor());
-    [1.0, 2.0, 5.0, 10.0]
-        .into_iter()
-        .map(|s| s * scale)
-        .find(|&s| s >= raw)
-        .unwrap_or(10.0 * scale)
 }
 
 #[cfg(test)]
@@ -928,6 +1073,37 @@ mod test {
         }
         let text = screen(&mut app);
         assert!(!text.contains(" Reads "));
+    }
+
+    #[test]
+    fn test_render_distance() {
+        let data = SummaryData::from_path(Path::new(
+            "crates/segul-core/tests/files/plot/distance-report.json",
+        ))
+        .unwrap();
+        let mut app = App::new(
+            data,
+            String::from("distance-report.json"),
+            Colormap::Viridis,
+        );
+        let text = screen(&mut app);
+        assert!(text.contains("6 samples · 3 loci · K2P"));
+        assert!(text.contains("4 Groups"));
+        assert!(text.contains("5 Matrix"));
+        assert!(text.contains("6 Group matrix"));
+
+        press(&mut app, KeyCode::Char('1'));
+        let text = screen(&mut app);
+        assert!(text.contains("Pairwise distances, all loci"));
+        assert!(text.contains("Median locus mean"));
+
+        press(&mut app, KeyCode::Char('5'));
+        press(&mut app, KeyCode::Right);
+        let text = screen(&mut app);
+        assert!(text.contains("Matrix · 6 samples"));
+        assert!(text.contains("Mus_musculus_A × Mus_musculus_B: 0.0328"));
+        assert!(text.contains("0.0328"));
+        assert!(text.contains(HEAT));
     }
 
     #[test]

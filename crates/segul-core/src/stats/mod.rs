@@ -13,6 +13,8 @@ pub mod common;
 pub mod contigs;
 #[cfg(feature = "align")]
 pub mod distance;
+#[cfg(feature = "align")]
+pub mod distance_report;
 #[cfg(feature = "read")]
 pub mod fastq;
 #[cfg(feature = "read")]
