@@ -5,6 +5,7 @@ use std::path::Path;
 
 use anyhow::{Context, Result, bail};
 
+use crate::cli::view::thousands;
 use crate::stats::align_report::{AlignReport, SiteTypeSummary};
 use crate::stats::distance_report::{DistanceReport, PairStats};
 use crate::stats::fastq::report::ReadReport;
@@ -88,22 +89,6 @@ impl Format {
             Format::Distance => format!("{:.4}", value),
         }
     }
-}
-
-/// [value] with commas between groups of three digits.
-pub(super) fn thousands(value: i128) -> String {
-    let digits = value.unsigned_abs().to_string();
-    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
-    for (i, ch) in digits.chars().enumerate() {
-        if i > 0 && (digits.len() - i).is_multiple_of(3) {
-            out.push(',');
-        }
-        out.push(ch);
-    }
-    if value < 0 {
-        out.insert(0, '-');
-    }
-    out
 }
 
 impl SummaryData {
@@ -737,11 +722,7 @@ mod test {
     }
 
     #[test]
-    fn test_thousands() {
-        assert_eq!(thousands(0), "0");
-        assert_eq!(thousands(999), "999");
-        assert_eq!(thousands(1_234_567), "1,234,567");
-        assert_eq!(thousands(-1_000), "-1,000");
+    fn test_format() {
         assert_eq!(Format::Decimal.show(2.345), "2.3");
         assert_eq!(Format::Distance.show(0.123456), "0.1235");
         assert_eq!(round_step(0.04), 0.05);

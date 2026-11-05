@@ -8,6 +8,7 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Clear, Paragraph, Wrap};
 
+use crate::cli::view::thousands;
 use crate::core::align::view::is_gap;
 
 use super::app::{App, Overlay};
@@ -67,7 +68,7 @@ pub(super) fn render(frame: &mut Frame, app: &mut App, palette: &Palette) {
     if app.show_sidebar {
         render_sidebar(frame, sidebar, app, palette);
     }
-    let header = format!("Taxa ({})", app.view.rows());
+    let header = format!("Taxa ({})", count(app.view.rows()));
     frame.render_widget(Span::from(header).dim(), names_header);
     render_names(frame.buffer_mut(), name_rows, app, palette);
     render_divider(frame.buffer_mut(), divider);
@@ -91,8 +92,8 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
         .unwrap_or_default();
     let mut summary = format!(
         "{} taxa · {} sites · {}",
-        view.rows(),
-        view.length(),
+        count(view.rows()),
+        count(view.length()),
         if view.is_dna() { "DNA" } else { "Amino acid" }
     );
     if !view.is_aligned() {
@@ -106,7 +107,14 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
     };
     let mut spans = vec![Span::from(name).bold()];
     if app.files.len() > 1 {
-        spans.push(Span::from(format!(" ({}/{})", app.file_index + 1, app.files.len())).dim());
+        spans.push(
+            Span::from(format!(
+                " ({}/{})",
+                count(app.file_index + 1),
+                count(app.files.len())
+            ))
+            .dim(),
+        );
     }
     spans.extend([
         Span::from("  "),
@@ -118,10 +126,10 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
         Span::from("  │ ").dim(),
         Span::from(format!(
             "Chunk {}–{} ({} of {}){}",
-            start + 1,
-            chunk_end,
-            app.chunk() + 1,
-            app.chunk_count(),
+            count(start + 1),
+            count(chunk_end),
+            count(app.chunk() + 1),
+            count(app.chunk_count()),
             if app.paged { " · Page" } else { "" }
         )),
     ]);
@@ -205,7 +213,7 @@ fn render_sidebar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     for (i, stat) in stats.iter().enumerate() {
         let is_current = first + i == app.chunk();
         let marker = if is_current { "▌" } else { " " };
-        let range = format!("{}{}–{}", marker, stat.start + 1, stat.end);
+        let range = format!("{}{}–{}", marker, count(stat.start + 1), count(stat.end));
         lines.push(if is_current {
             Line::from(range).fg(palette.accent).bold()
         } else {
@@ -263,10 +271,12 @@ fn render_divider(buf: &mut Buffer, area: Rect) {
 }
 
 fn render_ruler(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
+    // Room for the widest label, its tick, and a space.
+    let gap = RULER_GAP.max(count(app.view.length()).chars().count() + 2);
     let step = RULER_STEPS
         .iter()
         .copied()
-        .find(|s| s * app.zoom >= RULER_GAP)
+        .find(|s| s * app.zoom >= gap)
         .unwrap_or(*RULER_STEPS.last().unwrap_or(&1));
     let sites = (area.width as usize / app.zoom).min(app.site_range().1 - app.left_site);
     let mut free_from = 0usize;
@@ -282,7 +292,7 @@ fn render_ruler(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
         }
         let position = site + 1;
         if (position.is_multiple_of(step) || site == 0) && x >= free_from {
-            let label = format!("╵{}", position);
+            let label = format!("╵{}", count(position));
             let room = area.width as usize - x;
             buf.set_stringn(area.x + x as u16, area.y, &label, room, Style::new().dim());
             free_from = x + label.chars().count() + 1;
@@ -367,7 +377,7 @@ fn render_status(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         Overlay::GoTo(input) => Line::from(vec![
             Span::from(format!(
                 " Go to site (1–{}), or taxon:site: ",
-                app.view.length()
+                count(app.view.length())
             ))
             .fg(palette.accent),
             Span::from(format!("{input}▏")),
@@ -378,8 +388,8 @@ fn render_status(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
             let count = match (matches.len(), at) {
                 (0, _) if !input.is_empty() => String::from("  No results"),
                 (0, _) => String::new(),
-                (n, Some(i)) => format!("  {} of {}", i + 1, n),
-                (n, None) => format!("  {} matches", n),
+                (n, Some(i)) => format!("  {} of {}", count(i + 1), count(n)),
+                (n, None) => format!("  {} matches", count(n)),
             };
             Line::from(vec![
                 Span::from(" Find taxon: ").fg(palette.accent),
@@ -395,7 +405,10 @@ fn render_status(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     };
     let mut right = Vec::new();
     if !app.selected.is_empty() {
-        right.push(Span::from(format!("{} selected · ", app.selected.len())));
+        right.push(Span::from(format!(
+            "{} selected · ",
+            count(app.selected.len())
+        )));
     }
     if app.files.len() > 1 {
         right.push(Span::from("Ctrl+P Files · ").dim());
@@ -414,14 +427,14 @@ fn cursor_status(app: &App) -> String {
     let residue = view.residue(app.row, app.site);
     let position = match (residue, view.ungapped_position(app.row, app.site)) {
         (None, _) => String::from("past end"),
-        (_, Some(p)) => format!("ungapped {}", p),
+        (_, Some(p)) => format!("ungapped {}", count(p)),
         (_, None) => String::from("gap"),
     };
     let residue = residue.map(|c| (c as char).to_string()).unwrap_or_default();
     format!(
         " {} · site {} · {} · {}",
         view.name(app.row),
-        app.site + 1,
+        count(app.site + 1),
         position,
         residue
     )
@@ -509,7 +522,7 @@ fn render_files(
     let popup = centered(area, width, height);
     let block = Block::bordered()
         .border_type(BorderType::Rounded)
-        .title(format!(" Open file ({}) ", app.files.len()))
+        .title(format!(" Open file ({}) ", count(app.files.len())))
         .title_bottom(
             Line::from(" Type to filter · ↑↓ choose · Enter open · Esc close ").right_aligned(),
         );
@@ -554,6 +567,11 @@ fn centered(area: Rect, width: u16, height: u16) -> Rect {
         width,
         height,
     )
+}
+
+// Site and taxon counts with thousands separators.
+fn count(value: usize) -> String {
+    thousands(value as i128)
 }
 
 // Cuts `text` to `width` characters, ending with an ellipsis when cut.
