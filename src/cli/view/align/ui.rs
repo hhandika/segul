@@ -397,6 +397,9 @@ fn render_status(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     if !app.selected.is_empty() {
         right.push(Span::from(format!("{} selected · ", app.selected.len())));
     }
+    if app.files.len() > 1 {
+        right.push(Span::from("Ctrl+P Files · ").dim());
+    }
     right.push(Span::from("? Help ").dim());
     let right = Line::from(right).right_aligned();
     frame.render_widget(left, area);
@@ -506,7 +509,10 @@ fn render_files(
     let popup = centered(area, width, height);
     let block = Block::bordered()
         .border_type(BorderType::Rounded)
-        .title(format!(" Open file ({}) ", app.files.len()));
+        .title(format!(" Open file ({}) ", app.files.len()))
+        .title_bottom(
+            Line::from(" Type to filter · ↑↓ choose · Enter open · Esc close ").right_aligned(),
+        );
     let inner = block.inner(popup);
     frame.render_widget(Clear, popup);
     frame.render_widget(block, popup);
@@ -617,6 +623,29 @@ mod test {
         let text = screen(&mut app, &palette);
         assert!(text.contains("Keyboard shortcuts"));
         assert!(text.contains("Quit"));
+    }
+
+    #[test]
+    fn test_render_files() {
+        let files = [
+            PathBuf::from("crates/segul-core/tests/files/simple.fas"),
+            PathBuf::from("crates/segul-core/tests/files/simple_aa.fas"),
+        ];
+        let view = AlignmentView::open(&files[0], &InputFmt::Auto, &DataType::Ignore)
+            .expect("Failed opening fixture");
+        let mut app = App::new(&files, &InputFmt::Auto, &DataType::Ignore, view, 1000);
+        let palette = Palette::new(ResidueScheme::Clustal, Theme::Dark, true, true);
+        let text = screen(&mut app, &palette);
+        assert!(text.contains("(1/2)"));
+        assert!(text.contains("Ctrl+P Files"));
+
+        app.overlay = Overlay::Files {
+            query: String::new(),
+            index: 0,
+        };
+        let text = screen(&mut app, &palette);
+        assert!(text.contains("Open file (2)"));
+        assert!(text.contains("Enter open"));
     }
 
     #[test]

@@ -10,7 +10,14 @@ use super::IOArgs;
 pub(crate) enum ViewSubcommand {
     #[command(
         about = "View alignments in an interactive terminal viewer",
-        name = "align"
+        name = "align",
+        after_help = "Multiple files:\n  \
+        segul view align -d alignments/            View every alignment in a folder\n  \
+        segul view align -i locus1.fas locus2.fas  View several files\n  \
+        segul view align -i 'loci/*.nex'           View files matching a pattern\n\n\
+        The viewer opens the first file. Ctrl+PgUp / Ctrl+PgDn (Ctrl+fn+↑ / ↓ on macOS) \
+        moves to the previous or next file. Ctrl+P lists the files; type to filter, \
+        then Enter to open."
     )]
     Align(ViewAlignArgs),
     #[command(
