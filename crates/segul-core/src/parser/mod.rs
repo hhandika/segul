@@ -10,6 +10,8 @@ pub mod partition;
 pub mod phylip;
 #[cfg(feature = "read")]
 pub mod qscores;
+#[cfg(feature = "plot")]
+pub mod summary_csv;
 pub mod txt;
 
 #[cfg(target_os = "windows")]

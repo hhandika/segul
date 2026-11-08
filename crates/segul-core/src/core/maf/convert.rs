@@ -31,6 +31,7 @@ use crate::{
     core::OutputPrint,
     helper::{
         files,
+        progress::{self, ProgressReporter},
         types::{DnaStrand, Header, OutputFmt, SeqMatrix},
         utils,
     },
@@ -152,6 +153,7 @@ pub struct MafConverter<'a> {
     filter: BlockFilter,
     write_unmatched: bool,
     prefix: Option<String>,
+    progress: Option<&'a dyn ProgressReporter>,
 }
 
 impl OutputPrint for MafConverter<'_> {}
@@ -175,7 +177,14 @@ impl<'a> MafConverter<'a> {
             filter: BlockFilter::default(),
             write_unmatched: false,
             prefix: None,
+            progress: None,
         }
+    }
+
+    /// Report per-file progress to `reporter`, which can also cancel the run.
+    pub fn with_progress(mut self, reporter: &'a dyn ProgressReporter) -> Self {
+        self.progress = Some(reporter);
+        self
     }
 
     /// Assign blocks to the regions in a BED file.
@@ -246,6 +255,7 @@ impl<'a> MafConverter<'a> {
         })?;
         let spin = utils::set_spinner();
         spin.set_message("Converting MAF files...");
+        progress::report_start(self.progress, input_files.len());
         let mut report = match (self.bed, self.grouping) {
             (Some(bed), _) => self.convert_regions(bed, &input_files, &resolver, &ref_sample)?,
             (None, MafGrouping::Block) => {
@@ -287,6 +297,7 @@ impl<'a> MafConverter<'a> {
                 by_region.entry(id).or_default().extend(region_pieces);
             }
         }
+        self.start_writing()?;
         let regions = index.regions();
         let written = by_region
             .into_par_iter()
@@ -393,6 +404,7 @@ impl<'a> MafConverter<'a> {
                 by_chrom.entry(chrom).or_default().extend(chrom_pieces);
             }
         }
+        self.start_writing()?;
         let stats = by_chrom
             .into_par_iter()
             .map(|(chrom, pieces)| {
@@ -432,12 +444,36 @@ impl<'a> MafConverter<'a> {
             })?;
             report.add_counts(&counts);
         }
+        self.start_writing()?;
         report.loci_written += self.write_batch(self.output_dir, &mut batch)?;
         Ok(report)
     }
 
-    /// Stream the alignment blocks of a file, normalized and filtered.
+    /// Stops if the run was cancelled while reading, then reports the write step.
+    fn start_writing(&self) -> Result<()> {
+        progress::check_cancelled(self.progress)?;
+        progress::report_stage(self.progress, "Writing loci");
+        Ok(())
+    }
+
+    /// Stream the alignment blocks of a file, normalized and filtered, and
+    /// report the file to the progress reporter.
     fn read_blocks<F>(
+        &self,
+        file: &Path,
+        resolver: &SpeciesResolver,
+        ref_sample: &str,
+        on_block: F,
+    ) -> Result<BlockCounts>
+    where
+        F: FnMut(usize, RefBlock) -> Result<()>,
+    {
+        progress::track(self.progress, file, || {
+            self.stream_blocks(file, resolver, ref_sample, on_block)
+        })
+    }
+
+    fn stream_blocks<F>(
         &self,
         file: &Path,
         resolver: &SpeciesResolver,
@@ -450,6 +486,8 @@ impl<'a> MafConverter<'a> {
         let mut counts = BlockCounts::default();
         let reader = MafReader::new(files::open_reader(file)?);
         for paragraph in reader {
+            // Checked per block, so a cancelled run stops mid-file.
+            progress::check_cancelled(self.progress)?;
             let paragraph =
                 paragraph.with_context(|| format!("Failed reading {}", file.display()))?;
             let MafParagraph::Alignment(alignment) = paragraph else {
@@ -635,6 +673,7 @@ fn unique_name(names: &mut HashMap<String, usize>, base: String) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::helper::progress::CancelAfter;
     use std::io::Write;
 
     use flate2::{Compression, write::GzEncoder};
@@ -642,6 +681,22 @@ mod tests {
 
     const SIMPLE_MAF: &str = "tests/files/maf/simple.maf";
     const SIMPLE_REGIONS: &str = "tests/files/bed/simple_regions.bed";
+
+    #[test]
+    fn test_cancelled_mid_file() {
+        let output = TempDir::with_prefix("maf-convert").unwrap();
+        let files = vec![PathBuf::from(SIMPLE_MAF)];
+        let reporter = CancelAfter::new(2);
+        let error = MafConverter::new(&files, output.path(), &OutputFmt::Fasta)
+            .with_progress(&reporter)
+            .convert()
+            .unwrap_err();
+        assert!(error.downcast_ref::<progress::Cancelled>().is_some());
+        assert_eq!(
+            reporter.finished.load(std::sync::atomic::Ordering::Relaxed),
+            0
+        );
+    }
 
     fn read_fasta(path: &Path) -> Vec<(String, String)> {
         let text = fs::read_to_string(path).unwrap();

@@ -4,8 +4,10 @@ mod args;
 mod commands;
 mod contig;
 mod maf;
+mod plot;
 mod read;
 mod sequence;
+mod view;
 
 #[cfg(target_os = "windows")]
 use glob::glob;
@@ -20,7 +22,7 @@ use clap::Parser;
 use colored::Colorize;
 use dialoguer::{Confirm, theme::ColorfulTheme};
 
-use crate::cli::args::Cli;
+use crate::cli::args::{Cli, MainSubcommand};
 use crate::helper::finder::{ContigFileFinder, SeqFileFinder, SeqReadFinder};
 use crate::helper::types::{ContigFmt, DataType, InputFmt, OutputFmt, PartitionFmt, SeqReadFmt};
 use crate::helper::{logger, utils};
@@ -29,10 +31,15 @@ use crate::helper::{logger, utils};
 pub fn parse_cli() {
     let time = Instant::now();
     let args = Cli::parse();
+    // Viewers take over the screen, so skip the banner and log file.
+    if let MainSubcommand::View(subcommand) = &args.subcommand {
+        commands::match_view_subcommand(subcommand);
+        return;
+    }
     logger::init_logger(&args.log).expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
     commands::match_cli_subcommand(&args.subcommand);
-    log::info!("{:18}: {}", "Log file", &args.log.display());
+    log::info!("{:18}: {}", "Log file", args.log.display());
     let duration = time.elapsed();
     println!();
     utils::print_execution_time(duration);
@@ -88,13 +95,24 @@ trait InputCli {
         let files: Vec<PathBuf> = inputs
             .iter()
             .flat_map(|i| {
-                glob(i)
+                let matches = glob(i)
                     .expect("Failed finding files")
                     .filter_map(|ok| ok.ok())
-                    .collect::<Vec<PathBuf>>()
+                    .collect::<Vec<PathBuf>>();
+                // A plain path that matches nothing is kept, so the task
+                // reports the missing file as it does on other platforms.
+                if matches.is_empty() && !i.contains(['*', '?', '[']) {
+                    vec![PathBuf::from(i.to_string())]
+                } else {
+                    matches
+                }
             })
             .collect();
-        assert!(!files.is_empty(), "Empty folders!");
+        assert!(
+            !files.is_empty(),
+            "No input files match {}",
+            inputs.join(", ")
+        );
         files
     }
 

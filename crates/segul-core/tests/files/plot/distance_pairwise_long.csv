@@ -1,0 +1,7 @@
+locus,sample_1,sample_2,compared_sites,distance
+gene_1,ABCD,ABCE,5,0.800000
+gene_2,ABCD,ABCF,8,0.125000
+gene_2,ABCD,ABCE,3,0.000000
+gene_2,ABCF,ABCE,3,0.000000
+gene_3,ABCD,ABCE,6,0.166667
+gene_4,ABCD,ABCE,6,0.333333

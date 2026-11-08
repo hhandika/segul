@@ -20,6 +20,7 @@ fn test_align_distance() {
         assert!(output.is_file(), "Missing {}", output.display());
     }
     assert!(res_path.join("distance_summary.csv").is_file());
+    assert!(res_path.join("distance-report.json").is_file());
     tmp_dir.close().unwrap();
 }
 
@@ -36,6 +37,7 @@ fn test_align_distance_k2p() {
     cmd.assert().success();
     let res_path = tmp_dir.path().join("Align-Distance");
     assert!(res_path.join("k2p_summary.csv").is_file());
+    assert!(res_path.join("k2p_distance-report.json").is_file());
     tmp_dir.close().unwrap();
 }
 

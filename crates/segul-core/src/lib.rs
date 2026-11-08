@@ -20,6 +20,8 @@
 //! 16. Sequence translation
 //! 17. Sequence transposition
 //! 18. Sequence unique ID parsing
+//! 19. Plots of summary statistics with ColorBrewer, Okabe-Ito, and Paul Tol palettes
+//! 20. A shared color library with ColorBrewer and viridis colormaps and WCAG contrast checks
 //!
 //! ## Cargo features
 //!
@@ -33,6 +35,8 @@
 //! | `read`     | Raw read (FASTQ) summary statistics                       |
 //! | `contig`   | Contiguous sequence summary statistics                    |
 //! | `maf`      | Multiple alignment format (MAF) conversion                |
+//! | `plot`     | Charts from summary statistics (SVG, PNG)                 |
+//! | `pdf`      | PDF output for charts (adds `plot`)                       |
 //!
 //! ```toml
 //! segul-core = { version = "0.24", default-features = false, features = ["read"] }
@@ -64,8 +68,11 @@
 //! ```
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod color;
 pub mod core;
 pub mod helper;
 pub mod parser;
+#[cfg(feature = "plot")]
+pub mod plot;
 pub mod stats;
 pub mod writer;

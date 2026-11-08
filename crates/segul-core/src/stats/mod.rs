@@ -6,11 +6,15 @@
 //! 2. Contig sequences in FASTA format, including gzipped FASTA
 //! 3. Sequence Alignment in FASTA, NEXUS, and relaxed-PHYLIP formats
 //! 4. Pairwise genetic distances of sequence alignments
+#[cfg(feature = "align")]
+pub mod align_report;
 pub mod common;
 #[cfg(feature = "contig")]
 pub mod contigs;
 #[cfg(feature = "align")]
 pub mod distance;
+#[cfg(feature = "align")]
+pub mod distance_report;
 #[cfg(feature = "read")]
 pub mod fastq;
 #[cfg(feature = "read")]

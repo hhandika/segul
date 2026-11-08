@@ -6,6 +6,7 @@ pub mod files;
 pub mod finder;
 pub mod logger;
 pub mod partition;
+pub mod progress;
 pub mod sequence;
 #[cfg(feature = "sequence")]
 pub mod translation;

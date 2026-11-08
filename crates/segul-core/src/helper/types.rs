@@ -96,6 +96,40 @@ impl std::str::FromStr for SeqReadFmt {
     }
 }
 
+/// Quality score encoding of FASTQ reads.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum PhredOffset {
+    /// Detect the offset from the quality scores of the first reads
+    Auto,
+    /// Sanger and Illumina 1.8+ (ASCII 33)
+    Phred33,
+    /// Illumina 1.3 to 1.7 (ASCII 64)
+    Phred64,
+}
+
+impl std::fmt::Display for PhredOffset {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Auto => write!(f, "auto"),
+            Self::Phred33 => write!(f, "33"),
+            Self::Phred64 => write!(f, "64"),
+        }
+    }
+}
+
+impl std::str::FromStr for PhredOffset {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auto" => Ok(Self::Auto),
+            "33" => Ok(Self::Phred33),
+            "64" => Ok(Self::Phred64),
+            _ => Err(format!("{} is not a valid phred offset", s)),
+        }
+    }
+}
+
 pub fn infer_raw_input_auto(input: &Path) -> SeqReadFmt {
     let ext: &str = input
         .extension()

@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        features: ["", "align", "sequence", "read", "contig", "maf"]
+        features: ["", "align", "sequence", "read", "contig", "maf", "plot", "pdf", "plot,align", "plot,read", "plot,contig", "plot,maf"]
 
     steps:
       - name: Checkout sources

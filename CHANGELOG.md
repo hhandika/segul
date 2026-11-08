@@ -1,5 +1,76 @@
 # Release Notes
 
+## Unreleased
+
+New Features:
+
+- New `segul view align` opens alignments in an interactive terminal viewer, laid out like the SEGUI alignment viewer: a summary toolbar, an overview strip, a residue legend, taxon names, a site ruler, the colored residue grid, and a status bar showing the taxon, site, ungapped position, and residue under the cursor. Pass one or more files with `-i`, or a folder with `-d`, and switch between them with Ctrl+PgUp/Ctrl+PgDn or pick one with Ctrl+P.
+- The viewer uses VS Code-style keys: arrows, Ctrl+arrows to jump 10 sites, Home/End, PgUp/PgDn, `[` and `]` to move between chunks, Ctrl+G to go to a site or taxon, Ctrl+F to find a taxon, +/- to zoom, F2 to cycle base, mono, and difference-to-first colors, Ctrl+B for a chunk sidebar with gap and variable-site shares, Ctrl+C to copy the selected sequences as FASTA, and F1 or `?` for the full list. The mouse scrolls, zooms, moves the cursor, and resizes the name column.
+- On macOS, where terminals keep Command for themselves and Control+arrows switch spaces, the viewer also takes Option+arrows to jump 10 sites, Option+Up/Down to page through taxa, Option+Shift+Left/Right to page through sites, and fn+arrows for Home, End, and page keys. The help screen shows the Mac keys when running on macOS.
+- `segul view align` shows site and taxon counts, positions, and ruler labels with thousands separators, such as `12,345 sites`.
+- `segul view align --help` shows examples for viewing a folder with `-d` or several files with `-i`, and the keys to move between them. With more than one file open, the status bar shows `Ctrl+P Files`, and the file list shows its keys.
+- DNA and amino acids are detected from the residues; set them with `--datatype`. Use `--theme light` on a light terminal. Large FASTA files open quickly because they are memory-mapped and only the part in view is read.
+- New `segul view summary -i <REPORT>` opens `alignment-report.json` from `segul align summary` or `read-report.json` from `segul read summary --mode complete` in the terminal. An overview tab lists the totals with bar charts, such as matrix completeness, and each table of loci, taxa, or samples switches with `v` between a sortable table and a plot: one bar per item, or a histogram of the chosen column with `h`. Choose a column with the arrow keys and sort it with `s`.
+- Summary commands can now write charts next to their comma-delimited output. Add `--plot` to `segul align summary`, `segul align distance`, `segul read summary`, `segul contig summary`, or `segul maf summary`, and every chart that applies is written to `<OUTPUT>/plots`.
+- Charts include histograms, scatter plots, grouped and stacked bar charts, line charts, box plots, and heatmaps. For example, the alignment summary plots matrix completeness, parsimony informative sites vs alignment length, and missing data per taxon. The distance summary plots a heatmap for each locus (up to 50 loci). The complete read summary plots quality and base composition along the read for each sample.
+- `--plot-format` picks SVG or PNG (default). PNG text uses the system fonts, or a font file given with `--font`.
+- Charts use ColorBrewer Dark2 for categories and viridis for heatmaps by default. Choose others with `--palette` and `--colormap`, and preview the charts as seen with protanopia, deuteranopia, tritanopia, or achromatopsia with `--cvd`. Dark2 is colorblind-safe for its first three colors; use `--palette okabe-ito` or a Tol palette for more.
+- `--palette` also takes the ColorBrewer palettes `set2`, `dark2`, `paired`, and `set1`, and `--colormap` takes `plasma` and the ColorBrewer colormaps `blues`, `greens`, `ylgnbu`, `ylorrd`, `rdbu`, `puor`, and `brbg`. ColorBrewer palettes are only colorblind-safe for their first three or four colors, and `set1` is not.
+- Charts meet WCAG 2.2 AA contrast. Lines, points, and bar and box outlines are darkened where needed to reach 3:1 against the background, so pale colors such as Okabe-Ito yellow stay visible. Heatmap values are drawn in black or white, whichever reaches more contrast, and empty heatmap cells are outlined.
+- Bars in bar charts and histograms have rounded tops (4 pixels, flat at the axis), matching SEGUI charts. In stacked bars only the top segment is rounded.
+- The Okabe-Ito palette starts with blue and ends with gray instead of black, so charts with one or two series use its strongest colors.
+- `segul view align --residue-colors colorblind-safe` colors residues with Okabe-Ito hues for DNA and Paul Tol hues for amino acids. In both themes and color schemes, residue letters reach 4.5:1 contrast on every cell, including selected rows. The dots shown in difference-to-first mode are darker in the light theme and lighter in the dark theme to reach 4.5:1.
+- `segul view summary --theme light` sets colors for light terminals. Terminals with 24-bit color show the same accent color as the alignment viewer.
+- The characters chart in `segul view summary` labels gaps as `- (gap)` and missing data as `? (missing)`.
+- `segul view summary` separates table columns with light lines, so the chosen column stands out. Plots add a heatmap of every column with `h`, each scaled from its lowest to highest value. Choose its colors with `--colormap` (default viridis).
+- `--plot` does not work with `align summary --per-locus`, which writes no locus or taxon summary.
+- `segul align distance` also writes `distance-report.json` with every statistic of the run: totals, a histogram of every pairwise distance across loci, one entry per locus, one entry per sample with its distances to every other sample and its nearest sample, the mean distance between every pair of samples across loci, and, with grouping, the distances within and between groups. With grouping, each sample also gets its highest distance within its group and lowest to another group, which shows whether groups overlap. The sample matrix is left out above 1,000 samples. With `--prefix`, the report is named `<PREFIX>_distance-report.json`.
+- `segul view summary` opens `distance-report.json`, with tables of loci, samples, and groups, and the sample and group matrices as colored grids. Move between matrix cells with the arrow keys.
+- Tabs in `segul view summary` drop their item counts when they would not fit the terminal.
+- `segul align summary` also writes `alignment-report.json` with every statistic of the run: totals, matrix completeness, character counts, and one entry per locus and per taxon. Apps can read it to draw their own charts instead of parsing the CSV and text outputs. With `--prefix`, it is named `<PREFIX>_alignment-report.json`.
+- `segul read summary` is much faster. Each file is read once in large blocks that are summarized on all cores, so a single large FASTQ file no longer runs on one core. On a 2-million-read test file, complete mode went from 8.5 s to 0.3 s for plain FASTQ, from 9.3 s to 0.9 s for gzip, and from 9.2 s to 0.3 s for BGZF, which is also decompressed in parallel.
+- The read summary adds median, standard deviation, and N50 of read length, Q20 and Q30 bases, the mean quality per read, reads with mean quality below 20, and the detected quality offset. The new columns are added after the existing ones.
+- Complete mode adds quality quartiles and N content per read position, length, per-read quality, and GC distributions (with the theoretical GC curve), duplication across every read of each file, overrepresented sequences among all reads, and adapter content for Illumina Universal, Nextera, small RNA, poly-A, and poly-G. The distributions are written to `read-dist-summary.zip`, and all statistics to `read-report.json`.
+- Duplication compares the full sequence of every read. By default it keeps a uniform sample of 100,000 distinct sequences, about 3 MB per file, and counts their copies across the whole file, which estimates the duplicate share within about 0.3% and gives the same result with any number of threads. Set the sample size with `--dup-size`, or use `0` to count every distinct sequence exactly.
+- Overrepresented sequences are found among all reads with a heavy-hitter summary, so every read start above 0.1% of reads is listed. Counts can be short by up to 0.025% of reads, given as `max_error_pct` in `read-report.json`.
+- Running many FASTQ files at once uses smaller read blocks for each file, so memory stays low. On 25 files, complete mode used 214 MB.
+- New read charts with `--plot`: `q30-pct`, `pos-qscore-box`, `length-dist`, `read-qscore-dist`, `gc-dist`, `pos-n-content`, `adapter-content`, and `duplication`.
+- The quality offset (Phred+33 or Phred+64) is detected from the reads. Set it with `--phred 33` or `--phred 64`. Quality scores above 'J', such as PacBio HiFi scores, no longer stop the run.
+- Gzip and BGZF files are recognized from their content, so files with other extensions work. Malformed records now stop the run with the file name and read number instead of being skipped.
+
+Library Changes:
+
+- New `core::align::view::AlignmentView` reads alignments in tiles for interactive viewers, with data type detection, an overview sample, per-chunk gap and variable-site shares, ungapped positions, and FASTA export of chosen rows. It is part of the `align` feature, which now also uses `memchr` and `memmap2`.
+- New `color` module in `segul-core`, available without any feature. It is the single source of colors for segul plots, the terminal viewers, and SEGUI: categorical palettes (`color::Palette`: Okabe-Ito, Paul Tol, and ColorBrewer), continuous colormaps (`color::Colormap`: viridis family and ColorBrewer), alignment residue colors (`color::residue::ResiduePalette`), chart chrome and status colors (`color::ui::ChartTokens`), color vision deficiency simulation, and WCAG 2.2 helpers (`contrast_ratio`, `ensure_contrast`, `best_text_on`, `blend`). The module documentation lists the source of every palette. `colorous` is now a regular dependency of `segul-core`; it has no dependencies of its own.
+- `plot::color` re-exports `color`, so existing `segul_core::plot::color` paths keep working. `PlotStyle::line_colors` gives the series colors adjusted for lines. Palette, colormap, and color vision deficiency names serialize in kebab case (`"okabe-ito"`, `"viridis"`), the same names the command line takes.
+- New `plot` feature in `segul-core`, on by default. Presets in `plot::align`, `plot::distance`, `plot::read`, `plot::contig`, and `plot::maf` build a `PlotSpec` from a summary file, which `PlotRenderer` writes as SVG or PNG. `PlotSpec` serializes with serde, so apps can draw their own interactive charts from the same data.
+- `plot::batch::PlotWriter` writes many charts into one directory. `plot_alignment_summary`, `plot_distance`, `plot_read_summary`, `plot_contig_summary`, and `plot_maf_summary` write every chart for a summary.
+- The summary functions now return the files they wrote: `AlignmentSummary::summarize_all` returns `AlignSummaryFiles`, `GenomicReadSummary::summarize` returns `ReadSummaryFiles`, `ContigSummaryHandler::summarize` returns the summary path, and `AlignmentDistance::compute` returns `DistanceFiles`. The summary, read, and contig writers return the path they wrote. Code that calls them as statements keeps compiling.
+- New `pdf` feature, on by default, adds PDF output to `PlotRenderer`. PDF is only available through the library.
+- PNG and PDF draw text with fonts from `PlotFonts`: font files passed by the app (`PlotFonts::from_data`), the system fonts (`PlotFonts::system`), or both. No font is bundled. SVG output needs no fonts.
+- New `parser::summary_csv::SummaryCsv` reads segul summary files, including the per-position read archive.
+- The `plot` feature adds `plotters`, `resvg`, and `usvg`, and `pdf` adds `svg2pdf`. All are pure Rust. Turn off default features to leave them out.
+- New `stats::fastq::FastqAnalyzer` computes all read statistics for one file in a single pass and returns a `stats::fastq::report::SampleReadReport`. `ReadReport::from_path` reads `read-report.json`, and every report type serializes with serde.
+- `GenomicReadSummary::try_summarize` returns errors from invalid input instead of panicking, and `GenomicReadSummary::with_phred` sets the quality offset. `ReadSummaryFiles` gains `distributions` and `report`.
+- `FastqSummary` gains a `report` field with all statistics. Its existing fields are still filled.
+- New writers `ReadDistSummaryWriter` and `ReadReportWriter`, and `ReadSummaryWriter::write_summary` writes the Complete mode columns.
+- `FastqAnalyzer::with_dup_sketch_size` and `GenomicReadSummary::with_dup_sketch_size` set the duplication sample size, with `stats::fastq::DEFAULT_DUP_SKETCH_SIZE` as the default.
+- New `stats::align_report::AlignReport` holds every alignment summary statistic and serializes with serde. `AlignmentSummary::summarize_all` writes it, `AlignSummaryFiles` gains a `report` field with its path, and `AlignReport::from_path` reads it back. Code that builds `AlignSummaryFiles` itself needs to set the new field.
+- New `stats::distance_report::DistanceReport` holds every pairwise distance statistic and serializes with serde. `AlignmentDistance::compute` writes it, `DistanceFiles` gains a `report` field with its path, and `DistanceReport::from_path` reads it back.
+- New `helper::progress::ProgressReporter` lets apps follow long-running tasks file by file and stop them between files. Pass it with `with_progress` on `GenomicReadSummary`, `ContigSummaryHandler`, `MafConverter`, and `MafSummary`. A cancelled run returns the `helper::progress::Cancelled` error. FASTQ and MAF files that are already running stop at their next block of reads or alignment block, so cancelling takes effect within moments. Without a reporter, tasks behave as before. `FastqAnalyzer::with_progress` adds the same check to a single file.
+- New `ContigSummaryHandler::try_summarize` returns errors instead of panicking. Contig summary rows now follow the order of the input files.
+- The `read` feature uses `noodles` for BGZF instead of FASTQ, adds `memchr` and `xxhash-rust`, and gzip decoding uses the faster `zlib-rs` backend.
+
+Breaking Changes:
+
+- Library: `FastqMappedRead` and `FastqSummary::summarize_map` are removed. Per-position statistics are in `SampleReadReport::positions`. `ReadPosSummaryWriter::write` takes `&[SampleReadReport]`.
+- Library: code that builds `ReadSummaryFiles` directly must set the new `distributions` and `report` fields.
+- `SeqReadFmt` no longer decides how a file is decompressed. The compression is read from the file content.
+
+Bug Fixes:
+
+- Fix a missing input file given with `-i` on Windows stopping with "Empty folders!" instead of naming the file. Paths without wildcards are now passed on as given, as on other platforms, and a pattern that matches no files names the pattern.
+
 ## v0.24.0
 
 Installation:

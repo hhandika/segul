@@ -1,0 +1,103 @@
+use clap::builder::TypedValueParser as _;
+use std::path::PathBuf;
+
+use clap::{Args, Subcommand, builder};
+use segul_core::color::Colormap;
+
+use super::IOArgs;
+
+#[derive(Subcommand)]
+pub(crate) enum ViewSubcommand {
+    #[command(
+        about = "View alignments in an interactive terminal viewer",
+        name = "align",
+        after_help = "Multiple files:\n  \
+        segul view align -d alignments/            View every alignment in a folder\n  \
+        segul view align -i locus1.fas locus2.fas  View several files\n  \
+        segul view align -i 'loci/*.nex'           View files matching a pattern\n\n\
+        The viewer opens the first file. Ctrl+PgUp / Ctrl+PgDn (Ctrl+fn+↑ / ↓ on macOS) \
+        moves to the previous or next file. Ctrl+P lists the files; type to filter, \
+        then Enter to open."
+    )]
+    Align(ViewAlignArgs),
+    #[command(
+        about = "View a summary report in an interactive terminal viewer, as tables or plots",
+        name = "summary"
+    )]
+    Summary(ViewSummaryArgs),
+}
+
+#[derive(Args)]
+pub(crate) struct ViewAlignArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[arg(
+        short = 'f',
+        long = "input-format",
+        value_name = "SEQUENCE INPUT FORMAT",
+        help = "Specify input format",
+        default_value = "auto",
+        value_parser = builder::PossibleValuesParser::new(["auto","fasta","nexus","phylip"]),
+    )]
+    pub(crate) input_fmt: String,
+    #[arg(
+        long = "datatype",
+        help = "Specify sequence datatype. Ignore detects DNA or amino acids from the residues",
+        default_value = "ignore",
+        value_parser = builder::PossibleValuesParser::new(["dna", "aa", "ignore"]),
+    )]
+    pub(crate) datatype: String,
+    #[arg(
+        long = "theme",
+        help = "Residue colors for a dark or light terminal",
+        default_value = "dark",
+        value_parser = builder::PossibleValuesParser::new(["dark", "light"]),
+    )]
+    pub(crate) theme: String,
+    #[arg(
+        long = "residue-colors",
+        help = "Residue color scheme",
+        default_value = "clustal",
+        value_parser = builder::PossibleValuesParser::new(["clustal", "colorblind-safe"]),
+    )]
+    pub(crate) residue_colors: String,
+    #[arg(
+        long = "chunk",
+        help = "Sites per chunk",
+        default_value_t = 1000,
+        value_parser = builder::PossibleValuesParser::new(["250", "500", "1000", "2000"])
+            .map(|s| s.parse::<usize>().expect("Failed parsing chunk size")),
+    )]
+    pub(crate) chunk: usize,
+}
+
+#[derive(Args)]
+pub(crate) struct ViewSummaryArgs {
+    #[arg(
+        short = 'i',
+        long = "input",
+        value_name = "REPORT",
+        help = "alignment-report.json from `segul align summary`, read-report.json \
+        from `segul read summary --mode complete`, or distance-report.json from \
+        `segul align distance`"
+    )]
+    pub(crate) input: PathBuf,
+    #[arg(
+        long = "theme",
+        help = "Colors for a dark or light terminal",
+        default_value = "dark",
+        value_parser = builder::PossibleValuesParser::new(["dark", "light"]),
+    )]
+    pub(crate) theme: String,
+    #[arg(
+        long,
+        help = "Colormap for the heatmap",
+        default_value_t = Colormap::Viridis,
+        value_parser = builder::PossibleValuesParser::new([
+            "viridis", "cividis", "magma", "inferno", "plasma", "blues", "greens",
+            "ylgnbu", "ylorrd", "rdbu", "puor", "brbg",
+        ])
+            .map(|x| x.parse::<Colormap>().expect("Invalid colormap")),
+    )]
+    pub(crate) colormap: Colormap,
+}

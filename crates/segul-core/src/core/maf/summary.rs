@@ -17,7 +17,11 @@ use rayon::prelude::*;
 
 use super::block::{self, RefBlock, SampleNaming, SpeciesResolver};
 use crate::{
-    helper::{files, utils},
+    helper::{
+        files,
+        progress::{self, ProgressReporter},
+        utils,
+    },
     parser::maf::{MafParagraph, MafReader},
 };
 
@@ -128,6 +132,7 @@ pub struct MafSummary<'a> {
     naming: SampleNaming,
     ref_species: Option<String>,
     species: Option<Vec<String>>,
+    progress: Option<&'a dyn ProgressReporter>,
 }
 
 impl<'a> MafSummary<'a> {
@@ -139,7 +144,14 @@ impl<'a> MafSummary<'a> {
             naming: SampleNaming::default(),
             ref_species: None,
             species: None,
+            progress: None,
         }
+    }
+
+    /// Report per-file progress to `reporter`, which can also cancel the run.
+    pub fn with_progress(mut self, reporter: &'a dyn ProgressReporter) -> Self {
+        self.progress = Some(reporter);
+        self
     }
 
     pub fn with_naming(mut self, naming: SampleNaming) -> Self {
@@ -170,10 +182,16 @@ impl<'a> MafSummary<'a> {
         };
         let spin = utils::set_spinner();
         spin.set_message("Summarizing MAF files...");
+        progress::report_start(self.progress, input_files.len());
         let stats = input_files
             .par_iter()
-            .map(|file| self.summarize_file(file, &resolver, &ref_sample))
+            .map(|file| {
+                progress::track(self.progress, file, || {
+                    self.summarize_file(file, &resolver, &ref_sample)
+                })
+            })
             .collect::<Result<Vec<FileStats>>>()?;
+        progress::report_stage(self.progress, "Writing summary");
         fs::create_dir_all(self.output_dir).with_context(|| {
             format!(
                 "Failed creating output directory {}",
@@ -202,6 +220,8 @@ impl<'a> MafSummary<'a> {
         };
         let reader = MafReader::new(files::open_reader(file)?);
         for paragraph in reader {
+            // Checked per block, so a cancelled run stops mid-file.
+            progress::check_cancelled(self.progress)?;
             let paragraph =
                 paragraph.with_context(|| format!("Failed reading {}", file.display()))?;
             let MafParagraph::Alignment(alignment) = paragraph else {
@@ -371,7 +391,10 @@ fn ratio(numerator: usize, denominator: usize) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::Ordering;
+
     use super::*;
+    use crate::helper::progress::{CancelAfter, Cancelled};
     use tempfile::TempDir;
 
     fn read_csv(path: &Path) -> Vec<HashMap<String, String>> {
@@ -388,6 +411,19 @@ mod tests {
                     .collect()
             })
             .collect()
+    }
+
+    #[test]
+    fn test_cancelled_mid_file() {
+        let output = TempDir::with_prefix("maf-summary").unwrap();
+        let files = vec![PathBuf::from("tests/files/maf/simple.maf")];
+        let reporter = CancelAfter::new(2);
+        let error = MafSummary::new(&files, output.path(), None)
+            .with_progress(&reporter)
+            .summarize()
+            .unwrap_err();
+        assert!(error.downcast_ref::<Cancelled>().is_some());
+        assert_eq!(reporter.finished.load(Ordering::Relaxed), 0);
     }
 
     #[test]

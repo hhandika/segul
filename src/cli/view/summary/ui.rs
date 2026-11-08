@@ -1,0 +1,1167 @@
+//! Draws the summary viewer: toolbar, section tabs, the overview, a table
+//! as rows or a plot, or a matrix, then the status bar.
+
+use std::sync::OnceLock;
+
+use ratatui::Frame;
+use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Bar, BarChart, BarGroup, Block, BorderType, Clear, Paragraph, Wrap};
+use segul_core::color::residue::{ResiduePalette, ResidueScheme};
+use segul_core::color::{Theme, best_text_on};
+use segul_core::helper::types::DataType;
+
+use super::app::{App, Mode, PlotKind, Section};
+use super::data::{Column, Format, SummaryTable, round_step};
+use crate::cli::view::align::palette::{is_truecolor, to_color};
+
+const MIN_WIDTH: u16 = 40;
+const MIN_HEIGHT: u16 = 10;
+/// Accent for labels, bars, and messages, set once by [`set_accent`].
+static ACCENT: OnceLock<Color> = OnceLock::new();
+const NAME_WIDTH: [usize; 2] = [6, 28];
+const MAX_BINS: usize = 20;
+/// Widest histogram bar, so a few bins do not fill the screen.
+const MAX_BAR_WIDTH: usize = 9;
+// Lower three quarters of a cell, so bars on neighboring rows stay apart.
+const BAR: &str = "▆";
+/// Light line between table columns, so the chosen column stands apart.
+const SEPARATOR: &str = "│";
+/// Narrowest and widest heatmap cell, including the separator.
+const CELL_WIDTH: [usize; 2] = [3, 10];
+const HEAT: &str = "█";
+/// Width of a matrix cell, including the separator.
+const MATRIX_CELL: usize = 8;
+
+const HELP: &[(&str, &str)] = &[
+    ("Tab / Shift+Tab", "Next or previous section"),
+    ("1 to 9", "Go to a section"),
+    ("v or F2", "Switch between table and plot"),
+    ("h", "Cycle the plot: bars, histogram, heatmap"),
+    ("Left / Right", "Choose a column"),
+    ("s", "Sort by the column: highest, lowest, report order"),
+    ("Up / Down", "Move the selection"),
+    ("PgUp / PgDn", "Move a page"),
+    ("Home / End", "First or last item"),
+    ("Arrows in a matrix", "Move between cells"),
+    ("Mouse wheel", "Scroll"),
+    ("? or F1", "This help"),
+    ("q or Esc", "Quit"),
+];
+
+/// Use the accent of the shared color library for `theme`. It reaches 4.5:1
+/// on black (dark) or white (light) backgrounds. Terminals without 24-bit
+/// color get the nearest xterm-256 color on light themes and ANSI cyan on
+/// dark ones, which every terminal theme keeps readable.
+pub(super) fn set_accent(theme: Theme) {
+    let source = ResiduePalette::new(&ResidueScheme::Clustal, &theme, &DataType::Dna);
+    let accent = match (theme, is_truecolor()) {
+        (_, true) => to_color(source.accent, true),
+        (Theme::Light, false) => to_color(source.accent, false),
+        (Theme::Dark, false) => Color::Cyan,
+    };
+    let _ = ACCENT.set(accent);
+}
+
+fn accent() -> Color {
+    ACCENT.get().copied().unwrap_or(Color::Cyan)
+}
+
+pub(super) fn render(frame: &mut Frame, app: &mut App) {
+    let area = frame.area();
+    if area.width < MIN_WIDTH || area.height < MIN_HEIGHT {
+        let note = format!("Enlarge the terminal to at least {MIN_WIDTH}x{MIN_HEIGHT}");
+        frame.render_widget(Paragraph::new(note).wrap(Wrap { trim: true }), area);
+        return;
+    }
+    let [toolbar, tabs, main, status] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(3),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    render_toolbar(frame, toolbar, app);
+    render_tabs(frame, tabs, app);
+    match (app.open_section(), app.mode) {
+        (Section::Overview, _) => render_overview(frame, main, app),
+        (Section::Matrix(_), _) => render_matrix(frame, main, app),
+        (Section::Table(_), Mode::Table) => render_table(frame, main, app),
+        (Section::Table(_), Mode::Plot) => match app.plot {
+            PlotKind::Bars => render_bars(frame, main, app),
+            PlotKind::Histogram => render_histogram(frame, main, app),
+            PlotKind::Heatmap => render_heatmap(frame, main, app),
+        },
+    }
+    render_status(frame, status, app);
+    if app.show_help {
+        render_help(frame, area);
+    }
+}
+
+fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
+    let line = Line::from(vec![
+        Span::from(format!(" {}", app.file_name)).bold(),
+        Span::from("  "),
+        Span::from(app.data.kind),
+        Span::from(" · ").dim(),
+        Span::from(app.data.headline.as_str()),
+    ]);
+    frame.render_widget(Paragraph::new(line), area);
+}
+
+fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
+    let mode_width = if app.table().is_some() { 24 } else { 0 };
+    let [left, right] =
+        Layout::horizontal([Constraint::Min(1), Constraint::Length(mode_width)]).areas(area);
+    let tab_labels = |counts: bool| {
+        let mut labels = vec![String::from("Overview")];
+        labels.extend(app.data.tables.iter().map(|t| {
+            if counts {
+                format!("{} ({})", t.name, t.names.len())
+            } else {
+                t.name.to_string()
+            }
+        }));
+        labels.extend(app.data.matrices.iter().map(|m| m.name.to_string()));
+        labels
+    };
+    // Item counts are left out when the tabs would not fit.
+    let mut labels = tab_labels(true);
+    let width: usize = labels.iter().map(|l| l.chars().count() + 5).sum();
+    if width > left.width as usize {
+        labels = tab_labels(false);
+    }
+    let mut spans = vec![Span::from(" ")];
+    for (index, label) in labels.iter().enumerate() {
+        let text = format!(" {} {} ", index + 1, label);
+        spans.push(if index == app.section {
+            Span::from(text).add_modifier(Modifier::REVERSED | Modifier::BOLD)
+        } else {
+            Span::from(text)
+        });
+        spans.push(Span::from(" "));
+    }
+    frame.render_widget(Paragraph::new(Line::from(spans)), left);
+    if app.table().is_some() {
+        let pick = |label: &'static str, on: bool| {
+            if on {
+                Span::from(label).fg(accent()).bold()
+            } else {
+                Span::from(label).dim()
+            }
+        };
+        let mut mode = vec![
+            pick("Table", app.mode == Mode::Table),
+            Span::from(" │ ").dim(),
+            pick("Plot", app.mode == Mode::Plot),
+        ];
+        if app.mode == Mode::Plot {
+            mode.push(Span::from(match app.plot {
+                PlotKind::Bars => " (bars)",
+                PlotKind::Histogram => " (histogram)",
+                PlotKind::Heatmap => " (heatmap)",
+            }));
+        }
+        frame.render_widget(Paragraph::new(Line::from(mode).right_aligned()), right);
+    }
+}
+
+fn render_overview(frame: &mut Frame, area: Rect, app: &App) {
+    let data = &app.data;
+    let key_width = data
+        .overview
+        .iter()
+        .map(|(k, _)| k.chars().count())
+        .max()
+        .unwrap_or(0);
+    let value_width = data
+        .overview
+        .iter()
+        .map(|(_, v)| v.chars().count())
+        .max()
+        .unwrap_or(0);
+    // Wide enough for the longest line and the borders, leaving the
+    // charts at least a third of the screen.
+    let width = ((key_width + value_width + 5) as u16).min(area.width * 2 / 3);
+    let [values, charts] =
+        Layout::horizontal([Constraint::Length(width), Constraint::Min(10)]).areas(area);
+    let lines: Vec<Line> = data
+        .overview
+        .iter()
+        .map(|(key, value)| {
+            Line::from(vec![
+                Span::from(format!(" {:width$}  ", key, width = key_width)).dim(),
+                Span::from(value.as_str()),
+            ])
+        })
+        .collect();
+    let block = Block::bordered()
+        .border_type(BorderType::Rounded)
+        .title(" Overview ");
+    frame.render_widget(
+        Paragraph::new(lines)
+            .block(block)
+            .wrap(Wrap { trim: false }),
+        values,
+    );
+    if data.charts.is_empty() {
+        return;
+    }
+    let areas = Layout::vertical(
+        data.charts
+            .iter()
+            .map(|c| Constraint::Max(c.values.len() as u16 + 2)),
+    )
+    .split(charts);
+    for (chart, &chart_area) in data.charts.iter().zip(areas.iter()) {
+        let block = Block::bordered()
+            .border_type(BorderType::Rounded)
+            .title(format!(" {} ", chart.title));
+        let inner = block.inner(chart_area);
+        let values: Vec<Option<f64>> = chart.values.iter().map(|&v| Some(v)).collect();
+        let labels: Vec<&str> = chart.labels.iter().map(String::as_str).collect();
+        let lines = bar_lines(&labels, &values, chart.format, inner.width as usize, None);
+        frame.render_widget(Paragraph::new(lines).block(block), chart_area);
+    }
+}
+
+fn render_table(frame: &mut Frame, area: Rect, app: &mut App) {
+    let [title, header, rows] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(1),
+    ])
+    .areas(area);
+    app.page_rows = rows.height as usize;
+    app.keep_row_visible();
+    let Some((table, state)) = app.table() else {
+        return;
+    };
+    let name_width = name_width(table);
+    let widths: Vec<usize> = table.columns.iter().map(column_width).collect();
+    let first = first_visible_column(&widths, name_width + 1, area.width as usize, state.column);
+    let last = last_visible_column(&widths, name_width + 1, area.width as usize, first);
+    let hidden = widths.len().saturating_sub(last + 1) + first;
+    frame.render_widget(Paragraph::new(table_title(app, table, hidden)), title);
+    let mut head = vec![Span::from(format!(" {:name_width$}", table.item)).bold()];
+    for (c, column) in table.columns.iter().enumerate().take(last + 1).skip(first) {
+        let arrow = match state.sort {
+            Some((s, true)) if s == c => "↓",
+            Some((s, false)) if s == c => "↑",
+            _ => "",
+        };
+        let label = format!(
+            "{:>width$} ",
+            format!("{arrow}{}", column.label),
+            width = widths[c] - 2
+        );
+        head.push(Span::from(SEPARATOR).dim());
+        head.push(if c == state.column {
+            Span::from(label).fg(accent()).bold()
+        } else {
+            Span::from(label).bold()
+        });
+    }
+    frame.render_widget(Paragraph::new(Line::from(head)), header);
+    let lines: Vec<Line> = state
+        .order
+        .iter()
+        .enumerate()
+        .skip(state.offset)
+        .take(rows.height as usize)
+        .map(|(position, &item)| {
+            let mut spans = vec![Span::from(format!(
+                " {:name_width$}",
+                truncate(&table.names[item], name_width)
+            ))];
+            for (c, column) in table.columns.iter().enumerate().take(last + 1).skip(first) {
+                let text = format!("{:>width$} ", show(column, item), width = widths[c] - 2);
+                spans.push(Span::from(SEPARATOR).dim());
+                spans.push(if c == state.column {
+                    Span::from(text).fg(accent())
+                } else {
+                    Span::from(text)
+                });
+            }
+            let line = Line::from(spans);
+            if position == state.row {
+                line.add_modifier(Modifier::REVERSED)
+            } else {
+                line
+            }
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(lines), rows);
+}
+
+fn render_bars(frame: &mut Frame, area: Rect, app: &mut App) {
+    let [title, rows] = Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(area);
+    app.page_rows = rows.height as usize;
+    app.keep_row_visible();
+    let Some((table, state)) = app.table() else {
+        return;
+    };
+    let Some(column) = table.columns.get(state.column) else {
+        return;
+    };
+    frame.render_widget(Paragraph::new(plot_title(app, table, column)), title);
+    let visible: Vec<usize> = state
+        .order
+        .iter()
+        .skip(state.offset)
+        .take(rows.height as usize)
+        .copied()
+        .collect();
+    let names: Vec<&str> = visible.iter().map(|&i| table.names[i].as_str()).collect();
+    let values: Vec<Option<f64>> = visible.iter().map(|&i| column.values[i]).collect();
+    let largest = column
+        .values
+        .iter()
+        .flatten()
+        .fold(0.0_f64, |a, &b| a.max(b));
+    let highlight = state.row.checked_sub(state.offset);
+    let lines = bar_lines_scaled(
+        &names,
+        &values,
+        column.format,
+        rows.width as usize,
+        highlight,
+        largest,
+        name_width(table),
+    );
+    frame.render_widget(Paragraph::new(lines), rows);
+}
+
+fn render_histogram(frame: &mut Frame, area: Rect, app: &mut App) {
+    let [title, chart, note] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Min(3),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    let Some((table, _)) = app.table() else {
+        return;
+    };
+    let Some(column) = app.column() else {
+        return;
+    };
+    frame.render_widget(Paragraph::new(plot_title(app, table, column)), title);
+    let values: Vec<f64> = column.values.iter().flatten().copied().collect();
+    if values.is_empty() {
+        frame.render_widget(Paragraph::new(" No values to plot").dim(), chart);
+        return;
+    }
+    let max_bins = (chart.width as usize / 4).clamp(1, MAX_BINS);
+    let bins = Histogram::of(&values, max_bins);
+    let selected = app
+        .selected()
+        .and_then(|item| column.values[item])
+        .map(|value| bins.bin_of(value));
+    let bar_width = (chart.width as usize / bins.counts.len())
+        .saturating_sub(1)
+        .clamp(1, MAX_BAR_WIDTH) as u16;
+    let bars: Vec<Bar> = bins
+        .counts
+        .iter()
+        .enumerate()
+        .map(|(i, &count)| {
+            let style = if Some(i) == selected {
+                selected_bar()
+            } else {
+                Style::new().fg(accent())
+            };
+            Bar::default()
+                .value(count)
+                .label(Line::from(bins.label(i, column.format)))
+                .style(style)
+        })
+        .collect();
+    let widget = BarChart::default()
+        .data(BarGroup::default().bars(&bars))
+        .bar_width(bar_width)
+        .bar_gap(1)
+        .value_style(Style::new().add_modifier(Modifier::REVERSED));
+    frame.render_widget(widget, chart);
+    if let (Some(item), Some(bin)) = (app.selected(), selected) {
+        let text = format!(
+            " Selected {}: {} (range {})",
+            table.names[item],
+            show(column, item),
+            bins.label(bin, column.format)
+        );
+        frame.render_widget(Paragraph::new(text).dim(), note);
+    }
+}
+
+fn render_heatmap(frame: &mut Frame, area: Rect, app: &mut App) {
+    let [title, header, rows, legend] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(1),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    app.page_rows = rows.height as usize;
+    app.keep_row_visible();
+    let Some((table, state)) = app.table() else {
+        return;
+    };
+    if table.columns.is_empty() {
+        return;
+    }
+    let truecolor = is_truecolor();
+    let name_width = name_width(table);
+    let used = name_width + 1;
+    let cell = (area.width as usize)
+        .saturating_sub(used)
+        .checked_div(table.columns.len())
+        .unwrap_or(0)
+        .clamp(CELL_WIDTH[0], CELL_WIDTH[1]);
+    let widths = vec![cell; table.columns.len()];
+    let first = first_visible_column(&widths, used, area.width as usize, state.column);
+    let last = last_visible_column(&widths, used, area.width as usize, first);
+    let more = match widths.len().saturating_sub(last + 1) + first {
+        0 => String::new(),
+        1 => String::from(" · 1 more column"),
+        n => format!(" · {n} more columns"),
+    };
+    let heading = Line::from(vec![
+        Span::from(format!(" {} by column", table.name)).bold(),
+        Span::from(format!("{more} · ← → column · s sort · h bars · v table")).dim(),
+    ]);
+    frame.render_widget(Paragraph::new(heading), title);
+    let mut head = vec![Span::from(format!(" {:name_width$}", table.item)).bold()];
+    for (c, column) in table.columns.iter().enumerate().take(last + 1).skip(first) {
+        let label = format!(
+            "{:cell$}",
+            truncate(column.label, cell - 1),
+            cell = cell - 1
+        );
+        head.push(Span::from(SEPARATOR).dim());
+        head.push(if c == state.column {
+            Span::from(label).fg(accent()).bold()
+        } else {
+            Span::from(label).bold()
+        });
+    }
+    frame.render_widget(Paragraph::new(Line::from(head)), header);
+    let ranges: Vec<Option<(f64, f64)>> = table.columns.iter().map(value_range).collect();
+    let lines: Vec<Line> = state
+        .order
+        .iter()
+        .enumerate()
+        .skip(state.offset)
+        .take(rows.height as usize)
+        .map(|(position, &item)| {
+            let name = Span::from(format!(
+                " {:name_width$}",
+                truncate(&table.names[item], name_width)
+            ));
+            let mut spans = vec![if position == state.row {
+                name.add_modifier(Modifier::REVERSED)
+            } else {
+                name
+            }];
+            for (c, column) in table.columns.iter().enumerate().take(last + 1).skip(first) {
+                spans.push(Span::from(SEPARATOR).dim());
+                spans.push(match (column.values[item], ranges[c]) {
+                    (Some(value), Some((min, max))) => {
+                        let color = app.colormap.at(scale(value, min, max));
+                        Span::from(HEAT.repeat(cell - 1)).fg(to_color(color, truecolor))
+                    }
+                    _ => Span::from(format!("{:^width$}", "·", width = cell - 1)).dim(),
+                });
+            }
+            Line::from(spans)
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(lines), rows);
+    let mut key = vec![Span::from(" low ").dim()];
+    key.extend(
+        app.colormap
+            .stops(8)
+            .into_iter()
+            .map(|color| Span::from(HEAT).fg(to_color(color, truecolor))),
+    );
+    key.push(Span::from(" high · scaled per column").dim());
+    if let (Some(item), Some(column)) = (app.selected(), app.column()) {
+        key.push(
+            Span::from(format!(
+                " · {} {}: {}",
+                table.names[item],
+                column.label,
+                show(column, item)
+            ))
+            .dim(),
+        );
+    }
+    frame.render_widget(Paragraph::new(Line::from(key)), legend);
+}
+
+fn render_matrix(frame: &mut Frame, area: Rect, app: &mut App) {
+    let [title, header, rows, legend] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(1),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    let Some((matrix, _)) = app.matrix() else {
+        return;
+    };
+    // Columns are headed by row number, since names rarely fit a cell.
+    let number_width = matrix.names.len().to_string().len();
+    let name_width = matrix
+        .names
+        .iter()
+        .map(|n| n.chars().count())
+        .max()
+        .unwrap_or(0)
+        .clamp(NAME_WIDTH[0], NAME_WIDTH[1])
+        + number_width
+        + 1;
+    app.page_rows = rows.height as usize;
+    app.page_columns = ((area.width as usize).saturating_sub(name_width + 1) / MATRIX_CELL).max(1);
+    app.keep_cell_visible();
+    let Some((matrix, state)) = app.matrix() else {
+        return;
+    };
+    let items = matrix.names.len();
+    let heading = Line::from(vec![
+        Span::from(format!(" {} · {} {}", matrix.name, items, matrix.item)).bold(),
+        Span::from(" · arrows move · PgUp PgDn page").dim(),
+    ]);
+    frame.render_widget(Paragraph::new(heading), title);
+    let columns: Vec<usize> = (state.column_offset..items)
+        .take(app.page_columns)
+        .collect();
+    let mut head = vec![Span::from(format!(" {:name_width$}", ""))];
+    for &c in &columns {
+        let label = format!("{:>width$}", c + 1, width = MATRIX_CELL - 1);
+        head.push(Span::from(SEPARATOR).dim());
+        head.push(if c == state.column {
+            Span::from(label).fg(accent()).bold()
+        } else {
+            Span::from(label).bold()
+        });
+    }
+    frame.render_widget(Paragraph::new(Line::from(head)), header);
+    // One scale for every pair, leaving out each item with itself.
+    let off_diagonal = matrix.values.iter().enumerate().flat_map(|(i, row)| {
+        row.iter()
+            .enumerate()
+            .filter(move |&(j, _)| j != i)
+            .filter_map(|(_, v)| *v)
+    });
+    let range = off_diagonal.fold(None, |range: Option<(f64, f64)>, v| {
+        Some(range.map_or((v, v), |(min, max)| (min.min(v), max.max(v))))
+    });
+    let truecolor = is_truecolor();
+    let lines: Vec<Line> = (state.row_offset..items)
+        .take(rows.height as usize)
+        .map(|r| {
+            let name = format!(
+                " {:>number_width$} {:width$}",
+                r + 1,
+                truncate(&matrix.names[r], name_width - number_width - 1),
+                width = name_width - number_width - 1
+            );
+            let mut spans = vec![if r == state.row {
+                Span::from(name).fg(accent()).bold()
+            } else {
+                Span::from(name)
+            }];
+            for &c in &columns {
+                spans.push(Span::from(SEPARATOR).dim());
+                let text = matrix.values[r][c].map_or_else(
+                    || format!("{:^width$}", "·", width = MATRIX_CELL - 1),
+                    |v| format!("{:>width$}", matrix.format.show(v), width = MATRIX_CELL - 1),
+                );
+                let cell = match (matrix.values[r][c], range) {
+                    (Some(value), Some((min, max))) if r != c => {
+                        let bg = app.colormap.at(scale(value, min, max));
+                        Span::from(text)
+                            .bg(to_color(bg, truecolor))
+                            .fg(to_color(best_text_on(bg), truecolor))
+                    }
+                    _ => Span::from(text).dim(),
+                };
+                spans.push(if r == state.row && c == state.column {
+                    cell.add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                } else {
+                    cell
+                });
+            }
+            Line::from(spans)
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(lines), rows);
+    let mut key = vec![Span::from(" low ").dim()];
+    key.extend(
+        app.colormap
+            .stops(8)
+            .into_iter()
+            .map(|color| Span::from(HEAT).fg(to_color(color, truecolor))),
+    );
+    key.push(Span::from(" high").dim());
+    if let Some((min, max)) = range {
+        key.push(
+            Span::from(format!(
+                " · {} to {}",
+                matrix.format.show(min),
+                matrix.format.show(max)
+            ))
+            .dim(),
+        );
+    }
+    frame.render_widget(Paragraph::new(Line::from(key)), legend);
+}
+
+fn render_status(frame: &mut Frame, area: Rect, app: &App) {
+    let left = match (&app.message, app.table()) {
+        (Some(message), _) => Line::from(format!(" {message}")).fg(accent()),
+        (None, None) if app.matrix().is_some() => {
+            let (matrix, state) = app.matrix().expect("Failed finding the matrix");
+            let value = matrix.values[state.row][state.column]
+                .map_or_else(|| String::from("-"), |v| matrix.format.show(v));
+            Line::from(format!(
+                " {} × {}: {} · row {}, column {} of {}",
+                matrix.names[state.row],
+                matrix.names[state.column],
+                value,
+                state.row + 1,
+                state.column + 1,
+                matrix.names.len()
+            ))
+        }
+        (None, Some((table, state))) => match (app.selected(), app.column()) {
+            (Some(item), Some(column)) => Line::from(format!(
+                " {} · {}: {} · {} of {}",
+                table.names[item],
+                column.label,
+                show(column, item),
+                state.row + 1,
+                state.order.len()
+            )),
+            _ => Line::from(format!(" No {}", table.name.to_lowercase())),
+        },
+        (None, None) => Line::from(" Tab to see the tables").dim(),
+    };
+    let [left_area, right_area] =
+        Layout::horizontal([Constraint::Min(1), Constraint::Length(10)]).areas(area);
+    frame.render_widget(Paragraph::new(left), left_area);
+    frame.render_widget(
+        Paragraph::new(Line::from("? Help ").right_aligned()).dim(),
+        right_area,
+    );
+}
+
+fn render_help(frame: &mut Frame, area: Rect) {
+    let width = 70.min(area.width);
+    let height = (HELP.len() as u16 + 2).min(area.height);
+    let popup = centered(area, width, height);
+    let lines: Vec<Line> = HELP
+        .iter()
+        .map(|(keys, action)| {
+            Line::from(vec![
+                Span::from(format!(" {:18}", keys)).bold(),
+                Span::from(*action),
+            ])
+        })
+        .collect();
+    let block = Block::bordered()
+        .border_type(BorderType::Rounded)
+        .title(" Keyboard shortcuts ")
+        .title_bottom(Line::from(" Esc close ").right_aligned());
+    frame.render_widget(Clear, popup);
+    frame.render_widget(Paragraph::new(lines).block(block), popup);
+}
+
+/// Name, order, and keys of the open table. [hidden] columns do not fit
+/// and scroll into view with the arrow keys.
+fn table_title<'a>(app: &App, table: &'a SummaryTable, hidden: usize) -> Line<'a> {
+    let Some((_, state)) = app.table() else {
+        return Line::default();
+    };
+    let order = match state.sort {
+        Some((c, true)) => format!("sorted by {}, highest first", table.columns[c].label),
+        Some((c, false)) => format!("sorted by {}, lowest first", table.columns[c].label),
+        None => String::from("report order"),
+    };
+    let more = match hidden {
+        0 => String::new(),
+        1 => String::from(" · 1 more column"),
+        n => format!(" · {n} more columns"),
+    };
+    Line::from(vec![
+        Span::from(format!(" {}", table.name)).bold(),
+        Span::from(format!(" · {order}{more} · ← → column · s sort · v plot")).dim(),
+    ])
+}
+
+fn plot_title<'a>(app: &App, table: &'a SummaryTable, column: &'a Column) -> Line<'a> {
+    let mut values: Vec<f64> = column.values.iter().flatten().copied().collect();
+    values.sort_by(f64::total_cmp);
+    let stats = match (values.first(), values.last()) {
+        (Some(&min), Some(&max)) => format!(
+            " · min {} · median {} · max {}",
+            column.format.show(min),
+            column.format.show(median(&values)),
+            column.format.show(max)
+        ),
+        _ => String::new(),
+    };
+    let hint = match app.plot {
+        PlotKind::Bars => " · h histogram · v table",
+        PlotKind::Histogram => " · h heatmap · v table",
+        PlotKind::Heatmap => " · h bars · v table",
+    };
+    Line::from(vec![
+        Span::from(format!(
+            " {} by {}",
+            column.label,
+            table.item.to_lowercase()
+        ))
+        .bold(),
+        Span::from(stats),
+        Span::from(hint).dim(),
+    ])
+}
+
+/// Bars scaled to the largest of [values], each line a label, the bar, and
+/// the value. [highlight] marks one line.
+fn bar_lines<'a>(
+    labels: &[&'a str],
+    values: &[Option<f64>],
+    format: Format,
+    width: usize,
+    highlight: Option<usize>,
+) -> Vec<Line<'a>> {
+    let largest = values.iter().flatten().fold(0.0_f64, |a, &b| a.max(b));
+    let label_width = labels
+        .iter()
+        .map(|l| l.chars().count())
+        .max()
+        .unwrap_or(0)
+        .clamp(1, NAME_WIDTH[1]);
+    bar_lines_scaled(
+        labels,
+        values,
+        format,
+        width,
+        highlight,
+        largest,
+        label_width,
+    )
+}
+
+fn bar_lines_scaled<'a>(
+    labels: &[&'a str],
+    values: &[Option<f64>],
+    format: Format,
+    width: usize,
+    highlight: Option<usize>,
+    largest: f64,
+    label_width: usize,
+) -> Vec<Line<'a>> {
+    let texts: Vec<String> = values
+        .iter()
+        .map(|v| v.map_or_else(|| String::from("-"), |v| format.show(v)))
+        .collect();
+    let value_width = texts.iter().map(|t| t.len()).max().unwrap_or(1);
+    let bar_width = width.saturating_sub(label_width + value_width + 4);
+    labels
+        .iter()
+        .zip(values.iter().zip(texts))
+        .enumerate()
+        .map(|(i, (label, (value, text)))| {
+            let bar = value.map_or_else(String::new, |v| bar(v, largest, bar_width));
+            let pad = bar_width.saturating_sub(bar.chars().count());
+            let label = Span::from(format!(" {:label_width$} ", truncate(label, label_width)));
+            let value = Span::from(format!("{:>value_width$}", text));
+            let pad = Span::from(" ".repeat(pad + 1));
+            // Reversing the whole line would draw the bar's blocks in the
+            // background color, so only the label and value are reversed.
+            if Some(i) == highlight {
+                Line::from(vec![
+                    label.add_modifier(Modifier::REVERSED),
+                    Span::from(bar).style(selected_bar()),
+                    pad,
+                    value.add_modifier(Modifier::REVERSED),
+                ])
+            } else {
+                Line::from(vec![label, Span::from(bar).fg(accent()), pad, value])
+            }
+        })
+        .collect()
+}
+
+/// The selected item's bar, in the terminal's text color to match the
+/// reversed selection.
+fn selected_bar() -> Style {
+    Style::new().fg(Color::Reset)
+}
+
+/// A bar of [value] out of [largest] in [width] cells. Any value above
+/// zero gets at least one cell, so small values stay visible.
+fn bar(value: f64, largest: f64, width: usize) -> String {
+    if largest <= 0.0 || value <= 0.0 || width == 0 {
+        return String::new();
+    }
+    let cells = ((value / largest).min(1.0) * width as f64).round() as usize;
+    BAR.repeat(cells.max(1))
+}
+
+/// Lowest and highest value of [column], or none if it has no values.
+fn value_range(column: &Column) -> Option<(f64, f64)> {
+    let mut values = column.values.iter().flatten().copied();
+    let first = values.next()?;
+    Some(values.fold((first, first), |(min, max), v| (min.min(v), max.max(v))))
+}
+
+/// Position of [value] from [min] (0) to [max] (1). Columns with one value
+/// throughout sit in the middle of the colormap.
+fn scale(value: f64, min: f64, max: f64) -> f64 {
+    if max > min {
+        (value - min) / (max - min)
+    } else {
+        0.5
+    }
+}
+
+fn show(column: &Column, item: usize) -> String {
+    column.values[item].map_or_else(|| String::from("-"), |v| column.format.show(v))
+}
+
+fn name_width(table: &SummaryTable) -> usize {
+    table
+        .names
+        .iter()
+        .map(|n| n.chars().count())
+        .max()
+        .unwrap_or(0)
+        .max(table.item.len())
+        .clamp(NAME_WIDTH[0], NAME_WIDTH[1])
+}
+
+fn column_width(column: &Column) -> usize {
+    let longest = column
+        .values
+        .iter()
+        .map(|v| v.map_or(1, |v| column.format.show(v).len()))
+        .max()
+        .unwrap_or(1);
+    // Room for the sort arrow and a gap before the column.
+    (longest + 1).max(column.label.chars().count() + 1) + 2
+}
+
+/// First value column to draw so the chosen one fits beside the names.
+fn first_visible_column(widths: &[usize], used: usize, width: usize, chosen: usize) -> usize {
+    let mut first = 0;
+    while first < chosen {
+        let end: usize = used + widths[first..=chosen].iter().sum::<usize>();
+        if end <= width {
+            break;
+        }
+        first += 1;
+    }
+    first
+}
+
+/// Last value column, from [first], that fits whole beside the names.
+fn last_visible_column(widths: &[usize], used: usize, width: usize, first: usize) -> usize {
+    let mut end = used;
+    let mut last = first;
+    for (c, &w) in widths.iter().enumerate().skip(first) {
+        end += w;
+        if end > width {
+            break;
+        }
+        last = c;
+    }
+    last
+}
+
+fn median(sorted: &[f64]) -> f64 {
+    let mid = sorted.len() / 2;
+    if sorted.len() % 2 == 1 {
+        sorted[mid]
+    } else {
+        (sorted[mid - 1] + sorted[mid]) / 2.0
+    }
+}
+
+fn truncate(text: &str, width: usize) -> String {
+    if text.chars().count() <= width {
+        return text.to_string();
+    }
+    let mut out: String = text.chars().take(width.saturating_sub(1)).collect();
+    out.push('…');
+    out
+}
+
+fn centered(area: Rect, width: u16, height: u16) -> Rect {
+    let x = area.x + (area.width.saturating_sub(width)) / 2;
+    let y = area.y + (area.height.saturating_sub(height)) / 2;
+    Rect::new(x, y, width, height)
+}
+
+/// Counts of values in ranges of one round width.
+struct Histogram {
+    start: f64,
+    step: f64,
+    /// Whether every value is a whole number, so ranges end one below the
+    /// next start.
+    is_whole: bool,
+    counts: Vec<u64>,
+}
+
+impl Histogram {
+    /// Bins of [values] in at most [max_bins] ranges. Whole numbers with
+    /// few distinct values get one bin each.
+    fn of(values: &[f64], max_bins: usize) -> Self {
+        let low = values.iter().copied().fold(f64::INFINITY, f64::min);
+        let high = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+        let is_whole = values.iter().all(|v| v.fract() == 0.0);
+        let mut step = if is_whole && high - low + 1.0 <= max_bins as f64 {
+            1.0
+        } else {
+            round_step((high - low) / max_bins as f64)
+        };
+        if is_whole && step < 1.0 {
+            step = 1.0;
+        }
+        let start = (low / step).floor() * step;
+        let bins = ((high - start) / step).floor() as usize + 1;
+        let mut counts = vec![0; bins];
+        for &v in values {
+            let bin = (((v - start) / step).floor() as usize).min(bins - 1);
+            counts[bin] += 1;
+        }
+        Self {
+            start,
+            step,
+            is_whole,
+            counts,
+        }
+    }
+
+    fn bin_of(&self, value: f64) -> usize {
+        (((value - self.start) / self.step).floor().max(0.0) as usize).min(self.counts.len() - 1)
+    }
+
+    fn label(&self, bin: usize, format: Format) -> String {
+        let from = self.start + bin as f64 * self.step;
+        if self.is_whole && self.step == 1.0 {
+            return format.show(from);
+        }
+        let to = if self.is_whole {
+            from + self.step - 1.0
+        } else {
+            from + self.step
+        };
+        let show = |v: f64| match format {
+            Format::Count => format.show(v),
+            // Bounds of round steps need no forced decimal.
+            Format::Decimal if v.fract() == 0.0 => format!("{v}"),
+            Format::Decimal => format!("{v:.1}"),
+            Format::Distance => {
+                let decimals = (-self.step.log10().floor()).max(0.0) as usize;
+                format!("{v:.decimals$}")
+            }
+        };
+        format!("{}-{}", show(from), show(to))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use std::path::Path;
+
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    use segul_core::color::Colormap;
+
+    use super::super::data::SummaryData;
+
+    fn screen(app: &mut App) -> String {
+        let mut terminal =
+            Terminal::new(TestBackend::new(100, 24)).expect("Failed creating terminal");
+        terminal
+            .draw(|frame| render(frame, app))
+            .expect("Failed drawing");
+        let buffer = terminal.backend().buffer();
+        (0..buffer.area.height)
+            .map(|y| {
+                (0..buffer.area.width)
+                    .map(|x| buffer[(x, y)].symbol())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    fn press(app: &mut App, code: KeyCode) {
+        app.handle_key(KeyEvent::new(code, KeyModifiers::NONE));
+    }
+
+    #[test]
+    fn test_render_alignment() {
+        let data = SummaryData::from_path(Path::new(
+            "crates/segul-core/tests/files/plot/alignment-report.json",
+        ))
+        .unwrap();
+        let mut app = App::new(
+            data,
+            String::from("alignment-report.json"),
+            Colormap::Viridis,
+        );
+        let text = screen(&mut app);
+        assert!(text.contains("alignment-report.json"));
+        assert!(text.contains("3 taxa · 4 loci · DNA"));
+        assert!(text.contains("2 Loci (4)"));
+        assert!(text.contains("gene_1"));
+        assert!(text.contains("Informative"));
+        assert!(text.contains("gene_1 · Taxa: 1 · 1 of 4"));
+        assert!(text.contains(SEPARATOR));
+
+        press(&mut app, KeyCode::Char('v'));
+        let text = screen(&mut app);
+        assert!(text.contains("Taxa by locus"));
+        assert!(text.contains(BAR));
+
+        press(&mut app, KeyCode::Char('h'));
+        let text = screen(&mut app);
+        assert!(text.contains("(histogram)"));
+        assert!(text.contains("Selected gene_1"));
+
+        press(&mut app, KeyCode::Char('h'));
+        let text = screen(&mut app);
+        assert!(text.contains("(heatmap)"));
+        assert!(text.contains("Loci by column"));
+        assert!(text.contains("scaled per column"));
+        assert!(text.contains(HEAT));
+
+        press(&mut app, KeyCode::Char('1'));
+        let text = screen(&mut app);
+        assert!(text.contains("Loci with at least this share of taxa"));
+        assert!(text.contains("GC content"));
+
+        app.show_help = true;
+        let text = screen(&mut app);
+        assert!(text.contains("Keyboard shortcuts"));
+    }
+
+    #[test]
+    fn test_render_reads() {
+        let data = SummaryData::from_path(Path::new(
+            "crates/segul-core/tests/files/plot/read-report.json",
+        ))
+        .unwrap();
+        let mut app = App::new(data, String::from("read-report.json"), Colormap::Viridis);
+        let text = screen(&mut app);
+        assert!(text.contains("Read summary"));
+        assert!(text.contains("Samples ("));
+        // Columns scroll so the chosen one stays in view.
+        for _ in 0..12 {
+            press(&mut app, KeyCode::Right);
+        }
+        let text = screen(&mut app);
+        assert!(!text.contains(" Reads "));
+    }
+
+    #[test]
+    fn test_render_distance() {
+        let data = SummaryData::from_path(Path::new(
+            "crates/segul-core/tests/files/plot/distance-report.json",
+        ))
+        .unwrap();
+        let mut app = App::new(
+            data,
+            String::from("distance-report.json"),
+            Colormap::Viridis,
+        );
+        let text = screen(&mut app);
+        assert!(text.contains("6 samples · 3 loci · K2P"));
+        assert!(text.contains("4 Groups"));
+        assert!(text.contains("5 Matrix"));
+        assert!(text.contains("6 Group matrix"));
+
+        press(&mut app, KeyCode::Char('1'));
+        let text = screen(&mut app);
+        assert!(text.contains("Pairwise distances, all loci"));
+        assert!(text.contains("Median locus mean"));
+
+        press(&mut app, KeyCode::Char('5'));
+        press(&mut app, KeyCode::Right);
+        let text = screen(&mut app);
+        assert!(text.contains("Matrix · 6 samples"));
+        assert!(text.contains("Mus_musculus_A × Mus_musculus_B: 0.0328"));
+        assert!(text.contains("0.0328"));
+        assert!(text.contains(HEAT));
+    }
+
+    #[test]
+    fn test_selected_bar_visible() {
+        let lines = bar_lines(
+            &["a", "b"],
+            &[Some(4.0), Some(2.0)],
+            Format::Count,
+            20,
+            Some(0),
+        );
+        let bar = &lines[0].spans[1];
+        assert!(bar.content.contains(BAR));
+        assert!(!bar.style.add_modifier.contains(Modifier::REVERSED));
+        assert_eq!(bar.style.fg, Some(Color::Reset));
+        assert!(
+            lines[0].spans[0]
+                .style
+                .add_modifier
+                .contains(Modifier::REVERSED)
+        );
+        assert_eq!(lines[1].spans[1].style.fg, Some(accent()));
+    }
+
+    #[test]
+    fn test_histogram() {
+        let bins = Histogram::of(&[2.0, 3.0, 3.0, 4.0], 10);
+        assert_eq!(bins.counts, vec![1, 2, 1]);
+        assert_eq!(bins.label(0, Format::Count), "2");
+        let values: Vec<f64> = (100..300).map(f64::from).collect();
+        let bins = Histogram::of(&values, 10);
+        assert_eq!(bins.counts.len(), 10);
+        assert_eq!(bins.label(0, Format::Count), "100-119");
+        assert_eq!(bins.bin_of(299.0), 9);
+        let bins = Histogram::of(&[0.5, 1.2, 9.9], 5);
+        assert_eq!(bins.label(0, Format::Decimal), "0-2");
+        assert_eq!(bins.counts.iter().sum::<u64>(), 3);
+    }
+
+    #[test]
+    fn test_scale() {
+        assert_eq!(scale(5.0, 0.0, 10.0), 0.5);
+        assert_eq!(scale(10.0, 0.0, 10.0), 1.0);
+        assert_eq!(scale(3.0, 3.0, 3.0), 0.5);
+        let column = Column {
+            label: "GC %",
+            values: vec![Some(40.0), None, Some(45.0), Some(30.0)],
+            format: Format::Decimal,
+        };
+        assert_eq!(value_range(&column), Some((30.0, 45.0)));
+    }
+
+    #[test]
+    fn test_bar() {
+        assert_eq!(bar(10.0, 10.0, 4), "▆▆▆▆");
+        assert_eq!(bar(5.0, 10.0, 4), "▆▆");
+        assert_eq!(bar(0.1, 10.0, 4), "▆");
+        assert_eq!(bar(0.0, 10.0, 4), "");
+        assert_eq!(truncate("sample_long", 6), "sampl…");
+    }
+}

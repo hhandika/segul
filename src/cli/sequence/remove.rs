@@ -57,7 +57,7 @@ impl<'a> RemoveParser<'a> {
         } else if let Some(ids) = &self.args.id {
             let id_list = self.parse_id_opts(ids);
             log::info!("{:18}: id", "Options");
-            log::info!("{:18}: {:?}", "Values", &id_list);
+            log::info!("{:18}: {:?}", "Values", id_list);
             SeqRemovalParameters::Id(id_list)
         } else {
             unimplemented!("SeqRemovalParameters::None is not implemented yet")

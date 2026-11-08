@@ -5,10 +5,15 @@ on:
     tags:
       - "*"
 
+permissions:
+  contents: read
+
 jobs:
   linux:
     name: Linux x86_64 GNU
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -29,6 +34,7 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-Linux-x86_64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
           body: |
             ## Install
@@ -46,6 +52,8 @@ jobs:
   linux_musl:
     name: Linux x86_64 Static
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -71,11 +79,14 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-Linux-musl-x86_64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   linux_arm:
     name: Linux arm64 GNU
     runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -96,11 +107,14 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-Linux-arm64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   macos:
     name: macOS x86_64
     runs-on: macos-15-intel
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -121,11 +135,14 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-macOS-x86_64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   macos_arm:
     name: macOS arm64
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -146,11 +163,14 @@ jobs:
           file: segul.tar.gz
           asset_name: segul-macOS-arm64.tar.gz
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   windows:
     name: Windows x86_64
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -171,11 +191,14 @@ jobs:
           file: segul.zip
           asset_name: segul-Windows-x86_64.zip
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true
 
   windows_arm:
     name: Windows arm64
     runs-on: windows-11-arm
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v5
@@ -199,4 +222,5 @@ jobs:
           file: segul.zip
           asset_name: segul-Windows-arm64.zip
           tag: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
           overwrite: true

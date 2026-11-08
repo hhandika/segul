@@ -104,7 +104,7 @@ trait InputLogger {
 impl InputLogger for ReadLogger<'_> {
     fn log_input_info(&self) {
         if let Some(input) = self.input {
-            log::info!("{:18}: {}", "Input dir", &input.display());
+            log::info!("{:18}: {}", "Input dir", input.display());
         } else {
             log::info!("{:18}: {}", "Input path", "STDIN");
         }
@@ -155,7 +155,7 @@ impl<'a> ReadLogger<'a> {
 impl InputLogger for ContigLogger<'_> {
     fn log_input_info(&self) {
         if let Some(input) = self.input {
-            log::info!("{:18}: {}", "Input dir", &input.display());
+            log::info!("{:18}: {}", "Input dir", input.display());
         } else {
             log::info!("{:18}: {}", "Input path", "STDIN");
         }
@@ -205,7 +205,7 @@ impl<'a> ContigLogger<'a> {
 impl InputLogger for AlignSeqLogger<'_> {
     fn log_input_info(&self) {
         if let Some(input) = self.input {
-            log::info!("{:18}: {}", "Input dir", &input.display());
+            log::info!("{:18}: {}", "Input dir", input.display());
         } else {
             log::info!("{:18}: {}", "Input path", "STDIN");
         }

@@ -7,10 +7,14 @@ use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::{DataType, InputFmt};
 use crate::stats::distance::DistanceModel;
 
+use segul_core::plot::distance::plot_distance;
+
 use crate::cli::args::align::AlignDistanceArgs;
+use crate::cli::plot::PlotCli;
 use crate::cli::{AlignSeqInput, InputCli, OutputCli, collect_paths};
 
 impl InputCli for DistanceParser<'_> {}
+impl PlotCli for DistanceParser<'_> {}
 impl OutputCli for DistanceParser<'_> {}
 impl AlignSeqInput for DistanceParser<'_> {}
 
@@ -74,7 +78,11 @@ impl<'a> DistanceParser<'a> {
         if let Some(grouping) = grouping {
             handle = handle.with_grouping(grouping);
         }
-        handle.compute(&files, self.args.prefix.as_deref());
+        let prefix = self.args.prefix.as_deref();
+        let outputs = handle.compute(&files, prefix);
+        self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
+            plot_distance(&outputs, writer)
+        });
     }
 
     fn has_grouping(&self) -> bool {

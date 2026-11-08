@@ -1,0 +1,6 @@
+path,name,blocks_present,block_proportion,aligned_columns,bases,gaps,gap_proportion,n_count,ref_bases_covered,ref_coverage
+crates/segul-core/tests/files/maf/simple.maf,hg18,3,1.0000,61,57,4,0.0656,0,57,1.0000
+crates/segul-core/tests/files/maf/simple.maf,baboon,3,1.0000,61,57,4,0.0656,0,57,1.0000
+crates/segul-core/tests/files/maf/simple.maf,mm4,3,1.0000,61,57,4,0.0656,0,56,0.9825
+crates/segul-core/tests/files/maf/simple.maf,panTro1,3,1.0000,61,57,4,0.0656,0,57,1.0000
+crates/segul-core/tests/files/maf/simple.maf,rn3,2,0.6667,48,46,2,0.0417,0,43,0.7544

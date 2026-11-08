@@ -1,0 +1,3 @@
+file_path,contig_name,contig_count,base_count,nucleotide,GC_content,AT_content,sum,min,max,mean,median,N50,N75,N90,contig_750,contig_1000,contig_1500,G_Count,C_Count,A_Count,T_Count
+crates/segul-core/tests/files/contigs/contigs2.fa,contigs2,2,552,552,0.4963768115942029,0.5036231884057971,552,236,316,276,276,316,236,236,0,0,0,25,249,26,252
+crates/segul-core/tests/files/contigs/contigs1.fa,contigs1,2,485,485,0.35876288659793815,0.6412371134020619,485,227,258,242.5,242.5,258,227,227,0,0,0,53,121,187,124

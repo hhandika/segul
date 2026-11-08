@@ -11,8 +11,25 @@ use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, InputFmt, TaxonRecords};
 use crate::helper::utils;
+use crate::stats::align_report::AlignReport;
 use crate::stats::sequence::{CharMatrix, CharSummary, Completeness, SiteSummary, Sites, Taxa};
 use crate::writer::summary::{CsvWriter, SummaryWriter};
+
+/// Files written by [`AlignmentSummary::summarize_all`].
+#[derive(Debug, Clone)]
+pub struct AlignSummaryFiles {
+    /// Per-locus statistics (`locus_summary.csv`).
+    pub locus: PathBuf,
+    /// Per-taxon statistics (`taxon_summary.csv`).
+    pub taxon: PathBuf,
+    /// Text summary (`alignment_summary.txt`).
+    pub text: PathBuf,
+    /// Every statistic as JSON (`alignment-report.json`).
+    pub report: PathBuf,
+}
+
+/// File name of the JSON report, after the output prefix if any.
+const REPORT_NAME: &str = "alignment-report.json";
 
 pub struct AlignmentSummary<'a> {
     input_fmt: &'a InputFmt,
@@ -38,7 +55,8 @@ impl<'a> AlignmentSummary<'a> {
         }
     }
 
-    pub fn summarize_all(&mut self, files: &[PathBuf], prefix: Option<&str>) {
+    /// Write the text, taxon, and locus summaries. Returns the written files.
+    pub fn summarize_all(&mut self, files: &[PathBuf], prefix: Option<&str>) -> AlignSummaryFiles {
         self.check_datatype();
         let spin = utils::set_spinner();
         spin.set_message("Indexing alignments...");
@@ -51,13 +69,37 @@ impl<'a> AlignmentSummary<'a> {
         let taxon_records = self.summarize_taxa(&ids, &stats);
         spin.finish_with_message("Finished computing summary stats!\n");
         let sum = SummaryWriter::new(&sites, &dna, &complete, self.datatype);
-        sum.write(self.output, prefix)
+        let text = sum
+            .write(self.output, prefix)
             .expect("Failed writing to stdout");
         let csv = CsvWriter::new(self.output, prefix, self.datatype);
-        csv.write_taxon_summary(&taxon_records)
+        let taxon = csv
+            .write_taxon_summary(&taxon_records)
             .expect("Failed writing to csv");
-        csv.write_locus_summary(&stats)
+        let locus = csv
+            .write_locus_summary(&stats)
             .expect("Failed writing a per locus csv file");
+        let report = self.output.join(match prefix {
+            Some(prefix) => format!("{}_{}", prefix, REPORT_NAME),
+            None => REPORT_NAME.to_string(),
+        });
+        AlignReport::new(
+            &sites,
+            &dna,
+            &complete,
+            &stats,
+            &taxon_records,
+            self.datatype,
+        )
+        .write(&report)
+        .expect("Failed writing the alignment report");
+        log::info!("{:18}: {}", "Report", report.display());
+        AlignSummaryFiles {
+            locus,
+            taxon,
+            text,
+            report,
+        }
     }
 
     pub fn summarize_locus(&mut self, files: &[PathBuf], prefix: Option<&str>) {
@@ -165,5 +207,41 @@ impl<'a> AlignmentSummary<'a> {
         let mut mat_comp = Completeness::new(&self.ntax, self.interval);
         mat_comp.matrix_completeness(&dna);
         (sum_sites, sum_dna, mat_comp)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_summary_report() {
+        let output = TempDir::with_prefix("test").expect("Failed to create temp dir");
+        let files: Vec<PathBuf> = ["gene_1.nex", "gene_2.nex", "gene_3.nex"]
+            .iter()
+            .map(|f| PathBuf::from("tests/files/alignments").join(f))
+            .collect();
+        let mut summary = AlignmentSummary::new(&InputFmt::Nexus, output.path(), 5, &DataType::Dna);
+        let written = summary.summarize_all(&files, Some("test"));
+        assert_eq!(
+            written.report,
+            output.path().join("test_alignment-report.json")
+        );
+        let report = AlignReport::from_path(&written.report).unwrap();
+        assert_eq!(report.datatype, "dna");
+        assert_eq!(report.summary.loci, 3);
+        assert_eq!(report.loci.len(), 3);
+        assert_eq!(report.loci[0].name, "gene_1");
+        assert_eq!(report.taxa.len(), report.summary.taxa);
+        let sites: usize = report.loci.iter().map(|l| l.sites).sum();
+        assert_eq!(sites, report.summary.sites);
+        let missing: usize = report.loci.iter().map(|l| l.missing).sum();
+        assert_eq!(missing, report.summary.missing);
+        assert!(report.summary.gc.is_some());
+        assert_eq!(report.completeness[0].percent, 100);
+        // Taxa share the characters of the loci between them.
+        let chars: usize = report.taxa.iter().map(|t| t.chars).sum();
+        assert_eq!(chars, report.summary.chars);
     }
 }

@@ -6,17 +6,22 @@ use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
 use clap::builder;
+use clap::builder::TypedValueParser as _;
 use genomics::ContigSubcommand;
 use genomics::MafSubcommand;
 use genomics::SeqReadSubcommand;
+use segul_core::color::{Colormap, CvdKind, Palette};
+use segul_core::plot::spec::PlotFormat;
 
 use super::args::sequence::SequenceSubcommand;
+use super::args::view::ViewSubcommand;
 use crate::helper::logger;
 use clap::{crate_authors, crate_description, crate_name, crate_version};
 
 pub(crate) mod align;
 pub(crate) mod genomics;
 pub(crate) mod sequence;
+pub(crate) mod view;
 
 #[derive(Parser)]
 #[command(name = crate_name!())]
@@ -57,6 +62,12 @@ pub(crate) enum MainSubcommand {
     Partition(PartitionSubcommand),
     #[command(subcommand, about = "Sequence analyses", name = "sequence")]
     Sequence(SequenceSubcommand),
+    #[command(
+        subcommand,
+        about = "Interactive viewers in the terminal",
+        name = "view"
+    )]
+    View(ViewSubcommand),
 }
 
 #[derive(Args)]
@@ -127,4 +138,60 @@ pub(crate) struct CommonConcatArgs {
     pub(crate) codon: bool,
     #[arg(long = "prefix", help = "Specify prefix for output files")]
     pub(crate) prefix: Option<PathBuf>,
+}
+
+#[derive(Args)]
+pub(crate) struct PlotFlags {
+    #[arg(
+        long = "plot",
+        help = "Also write charts of the summary to <OUTPUT>/plots"
+    )]
+    pub(crate) plot: bool,
+    #[arg(
+        long = "plot-format",
+        help = "Chart file format",
+        requires = "plot",
+        default_value_t = PlotFormat::Png,
+        value_parser = builder::PossibleValuesParser::new(["png", "svg"])
+            .map(|x| x.parse::<PlotFormat>().expect("Invalid plot format")),
+    )]
+    pub(crate) plot_format: PlotFormat,
+    #[arg(
+        long,
+        value_name = "FILE",
+        requires = "plot",
+        help = "TrueType or OpenType font for PNG text [default: system fonts]"
+    )]
+    pub(crate) font: Option<PathBuf>,
+    #[arg(
+        long,
+        help = "Palette for categories",
+        requires = "plot",
+        default_value_t = Palette::Dark2,
+        value_parser = builder::PossibleValuesParser::new(
+            ["dark2", "okabe-ito", "tol-bright", "tol-muted", "set2", "paired", "set1"])
+            .map(|x| x.parse::<Palette>().expect("Invalid palette")),
+    )]
+    pub(crate) palette: Palette,
+    #[arg(
+        long,
+        help = "Colormap for heatmaps",
+        requires = "plot",
+        default_value_t = Colormap::Viridis,
+        value_parser = builder::PossibleValuesParser::new([
+            "viridis", "cividis", "magma", "inferno", "plasma", "blues", "greens",
+            "ylgnbu", "ylorrd", "rdbu", "puor", "brbg",
+        ])
+            .map(|x| x.parse::<Colormap>().expect("Invalid colormap")),
+    )]
+    pub(crate) colormap: Colormap,
+    #[arg(
+        long,
+        help = "Simulate a color vision deficiency in the charts",
+        requires = "plot",
+        value_parser = builder::PossibleValuesParser::new(
+            ["protanopia", "deuteranopia", "tritanopia", "achromatopsia"])
+            .map(|x| x.parse::<CvdKind>().expect("Invalid color vision deficiency")),
+    )]
+    pub(crate) cvd: Option<CvdKind>,
 }
