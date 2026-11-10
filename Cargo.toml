@@ -2,7 +2,7 @@
 members = ["crates/segul-core"]
 
 [workspace.package]
-version = "0.24.0"
+version = "0.25.0"
 authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2024"
 license = "MIT"
@@ -44,16 +44,28 @@ csv = "1.4.0"
 assert_cmd = "2.*"
 predicates = "3.*"
 tempfile = "3.27.0"
-plotters = { version = "0.3.7", default-features = false, features = ["svg_backend", "line_series", "point_series", "area_series", "histogram"] }
+plotters = { version = "0.3.7", default-features = false, features = [
+    "svg_backend",
+    "line_series",
+    "point_series",
+    "area_series",
+    "histogram",
+] }
 resvg = { version = "0.45.1", default-features = false, features = ["text"] }
-usvg = { version = "0.45.1", default-features = false, features = ["text", "system-fonts"] }
+usvg = { version = "0.45.1", default-features = false, features = [
+    "text",
+    "system-fonts",
+] }
 svg2pdf = { version = "0.13.0", default-features = false, features = ["text"] }
 colorous = "1.0.16"
 ratatui = "0.30.*"
 crossterm = { version = "0.29.*", features = ["osc52"] }
 
 [workspace.lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(docsrs)'] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(tarpaulin_include)',
+    'cfg(docsrs)',
+] }
 
 [package]
 name = "segul"
@@ -70,7 +82,14 @@ categories = ["command-line-utilities", "science"]
 exclude = ["crates/", "bench/"]
 
 [dependencies]
-segul-core = { workspace = true, features = ["align", "sequence", "read", "contig", "maf", "plot"] }
+segul-core = { workspace = true, features = [
+    "align",
+    "sequence",
+    "read",
+    "contig",
+    "maf",
+    "plot",
+] }
 anyhow.workspace = true
 clap.workspace = true
 colored.workspace = true
