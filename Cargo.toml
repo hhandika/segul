@@ -11,7 +11,7 @@ homepage = "https://www.segul.app/"
 repository = "https://github.com/hhandika/segul"
 
 [workspace.dependencies]
-segul-core = { path = "crates/segul-core", version = "0.24.0", default-features = false }
+segul-core = { path = "crates/segul-core", version = "0.25.0", default-features = false }
 ahash = "0.8.*"
 anyhow = "1.0.*"
 bytecount = "0.6.*"
