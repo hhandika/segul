@@ -97,48 +97,34 @@ pip install pysegul
 
 Learn more about using SEGUL API in the [documentation](https://www.segul.app/docs/api-usage/python/intro).
 
-## What's New in SEGUL 0.24.0
+## What's New in SEGUL 0.25.0
 
 ### New Features 🚀
 
-- `segul align distance`: compute pairwise genetic distances for each alignment using uncorrected p-distance, Jukes-Cantor (JC69), Kimura 2-parameter (K2P), Tamura-Nei (TN93), or Poisson (amino acid) models.
-  - Write a distance matrix and a summary (min, max, mean, median, SD) for each locus, with options to keep only the lower or upper triangle and to set the diagonal.
-  - Compute within- and between-group mean distances by grouping samples into populations or species using a delimiter, a regex, a CSV/TSV file, or automatic detection.
-  - Write the distances of all loci to one long table with `--long`.
-- `segul sequence transpose`: transpose locus alignments into per-sample sequence files.
-- `segul maf summary`: per-file and per-species MAF statistics written to CSV.
-- Improved `segul maf convert`:
-  - Assign blocks to every overlapping BED locus, clip them to the locus, and merge blocks across input files.
-  - Without a BED file, write one file per block or one per reference chromosome (`--group-by chrom`).
-  - Filter blocks by length, number of species, score, or a list of species.
-  - Reverse complement minus-strand loci with `--strand-aware`.
-  - Read gzipped MAF and BED files directly and write NEXUS output.
-- New [`segul-core`](https://crates.io/crates/segul-core) library crate with Cargo features (`align`, `sequence`, `read`, `contig`, and `maf`) to enable only what you need.
-- One-line installer for Linux and macOS (coming with the v0.24 release): `curl -fsSL https://segul.app/install.sh | sh`.
+- `segul view align`: an interactive terminal alignment viewer for one or many alignments, with light and colorblind-safe themes. It detects DNA or amino acids and opens large FASTA files quickly. Tested on the concatenated Esselstyn et al. (2021) dataset (102 taxa, 5.4 million sites).
+- `segul view summary`: browse alignment, distance, and read summary reports in the terminal with sortable tables, bar charts, histograms, and heatmaps.
+- Summary commands write PNG or SVG charts with `--plot`, using colorblind-safe palettes.
+- `segul align summary` and `segul align distance` also write JSON reports with every statistic of the run.
+- Improved `segul read summary`:
+  - Adds read length median, SD, and N50, Q20 and Q30 bases, and per-read mean quality.
+  - Complete mode adds per-position quality and N content, length, quality, and GC distributions, duplication, overrepresented sequences, and adapter content.
+  - Detects the quality offset from the reads and supports quality scores above 'J', such as PacBio HiFi.
+  - Recognizes gzip and BGZF FASTQ files from their content, regardless of extension.
 
 ### Performance ⚡
 
-- About 5× faster alignment conversion for FASTA, NEXUS, and PHYLIP input, thanks to faster sequence validation.
-- NEXUS input now uses about 1× the file size in memory (was about 3×). Interleaved NEXUS and PHYLIP output no longer doubles memory use.
-- Faster `segul align concat`: alignments are parsed in parallel, and memory stays close to the size of the concatenated alignment.
-- 5–10× faster `segul contig summary`.
+- `segul read summary` reads each file once and uses all cores. On a 2-million-read file, complete mode went from 8.5 s to 0.3 s for plain FASTQ and from 9.3 s to 0.9 s for gzip.
 
 ### Breaking Changes ⚠️
 
-- MAF conversion is now `segul maf convert` (was `segul maf maf`).
-- `--bed <FILE>` replaces `--reference <FILE> --from-bed`, and the MAF output format option is now `-F/--output-format`.
-- MAF sample names drop the assembly suffix (`hg18.chr7` becomes `hg18`). Use `--full-source-name` to keep full names.
-- Blocks that match no BED region are no longer written by default. Use `--write-unmatched` to write them.
-- Library users: replace `segul::` with `segul_core::` in imports. The `segul` crate re-exports the old modules for now, but these will be removed in a future release.
+- Malformed FASTQ records now stop the run with the file name and read number instead of being skipped.
+- Library users: `FastqMappedRead` and `FastqSummary::summarize_map` are removed. Per-position statistics are in `SampleReadReport::positions`.
+- Library users: code that builds `AlignSummaryFiles`, `ReadSummaryFiles`, or `DistanceFiles` directly must set the new `report` (and `distributions`) fields.
+- Library users: `SeqReadFmt` no longer decides decompression. It is detected from the file content.
 
 ### Bug Fixes 🐛
 
-- Fix MAF conversion without a BED file failing when a reference has more than one block.
-- Fix BED parsing issues with four-column files, CRLF line endings, and matching that ignored the chromosome.
-- Fix MAF blocks of the same locus overwriting each other instead of being joined.
-- Fix negative MAF block scores being ignored.
-- Fix the taxon order of `segul align concat` output changing between runs.
-- Update dependencies to resolve security advisories.
+- Fix a missing `-i` input file on Windows reporting "Empty folders!" instead of naming the file.
 
 See the [release notes](CHANGELOG.md) for full details.
 
@@ -153,7 +139,7 @@ Sequence formats:
 5. Multiple Alignment Format (MAF), including gzipped files
 6. Variant Call Format (VCF) (In development)
 
-All formats are supported in interleave and sequential versions. The app supports DNA and amino acid sequences, except for FASTQ, MAF, and VCF (DNA only).
+All formats are supported in interleave and sequential versions. The app supports DNA and amino acid sequences, except for FASTQ, and MAF. VCF support is in development.
 
 Alignment partition formats:
 
