@@ -90,6 +90,7 @@ segul-core = { workspace = true, features = [
     "maf",
     "plot",
 ] }
+alphanumeric-sort.workspace = true
 anyhow.workspace = true
 clap.workspace = true
 colored.workspace = true

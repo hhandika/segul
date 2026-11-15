@@ -9,6 +9,7 @@
 mod accumulate;
 mod chunk;
 mod parse;
+pub mod qc;
 pub mod report;
 mod sketch;
 

@@ -1,5 +1,15 @@
 # Release Notes
 
+## Unreleased
+
+New Features:
+
+- `segul view summary` shows read reports like the SEGUI read viewer. Samples get pass, warn, or fail checks with their ranges, and are listed with a filter and sort. Each sample has tabs for summary, quality, composition, length, duplication, adapters, and overrepresented sequences. Up to 10 samples are compared as lines; larger reports show every sample as a band or heatmap. Samples without reads are left out.
+
+Library Changes:
+
+- New `stats::fastq::qc` module with the read quality checks and their thresholds (`QcRule`, `QcCheck`, `qc_checks`, `overall_status`), shared by the terminal and SEGUI viewers.
+
 ## v0.25.0
 
 New Features:

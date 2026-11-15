@@ -64,7 +64,7 @@ pub(super) fn set_accent(theme: Theme) {
     let _ = ACCENT.set(accent);
 }
 
-fn accent() -> Color {
+pub(super) fn accent() -> Color {
     ACCENT.get().copied().unwrap_or(Color::Cyan)
 }
 
@@ -800,13 +800,13 @@ fn bar_lines_scaled<'a>(
 
 /// The selected item's bar, in the terminal's text color to match the
 /// reversed selection.
-fn selected_bar() -> Style {
+pub(super) fn selected_bar() -> Style {
     Style::new().fg(Color::Reset)
 }
 
 /// A bar of [value] out of [largest] in [width] cells. Any value above
 /// zero gets at least one cell, so small values stay visible.
-fn bar(value: f64, largest: f64, width: usize) -> String {
+pub(super) fn bar(value: f64, largest: f64, width: usize) -> String {
     if largest <= 0.0 || value <= 0.0 || width == 0 {
         return String::new();
     }
@@ -823,7 +823,7 @@ fn value_range(column: &Column) -> Option<(f64, f64)> {
 
 /// Position of [value] from [min] (0) to [max] (1). Columns with one value
 /// throughout sit in the middle of the colormap.
-fn scale(value: f64, min: f64, max: f64) -> f64 {
+pub(super) fn scale(value: f64, min: f64, max: f64) -> f64 {
     if max > min {
         (value - min) / (max - min)
     } else {
@@ -858,7 +858,12 @@ fn column_width(column: &Column) -> usize {
 }
 
 /// First value column to draw so the chosen one fits beside the names.
-fn first_visible_column(widths: &[usize], used: usize, width: usize, chosen: usize) -> usize {
+pub(super) fn first_visible_column(
+    widths: &[usize],
+    used: usize,
+    width: usize,
+    chosen: usize,
+) -> usize {
     let mut first = 0;
     while first < chosen {
         let end: usize = used + widths[first..=chosen].iter().sum::<usize>();
@@ -871,7 +876,12 @@ fn first_visible_column(widths: &[usize], used: usize, width: usize, chosen: usi
 }
 
 /// Last value column, from [first], that fits whole beside the names.
-fn last_visible_column(widths: &[usize], used: usize, width: usize, first: usize) -> usize {
+pub(super) fn last_visible_column(
+    widths: &[usize],
+    used: usize,
+    width: usize,
+    first: usize,
+) -> usize {
     let mut end = used;
     let mut last = first;
     for (c, &w) in widths.iter().enumerate().skip(first) {
@@ -893,7 +903,7 @@ fn median(sorted: &[f64]) -> f64 {
     }
 }
 
-fn truncate(text: &str, width: usize) -> String {
+pub(super) fn truncate(text: &str, width: usize) -> String {
     if text.chars().count() <= width {
         return text.to_string();
     }
@@ -902,7 +912,7 @@ fn truncate(text: &str, width: usize) -> String {
     out
 }
 
-fn centered(area: Rect, width: u16, height: u16) -> Rect {
+pub(super) fn centered(area: Rect, width: u16, height: u16) -> Rect {
     let x = area.x + (area.width.saturating_sub(width)) / 2;
     let y = area.y + (area.height.saturating_sub(height)) / 2;
     Rect::new(x, y, width, height)
@@ -1055,24 +1065,6 @@ mod test {
         app.show_help = true;
         let text = screen(&mut app);
         assert!(text.contains("Keyboard shortcuts"));
-    }
-
-    #[test]
-    fn test_render_reads() {
-        let data = SummaryData::from_path(Path::new(
-            "crates/segul-core/tests/files/plot/read-report.json",
-        ))
-        .unwrap();
-        let mut app = App::new(data, String::from("read-report.json"), Colormap::Viridis);
-        let text = screen(&mut app);
-        assert!(text.contains("Read summary"));
-        assert!(text.contains("Samples ("));
-        // Columns scroll so the chosen one stays in view.
-        for _ in 0..12 {
-            press(&mut app, KeyCode::Right);
-        }
-        let text = screen(&mut app);
-        assert!(!text.contains(" Reads "));
     }
 
     #[test]
