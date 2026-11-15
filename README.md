@@ -113,7 +113,7 @@ Learn more about using SEGUL API in the [documentation](https://www.segul.app/do
 
 ### Performance ⚡
 
-- `segul read summary` reads each file once and uses all cores. On a 2-million-read file, complete mode went from 8.5 s to 0.3 s for plain FASTQ and from 9.3 s to 0.9 s for gzip.
+- `segul read summary` reads each file once and uses all cores. On a 2-million-read file, complete mode went from 8.5 s to 0.3 s for plain FASTQ and from 9.3 s to 0.9 s for gzip. Tested on AMD Ryzen 9 5900X with 12 cores and 64 GB RAM running Ubuntu 26.04.1 LTS.
 
 ### Breaking Changes ⚠️
 
