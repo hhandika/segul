@@ -5,10 +5,27 @@
 New Features:
 
 - `segul view summary` shows read reports like the SEGUI read viewer. Samples get pass, warn, or fail checks with their ranges, and are listed with a filter and sort. Each sample has tabs for summary, quality, composition, length, duplication, adapters, and overrepresented sequences. Up to 10 samples are compared as lines; larger reports show every sample as a band or heatmap. Samples without reads are left out.
+- `segul contig summary` also writes `contig-report.json` with totals across samples, per-sample statistics, and contig length distributions. Open it with `segul view summary`.
+- The contig summary CSV adds N count, unknown characters, and contig length SD as the last columns.
+
+Bug Fixes:
+
+- Contig summaries of empty files no longer fail, and single-contig files report a length SD of 0 instead of NaN.
+- Long contig charts are labeled ">750 bp" and so on, matching the counts of contigs longer than each length.
 
 Library Changes:
 
 - New `stats::fastq::qc` module with the read quality checks and their thresholds (`QcRule`, `QcCheck`, `qc_checks`, `overall_status`), shared by the terminal and SEGUI viewers.
+- New `stats::contig_report::ContigReport`, which serializes with serde and reads with `from_path`. `ContigSummary` adds `length_distribution`, binned by `stats::contigs::LENGTH_BIN_EDGES`.
+- `CommonStats` and `NStats` stay zero for empty input, and `CommonStats` gives an SD of 0 for one value.
+
+Breaking Changes:
+
+- `ContigSummaryHandler::summarize` and `try_summarize` return `ContigSummaryFiles` instead of the summary path.
+
+Migration:
+
+- Use `files.summary` for the CSV path and `files.report` for the JSON report.
 
 ## v0.25.0
 

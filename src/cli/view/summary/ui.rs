@@ -1099,6 +1099,23 @@ mod test {
     }
 
     #[test]
+    fn test_render_contig() {
+        let data = SummaryData::from_path(Path::new(
+            "crates/segul-core/tests/files/plot/contig-report.json",
+        ))
+        .unwrap();
+        let mut app = App::new(data, String::from("contig-report.json"), Colormap::Viridis);
+        let text = screen(&mut app);
+        assert!(text.contains("2 samples · 4 contigs"));
+        assert!(text.contains(">1000 bp"));
+
+        press(&mut app, KeyCode::Char('1'));
+        let text = screen(&mut app);
+        assert!(text.contains("Contigs by length (bp)"));
+        assert!(text.contains("Longest contig"));
+    }
+
+    #[test]
     fn test_selected_bar_visible() {
         let lines = bar_lines(
             &["a", "b"],

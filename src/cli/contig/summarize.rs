@@ -35,10 +35,10 @@ impl<'a> ContigCliParser<'a> {
         ContigLogger::new(self.input_dir.as_deref(), input_fmt, fcounts).log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let prefix = self.args.prefix.as_deref();
-        let summary =
+        let written =
             ContigSummaryHandler::new(&files, input_fmt, &self.args.output, prefix).summarize();
         self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
-            plot_contig_summary(&summary, writer)
+            plot_contig_summary(&written.summary, writer)
         });
     }
 }

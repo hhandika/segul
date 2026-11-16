@@ -11,6 +11,11 @@ use crate::{
 
 use crate::parser::fasta::FastaReader;
 
+/// Lower bounds of the contig length bins, in bp. The last bin is open.
+pub const LENGTH_BIN_EDGES: [usize; 10] = [
+    0, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000,
+];
+
 /// Summary statistics for contigs
 pub struct ContigSummary {
     /// Path to the file
@@ -50,6 +55,8 @@ pub struct ContigSummary {
     pub contig1000: usize,
     /// Number of contigs > 1500 bp
     pub contig1500: usize,
+    /// Contigs per length bin, aligned with [`LENGTH_BIN_EDGES`].
+    pub length_distribution: Vec<usize>,
 }
 
 impl Default for ContigSummary {
@@ -79,6 +86,7 @@ impl ContigSummary {
             contig750: 0,
             contig1000: 0,
             contig1500: 0,
+            length_distribution: vec![0; LENGTH_BIN_EDGES.len()],
         }
     }
 
@@ -148,6 +156,7 @@ impl ContigSummary {
         self.count_contig750(contigs);
         self.count_contig1000(contigs);
         self.count_contig1500(contigs);
+        self.count_length_bins(contigs);
     }
 
     fn count_contigs(&mut self, contigs: &[usize]) {
@@ -171,11 +180,11 @@ impl ContigSummary {
     }
 
     fn calculate_gc_content(&mut self) {
-        self.gc_content = (self.g_count + self.c_count) as f64 / self.base_count as f64;
+        self.gc_content = proportion(self.g_count + self.c_count, self.base_count);
     }
 
     fn calculate_at_content(&mut self) {
-        self.at_content = (self.a_count + self.t_count) as f64 / self.base_count as f64;
+        self.at_content = proportion(self.a_count + self.t_count, self.base_count);
     }
 
     fn count_contig750(&mut self, contigs: &[usize]) {
@@ -188,6 +197,26 @@ impl ContigSummary {
 
     fn count_contig1500(&mut self, contigs: &[usize]) {
         self.contig1500 = contigs.iter().filter(|&c| *c > 1500).count();
+    }
+
+    fn count_length_bins(&mut self, contigs: &[usize]) {
+        contigs
+            .iter()
+            .for_each(|&len| self.length_distribution[length_bin(len)] += 1);
+    }
+}
+
+/// Index of the length bin holding a contig of `len` bp.
+pub fn length_bin(len: usize) -> usize {
+    LENGTH_BIN_EDGES.partition_point(|&edge| edge <= len) - 1
+}
+
+/// Share of `count` in `total`, 0 when `total` is 0.
+pub(crate) fn proportion(count: usize, total: usize) -> f64 {
+    if total == 0 {
+        0.0
+    } else {
+        count as f64 / total as f64
     }
 }
 
@@ -233,6 +262,25 @@ mod test {
         assert_eq!(parser.contig1000, 0);
         assert_eq!(parser.contig1500, 0);
         assert_eq!(parser.contig750, 0);
+        assert_eq!(parser.length_distribution[1], 2);
+        assert_eq!(parser.length_distribution.iter().sum::<usize>(), 2);
+    }
+
+    #[test]
+    fn test_length_bin() {
+        assert_eq!(length_bin(0), 0);
+        assert_eq!(length_bin(199), 0);
+        assert_eq!(length_bin(200), 1);
+        assert_eq!(length_bin(1_000), 3);
+        assert_eq!(length_bin(5_000_000), LENGTH_BIN_EDGES.len() - 1);
+    }
+
+    #[test]
+    fn test_empty_contigs() {
+        let mut parser = ContigSummary::new();
+        parser.summarize_contigs(&[]);
+        assert_eq!(parser.gc_content, 0.0);
+        assert_eq!(parser.at_content, 0.0);
     }
 
     #[test]

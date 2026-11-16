@@ -10,6 +10,8 @@
 pub mod align_report;
 pub mod common;
 #[cfg(feature = "contig")]
+pub mod contig_report;
+#[cfg(feature = "contig")]
 pub mod contigs;
 #[cfg(feature = "align")]
 pub mod distance;

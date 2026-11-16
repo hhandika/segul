@@ -7,6 +7,7 @@ use anyhow::{Context, Result, bail};
 
 use crate::cli::view::thousands;
 use crate::stats::align_report::{AlignReport, SiteTypeSummary};
+use crate::stats::contig_report::ContigReport;
 use crate::stats::distance_report::{DistanceReport, PairStats};
 
 /// Most bars in the pairwise distance histogram.
@@ -91,8 +92,8 @@ impl Format {
 }
 
 impl SummaryData {
-    /// Read an alignment, read, or distance report, telling them apart by
-    /// content.
+    /// Read an alignment, distance, or contig report, telling them apart
+    /// by content.
     pub(super) fn from_path(path: &Path) -> Result<Self> {
         let text = fs::read_to_string(path)
             .with_context(|| format!("Failed reading {}", path.display()))?;
@@ -102,11 +103,15 @@ impl SummaryData {
         if let Ok(report) = DistanceReport::from_json(&text) {
             return Ok(Self::from_distance(&report));
         }
+        if let Ok(report) = ContigReport::from_json(&text) {
+            return Ok(Self::from_contig(&report));
+        }
         bail!(
             "{} is not a segul summary report. Use alignment-report.json from \
             `segul align summary`, read-report.json from \
-            `segul read summary --mode complete`, or distance-report.json from \
-            `segul align distance`.",
+            `segul read summary --mode complete`, distance-report.json from \
+            `segul align distance`, or contig-report.json from \
+            `segul contig summary`.",
             path.display()
         )
     }
@@ -492,6 +497,127 @@ impl SummaryData {
             matrices,
         }
     }
+
+    pub(super) fn from_contig(report: &ContigReport) -> Self {
+        let s = &report.summary;
+        let pct = |p: f64| format!("{:.1}%", 100.0 * p);
+        let count = |n: usize| thousands(n as i128);
+        let overview = vec![
+            (String::from("Samples"), count(s.samples)),
+            (String::from("Contigs"), count(s.contigs)),
+            (String::from("Bases"), count(s.bases)),
+            (String::from("GC content"), pct(s.gc)),
+            (
+                String::from("N content"),
+                format!("{} ({})", count(s.n_count), pct(s.prop_n)),
+            ),
+            (String::from("Unknown characters"), count(s.unknown)),
+            (
+                String::from("Contigs per sample"),
+                format!(
+                    "{} to {}, mean {:.1}",
+                    count(s.min_contigs),
+                    count(s.max_contigs),
+                    s.mean_contigs
+                ),
+            ),
+            (
+                String::from("N50"),
+                format!(
+                    "{} to {}, median {:.1}",
+                    count(s.min_n50),
+                    count(s.max_n50),
+                    s.median_n50
+                ),
+            ),
+            (String::from("Longest contig"), count(s.longest)),
+        ];
+        let samples = &report.samples;
+        let charts = vec![
+            Chart {
+                title: String::from("Contigs by length (bp)"),
+                labels: report.length_bins.iter().map(|b| b.label()).collect(),
+                values: (0..report.length_bins.len())
+                    .map(|i| {
+                        samples
+                            .iter()
+                            .filter_map(|s| s.length_distribution.get(i))
+                            .sum::<usize>() as f64
+                    })
+                    .collect(),
+                format: Format::Count,
+            },
+            Chart {
+                title: String::from("N50 per sample"),
+                labels: samples.iter().map(|s| s.name.clone()).collect(),
+                values: samples.iter().map(|s| s.n50 as f64).collect(),
+                format: Format::Count,
+            },
+        ];
+        let counts = |values: Vec<usize>| values.into_iter().map(|v| Some(v as f64)).collect();
+        let column = |label: &'static str, values: Vec<usize>| Column {
+            label,
+            values: counts(values),
+            format: Format::Count,
+        };
+        let longer_than = |length: usize| {
+            samples
+                .iter()
+                .map(|s| {
+                    s.long_contigs
+                        .iter()
+                        .find(|c| c.length == length)
+                        .map_or(0, |c| c.contigs)
+                })
+                .collect()
+        };
+        let columns = vec![
+            column("Contigs", samples.iter().map(|s| s.contigs).collect()),
+            column("Bases", samples.iter().map(|s| s.bases).collect()),
+            Column {
+                label: "Mean",
+                values: samples.iter().map(|s| Some(s.mean)).collect(),
+                format: Format::Decimal,
+            },
+            Column {
+                label: "Median",
+                values: samples.iter().map(|s| Some(s.median)).collect(),
+                format: Format::Decimal,
+            },
+            column("Max", samples.iter().map(|s| s.max).collect()),
+            column("N50", samples.iter().map(|s| s.n50).collect()),
+            column("N75", samples.iter().map(|s| s.n75).collect()),
+            column("N90", samples.iter().map(|s| s.n90).collect()),
+            column(">1000 bp", longer_than(1000)),
+            Column {
+                label: "GC %",
+                values: samples.iter().map(|s| Some(100.0 * s.gc)).collect(),
+                format: Format::Decimal,
+            },
+            Column {
+                label: "N %",
+                values: samples.iter().map(|s| Some(100.0 * s.prop_n)).collect(),
+                format: Format::Decimal,
+            },
+        ];
+        Self {
+            kind: "Contig summary",
+            headline: format!(
+                "{} samples · {} contigs",
+                count(s.samples),
+                count(s.contigs)
+            ),
+            overview,
+            charts,
+            tables: vec![SummaryTable {
+                name: "Samples",
+                item: "Sample",
+                names: samples.iter().map(|s| s.name.clone()).collect(),
+                columns,
+            }],
+            matrices: Vec::new(),
+        }
+    }
 }
 
 /// Labels and counts of the pairwise distance histogram in at most
@@ -551,6 +677,7 @@ mod test {
 
     const ALIGN: &str = "crates/segul-core/tests/files/plot/alignment-report.json";
     const DISTANCE: &str = "crates/segul-core/tests/files/plot/distance-report.json";
+    const CONTIG: &str = "crates/segul-core/tests/files/plot/contig-report.json";
 
     #[test]
     fn test_character_label() {
@@ -596,6 +723,24 @@ mod test {
         assert_eq!(chart.values.iter().sum::<f64>(), 31.0);
         assert_eq!(chart.labels[0], "0.00-0.05");
         assert!(data.overview.iter().any(|(k, v)| k == "Groups" && v == "3"));
+    }
+
+    #[test]
+    fn test_contig_report() {
+        let data = SummaryData::from_path(Path::new(CONTIG)).expect("Failed reading fixture");
+        assert_eq!(data.kind, "Contig summary");
+        assert_eq!(data.headline, "2 samples · 4 contigs");
+        let samples = &data.tables[0];
+        assert_eq!(samples.names, vec!["contigs1", "contigs2"]);
+        assert_eq!(samples.columns[5].label, "N50");
+        assert_eq!(samples.columns[5].values, vec![Some(258.0), Some(316.0)]);
+        let lengths = &data.charts[0];
+        assert_eq!(lengths.labels[1], "200-500");
+        assert_eq!(lengths.values[1], 4.0);
+        // The viewer tries read reports first; a contig report is not one.
+        assert!(
+            segul_core::stats::fastq::report::ReadReport::from_path(Path::new(CONTIG)).is_err()
+        );
     }
 
     #[test]

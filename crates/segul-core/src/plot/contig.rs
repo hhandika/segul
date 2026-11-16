@@ -14,7 +14,7 @@ plot_presets! {
     ContigPlot {
         Nstats => ("nstats", "N50, N75, and N90 per sample"),
         ContigCount => ("contig-count", "Number of contigs per sample"),
-        LongContigs => ("long-contigs", "Contigs of at least 750, 1000, and 1500 bp per sample"),
+        LongContigs => ("long-contigs", "Contigs longer than 750, 1000, and 1500 bp per sample"),
         GcContent => ("gc-content", "GC content per sample"),
         CountVsN50 => ("count-vs-n50", "N50 vs number of contigs"),
     }
@@ -65,9 +65,9 @@ impl<'a> ContigPlotter<'a> {
                 &csv,
                 samples,
                 &[
-                    ("contig_750", "≥750 bp"),
-                    ("contig_1000", "≥1000 bp"),
-                    ("contig_1500", "≥1500 bp"),
+                    ("contig_750", ">750 bp"),
+                    ("contig_1000", ">1000 bp"),
+                    ("contig_1500", ">1500 bp"),
                 ],
                 "Long contigs per sample",
                 "Number of contigs",
