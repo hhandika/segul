@@ -1,6 +1,6 @@
 # Agent instructions
 
-SEGUL is an ultrafast and memory-efficient tool for phylogenomics, written in
+SEGUL is an ultrafast and memory-efficient tool for genomics, written in
 Rust. This file tells coding agents how the repository is organized and how
 to work in it.
 

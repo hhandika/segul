@@ -4,7 +4,7 @@
 
 New Features:
 
-- `segul view summary` shows read reports like the SEGUI read viewer. Samples get pass, warn, or fail checks with their ranges, and are listed with a filter and sort. Each sample has tabs for summary, quality, composition, length, duplication, adapters, and overrepresented sequences. Up to 10 samples are compared as lines; larger reports show every sample as a band or heatmap. Samples without reads are left out.
+- `segul view summary` shows read reports like the SEGUI read viewer.
 - `segul contig summary` also writes `contig-report.json` with totals across samples, per-sample statistics, and contig length distributions. Open it with `segul view summary`.
 - The contig summary CSV adds N count, unknown characters, and contig length SD as the last columns.
 

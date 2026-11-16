@@ -6,7 +6,7 @@ version = "0.25.0"
 authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2024"
 license = "MIT"
-description = "An ultrafast and memory-efficient tool for phylogenomics"
+description = "An ultrafast and memory-efficient tool for genomics"
 homepage = "https://www.segul.app/"
 repository = "https://github.com/hhandika/segul"
 
