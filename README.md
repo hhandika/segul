@@ -69,7 +69,13 @@ On Linux and macOS, install the latest release with one command:
 curl -fsSL https://segul.app/install.sh | sh
 ```
 
-The script picks the right binary for your system and installs it to `~/.local/bin` without root access. See the [installer options](https://www.segul.app/docs/installation/install_cli#installer-script). On Windows, use the pre-compiled binaries below.
+On Windows, install it from PowerShell:
+
+```powershell
+irm https://segul.app/install.ps1 | iex
+```
+
+The scripts pick the right binary for your system and install it to `~/.local/bin` without administrator access. The Windows script also adds that folder to your user `PATH`. See the [installer options](https://www.segul.app/docs/installation/install_cli#installer-script).
 
 #### CLI Installation Methods
 

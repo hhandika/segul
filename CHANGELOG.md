@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Installation:
+
+- The README shows how to install the CLI on Windows with `irm https://segul.app/install.ps1 | iex`.
+- The snap package description says genomic instead of phylogenomic.
+
 New Features:
 
 - `segul view summary` shows read reports like the SEGUI read viewer.
