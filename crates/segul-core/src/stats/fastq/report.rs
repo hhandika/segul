@@ -13,6 +13,9 @@ use super::accumulate::{
     LENGTH_QUALITY_BOUNDS, LIBRARY_ADAPTERS, LOW_QSCORE, MAX_QSCORE, POLY_G, PositionCounts,
     QSCORE_BINS, RELATIVE_POSITION_BINS, ReadAccumulator, bin_range, from_fixed,
 };
+pub use super::cohort::{CohortOutlier, CohortSummary, PairedReadSummary};
+use super::cohort::{pair_samples, summarize_cohort};
+use super::qc::QcProfile;
 use super::sketch::DuplicationSketch;
 
 /// Read starts above this share of reads are overrepresented.
@@ -51,9 +54,31 @@ const DUPLICATION_LEVELS: [(u64, &str); 16] = [
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ReadReport {
     pub samples: Vec<SampleReadReport>,
+    /// Quality-check profile requested for the run (defaults to Auto).
+    #[serde(default)]
+    pub qc_profile: QcProfile,
+    /// Paired-end R1/R2 consistency summaries for automatically matched pairs.
+    #[serde(default)]
+    pub pairs: Vec<PairedReadSummary>,
+    /// Run-level pooling balance and robust outlier summary across all samples.
+    #[serde(default)]
+    pub cohort: Option<CohortSummary>,
 }
 
 impl ReadReport {
+    /// Build a complete report from per-sample reports, automatically computing
+    /// paired-end consistency and cohort-level summaries.
+    pub fn from_samples(samples: Vec<SampleReadReport>, qc_profile: QcProfile) -> Self {
+        let pairs = pair_samples(&samples);
+        let cohort = summarize_cohort(&samples);
+        Self {
+            samples,
+            qc_profile,
+            pairs,
+            cohort,
+        }
+    }
+
     /// Read a report written by `segul read summary --mode complete`.
     pub fn from_path(path: &Path) -> Result<Self> {
         let text = fs::read_to_string(path)

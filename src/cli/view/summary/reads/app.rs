@@ -4,6 +4,8 @@ use std::collections::BTreeSet;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use segul_core::color::{Colormap, Theme};
+use segul_core::stats::fastq::qc::QcProfile;
+use segul_core::stats::fastq::report::{CohortSummary, PairedReadSummary};
 
 use super::metric::{ReadMetric, ReadSample, SampleSort, sample_view, step_through};
 use super::spread::MAX_OVERLAID;
@@ -21,10 +23,11 @@ pub(super) enum Tab {
     Duplication,
     Adapters,
     Overrepresented,
+    Cohort,
 }
 
 impl Tab {
-    pub(super) const ALL: [Self; 7] = [
+    pub(super) const ALL: [Self; 8] = [
         Self::Summary,
         Self::Quality,
         Self::Composition,
@@ -32,6 +35,7 @@ impl Tab {
         Self::Duplication,
         Self::Adapters,
         Self::Overrepresented,
+        Self::Cohort,
     ];
 
     pub(super) fn label(self) -> &'static str {
@@ -43,15 +47,7 @@ impl Tab {
             Self::Duplication => "Duplication",
             Self::Adapters => "Adapters",
             Self::Overrepresented => "Overrepresented",
-        }
-    }
-
-    /// Charts stacked in the tab.
-    pub(super) fn sections(self) -> usize {
-        match self {
-            Self::Quality => 2,
-            Self::Composition => 3,
-            _ => 1,
+            Self::Cohort => "Cohort",
         }
     }
 
@@ -100,6 +96,11 @@ pub(super) enum Popup {
 pub(super) struct App {
     pub(super) samples: Vec<ReadSample>,
     pub(super) file_name: String,
+    pub(super) qc_profile: QcProfile,
+    pub(super) pairs: Vec<PairedReadSummary>,
+    pub(super) cohort: Option<CohortSummary>,
+    /// Show relative read position (0-100%) instead of absolute bp on position charts.
+    pub(super) relative_pos: bool,
     pub(super) theme: Theme,
     pub(super) colormap: Colormap,
     pub(super) tab: Tab,
@@ -163,6 +164,10 @@ impl App {
             view,
             samples,
             file_name,
+            qc_profile: QcProfile::Auto,
+            pairs: Vec::new(),
+            cohort: None,
+            relative_pos: false,
             theme,
             colormap,
             tab: Tab::Summary,
@@ -190,6 +195,41 @@ impl App {
             message: None,
             clipboard: None,
             should_quit: false,
+        }
+    }
+
+    pub(super) fn with_report_meta(
+        mut self,
+        qc_profile: QcProfile,
+        pairs: Vec<PairedReadSummary>,
+        cohort: Option<CohortSummary>,
+    ) -> Self {
+        self.qc_profile = qc_profile;
+        self.pairs = pairs;
+        self.cohort = cohort;
+        self
+    }
+
+    /// Charts stacked in the open tab, adapting to optional fields in the report.
+    pub(super) fn sections(&self) -> usize {
+        let report = &self.open_sample().report;
+        match self.tab {
+            Tab::Quality => {
+                if report.expected_error_distribution.is_empty() {
+                    2
+                } else {
+                    3
+                }
+            }
+            Tab::Composition => 3,
+            Tab::Length => {
+                if report.length_quality.is_empty() {
+                    1
+                } else {
+                    2
+                }
+            }
+            _ => 1,
         }
     }
 
@@ -287,7 +327,7 @@ impl App {
             KeyCode::F(1) | KeyCode::Char('?') => self.popup = Some(Popup::Help),
             KeyCode::Tab => self.go_to_tab(self.tab.position() + 1),
             KeyCode::BackTab => self.go_to_tab(self.tab.position() + Tab::ALL.len() - 1),
-            KeyCode::Char(c @ '1'..='7') => self.go_to_tab(c as usize - '1' as usize),
+            KeyCode::Char(c @ '1'..='8') => self.go_to_tab(c as usize - '1' as usize),
             KeyCode::Up if alt => self.step_sample(-1),
             KeyCode::Down if alt => self.step_sample(1),
             KeyCode::Char('[') => self.step_sample(-1),
@@ -305,6 +345,7 @@ impl App {
             KeyCode::Char('c') => self.popup = Some(Popup::Checks(0)),
             KeyCode::Char('x') => self.open_compare(),
             KeyCode::Char('b') => self.toggle_spread(),
+            KeyCode::Char('r') => self.toggle_relative_pos(),
             KeyCode::Char('n') => self.move_section(1),
             KeyCode::Char('p') => self.move_section(-1),
             KeyCode::Char('l') => self.show_list = !self.show_list,
@@ -520,8 +561,21 @@ impl App {
         };
     }
 
+    fn toggle_relative_pos(&mut self) {
+        if self.open_sample().report.relative_positions.is_empty() {
+            self.message = Some(String::from("No relative-position data in this report"));
+            return;
+        }
+        self.relative_pos = !self.relative_pos;
+        self.message = Some(if self.relative_pos {
+            String::from("Showing relative read position (0-100%)")
+        } else {
+            String::from("Showing absolute read position (bp)")
+        });
+    }
+
     fn move_section(&mut self, delta: isize) {
-        let sections = self.tab.sections();
+        let sections = self.sections();
         if sections < 2 || self.is_stacked {
             self.message = Some(String::from("Every chart of this tab is shown"));
             return;

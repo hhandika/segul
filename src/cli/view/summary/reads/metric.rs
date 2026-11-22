@@ -4,8 +4,8 @@
 use std::cmp::Ordering;
 
 use segul_core::stats::fastq::qc::{
-    ADAPTERS_RULE, DUPLICATION_RULE, MEAN_QUALITY_RULE, Q30_RULE, QcCheck, QcRule, QcStatus,
-    overall_status, qc_checks,
+    ADAPTERS_RULE, DUPLICATION_RULE, MEAN_QUALITY_RULE, Q30_RULE, QcCheck, QcProfile, QcRule,
+    QcStatus, effective_profile, overall_status, qc_checks_with_profile,
 };
 use segul_core::stats::fastq::report::{ReadMetrics, ReadReport, SampleReadReport};
 
@@ -17,16 +17,24 @@ pub(super) struct ReadSample {
     pub(super) report: SampleReadReport,
     pub(super) checks: Vec<QcCheck>,
     pub(super) status: QcStatus,
+    pub(super) profile: QcProfile,
 }
 
 impl ReadSample {
+    #[cfg(test)]
     pub(super) fn new(report: SampleReadReport) -> Self {
-        let checks = qc_checks(&report);
+        Self::with_profile(report, QcProfile::Auto)
+    }
+
+    pub(super) fn with_profile(report: SampleReadReport, requested: QcProfile) -> Self {
+        let profile = effective_profile(&report, requested);
+        let checks = qc_checks_with_profile(&report, requested);
         let status = overall_status(&checks);
         Self {
             report,
             checks,
             status,
+            profile,
         }
     }
 
@@ -41,11 +49,12 @@ impl ReadSample {
 
 /// Samples with at least one read, which are the only ones with charts.
 pub(super) fn samples_with_reads(report: ReadReport) -> Vec<ReadSample> {
+    let profile = report.qc_profile;
     report
         .samples
         .into_iter()
         .filter(|s| s.metrics.read_count > 0)
-        .map(ReadSample::new)
+        .map(|s| ReadSample::with_profile(s, profile))
         .collect()
 }
 

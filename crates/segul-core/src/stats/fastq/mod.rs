@@ -8,6 +8,7 @@
 //! BGZF files are also decompressed in parallel.
 mod accumulate;
 mod chunk;
+pub mod cohort;
 mod header;
 mod parse;
 pub mod qc;
@@ -339,11 +340,9 @@ mod test {
         assert_eq!(report.metrics.phred_offset, 33);
         assert!(report.duplication.is_some());
         assert_eq!(report.adapters.len(), 5);
-        let json = report::ReadReport {
-            samples: vec![report.clone()],
-        }
-        .to_json()
-        .unwrap();
+        let json = report::ReadReport::from_samples(vec![report.clone()], qc::QcProfile::Auto)
+            .to_json()
+            .unwrap();
         // serde_json may round the last digit of a float, so compare counts.
         let parsed = report::ReadReport::from_json(&json).unwrap();
         assert_eq!(parsed.samples[0].positions.len(), report.positions.len());

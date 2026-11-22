@@ -4,7 +4,7 @@ use clap::builder::TypedValueParser as _;
 use clap::{Args, Subcommand, builder};
 
 use crate::helper::types::{ContigFmt, PhredOffset, SeqReadFmt, SummaryMode};
-use crate::stats::fastq::DEFAULT_DUP_SKETCH_SIZE;
+use crate::stats::fastq::{DEFAULT_DUP_SKETCH_SIZE, qc::QcProfile};
 
 use super::{IOArgs, PlotFlags};
 
@@ -68,6 +68,15 @@ pub(crate) struct SeqReadSummaryArgs {
         default_value_t = DEFAULT_DUP_SKETCH_SIZE
     )]
     pub(crate) dup_size: usize,
+    #[arg(
+        long = "qc-profile",
+        help = "Quality-check profile for pass/warn/fail thresholds",
+        default_value_t = QcProfile::Auto,
+        value_parser =
+            builder::PossibleValuesParser::new(["auto", "short-wgs", "amplicon", "long-ont", "long-hifi"])
+            .map(|x| x.parse::<QcProfile>().unwrap())
+    )]
+    pub(crate) qc_profile: QcProfile,
     #[arg(
         short = 'o',
         long = "output",

@@ -46,6 +46,7 @@ plot_presets! {
         PositionNContent => ("pos-n-content", "N content by read position (read-report.json)"),
         AdapterContent => ("adapter-content", "Cumulative adapter content by read position for one sample (read-report.json)"),
         Duplication => ("duplication", "Sequence duplication levels for one sample (read-report.json)"),
+        PairedQuality => ("pair-q30", "R1 vs R2 Q30 bases per read pair (read-report.json)"),
     }
 }
 
@@ -88,7 +89,8 @@ impl ReadPlot {
             | Self::GcDistribution
             | Self::PositionNContent
             | Self::AdapterContent
-            | Self::Duplication => ReadSource::Report,
+            | Self::Duplication
+            | Self::PairedQuality => ReadSource::Report,
             _ => ReadSource::Sample,
         }
     }
@@ -337,6 +339,12 @@ impl<'a> ReadPlotter<'a> {
     }
 
     fn report_chart(&self, preset: &ReadPlot) -> Result<PlotSpec> {
+        if *preset == ReadPlot::PairedQuality {
+            let report = ReadReport::from_path(self.input)?;
+            let mut spec = paired_quality(&report)?;
+            spec.style = self.style.clone();
+            return Ok(spec);
+        }
         let samples = self.report_samples(preset.is_per_sample())?;
         let mut spec = match preset {
             ReadPlot::PositionQualityBox => position_quality_box(&samples[0]),
@@ -688,6 +696,29 @@ fn complexity(samples: &[SampleReadReport]) -> Result<PlotSpec> {
     Ok(spec)
 }
 
+fn paired_quality(report: &ReadReport) -> Result<PlotSpec> {
+    if report.pairs.is_empty() {
+        bail!("No paired-end read pairs in report");
+    }
+    let q30_of = |name: &str| {
+        report
+            .samples
+            .iter()
+            .find(|s| s.sample == name)
+            .map_or(0.0, |s| s.metrics.q30_pct)
+    };
+    let categories: Vec<String> = report.pairs.iter().map(|p| p.pair_name.clone()).collect();
+    let r1: Vec<f64> = report.pairs.iter().map(|p| q30_of(&p.r1_sample)).collect();
+    let r2: Vec<f64> = report.pairs.iter().map(|p| q30_of(&p.r2_sample)).collect();
+    Ok(bar_spec(
+        "R1 vs R2 Q30 bases per read pair",
+        ("Pair", "Q30 bases (%)"),
+        categories,
+        vec![Series::categorical("R1", r1), Series::categorical("R2", r2)],
+        &PlotStyle::default(),
+    ))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -791,7 +822,7 @@ mod test {
     fn test_report_presets_build() {
         let dir = tempfile::TempDir::with_prefix("read-plot").unwrap();
         let report_path = dir.path().join("read-report.json");
-        let sample_report = crate::stats::fastq::FastqAnalyzer::new(
+        let r1 = crate::stats::fastq::FastqAnalyzer::new(
             Path::new("tests/files/raw/read_1.fastq"),
             crate::helper::types::PhredOffset::Auto,
             true,
@@ -799,11 +830,17 @@ mod test {
         )
         .analyze()
         .unwrap();
-        let json = ReadReport {
-            samples: vec![sample_report],
-        }
-        .to_json()
+        let r2 = crate::stats::fastq::FastqAnalyzer::new(
+            Path::new("tests/files/raw/read_2.fastq"),
+            crate::helper::types::PhredOffset::Auto,
+            true,
+            1,
+        )
+        .analyze()
         .unwrap();
+        let json = ReadReport::from_samples(vec![r1, r2], crate::stats::fastq::qc::QcProfile::Auto)
+            .to_json()
+            .unwrap();
         std::fs::write(&report_path, json).unwrap();
         for preset in ReadPlot::all()
             .iter()

@@ -115,6 +115,20 @@ fn test_read_summary_malformed() {
 }
 
 #[test]
+fn test_read_summary_qc_profile_and_pairs() {
+    initiate_raw_cmd!(cmd, tmp_dir, "crates/segul-core/tests/files/raw");
+    cmd.args(["--qc-profile", "amplicon"]).assert().success();
+    let output = tmp_dir.path().join(OUTPUT);
+    let report = fs::read_to_string(output.join("read-report.json")).unwrap();
+    assert!(report.contains("\"qc_profile\":\"amplicon\""));
+    assert!(report.contains("\"pair_name\":\"read\""));
+    assert!(report.contains("\"in_sync\":true"));
+    assert!(report.contains("\"cohort\":{"));
+    let distributions = zip_entries(&output.join("read-dist-summary.zip"));
+    assert!(distributions.contains(&"pairs.csv".to_string()));
+}
+
+#[test]
 fn test_read_summary_dup_size() {
     for size in ["0", "2"] {
         initiate_raw_cmd!(cmd, tmp_dir, QC_DIR);

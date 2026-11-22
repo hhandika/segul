@@ -13,7 +13,7 @@ use segul_core::color::residue::{ResiduePalette, ResidueScheme};
 use segul_core::color::ui::ChartTokens;
 use segul_core::color::{Palette, Rgb, Theme, best_text_on};
 use segul_core::helper::types::DataType;
-use segul_core::stats::fastq::qc::QcStatus;
+use segul_core::stats::fastq::qc::{QcStatus, overall_status, pair_qc_checks};
 
 use super::super::ui::{
     accent, bar, centered, first_visible_column, last_visible_column, scale, selected_bar, truncate,
@@ -41,7 +41,7 @@ const GOOD_QUALITY: f64 = 28.0;
 
 const HELP: &[(&str, &str)] = &[
     ("Tab / Shift+Tab", "Next or previous tab"),
-    ("1 to 7", "Go to a tab"),
+    ("1 to 8", "Go to a tab"),
     ("Alt+↑↓ or [ ]", "Previous or next sample in the list"),
     ("Up / Down", "Move in a table, or step through samples"),
     ("PgUp / PgDn", "Move a page"),
@@ -51,6 +51,7 @@ const HELP: &[(&str, &str)] = &[
     ("c", "Checks of the open sample and their ranges"),
     ("x", "Choose samples to compare"),
     ("b", "Show many samples as a band or heatmap"),
+    ("r", "Toggle absolute (bp) vs relative (0-100%) position"),
     ("n / p", "Next or previous chart when one fits"),
     ("l", "Show or hide the sample list"),
     ("/", "Filter samples by name"),
@@ -148,6 +149,7 @@ pub(super) fn render(frame: &mut Frame, app: &mut App) {
     match app.tab {
         Tab::Summary => render_summary(frame, content, app, &colors),
         Tab::Overrepresented => render_sequences(frame, content, app),
+        Tab::Cohort => render_cohort(frame, content, app, &colors),
         _ => render_sections(frame, content, app, &colors),
     }
     render_status(frame, status, app);
@@ -209,6 +211,7 @@ fn render_sample_bar(frame: &mut Frame, area: Rect, app: &App, colors: &Colors) 
         Span::from(DOT).fg(colors.status(sample.status)),
         Span::from(format!(" {}", sample.name())).bold(),
         Span::from(format!("  {}", sample.status.label())).fg(colors.status(sample.status)),
+        Span::from(format!(" · {}", sample.profile.label())).dim(),
         Span::from(format!(" · {place}")),
         Span::from(" · Alt+↑↓ or [ ] sample").dim(),
     ]);
@@ -566,7 +569,7 @@ fn check_lines(app: &App, colors: &Colors, width: u16) -> Vec<Line<'static>> {
 /// Charts of a tab other than the summary, stacked when they fit and one
 /// at a time when they do not.
 fn render_sections(frame: &mut Frame, area: Rect, app: &mut App, colors: &Colors) {
-    let sections = app.tab.sections();
+    let sections = app.sections();
     app.is_stacked = area.height / sections as u16 >= MIN_SECTION_HEIGHT;
     let shown: Vec<usize> = if app.is_stacked {
         (0..sections).collect()
@@ -592,12 +595,16 @@ fn render_section(
     let report = &sample.report;
     let (title, description, comparison) = match (app.tab, section) {
         (Tab::Quality, 0) => (
-            format!("Per-base quality: {name}"),
-            "Median and mean quality at each position, with the middle half and the \
-            10th to 90th percentile of bases.",
+            if app.relative_pos && !report.relative_positions.is_empty() {
+                format!("Relative-position quality: {name}")
+            } else {
+                format!("Per-base quality: {name}")
+            },
+            "Median, mean, and effective quality across read position, with the middle \
+            half and 10th to 90th percentile of bases.",
             None,
         ),
-        (Tab::Quality, _) => (
+        (Tab::Quality, 1) => (
             String::from("Per-read quality"),
             "Reads by their mean quality score.",
             Some(Comparison {
@@ -607,6 +614,11 @@ fn render_section(
                 y_title: "Reads",
             }),
         ),
+        (Tab::Quality, _) => (
+            format!("Expected errors per read: {name}"),
+            "Distribution of expected sequencing errors per read (sum of 10^(-Q/10)).",
+            None,
+        ),
         (Tab::Composition, 0) => (
             format!("GC content: {name}"),
             "Reads by GC content, with a normal curve of the same mean and deviation. \
@@ -614,7 +626,11 @@ fn render_section(
             None,
         ),
         (Tab::Composition, 1) => (
-            format!("Base composition: {name}"),
+            if app.relative_pos && !report.relative_positions.is_empty() {
+                format!("Relative base composition: {name}")
+            } else {
+                format!("Base composition: {name}")
+            },
             "Share of each base at each position. Lines should be flat after the first \
             few bases of most libraries.",
             None,
@@ -629,7 +645,7 @@ fn render_section(
                 y_title: "N (%)",
             }),
         ),
-        (Tab::Length, _) => (
+        (Tab::Length, 0) => (
             String::from("Read length"),
             "Reads by length.",
             Some(Comparison {
@@ -650,6 +666,11 @@ fn render_section(
                 y_title: "Reads",
             }),
         ),
+        (Tab::Length, _) => (
+            format!("Quality by read length: {name}"),
+            "Effective and arithmetic mean quality stratified by read-length range.",
+            None,
+        ),
         (Tab::Duplication, _) => (
             format!("Duplication: {name}"),
             "Copies of each sequence across every read. Most reads of a diverse library \
@@ -664,6 +685,17 @@ fn render_section(
         ),
     };
     let mut hints = String::new();
+    if matches!(
+        (app.tab, section),
+        (Tab::Quality, 0) | (Tab::Composition, 1)
+    ) && !report.relative_positions.is_empty()
+    {
+        hints.push_str(if app.relative_pos {
+            " · r absolute bp"
+        } else {
+            " · r relative %"
+        });
+    }
     if comparison.is_some() {
         hints.push_str(if app.is_overlay() {
             " · x samples"
@@ -709,7 +741,9 @@ fn render_section(
         return;
     }
     match (app.tab, section) {
-        (Tab::Quality, _) => render_base_quality(frame, chart, sample, colors),
+        (Tab::Quality, 0) => render_base_quality(frame, chart, sample, app.relative_pos, colors),
+        (Tab::Quality, _) => render_expected_errors(frame, chart, sample, colors),
+        (Tab::Length, _) => render_length_quality(frame, chart, sample, colors),
         (Tab::Composition, 0) => {
             let series = vec![
                 Series::named(
@@ -735,30 +769,7 @@ fn render_section(
             );
         }
         (Tab::Composition, _) => {
-            type BaseShare = fn(&segul_core::stats::fastq::report::PositionSummary) -> f64;
-            let bases: [(&str, BaseShare); 5] = [
-                ("A", |p| share(p.a_count, p.base_count())),
-                ("C", |p| share(p.c_count, p.base_count())),
-                ("G", |p| share(p.g_count, p.base_count())),
-                ("T", |p| share(p.t_count, p.base_count())),
-                ("N", |p| share(p.n_count, p.base_count())),
-            ];
-            let series: Vec<Series> = bases
-                .iter()
-                .zip(colors.bases)
-                .map(|((base, value), color)| {
-                    Series::named(base, position_points(sample, *value).pairs(), color)
-                })
-                .collect();
-            line_chart(
-                frame,
-                chart,
-                &series,
-                "Position (bp)",
-                "Bases (%)",
-                Some(0.0),
-                colors,
-            );
+            render_base_composition(frame, chart, sample, app.relative_pos, colors);
         }
         (Tab::Duplication, _) => render_duplication(frame, chart, sample, colors),
         _ => {
@@ -787,7 +798,62 @@ fn render_section(
     }
 }
 
-fn render_base_quality(frame: &mut Frame, area: Rect, sample: &ReadSample, colors: &Colors) {
+fn render_base_quality(
+    frame: &mut Frame,
+    area: Rect,
+    sample: &ReadSample,
+    relative: bool,
+    colors: &Colors,
+) {
+    if relative && !sample.report.relative_positions.is_empty() {
+        let rel = &sample.report.relative_positions;
+        let line =
+            |value: fn(&segul_core::stats::fastq::report::RelativePositionSummary) -> f64| {
+                rel.iter()
+                    .map(|p| ((p.start_pct + p.end_pct) as f64 / 2.0, value(p)))
+                    .collect::<Vec<_>>()
+            };
+        let first = rel
+            .first()
+            .map_or(0.0, |p| (p.start_pct + p.end_pct) as f64 / 2.0);
+        let last = rel
+            .last()
+            .map_or(100.0, |p| (p.start_pct + p.end_pct) as f64 / 2.0);
+        let zone = |y: f64| vec![(first, y), (last, y)];
+        let series = vec![
+            Series::named("Poor <20", zone(POOR_QUALITY), colors.fail).marker(Marker::Dot),
+            Series::named("Good 28+", zone(GOOD_QUALITY), colors.pass).marker(Marker::Dot),
+            Series::named(
+                "10th to 90th",
+                line(|p| p.p10_qscore as f64),
+                colors.outlier,
+            ),
+            Series::unnamed(line(|p| p.p90_qscore as f64), colors.outlier),
+            Series::named("Middle half", line(|p| p.q1_qscore as f64), colors.axis),
+            Series::unnamed(line(|p| p.q3_qscore as f64), colors.axis),
+            Series::named(
+                "Eff Q",
+                line(|p| p.effective_mean_qscore),
+                colors.series_at(2),
+            ),
+            Series::named("Mean", line(|p| p.mean_qscore), colors.series_at(1)),
+            Series::named(
+                "Median",
+                line(|p| p.median_qscore as f64),
+                colors.series_at(0),
+            ),
+        ];
+        line_chart(
+            frame,
+            area,
+            &series,
+            "Relative position (%)",
+            "Quality score",
+            Some(0.0),
+            colors,
+        );
+        return;
+    }
     let positions = &sample.report.positions;
     let line = |value: fn(&segul_core::stats::fastq::report::PositionSummary) -> f64| {
         positions
@@ -798,7 +864,7 @@ fn render_base_quality(frame: &mut Frame, area: Rect, sample: &ReadSample, color
     let first = positions.first().map_or(0.0, |p| p.start as f64);
     let last = positions.last().map_or(1.0, |p| p.start as f64);
     let zone = |y: f64| vec![(first, y), (last, y)];
-    let series = vec![
+    let mut series = vec![
         Series::named("Poor <20", zone(POOR_QUALITY), colors.fail).marker(Marker::Dot),
         Series::named("Good 28+", zone(GOOD_QUALITY), colors.pass).marker(Marker::Dot),
         Series::named(
@@ -816,6 +882,13 @@ fn render_base_quality(frame: &mut Frame, area: Rect, sample: &ReadSample, color
             colors.series_at(0),
         ),
     ];
+    if positions.iter().any(|p| p.effective_mean_qscore > 0.0) {
+        series.push(Series::named(
+            "Eff Q",
+            line(|p| p.effective_mean_qscore),
+            colors.series_at(2),
+        ));
+    }
     if positions.is_empty() {
         placeholder(frame, area, "No per-position statistics in this report.");
         return;
@@ -829,6 +902,320 @@ fn render_base_quality(frame: &mut Frame, area: Rect, sample: &ReadSample, color
         Some(0.0),
         colors,
     );
+}
+
+fn render_base_composition(
+    frame: &mut Frame,
+    area: Rect,
+    sample: &ReadSample,
+    relative: bool,
+    colors: &Colors,
+) {
+    if relative && !sample.report.relative_positions.is_empty() {
+        type RelShare = fn(&segul_core::stats::fastq::report::RelativePositionSummary) -> f64;
+        let bases: [(&str, RelShare); 5] = [
+            ("A", |p| {
+                share(
+                    p.a_count,
+                    p.a_count + p.c_count + p.g_count + p.t_count + p.n_count,
+                )
+            }),
+            ("C", |p| {
+                share(
+                    p.c_count,
+                    p.a_count + p.c_count + p.g_count + p.t_count + p.n_count,
+                )
+            }),
+            ("G", |p| {
+                share(
+                    p.g_count,
+                    p.a_count + p.c_count + p.g_count + p.t_count + p.n_count,
+                )
+            }),
+            ("T", |p| {
+                share(
+                    p.t_count,
+                    p.a_count + p.c_count + p.g_count + p.t_count + p.n_count,
+                )
+            }),
+            ("N", |p| {
+                share(
+                    p.n_count,
+                    p.a_count + p.c_count + p.g_count + p.t_count + p.n_count,
+                )
+            }),
+        ];
+        let series: Vec<Series> = bases
+            .iter()
+            .zip(colors.bases)
+            .map(|((base, value), color)| {
+                let pairs: Vec<(f64, f64)> = sample
+                    .report
+                    .relative_positions
+                    .iter()
+                    .map(|p| ((p.start_pct + p.end_pct) as f64 / 2.0, value(p)))
+                    .collect();
+                Series::named(base, pairs, color)
+            })
+            .collect();
+        line_chart(
+            frame,
+            area,
+            &series,
+            "Relative position (%)",
+            "Bases (%)",
+            Some(0.0),
+            colors,
+        );
+        return;
+    }
+    type BaseShare = fn(&segul_core::stats::fastq::report::PositionSummary) -> f64;
+    let bases: [(&str, BaseShare); 5] = [
+        ("A", |p| share(p.a_count, p.base_count())),
+        ("C", |p| share(p.c_count, p.base_count())),
+        ("G", |p| share(p.g_count, p.base_count())),
+        ("T", |p| share(p.t_count, p.base_count())),
+        ("N", |p| share(p.n_count, p.base_count())),
+    ];
+    let series: Vec<Series> = bases
+        .iter()
+        .zip(colors.bases)
+        .map(|((base, value), color)| {
+            Series::named(base, position_points(sample, *value).pairs(), color)
+        })
+        .collect();
+    line_chart(
+        frame,
+        area,
+        &series,
+        "Position (bp)",
+        "Bases (%)",
+        Some(0.0),
+        colors,
+    );
+}
+
+fn render_expected_errors(frame: &mut Frame, area: Rect, sample: &ReadSample, colors: &Colors) {
+    let buckets = &sample.report.expected_error_distribution;
+    if buckets.is_empty() {
+        placeholder(frame, area, "No expected-error statistics in this report.");
+        return;
+    }
+    let m = sample.metrics();
+    let [summary, rows] = Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(area);
+    frame.render_widget(
+        Paragraph::new(format!(
+            " Mean EE: {:.2}/read ({:.2}/100 bp) · Error-free est: {:.1}% · EE < 1: {:.1}%",
+            m.mean_expected_errors,
+            m.expected_errors_per_100bp,
+            m.expected_error_free_reads_pct,
+            m.reads_ee_lt_1_pct
+        )),
+        summary,
+    );
+    let label_width = 10;
+    let value_width = 16;
+    let bar_width = (area.width as usize).saturating_sub(label_width + value_width + 4);
+    let max_pct = buckets
+        .iter()
+        .map(|b| b.reads_pct)
+        .fold(0.0f64, f64::max)
+        .max(1.0);
+    let lines: Vec<Line> = buckets
+        .iter()
+        .take(rows.height as usize)
+        .map(|b| {
+            let cells = bar(b.reads_pct, max_pct, bar_width);
+            let pad = " ".repeat(bar_width.saturating_sub(cells.chars().count()) + 1);
+            Line::from(vec![
+                Span::from(format!(" {:label_width$}", b.label)),
+                Span::from(cells).fg(colors.series_at(0)),
+                Span::from(pad),
+                Span::from(format!(
+                    "{:>5.1}% ({})",
+                    b.reads_pct,
+                    compact(b.reads as f64)
+                )),
+            ])
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(lines), rows);
+}
+
+fn render_length_quality(frame: &mut Frame, area: Rect, sample: &ReadSample, colors: &Colors) {
+    let bins = &sample.report.length_quality;
+    if bins.is_empty() {
+        placeholder(frame, area, "No length-quality statistics in this report.");
+        return;
+    }
+    let [header, rows] = Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(area);
+    let label_width = 10;
+    let stats_width = 34;
+    let bar_width = (area.width as usize).saturating_sub(label_width + stats_width + 4);
+    frame.render_widget(
+        Paragraph::new(Line::from(vec![
+            Span::from(format!(" {:label_width$}", "Length")).bold(),
+            Span::from(format!("{:bar_width$} ", "Effective Q")).bold(),
+            Span::from(format!(
+                "{:>6} {:>6} {:>7} {:>7}",
+                "Eff Q", "MeanQ", "Reads", "MeanEE"
+            ))
+            .bold(),
+        ])),
+        header,
+    );
+    let max_q = bins
+        .iter()
+        .map(|b| b.effective_mean_qscore.max(b.mean_qscore))
+        .fold(40.0f64, f64::max);
+    let lines: Vec<Line> = bins
+        .iter()
+        .take(rows.height as usize)
+        .map(|b| {
+            let cells = bar(b.effective_mean_qscore, max_q, bar_width);
+            let pad = " ".repeat(bar_width.saturating_sub(cells.chars().count()) + 1);
+            let color = if b.effective_mean_qscore < POOR_QUALITY {
+                colors.fail
+            } else if b.effective_mean_qscore < GOOD_QUALITY {
+                colors.warn
+            } else {
+                colors.pass
+            };
+            Line::from(vec![
+                Span::from(format!(" {:label_width$}", b.label)),
+                Span::from(cells).fg(color),
+                Span::from(pad),
+                Span::from(format!(
+                    "{:>6.1} {:>6.1} {:>7} {:>7.2}",
+                    b.effective_mean_qscore,
+                    b.mean_qscore,
+                    compact(b.reads as f64),
+                    b.mean_expected_errors
+                )),
+            ])
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(lines), rows);
+}
+
+fn render_cohort(frame: &mut Frame, area: Rect, app: &App, colors: &Colors) {
+    let block = Block::bordered()
+        .border_type(BorderType::Rounded)
+        .title(Line::from(vec![
+            Span::from(" Cohort balance & paired-end integrity ").bold(),
+            Span::from(format!("· profile: {} ", app.qc_profile.label())).dim(),
+        ]));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if app.cohort.is_none() && app.pairs.is_empty() {
+        placeholder(
+            frame,
+            inner,
+            "No cohort or paired-end summary in this report.",
+        );
+        return;
+    }
+    let mut lines: Vec<Line> = Vec::new();
+    if let Some(cohort) = &app.cohort {
+        lines.push(Line::from(Span::from(" Cohort depth balance").bold()));
+        lines.push(Line::from(format!(
+            " Samples: {} ({} empty) · Total reads: {} · Total bases: {}",
+            thousands(cohort.sample_count as i128),
+            thousands(cohort.empty_sample_count as i128),
+            thousands(cohort.total_reads as i128),
+            compact(cohort.total_bases as f64),
+        )));
+        lines.push(Line::from(format!(
+            " Median reads: {} · P10-P90: {}-{} · P90/P10: {:.2}x · CV: {:.2} · Gini: {:.2}",
+            compact(cohort.median_reads),
+            compact(cohort.p10_reads),
+            compact(cohort.p90_reads),
+            cohort.depth_p90_p10_ratio,
+            cohort.depth_cv,
+            cohort.depth_gini,
+        )));
+        if !cohort.low_yield_samples.is_empty() {
+            lines.push(Line::from(vec![
+                Span::from(" Low-yield dropouts (<10% median): ")
+                    .fg(colors.warn)
+                    .bold(),
+                Span::from(cohort.low_yield_samples.join(", ")),
+            ]));
+        }
+        lines.push(Line::from(""));
+    }
+    if !app.pairs.is_empty() {
+        lines.push(Line::from(
+            Span::from(format!(
+                " Paired-end R1/R2 consistency ({})",
+                app.pairs.len()
+            ))
+            .bold(),
+        ));
+        lines.push(
+            Line::from(format!(
+                " {:<24} {:>10} {:>10} {:>7} {:>9} {:>9} {:>8}",
+                "Pair", "R1 reads", "R2 reads", "Sync", "Q30 drop", "EffQ drop", "GC diff"
+            ))
+            .bold(),
+        );
+        for pair in &app.pairs {
+            let status = overall_status(&pair_qc_checks(pair));
+            let sync = if pair.in_sync { "OK" } else { "DIFF" };
+            lines.push(Line::from(vec![
+                Span::from(format!(" {DOT}")).fg(colors.status(status)),
+                Span::from(format!(
+                    " {:<22} {:>10} {:>10} ",
+                    truncate(&pair.pair_name, 22),
+                    compact(pair.r1_reads as f64),
+                    compact(pair.r2_reads as f64),
+                )),
+                Span::from(format!("{:>7}", sync)).fg(if pair.in_sync {
+                    colors.pass
+                } else {
+                    colors.fail
+                }),
+                Span::from(format!(
+                    " {:>+8.1}% {:>+9.1} {:>+7.1}%",
+                    pair.q30_drop_pct, pair.effective_q_drop, pair.gc_diff_pct
+                )),
+            ]));
+        }
+        lines.push(Line::from(""));
+    }
+    if let Some(cohort) = &app.cohort
+        && !cohort.outliers.is_empty()
+    {
+        lines.push(Line::from(
+            Span::from(format!(
+                " Cohort-relative outliers ({})",
+                cohort.outliers.len()
+            ))
+            .bold(),
+        ));
+        lines.push(
+            Line::from(format!(
+                " {:<24} {:<20} {:>10} {:>10} {:>8}",
+                "Sample", "Metric", "Value", "Median", "Mod Z"
+            ))
+            .bold(),
+        );
+        for outlier in &cohort.outliers {
+            lines.push(Line::from(vec![
+                Span::from(format!(
+                    " {:<24} {:<20} ",
+                    truncate(&outlier.sample, 24),
+                    outlier.metric
+                )),
+                Span::from(format!("{:>10.1}", outlier.value)).fg(colors.warn),
+                Span::from(format!(
+                    " {:>10.1} {:>+8.1}",
+                    outlier.cohort_median, outlier.modified_z
+                )),
+            ]));
+        }
+    }
+    frame.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), inner);
 }
 
 fn render_duplication(frame: &mut Frame, area: Rect, sample: &ReadSample, colors: &Colors) {
@@ -1680,6 +2067,54 @@ mod test {
         let text = screen(&mut app, 120, 40);
         assert!(text.contains("as a row"));
         assert!(text.contains(HEAT));
+    }
+
+    #[test]
+    fn test_render_cohort_and_relative_toggle() {
+        let r1 = segul_core::stats::fastq::FastqAnalyzer::new(
+            std::path::Path::new("crates/segul-core/tests/files/raw/read_1.fastq"),
+            segul_core::helper::types::PhredOffset::Auto,
+            true,
+            1,
+        )
+        .analyze()
+        .unwrap();
+        let r2 = segul_core::stats::fastq::FastqAnalyzer::new(
+            std::path::Path::new("crates/segul-core/tests/files/raw/read_2.fastq"),
+            segul_core::helper::types::PhredOffset::Auto,
+            true,
+            1,
+        )
+        .analyze()
+        .unwrap();
+        let report = segul_core::stats::fastq::report::ReadReport::from_samples(
+            vec![r1, r2],
+            segul_core::stats::fastq::qc::QcProfile::Amplicon,
+        );
+        let qc_profile = report.qc_profile;
+        let pairs = report.pairs.clone();
+        let cohort = report.cohort.clone();
+        let samples = super::super::metric::samples_with_reads(report);
+        let mut app = App::new(
+            samples,
+            String::from("read-report.json"),
+            Theme::Dark,
+            Colormap::Viridis,
+        )
+        .with_report_meta(qc_profile, pairs, cohort);
+        press(&mut app, KeyCode::Char('2'));
+        press(&mut app, KeyCode::Char('r'));
+        let text = screen(&mut app, 120, 40);
+        assert!(text.contains("Relative-position quality: read_1"));
+        assert!(text.contains("Expected errors per read: read_1"));
+        press(&mut app, KeyCode::Char('4'));
+        let text = screen(&mut app, 120, 40);
+        assert!(text.contains("Quality by read length: read_1"));
+        press(&mut app, KeyCode::Char('8'));
+        let text = screen(&mut app, 120, 30);
+        assert!(text.contains("Cohort depth balance"));
+        assert!(text.contains("Paired-end R1/R2 consistency"));
+        assert!(text.contains("Amplicon / Capture"));
     }
 
     #[test]

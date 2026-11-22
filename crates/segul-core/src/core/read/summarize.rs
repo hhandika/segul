@@ -18,6 +18,7 @@ use crate::{
     stats::fastq::{
         DEFAULT_DUP_SKETCH_SIZE, FastqAnalyzer, FastqSummary, FastqSummaryMin,
         count_reads_with_progress,
+        qc::QcProfile,
         report::{ReadReport, SampleReadReport},
     },
     writer::read::{
@@ -76,6 +77,8 @@ pub struct GenomicReadSummary<'a> {
     /// Distinct sequences kept to estimate duplication in Complete mode.
     /// Zero counts every distinct sequence.
     pub dup_sketch_size: usize,
+    /// Quality-check profile stored in `read-report.json`.
+    pub qc_profile: QcProfile,
     /// Receives per-file progress and can cancel the run.
     progress: Option<&'a dyn ProgressReporter>,
 }
@@ -97,6 +100,7 @@ impl<'a> GenomicReadSummary<'a> {
             prefix,
             phred: PhredOffset::Auto,
             dup_sketch_size: DEFAULT_DUP_SKETCH_SIZE,
+            qc_profile: QcProfile::Auto,
             progress: None,
         }
     }
@@ -111,6 +115,12 @@ impl<'a> GenomicReadSummary<'a> {
     /// Use a fixed quality score offset instead of detecting it.
     pub fn with_phred(mut self, phred: PhredOffset) -> Self {
         self.phred = phred;
+        self
+    }
+
+    /// Set the QC profile recorded in `read-report.json`.
+    pub fn with_qc_profile(mut self, profile: QcProfile) -> Self {
+        self.qc_profile = profile;
         self
     }
 
@@ -264,20 +274,50 @@ impl<'a> GenomicReadSummary<'a> {
         records: Vec<FastqSummary>,
     ) -> Result<ReadSummaryFiles> {
         let summary = self.write_record_basic(spin, &records, true);
-        let report = ReadReport {
-            samples: records.into_iter().map(|r| r.report).collect(),
-        };
+        let report = ReadReport::from_samples(
+            records.into_iter().map(|r| r.report).collect(),
+            self.qc_profile,
+        );
+        self.print_cohort_info(&report);
         let samples: &[SampleReadReport] = &report.samples;
         let positions = ReadPosSummaryWriter::new(self.output, self.prefix).write(samples)?;
-        let distributions = ReadDistSummaryWriter::new(self.output, self.prefix).write(samples)?;
-        let report = ReadReportWriter::new(self.output, self.prefix).write(&report)?;
+        let distributions =
+            ReadDistSummaryWriter::new(self.output, self.prefix).write_report(&report)?;
+        let report_path = ReadReportWriter::new(self.output, self.prefix).write(&report)?;
         Ok(ReadSummaryFiles {
             summary,
             mode: *self.mode,
             positions: Some(positions),
             distributions: Some(distributions),
-            report: Some(report),
+            report: Some(report_path),
         })
+    }
+
+    fn print_cohort_info(&self, report: &ReadReport) {
+        if !report.pairs.is_empty() {
+            let out_of_sync = report.pairs.iter().filter(|p| !p.in_sync).count();
+            log::info!("{:18}: {}", "Matched pairs", report.pairs.len());
+            if out_of_sync > 0 {
+                log::warn!(
+                    "{:18}: {} pair(s) have mismatched R1/R2 read counts",
+                    "Pair sync",
+                    out_of_sync
+                );
+            }
+        }
+        if let Some(cohort) = &report.cohort
+            && cohort.sample_count > 1
+        {
+            log::info!("{:18}: {:.2}", "Depth CV", cohort.depth_cv);
+            log::info!("{:18}: {:.2}", "Depth Gini", cohort.depth_gini);
+            if !cohort.low_yield_samples.is_empty() {
+                log::warn!(
+                    "{:18}: {}",
+                    "Low-yield samples",
+                    cohort.low_yield_samples.join(", ")
+                );
+            }
+        }
     }
 
     fn print_totals(&self, counts: impl Iterator<Item = (u64, u64)>) {

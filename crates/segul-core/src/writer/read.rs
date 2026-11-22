@@ -334,6 +334,57 @@ impl<'a> ReadDistSummaryWriter<'a> {
         Ok(zip_path)
     }
 
+    /// Write per-sample distributions plus run-level pairs and cohort tables when present.
+    pub fn write_report(&self, report: &ReadReport) -> Result<PathBuf> {
+        let zip_path = output_path(self.output, self.prefix, DISTRIBUTION_SUFFIX, ZIP_EXTENSION);
+        let mut zip = self
+            .create_zip_writer(&zip_path)
+            .expect("Failed writing to file");
+        for sample in &report.samples {
+            self.write_sample(&mut zip, sample)?;
+        }
+        if !report.pairs.is_empty() {
+            start_entry(&mut zip, "pairs.csv")?;
+            writeln!(
+                zip,
+                "pair_name,r1_sample,r2_sample,r1_reads,r2_reads,read_count_diff,\
+                in_sync,q30_drop_pct,effective_q_drop,mean_length_diff,gc_diff_pct"
+            )?;
+            for p in &report.pairs {
+                writeln!(
+                    zip,
+                    "{},{},{},{},{},{},{},{},{},{},{}",
+                    p.pair_name,
+                    p.r1_sample,
+                    p.r2_sample,
+                    p.r1_reads,
+                    p.r2_reads,
+                    p.read_count_diff,
+                    p.in_sync,
+                    p.q30_drop_pct,
+                    p.effective_q_drop,
+                    p.mean_length_diff,
+                    p.gc_diff_pct,
+                )?;
+            }
+        }
+        if let Some(cohort) = &report.cohort
+            && !cohort.outliers.is_empty()
+        {
+            start_entry(&mut zip, "cohort-outliers.csv")?;
+            writeln!(zip, "sample,metric,value,cohort_median,modified_z")?;
+            for o in &cohort.outliers {
+                writeln!(
+                    zip,
+                    "{},{},{},{},{}",
+                    o.sample, o.metric, o.value, o.cohort_median, o.modified_z
+                )?;
+            }
+        }
+        zip.finish()?;
+        Ok(zip_path)
+    }
+
     fn write_sample<W: Write + std::io::Seek>(
         &self,
         zip: &mut ZipWriter<W>,
