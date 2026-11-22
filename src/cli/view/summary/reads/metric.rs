@@ -56,28 +56,38 @@ pub(super) enum ReadMetric {
     Bases,
     MeanLength,
     N50,
+    AuN,
     Q30,
     MeanQuality,
+    EffectiveQuality,
+    ErrorFreeReads,
     Gc,
+    GcDivergence,
+    LowComplexity,
     Duplication,
     Adapters,
 }
 
 impl ReadMetric {
-    pub(super) const ALL: [Self; 9] = [
+    pub(super) const ALL: [Self; 14] = [
         Self::Reads,
         Self::Bases,
         Self::MeanLength,
         Self::N50,
+        Self::AuN,
         Self::Q30,
         Self::MeanQuality,
+        Self::EffectiveQuality,
+        Self::ErrorFreeReads,
         Self::Gc,
+        Self::GcDivergence,
+        Self::LowComplexity,
         Self::Duplication,
         Self::Adapters,
     ];
 
-    /// Columns of the summary table, in the order of the GUI.
-    pub(super) const TABLE: [Self; 9] = [
+    /// Columns of the summary table, keeping the core columns first.
+    pub(super) const TABLE: [Self; 14] = [
         Self::Reads,
         Self::Bases,
         Self::MeanLength,
@@ -87,6 +97,11 @@ impl ReadMetric {
         Self::MeanQuality,
         Self::Duplication,
         Self::Adapters,
+        Self::EffectiveQuality,
+        Self::ErrorFreeReads,
+        Self::LowComplexity,
+        Self::GcDivergence,
+        Self::AuN,
     ];
 
     /// Name above the bars.
@@ -96,9 +111,14 @@ impl ReadMetric {
             Self::Bases => "Bases",
             Self::MeanLength => "Mean length (bp)",
             Self::N50 => "N50 (bp)",
+            Self::AuN => "auN (bp)",
             Self::Q30 => "Q30 bases (%)",
             Self::MeanQuality => "Mean quality",
+            Self::EffectiveQuality => "Effective quality",
+            Self::ErrorFreeReads => "Error-free reads (%)",
             Self::Gc => "GC (%)",
+            Self::GcDivergence => "GC divergence (%)",
+            Self::LowComplexity => "Low complexity (%)",
             Self::Duplication => "Duplication (%)",
             Self::Adapters => "Adapters (%)",
         }
@@ -109,8 +129,13 @@ impl ReadMetric {
         match self {
             Self::MeanLength => "Mean length",
             Self::N50 => "N50",
+            Self::AuN => "auN",
             Self::Q30 => "Q30 (%)",
             Self::MeanQuality => "Mean Q",
+            Self::EffectiveQuality => "Eff Q",
+            Self::ErrorFreeReads => "Err-free (%)",
+            Self::GcDivergence => "GC div (%)",
+            Self::LowComplexity => "Low-cplx (%)",
             _ => self.label(),
         }
     }
@@ -122,9 +147,14 @@ impl ReadMetric {
             Self::Bases => Some(metrics.base_count as f64),
             Self::MeanLength => Some(metrics.mean_read_length),
             Self::N50 => Some(metrics.n50_read_length as f64),
+            Self::AuN => Some(metrics.aun_read_length),
             Self::Q30 => Some(metrics.q30_pct),
             Self::MeanQuality => Some(metrics.mean_qscore),
+            Self::EffectiveQuality => Some(metrics.effective_mean_qscore),
+            Self::ErrorFreeReads => Some(metrics.expected_error_free_reads_pct),
             Self::Gc => Some(100.0 * metrics.gc_content),
+            Self::GcDivergence => Some(metrics.gc_normal_divergence_pct),
+            Self::LowComplexity => Some(metrics.low_complexity_reads_pct),
             Self::Duplication => metrics.duplicate_pct_est,
             Self::Adapters => metrics.adapter_reads_pct,
         }
@@ -134,7 +164,7 @@ impl ReadMetric {
     pub(super) fn rule(self) -> Option<QcRule> {
         match self {
             Self::Q30 => Some(Q30_RULE),
-            Self::MeanQuality => Some(MEAN_QUALITY_RULE),
+            Self::MeanQuality | Self::EffectiveQuality => Some(MEAN_QUALITY_RULE),
             Self::Duplication => Some(DUPLICATION_RULE),
             Self::Adapters => Some(ADAPTERS_RULE),
             _ => None,
@@ -145,7 +175,7 @@ impl ReadMetric {
     pub(super) fn short(self, value: f64) -> String {
         match self {
             Self::Reads | Self::Bases => compact(value),
-            Self::N50 => format!("{}", value.round()),
+            Self::N50 | Self::AuN => format!("{}", value.round()),
             _ => format!("{value:.1}"),
         }
     }
@@ -153,7 +183,7 @@ impl ReadMetric {
     /// [value] in a table cell.
     pub(super) fn exact(self, value: f64) -> String {
         match self {
-            Self::Reads | Self::Bases | Self::N50 => thousands(value.round() as i128),
+            Self::Reads | Self::Bases | Self::N50 | Self::AuN => thousands(value.round() as i128),
             _ => format!("{value:.1}"),
         }
     }

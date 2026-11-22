@@ -583,13 +583,15 @@ impl TaxonRecords {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub enum SummaryMode {
-    /// Only write/print minimal summary information
+    /// Only write read counts.
     Minimal,
-    /// Write all essential summary information
-    Default,
-    /// Write all summary information
+    /// Write file-level and per-read summary statistics to a single CSV.
+    Basic,
+    /// Write all summary statistics, per-position profiles, distributions,
+    /// duplication, adapters, overrepresented sequences, and JSON report.
+    #[default]
     Complete,
 }
 
@@ -597,7 +599,7 @@ impl std::fmt::Display for SummaryMode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Minimal => write!(f, "minimal"),
-            Self::Default => write!(f, "default"),
+            Self::Basic => write!(f, "basic"),
             Self::Complete => write!(f, "complete"),
         }
     }
@@ -609,7 +611,7 @@ impl std::str::FromStr for SummaryMode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "minimal" => Ok(Self::Minimal),
-            "default" => Ok(Self::Default),
+            "basic" | "default" => Ok(Self::Basic),
             "complete" => Ok(Self::Complete),
             _ => Err(format!("{} is not a valid summary mode", s)),
         }
@@ -750,5 +752,26 @@ mod test {
         let file = Path::new("tests/files/simple.nex");
         let input_fmt = infer_input_auto(file);
         assert_eq!(InputFmt::Nexus, input_fmt);
+    }
+
+    #[test]
+    fn test_summary_mode_parse_and_default() {
+        assert_eq!(SummaryMode::default(), SummaryMode::Complete);
+        assert_eq!(
+            "minimal".parse::<SummaryMode>().unwrap(),
+            SummaryMode::Minimal
+        );
+        assert_eq!("basic".parse::<SummaryMode>().unwrap(), SummaryMode::Basic);
+        // Legacy alias for Basic mode.
+        assert_eq!(
+            "default".parse::<SummaryMode>().unwrap(),
+            SummaryMode::Basic
+        );
+        assert_eq!(
+            "complete".parse::<SummaryMode>().unwrap(),
+            SummaryMode::Complete
+        );
+        assert_eq!(SummaryMode::Basic.to_string(), "basic");
+        assert!("unknown".parse::<SummaryMode>().is_err());
     }
 }

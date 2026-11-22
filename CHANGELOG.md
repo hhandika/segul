@@ -9,27 +9,36 @@ Installation:
 
 New Features:
 
+- `segul read summary` now defaults to `--mode complete` (matching SEGUI) and renames the middle mode from `default` to `basic` (`--mode default` remains accepted as an alias). The per-sample CSV is named `read-summary.csv`.
+- `segul read summary` adds error-probability–aware quality metrics (`effective_mean_QScore`, `mean_error_rate`, `Q10_pct`, `Q15_pct`, `Q40_pct`, `distinct_QScores`, expected errors per read and per 100 bp, expected error-free read share, and read-level base survival at Q10/Q20/Q30), sequence complexity (`mean_complexity`, `low_complexity_reads_pct`), homopolymer run and 3'-terminal tail statistics with homopolymer quality gap, extended length metrics (`N90`, `L50`, `auN`, `empty_reads`), strand skew (`AT_skew`, `GC_skew`), quantitative GC shape (`GC_stdev`, `GC_normal_divergence_pct`, `GC_peaks`), and lightweight FASTQ header metadata (`platform`, Illumina chastity-failed reads, run/lane group count) in both `basic` and `complete` modes.
+- Complete mode adds relative-position (0-100%) quality and base profiles (`relative-pos.csv`), read length × quality summaries (`length-quality.csv`), expected-error and complexity distributions, per-position effective quality and read survival, and summary scalars (`QScore_tail_drop`, `effective_Q20_span`, `effective_Q30_span`, `head_bias_bp`), plus matching `--plot` presets and `segul view summary` columns.
 - `segul view summary` shows read reports like the SEGUI read viewer.
 - `segul contig summary` also writes `contig-report.json` with totals across samples, per-sample statistics, and contig length distributions. Open it with `segul view summary`.
 - The contig summary CSV adds N count, unknown characters, and contig length SD as the last columns.
 
 Bug Fixes:
 
+- Per-read mean quality scores now round to the nearest integer instead of truncating, and `mean_read_QScore` averages exact per-read means.
+- Read sample names strip compound FASTQ extensions (`.fastq.gz`, `.fq.gz`) instead of leaving `.fastq` attached, and non-ACGTN bases are reported in `other_bases`.
 - Contig summaries of empty files no longer fail, and single-contig files report a length SD of 0 instead of NaN.
 - Long contig charts are labeled ">750 bp" and so on, matching the counts of contigs longer than each length.
 
 Library Changes:
 
+- `ReadMetrics` and `SampleReadReport` add error-rate quality, expected-error, complexity, homopolymer, relative-position, length × quality, and FASTQ header metadata fields (all `#[serde(default)]` for compatibility with older `read-report.json` files).
 - New `stats::fastq::qc` module with the read quality checks and their thresholds (`QcRule`, `QcCheck`, `qc_checks`, `overall_status`), shared by the terminal and SEGUI viewers.
 - New `stats::contig_report::ContigReport`, which serializes with serde and reads with `from_path`. `ContigSummary` adds `length_distribution`, binned by `stats::contigs::LENGTH_BIN_EDGES`.
 - `CommonStats` and `NStats` stay zero for empty input, and `CommonStats` gives an SD of 0 for one value.
 
 Breaking Changes:
 
+- `SummaryMode::Default` is renamed to `SummaryMode::Basic`, and `SummaryMode::default()` now returns `SummaryMode::Complete`. `SummaryMode::from_str` still accepts `"default"` as an alias for `Basic`.
+- The per-sample read summary CSV is written as `read-summary.csv` instead of `default-read-summary.csv`.
 - `ContigSummaryHandler::summarize` and `try_summarize` return `ContigSummaryFiles` instead of the summary path.
 
 Migration:
 
+- Replace `SummaryMode::Default` with `SummaryMode::Basic` in Rust callers, and pass `--mode basic` on the CLI if you only want the single CSV without Complete mode outputs.
 - Use `files.summary` for the CSV path and `files.report` for the JSON report.
 
 ## v0.25.0

@@ -47,11 +47,10 @@ pub(crate) struct SeqReadSummaryArgs {
     pub(crate) input_format: SeqReadFmt,
     #[arg(
         long = "mode",
-        help = "Summary mode",
-        default_value_t = SummaryMode::Default,
-        value_parser =
-            builder::PossibleValuesParser::new(["minimal", "default", "complete"])
-            .map(|x| x.parse::<SummaryMode>().unwrap()))]
+        help = "Summary mode: minimal (read counts), basic (per-file CSV), or complete (all statistics and report)",
+        default_value_t = SummaryMode::Complete,
+        value_parser = SummaryModeParser,
+    )]
     pub(crate) mode: SummaryMode,
     #[arg(
         long = "phred",
@@ -234,4 +233,52 @@ pub(crate) struct MafSummaryArgs {
     pub(crate) prefix: Option<String>,
     #[command(flatten)]
     pub(crate) plot: PlotFlags,
+}
+
+/// Parses `--mode` while advertising `minimal`, `basic`, and `complete` and
+/// still accepting the legacy `default` alias for `basic`.
+#[derive(Clone)]
+struct SummaryModeParser;
+
+impl builder::TypedValueParser for SummaryModeParser {
+    type Value = SummaryMode;
+
+    fn parse_ref(
+        &self,
+        cmd: &clap::Command,
+        arg: Option<&clap::Arg>,
+        value: &std::ffi::OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        let raw = value.to_str().unwrap_or_default();
+        raw.parse::<SummaryMode>().map_err(|_| {
+            let mut err = clap::Error::new(clap::error::ErrorKind::InvalidValue).with_cmd(cmd);
+            if let Some(arg) = arg {
+                err.insert(
+                    clap::error::ContextKind::InvalidArg,
+                    clap::error::ContextValue::String(arg.to_string()),
+                );
+            }
+            err.insert(
+                clap::error::ContextKind::InvalidValue,
+                clap::error::ContextValue::String(raw.to_string()),
+            );
+            err.insert(
+                clap::error::ContextKind::ValidValue,
+                clap::error::ContextValue::Strings(vec![
+                    String::from("minimal"),
+                    String::from("basic"),
+                    String::from("complete"),
+                ]),
+            );
+            err
+        })
+    }
+
+    fn possible_values(&self) -> Option<Box<dyn Iterator<Item = builder::PossibleValue> + '_>> {
+        Some(Box::new(
+            ["minimal", "basic", "complete"]
+                .into_iter()
+                .map(builder::PossibleValue::new),
+        ))
+    }
 }

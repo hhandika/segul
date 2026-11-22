@@ -8,6 +8,7 @@
 //! BGZF files are also decompressed in parallel.
 mod accumulate;
 mod chunk;
+mod header;
 mod parse;
 pub mod qc;
 pub mod report;
@@ -383,10 +384,28 @@ mod test {
         assert_eq!(m.base_count, 127);
         assert_eq!(m.median_read_length, 24.0);
         assert_eq!(m.n50_read_length, 24);
+        assert_eq!(m.n90_read_length, 20);
+        assert_eq!(m.l50_read_length, 3);
+        assert!(m.aun_read_length > 23.0);
         assert_eq!(m.min_read_length, 5);
         assert_eq!(m.max_read_length, 30);
         assert_eq!(m.adapter_reads_pct, Some(50.0));
         assert!((m.poly_g_reads_pct.unwrap() - 100.0 / 6.0).abs() < 1e-9);
+        assert!((m.poly_g_tail_reads_pct - 100.0 / 6.0).abs() < 1e-9);
+        assert!(m.effective_mean_qscore < m.mean_qscore);
+        assert!(m.mean_error_rate > 0.0);
+        assert!(m.expected_error_free_reads_pct > 0.0 && m.expected_error_free_reads_pct < 100.0);
+        assert!(m.distinct_qscores >= 4);
+        assert_eq!(m.max_homopolymer_length, 16);
+        assert!(m.low_complexity_reads_pct > 0.0);
+        assert_eq!(report.relative_positions.len(), 20);
+        assert_eq!(report.length_quality.len(), 1);
+        assert_eq!(report.expected_error_distribution.len(), 8);
+        assert_eq!(report.complexity_distribution.len(), 20);
+        assert!(m.qscore_tail_drop.is_some());
+        assert!(m.effective_q20_span.is_some());
+        assert!(m.effective_q30_span.is_some());
+        assert!(m.head_bias_bp.is_some());
         let dup = report.duplication.as_ref().unwrap();
         assert_eq!(dup.reads, 6);
         assert_eq!(dup.distinct_sequences, 4.0);

@@ -47,12 +47,12 @@ pub struct ReadSummaryFiles {
 ///
 /// It accept input in FASTQ or compressed FASTQ (.gzip).
 /// The resulting file is in Comma-separated (.csv) format.
-/// It accepts three mode to generate summary statistics:
+/// It accepts three modes to generate summary statistics:
 /// 1. Minimal: read count only
-/// 2. Default: essential statistics, such as read counts, base counts, gc, at, and n content, and qscore statistics
-/// 3. Complete: all the essential statistics plus statistics per read
-///    position, read length, quality, and GC distributions, duplication,
-///    overrepresented sequences, and adapter content for each file.
+/// 2. Basic: per-file and per-read summary statistics in a single CSV
+/// 3. Complete (default): all Basic statistics plus per-position and
+///    relative-position profiles, length x quality, distributions,
+///    duplication, overrepresented sequences, adapter content, and JSON report.
 ///
 /// Each file is read once. Large files are split into blocks that are
 /// summarized in parallel.
@@ -142,7 +142,7 @@ impl<'a> GenomicReadSummary<'a> {
     /// let mut handle = GenomicReadSummary::new(
     ///     &mut files,
     ///     &SeqReadFmt::Auto,
-    ///     &SummaryMode::Default,
+    ///     &SummaryMode::Basic,
     ///     Path::new(output.path()),
     ///     None,
     /// );
@@ -169,10 +169,10 @@ impl<'a> GenomicReadSummary<'a> {
                     report: None,
                 }
             }
-            SummaryMode::Default => {
+            SummaryMode::Basic => {
                 let records = self.par_summarize(false)?;
                 ReadSummaryFiles {
-                    summary: self.write_record_default(&spin, &records, false),
+                    summary: self.write_record_basic(&spin, &records, false),
                     mode: *self.mode,
                     positions: None,
                     distributions: None,
@@ -244,7 +244,7 @@ impl<'a> GenomicReadSummary<'a> {
             .expect("Failed writing to file")
     }
 
-    fn write_record_default(
+    fn write_record_basic(
         &self,
         spin: &ProgressBar,
         records: &[FastqSummary],
@@ -263,7 +263,7 @@ impl<'a> GenomicReadSummary<'a> {
         spin: &ProgressBar,
         records: Vec<FastqSummary>,
     ) -> Result<ReadSummaryFiles> {
-        let summary = self.write_record_default(spin, &records, true);
+        let summary = self.write_record_basic(spin, &records, true);
         let report = ReadReport {
             samples: records.into_iter().map(|r| r.report).collect(),
         };
@@ -314,7 +314,7 @@ mod test {
         let handler = GenomicReadSummary::new(
             &mut files,
             &SeqReadFmt::Auto,
-            &SummaryMode::Default,
+            &SummaryMode::Basic,
             output.path(),
             None,
         );
@@ -354,7 +354,7 @@ mod test {
         GenomicReadSummary::new(
             &mut files,
             &SeqReadFmt::Auto,
-            &SummaryMode::Default,
+            &SummaryMode::Basic,
             output.path(),
             None,
         )
@@ -376,7 +376,7 @@ mod test {
         let error = GenomicReadSummary::new(
             &mut files,
             &SeqReadFmt::Auto,
-            &SummaryMode::Default,
+            &SummaryMode::Basic,
             output.path(),
             None,
         )
@@ -438,7 +438,7 @@ mod test {
             Some("run"),
         );
         let files = handler.try_summarize().unwrap();
-        assert!(files.summary.ends_with("run_default-read-summary.csv"));
+        assert!(files.summary.ends_with("run_read-summary.csv"));
         assert!(files.positions.unwrap().exists());
         assert!(files.distributions.unwrap().exists());
         let report = ReadReport::from_path(&files.report.unwrap()).unwrap();

@@ -14,9 +14,6 @@ pub mod qscores;
 pub mod summary_csv;
 pub mod txt;
 
-#[cfg(target_os = "windows")]
-const CAR_RETURN: u8 = b'\r';
-
 #[cfg(feature = "maf")]
 const END_OF_LINE: u8 = b'\n';
 #[cfg(feature = "maf")]
