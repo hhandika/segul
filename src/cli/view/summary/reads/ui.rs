@@ -762,10 +762,12 @@ fn render_section(
         }
         (Tab::Duplication, _) => render_duplication(frame, chart, sample, colors),
         _ => {
+            // Only adapters found in the reads; each keeps its color across samples.
             let series: Vec<Series> = report
                 .adapters
                 .iter()
                 .enumerate()
+                .filter(|(_, adapter)| adapter.cumulative_pct.iter().any(|&v| v > 0.0))
                 .map(|(i, adapter)| {
                     let points = Points {
                         x: report.positions.iter().map(|p| p.start as f64).collect(),
@@ -774,6 +776,10 @@ fn render_section(
                     Series::named(&adapter.name, points.pairs(), colors.series_at(i))
                 })
                 .collect();
+            if series.is_empty() {
+                placeholder(frame, chart, "No adapters found.");
+                return;
+            }
             line_chart(
                 frame,
                 chart,
@@ -1649,11 +1655,29 @@ mod test {
         press(&mut app, KeyCode::Char('5'));
         assert!(screen(&mut app, 120, 30).contains("repeat another read"));
         press(&mut app, KeyCode::Char('6'));
-        assert!(screen(&mut app, 120, 30).contains("Adapter content: read_1"));
+        let text = screen(&mut app, 120, 30);
+        assert!(text.contains("Adapter content: read_1"));
+        assert!(text.contains("No adapters found."));
+        assert!(!text.contains("Nextera"));
         press(&mut app, KeyCode::Char('7'));
         assert!(screen(&mut app, 120, 30).contains("No overrepresented sequences."));
         press(&mut app, KeyCode::Char(']'));
         assert!(screen(&mut app, 120, 30).contains("Overrepresented sequences: read_2"));
+    }
+
+    #[test]
+    fn test_render_detected_adapters_only() {
+        let mut app = app();
+        let report = &mut app.samples[0].report;
+        let positions = report.positions.len();
+        assert!(positions > 0);
+        report.adapters[1].cumulative_pct = vec![25.0; positions];
+        press(&mut app, KeyCode::Char('6'));
+        let text = screen(&mut app, 120, 30);
+        assert!(text.contains("Nextera"));
+        assert!(!text.contains("Illumina Universal"));
+        assert!(!text.contains("PolyG"));
+        assert!(!text.contains("No adapters found."));
     }
 
     #[test]

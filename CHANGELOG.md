@@ -17,6 +17,7 @@ Bug Fixes:
 
 - Contig summaries of empty files no longer fail, and single-contig files report a length SD of 0 instead of NaN.
 - Long contig charts are labeled ">750 bp" and so on, matching the counts of contigs longer than each length.
+- Automatic reading frame detection accepts the stop codon at the end of a complete coding sequence, including before a partial codon, gaps, or missing data, instead of picking another frame or failing.
 
 Library Changes:
 

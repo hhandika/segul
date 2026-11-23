@@ -81,17 +81,30 @@ impl<'a> SequenceTranslation<'a> {
             .values()
             .next()
             .expect("Failed getting the first sequence");
-        let trans = self.translate_seq(seq, *frame);
-        if trans.contains('*') && *frame < 3 {
+        let has_internal_stop = self.has_internal_stop(seq, *frame);
+        if has_internal_stop && *frame < 3 {
             *frame += 1;
             self.get_reading_frame(file, matrix, frame);
-        } else if trans.contains('*') && *frame == 3 {
+        } else if has_internal_stop && *frame == 3 {
             panic!(
                 "The alignment {} still contains stop codons \
             after testing all possible reading frames",
                 file.display()
             )
         }
+    }
+
+    // A complete CDS ends in a stop, so a stop is internal only if a full codon follows it.
+    // We count bases because X in the translation can be a partial, missing, or ambiguous codon.
+    fn has_internal_stop(&self, seq: &str, frame: usize) -> bool {
+        self.translate_seq(seq, frame).find('*').is_some_and(|pos| {
+            let bases_after_stop = seq
+                .chars()
+                .skip(frame - 1 + (pos + 1) * 3)
+                .filter(|c| !matches!(c, '-' | '?' | '.' | 'N' | 'n'))
+                .count();
+            bases_after_stop >= 3
+        })
     }
 
     fn translate_matrix(&self, matrix: &mut SeqMatrix, frame: usize) -> (SeqMatrix, Header) {
@@ -188,6 +201,22 @@ mod tests {
                 &OutputFmt::Fasta,
             );
             assert_eq!($result, trans.translate_seq($input, $frame));
+        };
+    }
+
+    macro_rules! test_reading_frame {
+        ($input:expr_2021, $result:expr_2021, $code:ident) => {
+            let trans = SequenceTranslation::new(
+                &InputFmt::Fasta,
+                &GeneticCodes::$code,
+                &DataType::Dna,
+                &OutputFmt::Fasta,
+            );
+            let mut matrix: SeqMatrix = IndexMap::new();
+            matrix.insert(String::from("seq"), String::from($input));
+            let mut frame = 1;
+            trans.get_reading_frame(Path::new("cds.fas"), &matrix, &mut frame);
+            assert_eq!($result, frame, "{}", $input);
         };
     }
 
@@ -442,5 +471,63 @@ mod tests {
         let dna = "nnnaaaggggatttagttagaa?????";
         let frame = 1;
         test_translate!(dna, frame, String::from("XKGDLVRX?"), StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_complete_cds() {
+        // Frame 2 has no stop codons, so it must not win over the complete CDS in frame 1.
+        test_reading_frame!("ATGGCCTAA", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_complete_cds_stops_in_other_frames() {
+        test_reading_frame!("ATGATAGTTAGCTAA", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_stop_with_partial_codon() {
+        test_reading_frame!("ATGGCCTAAG", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAAGC", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_stop_with_gaps() {
+        test_reading_frame!("ATGGCCTAA------", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAA--", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAAG-----", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAA--G--C", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_stop_with_missing() {
+        test_reading_frame!("ATGGCCTAA??????", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAANNNNNN", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAA......", 1, StandardCode);
+        test_reading_frame!("atggcctaannn---", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_complete_cds_offset() {
+        test_reading_frame!("TAATGATAGTTAGCTAA", 3, StandardCode);
+        test_reading_frame!("TATGATAGTTAGCTAA", 2, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_complete_cds_vertmtdna() {
+        test_reading_frame!("ATGGCCAGA", 1, VertMtDna);
+    }
+
+    #[test]
+    fn test_reading_frame_internal_stop() {
+        test_reading_frame!("ATGTAAGCC", 2, StandardCode);
+        test_reading_frame!("ATGGCCTAATAA", 2, StandardCode);
+        test_reading_frame!("ATGTAA---GCC", 2, StandardCode);
+        test_reading_frame!("ATGGCCTAARAC", 2, StandardCode);
+    }
+
+    #[test]
+    #[should_panic(expected = "still contains stop codons")]
+    fn test_reading_frame_internal_stop_all_frames() {
+        test_reading_frame!("TAAATAAATAAATAA", 1, StandardCode);
     }
 }
