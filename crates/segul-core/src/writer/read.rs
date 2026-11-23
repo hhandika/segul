@@ -10,7 +10,7 @@ use super::FileWriter;
 use crate::stats::fastq::report::{ReadReport, SampleReadReport};
 use crate::stats::fastq::{FastqSummary, FastqSummaryMin};
 
-const DEFAULT_READ_SUFFIX: &str = "default-read-summary";
+const READ_SUMMARY_SUFFIX: &str = "read-summary";
 const MINIMAL_READ_SUFFIX: &str = "minimal-read-summary";
 const PER_READ_SUFFIX: &str = "read-pos-summary";
 const DISTRIBUTION_SUFFIX: &str = "read-dist-summary";
@@ -29,16 +29,27 @@ G,C,A,T,N,\
 low_QScore,mean_QScore,min_QScore,max_QScore,\
 median_read_length,stdev_read_length,N50_read_length,\
 Q20_bases,Q20_pct,Q30_bases,Q30_pct,\
-mean_read_QScore,low_quality_reads,phred_offset";
+mean_read_QScore,low_quality_reads,phred_offset,\
+N90_read_length,L50_read_length,auN_read_length,empty_reads,other_bases,\
+AT_skew,GC_skew,GC_stdev,GC_normal_divergence_pct,GC_peaks,\
+effective_mean_QScore,mean_error_rate,Q10_pct,Q15_pct,Q40_pct,distinct_QScores,\
+mean_expected_errors,expected_errors_per_100bp,expected_error_free_reads_pct,\
+reads_EE_lt_1_pct,Q10_read_bases_pct,Q20_read_bases_pct,Q30_read_bases_pct,\
+mean_complexity,low_complexity_reads_pct,\
+homopolymer_bases_pct,max_homopolymer_length,\
+homopolymer_mean_QScore,non_homopolymer_mean_QScore,homopolymer_QScore_gap,\
+polyG_tail_reads_pct,polyA_tail_reads_pct,polyT_tail_reads_pct,polyC_tail_reads_pct,\
+platform,chastity_failed_reads,chastity_failed_pct,run_group_count";
 
-const COMPLETE_READ_HEADER: &str =
-    ",duplicate_pct_est,adapter_reads_pct,polyG_reads_pct,overrepresented_count";
+const COMPLETE_READ_HEADER: &str = ",duplicate_pct_est,adapter_reads_pct,polyG_reads_pct,\
+overrepresented_count,QScore_tail_drop,effective_Q20_span,effective_Q30_span,head_bias_bp";
 
 const PER_READ_HEADER: &str = "index,G,C,A,T\
 ,proportion_G,proportion_C,proportion_A,proportion_T\
 ,mean_QScore,min_QScore,max_QScore\
 ,N,proportion_N\
-,P10_QScore,Q1_QScore,median_QScore,Q3_QScore,P90_QScore,end_index";
+,P10_QScore,Q1_QScore,median_QScore,Q3_QScore,P90_QScore,end_index\
+,effective_mean_QScore,read_survival_pct";
 
 /// Output file path with an optional prefix.
 fn output_path(output: &Path, prefix: Option<&str>, suffix: &str, extension: &str) -> PathBuf {
@@ -61,17 +72,17 @@ impl<'a> ReadSummaryWriter<'a> {
         Self { output, prefix }
     }
 
-    /// Write default statistics for each file.
+    /// Write Basic-mode statistics for each file.
     pub fn write(&self, records: &[FastqSummary]) -> Result<PathBuf> {
         self.write_summary(records, false)
     }
 
-    /// Write default statistics, plus the Complete mode columns when `complete` is true.
+    /// Write per-file summary statistics, plus Complete-mode columns when `complete` is true.
     pub fn write_summary(&self, records: &[FastqSummary], complete: bool) -> Result<PathBuf> {
         let final_path = output_path(
             self.output,
             self.prefix,
-            DEFAULT_READ_SUFFIX,
+            READ_SUMMARY_SUFFIX,
             DEFAULT_EXTENSION,
         );
         let mut writer = self
@@ -131,7 +142,17 @@ impl<'a> ReadSummaryWriter<'a> {
                 {},{},{},{},\
                 {},{},{},\
                 {},{},{},{},\
-                {},{},{}",
+                {},{},{},\
+                {},{},{},{},{},\
+                {},{},{},{},{},\
+                {},{},{},{},{},{},\
+                {},{},{},\
+                {},{},{},{},\
+                {},{},\
+                {},{},\
+                {},{},{},\
+                {},{},{},{},\
+                {},{},{},{}",
                 rec.path.display(),
                 rec.file_name,
                 m.read_count,
@@ -163,15 +184,57 @@ impl<'a> ReadSummaryWriter<'a> {
                 m.mean_read_qscore,
                 m.low_quality_reads,
                 m.phred_offset,
+                m.n90_read_length,
+                m.l50_read_length,
+                m.aun_read_length,
+                m.empty_reads,
+                m.other_count,
+                m.at_skew,
+                m.gc_skew,
+                m.gc_stdev,
+                m.gc_normal_divergence_pct,
+                m.gc_peaks,
+                m.effective_mean_qscore,
+                m.mean_error_rate,
+                m.q10_pct,
+                m.q15_pct,
+                m.q40_pct,
+                m.distinct_qscores,
+                m.mean_expected_errors,
+                m.expected_errors_per_100bp,
+                m.expected_error_free_reads_pct,
+                m.reads_ee_lt_1_pct,
+                m.q10_read_bases_pct,
+                m.q20_read_bases_pct,
+                m.q30_read_bases_pct,
+                m.mean_complexity,
+                m.low_complexity_reads_pct,
+                m.homopolymer_bases_pct,
+                m.max_homopolymer_length,
+                m.homopolymer_mean_qscore,
+                m.non_homopolymer_mean_qscore,
+                m.homopolymer_qscore_gap,
+                m.poly_g_tail_reads_pct,
+                m.poly_a_tail_reads_pct,
+                m.poly_t_tail_reads_pct,
+                m.poly_c_tail_reads_pct,
+                m.platform.as_deref().unwrap_or(""),
+                m.chastity_failed_reads,
+                m.chastity_failed_pct,
+                m.run_group_count,
             )?;
             if complete {
                 write!(
                     writer,
-                    ",{},{},{},{}",
+                    ",{},{},{},{},{},{},{},{}",
                     m.duplicate_pct_est.unwrap_or(0.0),
                     m.adapter_reads_pct.unwrap_or(0.0),
                     m.poly_g_reads_pct.unwrap_or(0.0),
                     m.overrepresented_count.unwrap_or(0),
+                    m.qscore_tail_drop.unwrap_or(0.0),
+                    m.effective_q20_span.unwrap_or(0),
+                    m.effective_q30_span.unwrap_or(0),
+                    m.head_bias_bp.unwrap_or(0),
                 )?;
             }
             writeln!(writer)?;
@@ -217,7 +280,7 @@ impl<'a> ReadPosSummaryWriter<'a> {
             let acgt = (p.g_count + p.c_count + p.a_count + p.t_count) as f64;
             writeln!(
                 zip,
-                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
                 p.start,
                 p.g_count,
                 p.c_count,
@@ -238,6 +301,8 @@ impl<'a> ReadPosSummaryWriter<'a> {
                 p.q3_qscore,
                 p.p90_qscore,
                 p.end,
+                p.effective_mean_qscore,
+                p.read_survival_pct,
             )?;
         }
         Ok(())
@@ -264,6 +329,57 @@ impl<'a> ReadDistSummaryWriter<'a> {
             .expect("Failed writing to file");
         for report in reports {
             self.write_sample(&mut zip, report)?;
+        }
+        zip.finish()?;
+        Ok(zip_path)
+    }
+
+    /// Write per-sample distributions plus run-level pairs and cohort tables when present.
+    pub fn write_report(&self, report: &ReadReport) -> Result<PathBuf> {
+        let zip_path = output_path(self.output, self.prefix, DISTRIBUTION_SUFFIX, ZIP_EXTENSION);
+        let mut zip = self
+            .create_zip_writer(&zip_path)
+            .expect("Failed writing to file");
+        for sample in &report.samples {
+            self.write_sample(&mut zip, sample)?;
+        }
+        if !report.pairs.is_empty() {
+            start_entry(&mut zip, "pairs.csv")?;
+            writeln!(
+                zip,
+                "pair_name,r1_sample,r2_sample,r1_reads,r2_reads,read_count_diff,\
+                in_sync,q30_drop_pct,effective_q_drop,mean_length_diff,gc_diff_pct"
+            )?;
+            for p in &report.pairs {
+                writeln!(
+                    zip,
+                    "{},{},{},{},{},{},{},{},{},{},{}",
+                    p.pair_name,
+                    p.r1_sample,
+                    p.r2_sample,
+                    p.r1_reads,
+                    p.r2_reads,
+                    p.read_count_diff,
+                    p.in_sync,
+                    p.q30_drop_pct,
+                    p.effective_q_drop,
+                    p.mean_length_diff,
+                    p.gc_diff_pct,
+                )?;
+            }
+        }
+        if let Some(cohort) = &report.cohort
+            && !cohort.outliers.is_empty()
+        {
+            start_entry(&mut zip, "cohort-outliers.csv")?;
+            writeln!(zip, "sample,metric,value,cohort_median,modified_z")?;
+            for o in &cohort.outliers {
+                writeln!(
+                    zip,
+                    "{},{},{},{},{}",
+                    o.sample, o.metric, o.value, o.cohort_median, o.modified_z
+                )?;
+            }
         }
         zip.finish()?;
         Ok(zip_path)
@@ -297,6 +413,79 @@ impl<'a> ReadDistSummaryWriter<'a> {
             .enumerate()
         {
             writeln!(zip, "{},{},{}", gc, reads, theoretical)?;
+        }
+
+        if !report.relative_positions.is_empty() {
+            start_entry(zip, &entry("relative-pos"))?;
+            writeln!(
+                zip,
+                "start_pct,end_pct,G,C,A,T,N,mean_QScore,effective_mean_QScore,\
+                P10_QScore,Q1_QScore,median_QScore,Q3_QScore,P90_QScore"
+            )?;
+            for p in &report.relative_positions {
+                writeln!(
+                    zip,
+                    "{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                    p.start_pct,
+                    p.end_pct,
+                    p.g_count,
+                    p.c_count,
+                    p.a_count,
+                    p.t_count,
+                    p.n_count,
+                    p.mean_qscore,
+                    p.effective_mean_qscore,
+                    p.p10_qscore,
+                    p.q1_qscore,
+                    p.median_qscore,
+                    p.q3_qscore,
+                    p.p90_qscore,
+                )?;
+            }
+        }
+
+        if !report.length_quality.is_empty() {
+            start_entry(zip, &entry("length-quality"))?;
+            writeln!(
+                zip,
+                "length_bin,min_length,max_length,reads,bases,mean_QScore,\
+                effective_mean_QScore,Q1_QScore,median_QScore,Q3_QScore,mean_expected_errors"
+            )?;
+            for b in &report.length_quality {
+                let max_len = b.max_length.map_or(String::new(), |v| v.to_string());
+                writeln!(
+                    zip,
+                    "{},{},{},{},{},{},{},{},{},{},{}",
+                    b.label,
+                    b.min_length,
+                    max_len,
+                    b.reads,
+                    b.bases,
+                    b.mean_qscore,
+                    b.effective_mean_qscore,
+                    b.q1_qscore,
+                    b.median_qscore,
+                    b.q3_qscore,
+                    b.mean_expected_errors,
+                )?;
+            }
+        }
+
+        if !report.expected_error_distribution.is_empty() {
+            start_entry(zip, &entry("expected-errors"))?;
+            writeln!(zip, "bucket,reads,reads_pct")?;
+            for b in &report.expected_error_distribution {
+                writeln!(zip, "{},{},{}", b.label, b.reads, b.reads_pct)?;
+            }
+        }
+
+        if !report.complexity_distribution.is_empty() {
+            start_entry(zip, &entry("complexity"))?;
+            writeln!(zip, "bin_start_pct,bin_end_pct,reads")?;
+            let step = 100 / report.complexity_distribution.len().max(1);
+            for (i, reads) in report.complexity_distribution.iter().enumerate() {
+                writeln!(zip, "{},{},{}", i * step, (i + 1) * step, reads)?;
+            }
         }
 
         if let Some(duplication) = &report.duplication {

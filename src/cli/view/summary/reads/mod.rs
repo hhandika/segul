@@ -19,12 +19,16 @@ use self::metric::samples_with_reads;
 
 /// Shows [report], or says so when no sample has reads.
 pub(super) fn view(report: ReadReport, file_name: String, theme: Theme, colormap: Colormap) {
+    let qc_profile = report.qc_profile;
+    let pairs = report.pairs.clone();
+    let cohort = report.cohort.clone();
     let samples = samples_with_reads(report);
     if samples.is_empty() {
         eprintln!("{file_name} has no reads to show.");
         std::process::exit(1);
     }
-    let mut app = App::new(samples, file_name, theme, colormap);
+    let mut app =
+        App::new(samples, file_name, theme, colormap).with_report_meta(qc_profile, pairs, cohort);
     run(&mut app).expect("Failed running the read report viewer");
 }
 

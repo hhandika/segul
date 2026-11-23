@@ -60,34 +60,45 @@ fn test_read_summary_minimal() {
 }
 
 #[test]
-fn test_read_summary_default() {
-    initiate_raw_cmd!(cmd, tmp_dir, QC_DIR);
-    cmd.assert().success();
-    let output = tmp_dir.path().join(OUTPUT);
-    let header = header(&output.join("default-read-summary.csv"));
-    assert!(header.starts_with("file_path,file_name,read_count,base_count"));
-    assert!(header.ends_with("mean_read_QScore,low_quality_reads,phred_offset"));
-    assert!(!output.join("read-report.json").exists());
+fn test_read_summary_basic() {
+    for mode in ["basic", "default"] {
+        initiate_raw_cmd!(cmd, tmp_dir, QC_DIR);
+        cmd.args(["--mode", mode]).assert().success();
+        let output = tmp_dir.path().join(OUTPUT);
+        let header = header(&output.join("read-summary.csv"));
+        assert!(header.starts_with("file_path,file_name,read_count,base_count"));
+        assert!(header.contains("effective_mean_QScore,mean_error_rate"));
+        assert!(header.contains("mean_complexity,low_complexity_reads_pct"));
+        assert!(
+            header.ends_with("platform,chastity_failed_reads,chastity_failed_pct,run_group_count")
+        );
+        assert!(!output.join("read-report.json").exists());
+    }
 }
 
 #[test]
-fn test_read_summary_complete() {
+fn test_read_summary_default_is_complete() {
     initiate_raw_cmd!(cmd, tmp_dir, QC_DIR);
-    cmd.args(["--mode", "complete", "--prefix", "qc"])
-        .assert()
-        .success();
+    cmd.args(["--prefix", "qc"]).assert().success();
     let output = tmp_dir.path().join(OUTPUT);
-    let header = header(&output.join("qc_default-read-summary.csv"));
-    assert!(header.ends_with("polyG_reads_pct,overrepresented_count"));
+    let header = header(&output.join("qc_read-summary.csv"));
+    assert!(
+        header.ends_with("QScore_tail_drop,effective_Q20_span,effective_Q30_span,head_bias_bp")
+    );
     let positions = zip_entries(&output.join("qc_read-pos-summary.zip"));
     assert!(positions.contains(&"qc_adapter.csv".to_string()));
-    assert!(positions.contains(&"qc_bgzf.fastq.csv".to_string()));
+    assert!(positions.contains(&"qc_bgzf.csv".to_string()));
     let distributions = zip_entries(&output.join("qc_read-dist-summary.zip"));
     assert!(distributions.contains(&"qc_adapter/adapters.csv".to_string()));
+    assert!(distributions.contains(&"qc_adapter/relative-pos.csv".to_string()));
+    assert!(distributions.contains(&"qc_adapter/length-quality.csv".to_string()));
+    assert!(distributions.contains(&"qc_adapter/expected-errors.csv".to_string()));
+    assert!(distributions.contains(&"qc_adapter/complexity.csv".to_string()));
     assert!(distributions.contains(&"qc_phred64/duplication.csv".to_string()));
     let report = fs::read_to_string(output.join("qc_read-report.json")).unwrap();
     assert!(report.contains("\"phred_offset\":64"));
     assert!(report.contains("Illumina Universal"));
+    assert!(report.contains("\"effective_mean_qscore\""));
 }
 
 #[test]
@@ -101,6 +112,20 @@ fn test_read_summary_phred_override() {
 fn test_read_summary_malformed() {
     initiate_raw_cmd!(cmd, tmp_dir, "crates/segul-core/tests/files/raw_invalid");
     cmd.assert().failure();
+}
+
+#[test]
+fn test_read_summary_qc_profile_and_pairs() {
+    initiate_raw_cmd!(cmd, tmp_dir, "crates/segul-core/tests/files/raw");
+    cmd.args(["--qc-profile", "amplicon"]).assert().success();
+    let output = tmp_dir.path().join(OUTPUT);
+    let report = fs::read_to_string(output.join("read-report.json")).unwrap();
+    assert!(report.contains("\"qc_profile\":\"amplicon\""));
+    assert!(report.contains("\"pair_name\":\"read\""));
+    assert!(report.contains("\"in_sync\":true"));
+    assert!(report.contains("\"cohort\":{"));
+    let distributions = zip_entries(&output.join("read-dist-summary.zip"));
+    assert!(distributions.contains(&"pairs.csv".to_string()));
 }
 
 #[test]
