@@ -6,6 +6,8 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
+use super::limiter::ConcurrencyProfile;
+
 static SUFFIX_VERSION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\.\d+$").expect("Valid version regex"));
 static UNSAFE_NAME_RE: LazyLock<Regex> =
@@ -174,6 +176,7 @@ pub struct DownloadConfig {
     pub ncbi_api_key: Option<String>,
     pub tool_name: String,
     pub contact_email: String,
+    pub concurrency: ConcurrencyProfile,
 }
 
 impl Default for DownloadConfig {
@@ -182,6 +185,7 @@ impl Default for DownloadConfig {
             ncbi_api_key: None,
             tool_name: "segui".to_string(),
             contact_email: "herubiolog@gmail.com".to_string(),
+            concurrency: ConcurrencyProfile::Auto,
         }
     }
 }

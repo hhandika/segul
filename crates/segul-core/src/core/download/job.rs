@@ -1,6 +1,6 @@
 //! Concurrent, resumable download job orchestration for GenBank and ENA.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -14,6 +14,7 @@ use regex::Regex;
 use reqwest::Url;
 use std::sync::LazyLock;
 use tokio::sync::Semaphore;
+use tokio::task::JoinSet;
 
 use super::assembly::{decompress_fasta, parse_sequence_report, write_ena_assembly};
 use super::client::{ArchiveClient, CancelSignal, SaveOptions};
@@ -28,9 +29,6 @@ use super::types::{
 const GENBANK_BATCH_COUNT: usize = 200;
 const ENA_BATCH_COUNT: usize = 100;
 const MAX_BATCH_BYTES: u64 = 5 * 1024 * 1024;
-const SEQUENCE_CONCURRENCY: usize = 3;
-const READ_FILE_CONCURRENCY: usize = 3;
-const ASSEMBLY_CONCURRENCY: usize = 2;
 
 static FASTQ_EXT_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\.(fastq|fq)\.gz$").expect("Valid fastq suffix regex"));
@@ -104,7 +102,7 @@ impl DownloadJob {
             .ncbi_api_key
             .as_deref()
             .is_some_and(|k| !k.trim().is_empty());
-        let client = Arc::new(ArchiveClient::new(has_key)?);
+        let client = Arc::new(ArchiveClient::with_profile(has_key, config.concurrency)?);
         Ok(Self::with_client(
             client,
             records,
@@ -313,7 +311,20 @@ impl DownloadJob {
         tracker: &Arc<ProgressTracker>,
         cancel: &CancelSignal,
     ) -> Result<()> {
-        for source in [DatabaseSource::GenBank, DatabaseSource::Ena] {
+        type BatchOutcome = (
+            Vec<DownloadRecord>,
+            PathBuf,
+            PathBuf,
+            Result<(String, u64, PreparedBatch)>,
+        );
+
+        let staging = self.staging.clone().expect("Staging prepared");
+        let mut join_set: JoinSet<Result<(usize, usize, BatchOutcome)>> = JoinSet::new();
+
+        for (source_idx, source) in [DatabaseSource::GenBank, DatabaseSource::Ena]
+            .into_iter()
+            .enumerate()
+        {
             let records: Vec<DownloadRecord> = pending
                 .iter()
                 .filter(|r| r.source == source && r.content.is_sequence())
@@ -327,12 +338,16 @@ impl DownloadJob {
             } else {
                 ENA_BATCH_COUNT
             };
+            let host = match source {
+                DatabaseSource::GenBank => endpoint_host(&self.endpoints.genbank_efetch),
+                DatabaseSource::Ena => endpoint_host(&self.endpoints.ena_fasta_base),
+            }
+            .unwrap_or_else(|| "eutils.ncbi.nlm.nih.gov".to_string());
+            let concurrency = self.client.limiter().max_limit(&host);
+            let sem = Arc::new(Semaphore::new(concurrency));
             let batches = adaptive_batches(&records, max_count, MAX_BATCH_BYTES);
-            let staging = self.staging.clone().expect("Staging prepared");
-            let sem = Arc::new(Semaphore::new(SEQUENCE_CONCURRENCY));
-            let mut handles = Vec::with_capacity(batches.len());
 
-            for (idx, batch) in batches.into_iter().enumerate() {
+            for (batch_idx, batch) in batches.into_iter().enumerate() {
                 let raw = self.next_temp_file(&staging);
                 let parts_dir = self.next_temp_dir(&staging, "batch");
                 let sem = Arc::clone(&sem);
@@ -344,7 +359,7 @@ impl DownloadJob {
                 let endpoints = self.endpoints.clone();
                 let trims = self.trims_to_frame;
 
-                handles.push(tokio::spawn(async move {
+                join_set.spawn(async move {
                     let _permit = sem.acquire_owned().await?;
                     cancel.throw_if_cancelled()?;
                     for r in &batch {
@@ -354,7 +369,7 @@ impl DownloadJob {
 
                     let stream_id = tracker.alloc_stream();
                     let res = fetch_and_prepare_batch(
-                        idx,
+                        batch_idx,
                         source,
                         batch.clone(),
                         raw.clone(),
@@ -370,32 +385,51 @@ impl DownloadJob {
                     )
                     .await;
                     tracker.finish_stream(stream_id);
-                    Ok::<_, anyhow::Error>((idx, batch, raw, parts_dir, res))
-                }));
+                    Ok((source_idx, batch_idx, (batch, raw, parts_dir, res)))
+                });
             }
+        }
 
-            let mut results = Vec::with_capacity(handles.len());
-            for handle in handles {
-                results.push(handle.await??);
-            }
-            results.sort_by_key(|(idx, _, _, _, _)| *idx);
+        let mut next_idx = [0usize; 2];
+        let mut ready: [BTreeMap<usize, BatchOutcome>; 2] = Default::default();
 
-            for (_, batch, raw, parts_dir, outcome) in results {
-                let cleanup = || {
-                    let _ = fs::remove_file(&raw);
-                    let _ = fs::remove_dir_all(&parts_dir);
+        while let Some(joined) = join_set.join_next().await {
+            let (source_idx, batch_idx, item) = joined??;
+            ready[source_idx].insert(batch_idx, item);
+
+            while let Some((batch, raw, parts_dir, outcome)) =
+                ready[source_idx].remove(&next_idx[source_idx])
+            {
+                next_idx[source_idx] += 1;
+                let cleanup = |raw_path: &Path, dir_path: &Path| {
+                    let _ = fs::remove_file(raw_path);
+                    let _ = fs::remove_dir_all(dir_path);
                 };
                 match outcome {
                     Ok((url, bytes_len, prepared)) => {
                         let apply_res = self.apply_prepared_batch(
                             &batch, &parts_dir, &url, bytes_len, prepared, reasons, tracker, cancel,
                         );
-                        cleanup();
-                        apply_res?;
+                        cleanup(&raw, &parts_dir);
+                        if apply_res.is_err() {
+                            join_set.abort_all();
+                            for map in &ready {
+                                for (_, rem_raw, rem_dir, _) in map.values() {
+                                    cleanup(rem_raw, rem_dir);
+                                }
+                            }
+                            apply_res?;
+                        }
                     }
                     Err(err) => {
-                        cleanup();
+                        cleanup(&raw, &parts_dir);
                         if err.downcast_ref::<DownloadCancelled>().is_some() {
+                            join_set.abort_all();
+                            for map in &ready {
+                                for (_, rem_raw, rem_dir, _) in map.values() {
+                                    cleanup(rem_raw, rem_dir);
+                                }
+                            }
                             return Err(err);
                         }
                         let msg = err.to_string();
@@ -517,8 +551,16 @@ impl DownloadJob {
         cancel: &CancelSignal,
     ) -> Result<()> {
         let staging = self.staging.clone().expect("Staging prepared");
-        let sem = Arc::new(Semaphore::new(READ_FILE_CONCURRENCY));
-        let mut run_handles = Vec::with_capacity(records.len());
+        let read_host = records
+            .iter()
+            .flat_map(|r| r.files.iter())
+            .find_map(|f| endpoint_host(&f.url))
+            .unwrap_or_else(|| "ftp.sra.ebi.ac.uk".to_string());
+        let host_limit = self.client.limiter().max_limit(&read_host);
+        let total_files: usize = records.iter().map(|r| r.files.len()).sum();
+        let concurrent_files = total_files.min(host_limit).max(1);
+        let sem = Arc::new(Semaphore::new(host_limit));
+        let mut run_handles = JoinSet::new();
 
         for record in records {
             if record.files.is_empty() {
@@ -539,8 +581,7 @@ impl DownloadJob {
             let tracker = Arc::clone(tracker);
             let cancel = cancel.clone();
 
-            run_handles.push(tokio::spawn(async move {
-                tracker.set_status(&record.key(), RecordDownloadStatus::Active);
+            run_handles.spawn(async move {
                 let mut f_handles = Vec::with_capacity(file_jobs.len());
                 for (remote, part) in &file_jobs {
                     let sem = Arc::clone(&sem);
@@ -549,9 +590,19 @@ impl DownloadJob {
                     let cancel = cancel.clone();
                     let remote = remote.clone();
                     let part = part.clone();
+                    let key = record.key();
                     f_handles.push(tokio::spawn(async move {
                         let _permit = sem.acquire_owned().await?;
-                        download_and_verify_read(&client, &remote, &part, &tracker, &cancel).await
+                        tracker.set_status(&key, RecordDownloadStatus::Active);
+                        download_and_verify_read(
+                            &client,
+                            &remote,
+                            &part,
+                            concurrent_files,
+                            &tracker,
+                            &cancel,
+                        )
+                        .await
                     }));
                 }
                 let mut saved = Vec::with_capacity(file_jobs.len());
@@ -574,11 +625,11 @@ impl DownloadJob {
                     return Ok::<_, anyhow::Error>((record, Err(err)));
                 }
                 Ok((record, Ok(saved)))
-            }));
+            });
         }
 
-        for handle in run_handles {
-            let (record, outcome) = handle.await??;
+        while let Some(joined) = run_handles.join_next().await {
+            let (record, outcome) = joined??;
             match outcome {
                 Ok(saved) => {
                     for (part, remote, size) in saved {
@@ -601,6 +652,7 @@ impl DownloadJob {
                 }
                 Err(err) => {
                     if err.downcast_ref::<DownloadCancelled>().is_some() {
+                        run_handles.abort_all();
                         return Err(err);
                     }
                     reasons.insert(record.key(), err.to_string());
@@ -620,24 +672,53 @@ impl DownloadJob {
         cancel: &CancelSignal,
     ) -> Result<()> {
         let staging = self.staging.clone().expect("Staging prepared");
-        let sem = Arc::new(Semaphore::new(ASSEMBLY_CONCURRENCY));
-        let mut handles = Vec::with_capacity(records.len());
+        let gb_host = records
+            .iter()
+            .filter(|r| r.source == DatabaseSource::GenBank)
+            .find_map(|r| r.files.first().and_then(|f| endpoint_host(&f.url)))
+            .unwrap_or_else(|| "ftp.ncbi.nlm.nih.gov".to_string());
+        let ena_host = endpoint_host(&self.endpoints.ena_fasta_base)
+            .unwrap_or_else(|| "www.ebi.ac.uk".to_string());
+
+        let gb_limit = self.client.limiter().max_limit(&gb_host);
+        let ena_limit = self.client.limiter().max_limit(&ena_host);
+        let gb_count = records
+            .iter()
+            .filter(|r| r.source == DatabaseSource::GenBank)
+            .count();
+        let gb_concurrent = gb_count.min(gb_limit).max(1);
+
+        let gb_sem = Arc::new(Semaphore::new(gb_limit));
+        let ena_sem = Arc::new(Semaphore::new(ena_limit));
+        let mut handles = JoinSet::new();
 
         for record in records {
             let record = record.clone();
             let raw = self.next_temp_file(&staging);
             let ready = self.next_temp_file(&staging);
-            let sem = Arc::clone(&sem);
+            let sem = if record.source == DatabaseSource::GenBank {
+                Arc::clone(&gb_sem)
+            } else {
+                Arc::clone(&ena_sem)
+            };
             let client = Arc::clone(&self.client);
             let tracker = Arc::clone(tracker);
             let cancel = cancel.clone();
             let endpoints = self.endpoints.clone();
 
-            handles.push(tokio::spawn(async move {
+            handles.spawn(async move {
                 let _permit = sem.acquire_owned().await?;
+                cancel.throw_if_cancelled()?;
                 tracker.set_status(&record.key(), RecordDownloadStatus::Active);
                 let res = fetch_and_prepare_assembly(
-                    &record, &raw, &ready, &client, &endpoints, &tracker, &cancel,
+                    &record,
+                    &raw,
+                    &ready,
+                    gb_concurrent,
+                    &client,
+                    &endpoints,
+                    &tracker,
+                    &cancel,
                 )
                 .await;
                 let _ = fs::remove_file(&raw);
@@ -645,11 +726,11 @@ impl DownloadJob {
                     let _ = fs::remove_file(&ready);
                 }
                 Ok::<_, anyhow::Error>((record, ready, res))
-            }));
+            });
         }
 
-        for handle in handles {
-            let (record, ready, outcome) = handle.await??;
+        while let Some(joined) = handles.join_next().await {
+            let (record, ready, outcome) = joined??;
             match outcome {
                 Ok((url, raw_size)) => {
                     let stem = stem_of(&record);
@@ -663,6 +744,7 @@ impl DownloadJob {
                 }
                 Err(err) => {
                     if err.downcast_ref::<DownloadCancelled>().is_some() {
+                        handles.abort_all();
                         return Err(err);
                     }
                     reasons.insert(record.key(), err.to_string());
@@ -812,6 +894,7 @@ async fn fetch_and_prepare_batch(
                 allow_parallel_ranges: false,
                 known_size: None,
                 compute_md5: false,
+                concurrent_files: 1,
             },
             &cancel,
             &move |received, total| {
@@ -859,6 +942,7 @@ async fn download_and_verify_read(
     client: &ArchiveClient,
     remote: &RemoteFile,
     part: &Path,
+    concurrent_files: usize,
     tracker: &Arc<ProgressTracker>,
     cancel: &CancelSignal,
 ) -> Result<u64> {
@@ -875,10 +959,10 @@ async fn download_and_verify_read(
             &SaveOptions {
                 form: None,
                 allow_resume: true,
-                allow_parallel_ranges: url.host_str().is_some_and(|h| h.ends_with(".ebi.ac.uk"))
-                    || !is_real_ncbi_host(&url),
+                allow_parallel_ranges: true,
                 known_size: remote.bytes,
                 compute_md5: remote.md5.is_some(),
+                concurrent_files,
             },
             cancel,
             &move |received, total| {
@@ -898,10 +982,12 @@ async fn download_and_verify_read(
     Ok(size)
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn fetch_and_prepare_assembly(
     record: &DownloadRecord,
     raw: &Path,
     ready: &Path,
+    gb_concurrent_files: usize,
     client: &ArchiveClient,
     endpoints: &Endpoints,
     tracker: &Arc<ProgressTracker>,
@@ -922,9 +1008,10 @@ async fn fetch_and_prepare_assembly(
         let save_opts = SaveOptions {
             form: None,
             allow_resume: true,
-            allow_parallel_ranges: false,
+            allow_parallel_ranges: true,
             known_size: first.bytes,
             compute_md5: true,
+            concurrent_files: gb_concurrent_files,
         };
         let on_bytes = move |received, total| {
             tracker_bytes.update_stream(stream_id, received, total);
@@ -977,6 +1064,7 @@ async fn fetch_and_prepare_assembly(
         allow_parallel_ranges: false,
         known_size: None,
         compute_md5: false,
+        concurrent_files: 1,
     };
     let on_bytes = move |received, total| {
         tracker_bytes.update_stream(stream_id, received, total);
@@ -1237,9 +1325,10 @@ fn stem_of(record: &DownloadRecord) -> String {
     safe_name(&record.accession).replace('.', "_")
 }
 
-fn is_real_ncbi_host(url: &Url) -> bool {
-    url.host_str()
-        .is_some_and(|h| h.ends_with(".ncbi.nlm.nih.gov"))
+fn endpoint_host(url: &str) -> Option<String> {
+    Url::parse(url)
+        .ok()
+        .and_then(|u| u.host_str().map(str::to_string))
 }
 
 fn known_bytes(pending: &[DownloadRecord]) -> u64 {
@@ -1687,5 +1776,220 @@ mod tests {
         let text = fs::read_to_string(&asm_done.files[0]).unwrap();
         assert!(text.contains("CM000001.1"));
         assert!(!text.contains("JACO02"));
+    }
+
+    struct CapturingReporter {
+        updates: Mutex<Vec<u32>>,
+    }
+
+    impl DownloadProgressReporter for CapturingReporter {
+        fn on_progress(&self, progress: DownloadProgress) {
+            self.updates.lock().unwrap().push(progress.done);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_mixed_genbank_and_ena_sequences_stream_progress_concurrently() {
+        use std::sync::atomic::AtomicUsize;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let in_flight = Arc::new(AtomicUsize::new(0));
+        let peak_in_flight = Arc::new(AtomicUsize::new(0));
+        let in_flight_srv = Arc::clone(&in_flight);
+        let peak_srv = Arc::clone(&peak_in_flight);
+
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut sock, _)) = listener.accept().await else {
+                    break;
+                };
+                let active = Arc::clone(&in_flight_srv);
+                let peak = Arc::clone(&peak_srv);
+                tokio::spawn(async move {
+                    let cur = active.fetch_add(1, Ordering::SeqCst) + 1;
+                    peak.fetch_max(cur, Ordering::SeqCst);
+                    let mut buf = [0u8; 4096];
+                    let n = sock.read(&mut buf).await.unwrap_or(0);
+                    let req = String::from_utf8_lossy(&buf[..n]);
+                    let path = req.lines().next().unwrap_or("");
+                    let body = if path.contains("efetch.fcgi") {
+                        tokio::time::sleep(Duration::from_millis(80)).await;
+                        ">U49845.1 Mus musculus\nACGT\n"
+                    } else {
+                        tokio::time::sleep(Duration::from_millis(10)).await;
+                        ">ENA|AY123456|AY123456.1 Mus musculus\nTGCA\n"
+                    };
+                    let hdr = format!(
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                        body.len(),
+                        body
+                    );
+                    let _ = sock.write_all(hdr.as_bytes()).await;
+                    active.fetch_sub(1, Ordering::SeqCst);
+                });
+            }
+        });
+
+        let dir = TempDir::new().unwrap();
+        let base = format!("http://127.0.0.1:{}", addr.port());
+        let endpoints = Endpoints {
+            genbank_efetch: format!("{base}/efetch.fcgi"),
+            ena_fasta_base: format!("{base}/fasta"),
+            ..Default::default()
+        };
+        let records = vec![
+            DownloadRecord {
+                source: DatabaseSource::GenBank,
+                content: DownloadContent::Nucleotide,
+                accession: "U49845.1".to_string(),
+                organism: "Mus musculus".to_string(),
+                title: String::new(),
+                length: Some(4),
+                codon_start: 1,
+                gene: String::new(),
+                files: Vec::new(),
+            },
+            DownloadRecord {
+                source: DatabaseSource::Ena,
+                content: DownloadContent::Nucleotide,
+                accession: "AY123456.1".to_string(),
+                organism: "Mus musculus".to_string(),
+                title: String::new(),
+                length: Some(4),
+                codon_start: 1,
+                gene: String::new(),
+                files: Vec::new(),
+            },
+        ];
+        let reporter = Arc::new(CapturingReporter {
+            updates: Mutex::new(Vec::new()),
+        });
+        let mut job = DownloadJob::with_client(
+            loopback_client(true),
+            records,
+            DownloadOptions::default(),
+            DownloadConfig::default(),
+            false,
+            dir.path().to_path_buf(),
+            HashSet::new(),
+            endpoints,
+        );
+        let report = job.run(Some(reporter.clone())).await.unwrap();
+        assert!(report.is_complete());
+        let completed = job.commit().unwrap();
+        let fasta = fs::read_to_string(&completed.files[0]).unwrap();
+        assert!(fasta.contains("U49845.1"));
+        assert!(fasta.contains("AY123456.1"));
+        assert!(peak_in_flight.load(Ordering::SeqCst) >= 2);
+        let seen = reporter.updates.lock().unwrap().clone();
+        assert!(seen.contains(&1));
+        assert!(seen.contains(&2));
+    }
+
+    #[tokio::test]
+    async fn test_genbank_assembly_parallel_work_stealing() {
+        use std::sync::atomic::AtomicUsize;
+
+        let large_fasta: Vec<u8> = b">contig1\nACGTACGT\n".repeat(500_000);
+        let mut gz_buf = Vec::new();
+        {
+            let mut enc = GzEncoder::new(&mut gz_buf, Compression::new(0));
+            enc.write_all(&large_fasta).unwrap();
+            enc.finish().unwrap();
+        }
+        assert!(gz_buf.len() >= 8 * 1024 * 1024);
+        let expected_md5 = format!("{:x}", Md5::digest(&gz_buf));
+        let md5_txt = format!("{expected_md5}  ./GCA_001.fna.gz\n");
+        let gz_len = gz_buf.len();
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let range_gets = Arc::new(AtomicUsize::new(0));
+        let range_srv = Arc::clone(&range_gets);
+        let gz_srv = Arc::new(gz_buf);
+
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut sock, _)) = listener.accept().await else {
+                    break;
+                };
+                let gets = Arc::clone(&range_srv);
+                let data = Arc::clone(&gz_srv);
+                let md5_body = md5_txt.clone();
+                tokio::spawn(async move {
+                    let mut buf = [0u8; 2048];
+                    let n = sock.read(&mut buf).await.unwrap_or(0);
+                    let req = String::from_utf8_lossy(&buf[..n]);
+                    let first = req.lines().next().unwrap_or("");
+                    if first.contains("md5checksums.txt") {
+                        let hdr = format!(
+                            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                            md5_body.len(),
+                            md5_body
+                        );
+                        let _ = sock.write_all(hdr.as_bytes()).await;
+                    } else if first.starts_with("HEAD ") {
+                        let hdr = format!(
+                            "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                            data.len()
+                        );
+                        let _ = sock.write_all(hdr.as_bytes()).await;
+                    } else if let Some(line) = req
+                        .lines()
+                        .find(|l| l.to_ascii_lowercase().starts_with("range:"))
+                    {
+                        gets.fetch_add(1, Ordering::SeqCst);
+                        let spec = line.split('=').nth(1).unwrap().trim();
+                        let mut parts = spec.split('-');
+                        let start: usize = parts.next().unwrap().parse().unwrap();
+                        let end: usize = parts.next().unwrap().parse().unwrap();
+                        let slice = &data[start..=end];
+                        let hdr = format!(
+                            "HTTP/1.1 206 Partial Content\r\nContent-Length: {}\r\nContent-Range: bytes {}-{}/{}\r\nConnection: close\r\n\r\n",
+                            slice.len(),
+                            start,
+                            end,
+                            data.len()
+                        );
+                        let _ = sock.write_all(hdr.as_bytes()).await;
+                        let _ = sock.write_all(slice).await;
+                    }
+                });
+            }
+        });
+
+        let dir = TempDir::new().unwrap();
+        let url = format!("http://127.0.0.1:{}/GCA_001.fna.gz", addr.port());
+        let rec = DownloadRecord {
+            source: DatabaseSource::GenBank,
+            content: DownloadContent::Assembly,
+            accession: "GCA_001.1".to_string(),
+            organism: "Mus".to_string(),
+            title: String::new(),
+            length: None,
+            codon_start: 1,
+            gene: String::new(),
+            files: vec![RemoteFile {
+                url,
+                bytes: Some(gz_len as u64),
+                md5: None,
+            }],
+        };
+        let mut job = DownloadJob::with_client(
+            loopback_client(false),
+            vec![rec],
+            DownloadOptions::default(),
+            DownloadConfig::default(),
+            false,
+            dir.path().to_path_buf(),
+            HashSet::new(),
+            Endpoints::default(),
+        );
+        let report = job.run(None).await.unwrap();
+        assert!(report.is_complete());
+        let completed = job.commit().unwrap();
+        assert!(range_gets.load(Ordering::SeqCst) >= 3);
+        assert_eq!(fs::read(&completed.files[0]).unwrap(), large_fasta);
     }
 }

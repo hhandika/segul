@@ -1,30 +1,36 @@
-//! Pooled, resumable, multi-range HTTPS client for NCBI and EMBL-EBI.
+//! Pooled, resumable, work-stealing HTTPS client for NCBI and EMBL-EBI.
 
-use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::Path;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{Duration, Instant};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use anyhow::Result;
 use md5::{Digest, Md5};
 use reqwest::header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, LOCATION, RANGE, RETRY_AFTER};
 use reqwest::{Client, StatusCode, Url};
-use tokio::sync::{Mutex, Notify};
+use tokio::sync::Notify;
+use tokio::task::JoinSet;
 use tokio::time::{sleep, timeout};
 
+use super::limiter::{
+    ConcurrencyProfile, HostLimiter, HostPermit, jittered_backoff, parse_retry_after_value,
+};
 use super::types::{DownloadCancelled, DownloadError};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(20);
 const RESPONSE_TIMEOUT: Duration = Duration::from_secs(45);
 const READ_TIMEOUT: Duration = Duration::from_secs(30);
-const MAX_ATTEMPTS: u32 = 3;
+const MAX_ATTEMPTS: u32 = 5;
 const MAX_REDIRECTS: usize = 4;
 const RETRY_BASE_DELAY: Duration = Duration::from_secs(2);
+const POOL_MAX_IDLE_PER_HOST: usize = 10;
 const PARALLEL_THRESHOLD_BYTES: u64 = 8 * 1024 * 1024;
-const PARALLEL_PARTS: u64 = 4;
+const MIN_CHUNK_BYTES: u64 = 4 * 1024 * 1024;
+const MAX_CHUNK_BYTES: u64 = 32 * 1024 * 1024;
 const WRITE_BUF_SIZE: usize = 256 * 1024;
 
 /// Cooperative cancellation signal shared across concurrent tasks.
@@ -60,23 +66,45 @@ impl CancelSignal {
         if self.is_cancelled() {
             return Err(DownloadCancelled.into());
         }
+        let notified = self.notify.notified();
+        tokio::pin!(notified);
+        notified.as_mut().enable();
+        if self.is_cancelled() {
+            return Err(DownloadCancelled.into());
+        }
         tokio::select! {
             _ = sleep(duration) => self.throw_if_cancelled(),
-            _ = self.notify.notified() => Err(DownloadCancelled.into()),
+            _ = notified => Err(DownloadCancelled.into()),
         }
     }
 
-    async fn run_cancellable<T, F>(&self, fut: F) -> Result<T>
+    pub async fn wait_cancelled(&self) {
+        loop {
+            let notified = self.notify.notified();
+            tokio::pin!(notified);
+            notified.as_mut().enable();
+            if self.is_cancelled() {
+                return;
+            }
+            notified.await;
+        }
+    }
+
+    pub(super) async fn run_cancellable<T, F>(&self, fut: F) -> Result<T>
     where
         F: std::future::Future<Output = Result<T>>,
     {
+        self.throw_if_cancelled()?;
+        let notified = self.notify.notified();
+        tokio::pin!(notified);
+        notified.as_mut().enable();
         self.throw_if_cancelled()?;
         tokio::select! {
             res = fut => {
                 self.throw_if_cancelled()?;
                 res
             }
-            _ = self.notify.notified() => Err(DownloadCancelled.into()),
+            _ = notified => Err(DownloadCancelled.into()),
         }
     }
 }
@@ -89,6 +117,8 @@ pub struct SaveOptions {
     pub allow_parallel_ranges: bool,
     pub known_size: Option<u64>,
     pub compute_md5: bool,
+    /// Number of sibling files concurrently targeting the same host.
+    pub concurrent_files: usize,
 }
 
 /// Outcome of [`ArchiveClient::save_file`].
@@ -109,58 +139,10 @@ pub fn is_archive_url(url: &Url) -> bool {
     host.ends_with(".ncbi.nlm.nih.gov") || host.ends_with(".ebi.ac.uk")
 }
 
-struct HostThrottle {
-    ncbi_interval: Duration,
-    default_interval: Duration,
-    next_slot: Mutex<HashMap<String, Instant>>,
-}
-
-impl HostThrottle {
-    fn new(has_ncbi_key: bool) -> Self {
-        Self {
-            ncbi_interval: if has_ncbi_key {
-                Duration::from_millis(110)
-            } else {
-                Duration::from_millis(350)
-            },
-            default_interval: Duration::from_millis(50),
-            next_slot: Mutex::new(HashMap::new()),
-        }
-    }
-
-    async fn wait_slot(&self, host: &str, cancel: &CancelSignal) -> Result<()> {
-        let interval = if host.starts_with("eutils.ncbi") {
-            self.ncbi_interval
-        } else {
-            self.default_interval
-        };
-        let sleep_for = {
-            let mut map = self.next_slot.lock().await;
-            let now = Instant::now();
-            let slot = map.get(host).copied().filter(|t| *t > now).unwrap_or(now);
-            map.insert(host.to_string(), slot + interval);
-            slot.saturating_duration_since(now)
-        };
-        if !sleep_for.is_zero() {
-            cancel.wait(sleep_for).await?;
-        }
-        Ok(())
-    }
-
-    async fn push_back(&self, host: &str, delay: Duration) {
-        let mut map = self.next_slot.lock().await;
-        let target = Instant::now() + delay;
-        let entry = map.entry(host.to_string()).or_insert(target);
-        if *entry < target {
-            *entry = target;
-        }
-    }
-}
-
-/// Pooled HTTPS client with retry, `Range` resume, and parallel byte-range support.
+/// Pooled HTTPS client with retry, `Range` resume, and work-stealing byte-range support.
 pub struct ArchiveClient {
     http: Client,
-    throttle: Arc<HostThrottle>,
+    limiter: Arc<HostLimiter>,
     is_allowed: Arc<dyn Fn(&Url) -> bool + Send + Sync>,
     retry_base_delay: Duration,
 }
@@ -168,7 +150,17 @@ pub struct ArchiveClient {
 impl ArchiveClient {
     /// Creates a production client validated against NCBI and EMBL-EBI domains.
     pub fn new(has_ncbi_key: bool) -> Result<Self> {
-        Self::with_validator(has_ncbi_key, Arc::new(is_archive_url), RETRY_BASE_DELAY)
+        Self::with_profile(has_ncbi_key, ConcurrencyProfile::Auto)
+    }
+
+    /// Creates a production client with an explicit [`ConcurrencyProfile`].
+    pub fn with_profile(has_ncbi_key: bool, profile: ConcurrencyProfile) -> Result<Self> {
+        Self::with_validator_and_profile(
+            has_ncbi_key,
+            profile,
+            Arc::new(is_archive_url),
+            RETRY_BASE_DELAY,
+        )
     }
 
     /// Creates a client with a custom URL validator and retry base delay (for tests).
@@ -177,19 +169,39 @@ impl ArchiveClient {
         is_allowed: Arc<dyn Fn(&Url) -> bool + Send + Sync>,
         retry_base_delay: Duration,
     ) -> Result<Self> {
+        Self::with_validator_and_profile(
+            has_ncbi_key,
+            ConcurrencyProfile::Auto,
+            is_allowed,
+            retry_base_delay,
+        )
+    }
+
+    /// Creates a client with custom URL validator, profile, and retry base delay (for tests).
+    pub fn with_validator_and_profile(
+        has_ncbi_key: bool,
+        profile: ConcurrencyProfile,
+        is_allowed: Arc<dyn Fn(&Url) -> bool + Send + Sync>,
+        retry_base_delay: Duration,
+    ) -> Result<Self> {
         let http = Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .connect_timeout(CONNECT_TIMEOUT)
-            .pool_max_idle_per_host(6)
+            .pool_max_idle_per_host(POOL_MAX_IDLE_PER_HOST)
             .pool_idle_timeout(Duration::from_secs(15))
             .user_agent("segul-core/0.25")
             .build()?;
         Ok(Self {
             http,
-            throttle: Arc::new(HostThrottle::new(has_ncbi_key)),
+            limiter: Arc::new(HostLimiter::new(has_ncbi_key, profile)),
             is_allowed,
             retry_base_delay,
         })
+    }
+
+    /// Returns the shared per-host concurrency limiter for this client.
+    pub fn limiter(&self) -> &Arc<HostLimiter> {
+        &self.limiter
     }
 
     /// Reads an HTTP response body as text, returning `(status, body)`.
@@ -201,7 +213,8 @@ impl ArchiveClient {
         on_retry: &(dyn Fn(u32, u32) + Send + Sync),
     ) -> Result<(u16, String)> {
         self.with_retry(url, cancel, on_retry, |is_last| async move {
-            let response = self.send_request(url, form, None, true, cancel).await?;
+            let (response, active_host, _permit) =
+                self.send_request(url, form, None, true, cancel).await?;
             let status = response.status();
             if !is_last && is_busy(status) {
                 let retry_after = parse_retry_after(&response);
@@ -209,6 +222,7 @@ impl ArchiveClient {
                 return Err(AttemptErr::Busy {
                     status,
                     retry_after,
+                    host: active_host,
                 });
             }
             let bytes = cancel
@@ -220,6 +234,11 @@ impl ArchiveClient {
                 })
                 .await
                 .map_err(AttemptErr::classify)?;
+            if status.is_success()
+                && let Some(host) = active_host.as_deref()
+            {
+                self.limiter.on_success(host);
+            }
             Ok((
                 status.as_u16(),
                 String::from_utf8_lossy(&bytes).into_owned(),
@@ -238,25 +257,40 @@ impl ArchiveClient {
         on_bytes: &(dyn Fn(u64, Option<u64>) + Send + Sync),
         on_retry: &(dyn Fn(u32, u32) + Send + Sync),
     ) -> Result<SaveResult> {
+        let concurrent_files = options.concurrent_files.max(1);
+        let workers = url
+            .host_str()
+            .map(|h| self.limiter.range_workers_for(h, concurrent_files))
+            .unwrap_or(1);
+
         if options.allow_parallel_ranges
             && options.form.is_none()
+            && workers > 1
             && let Some(total) = self
                 .probe_parallel_size(url, options.known_size, cancel)
                 .await?
             && total >= PARALLEL_THRESHOLD_BYTES
         {
             match self
-                .save_parallel(url, dest, total, options.compute_md5, cancel, on_bytes)
+                .save_parallel(
+                    url,
+                    dest,
+                    total,
+                    workers,
+                    options.compute_md5,
+                    cancel,
+                    on_bytes,
+                    on_retry,
+                )
                 .await
             {
                 Ok(result) => return Ok(result),
-                Err(err) if err.downcast_ref::<DownloadCancelled>().is_some() => {
-                    return Err(err);
-                }
-                Err(_) => {
-                    // Fall back cleanly to single-stream download.
+                Err(ParallelErr::Cancelled) => return Err(DownloadCancelled.into()),
+                Err(ParallelErr::Fallback) => {
+                    // Server refused range requests; fall back to single-stream download.
                     let _ = std::fs::remove_file(dest);
                 }
+                Err(ParallelErr::Fatal(err)) => return Err(err),
             }
         }
         self.save_single(url, dest, options, cancel, on_bytes, on_retry)
@@ -295,76 +329,146 @@ impl ArchiveClient {
         Ok(len.filter(|&s| s >= PARALLEL_THRESHOLD_BYTES))
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn save_parallel(
         &self,
         url: &Url,
         dest: &Path,
         total: u64,
+        workers: usize,
         compute_md5: bool,
         cancel: &CancelSignal,
         on_bytes: &(dyn Fn(u64, Option<u64>) + Send + Sync),
-    ) -> Result<SaveResult> {
-        {
+        on_retry: &(dyn Fn(u32, u32) + Send + Sync),
+    ) -> std::result::Result<SaveResult, ParallelErr> {
+        let create_res = (|| -> std::io::Result<()> {
             let file = File::create(dest)?;
             file.set_len(total)?;
+            Ok(())
+        })();
+        if let Err(err) = create_res {
+            return Err(ParallelErr::Fatal(
+                DownloadError(format!("Could not save the download ({err}).")).into(),
+            ));
         }
+
+        let target_chunks = (workers as u64).saturating_mul(4).max(4);
+        let chunk_size = total
+            .div_ceil(target_chunks)
+            .clamp(MIN_CHUNK_BYTES, MAX_CHUNK_BYTES);
+        let mut queue = VecDeque::new();
+        let mut offset = 0u64;
+        while offset < total {
+            let end = (offset + chunk_size - 1).min(total - 1);
+            queue.push_back(RangeChunk { start: offset, end });
+            offset = end + 1;
+        }
+        let worker_count = workers.min(queue.len()).max(1);
+        let chunks = Arc::new(Mutex::new(queue));
         let received_total = Arc::new(AtomicU64::new(0));
+        let retry_packed = Arc::new(AtomicU64::new(0));
+        let retry_notify = Arc::new(Notify::new());
+        let worker_cancel = CancelSignal::new();
         on_bytes(0, Some(total));
 
-        let chunk = total / PARALLEL_PARTS;
-        let mut handles = Vec::with_capacity(PARALLEL_PARTS as usize);
-        for part in 0..PARALLEL_PARTS {
-            let start = part * chunk;
-            let end = if part + 1 == PARALLEL_PARTS {
-                total - 1
-            } else {
-                (part + 1) * chunk - 1
-            };
+        let mut join_set: JoinSet<std::result::Result<(), ParallelErr>> = JoinSet::new();
+        for _ in 0..worker_count {
+            let queue = Arc::clone(&chunks);
             let url = url.clone();
             let dest = dest.to_path_buf();
-            let cancel = cancel.clone();
+            let cancel = worker_cancel.clone();
             let received = Arc::clone(&received_total);
+            let retry_state = Arc::clone(&retry_packed);
+            let retry_wake = Arc::clone(&retry_notify);
             let http = self.http.clone();
             let is_allowed = Arc::clone(&self.is_allowed);
-            let throttle = Arc::clone(&self.throttle);
+            let limiter = Arc::clone(&self.limiter);
             let retry_base = self.retry_base_delay;
-            handles.push(tokio::spawn(async move {
-                download_range_part(
+            join_set.spawn(async move {
+                run_range_worker(
                     &http,
                     &*is_allowed,
-                    &throttle,
+                    &limiter,
                     retry_base,
                     &url,
                     &dest,
-                    start,
-                    end,
-                    total,
+                    &queue,
                     &cancel,
                     &received,
+                    &retry_state,
+                    &retry_wake,
                 )
                 .await
-            }));
+            });
         }
 
-        // Poll progress ticks while parallel range tasks write directly to offsets.
-        let poll_cancel = cancel.clone();
-        let poll_bytes = Arc::clone(&received_total);
-        let mut join_set = Box::pin(futures_all(handles));
-        loop {
+        let mut tick = tokio::time::interval(Duration::from_millis(100));
+        let mut last_retry = 0u64;
+        let mut first_err: Option<ParallelErr> = None;
+        let mut flush_retry = || {
+            let packed = retry_packed.load(Ordering::Relaxed);
+            if packed != 0 && packed != last_retry {
+                last_retry = packed;
+                on_retry((packed >> 32) as u32, packed as u32);
+            }
+        };
+
+        while !join_set.is_empty() {
             tokio::select! {
-                res = &mut join_set => {
-                    res?;
-                    break;
+                _ = cancel.wait_cancelled() => {
+                    worker_cancel.cancel();
+                    join_set.abort_all();
+                    return Err(ParallelErr::Cancelled);
                 }
-                _ = sleep(Duration::from_millis(100)) => {
-                    poll_cancel.throw_if_cancelled()?;
-                    on_bytes(poll_bytes.load(Ordering::Relaxed), Some(total));
+                _ = retry_notify.notified() => {
+                    flush_retry();
+                }
+                joined = join_set.join_next() => {
+                    flush_retry();
+                    match joined {
+                        Some(Ok(Ok(()))) => {}
+                        Some(Ok(Err(err))) => {
+                            worker_cancel.cancel();
+                            if first_err.is_none() {
+                                first_err = Some(err);
+                            }
+                        }
+                        Some(Err(join_err)) => {
+                            worker_cancel.cancel();
+                            if first_err.is_none() {
+                                first_err = Some(ParallelErr::Fatal(join_err.into()));
+                            }
+                        }
+                        None => break,
+                    }
+                }
+                _ = tick.tick() => {
+                    if cancel.is_cancelled() {
+                        worker_cancel.cancel();
+                        join_set.abort_all();
+                        return Err(ParallelErr::Cancelled);
+                    }
+                    flush_retry();
+                    on_bytes(received_total.load(Ordering::Relaxed), Some(total));
                 }
             }
         }
+        flush_retry();
+
+        if cancel.is_cancelled() {
+            return Err(ParallelErr::Cancelled);
+        }
+        if let Some(err) = first_err {
+            return Err(err);
+        }
+
         on_bytes(total, Some(total));
         let md5 = if compute_md5 {
-            Some(compute_file_md5(dest, cancel).await?)
+            Some(
+                compute_file_md5(dest, cancel)
+                    .await
+                    .map_err(ParallelErr::from_anyhow)?,
+            )
         } else {
             None
         };
@@ -391,7 +495,7 @@ impl ArchiveClient {
                 0
             };
             let range_header = (existing > 0).then(|| format!("bytes={existing}-"));
-            let mut response = self
+            let (mut response, active_host, _permit) = self
                 .send_request(url, form, range_header.as_deref(), true, cancel)
                 .await?;
             let status = response.status();
@@ -403,6 +507,7 @@ impl ArchiveClient {
                     return Err(AttemptErr::Busy {
                         status,
                         retry_after,
+                        host: active_host,
                     });
                 }
                 return Err(AttemptErr::Fatal(
@@ -455,6 +560,9 @@ impl ArchiveClient {
             }
             writer.flush().map_err(AttemptErr::Fs)?;
             drop(writer);
+            if let Some(host) = active_host.as_deref() {
+                self.limiter.on_success(host);
+            }
 
             let md5 = match (options.compute_md5, hasher) {
                 (false, _) => None,
@@ -500,23 +608,28 @@ impl ArchiveClient {
                 Err(AttemptErr::Busy {
                     status,
                     retry_after,
+                    host,
                 }) => {
+                    let delay = jittered_backoff(self.retry_base_delay, count, retry_after);
+                    if let Some(h) = host.as_deref().or_else(|| url.host_str()) {
+                        self.limiter.on_throttled(h, delay);
+                    }
                     if is_last {
                         return Err(DownloadError(status_message(status)).into());
-                    }
-                    let delay = retry_after.unwrap_or(self.retry_base_delay * count);
-                    if let Some(host) = url.host_str() {
-                        self.throttle.push_back(host, delay).await;
                     }
                     on_retry(count + 1, MAX_ATTEMPTS);
                     cancel.wait(delay).await?;
                 }
                 Err(AttemptErr::Transient(msg)) => {
+                    if let Some(h) = url.host_str() {
+                        self.limiter.on_transient_error(h);
+                    }
                     if is_last {
                         return Err(DownloadError(msg).into());
                     }
+                    let delay = jittered_backoff(self.retry_base_delay, count, None);
                     on_retry(count + 1, MAX_ATTEMPTS);
-                    cancel.wait(self.retry_base_delay * count).await?;
+                    cancel.wait(delay).await?;
                 }
             }
         }
@@ -530,7 +643,8 @@ impl ArchiveClient {
         range: Option<&str>,
         apply_throttle: bool,
         cancel: &CancelSignal,
-    ) -> std::result::Result<reqwest::Response, AttemptErr> {
+    ) -> std::result::Result<(reqwest::Response, Option<String>, Option<HostPermit>), AttemptErr>
+    {
         let mut url = start.clone();
         let mut send_form = form;
         for _ in 0..=MAX_REDIRECTS {
@@ -539,12 +653,23 @@ impl ArchiveClient {
                     DownloadError("The database gave an unsafe address.".to_string()).into(),
                 ));
             }
-            if apply_throttle && let Some(host) = url.host_str() {
-                self.throttle
-                    .wait_slot(host, cancel)
+            let host = url.host_str().map(str::to_string);
+            let permit = if let Some(h) = host.as_deref() {
+                let p = self
+                    .limiter
+                    .acquire(h, cancel)
                     .await
                     .map_err(AttemptErr::classify)?;
-            }
+                if apply_throttle {
+                    self.limiter
+                        .pace(h, cancel)
+                        .await
+                        .map_err(AttemptErr::classify)?;
+                }
+                Some(p)
+            } else {
+                None
+            };
             cancel.throw_if_cancelled().map_err(AttemptErr::classify)?;
 
             let mut req = match send_form {
@@ -579,10 +704,11 @@ impl ArchiveClient {
                     send_form = None;
                 }
                 let _ = response.bytes().await;
+                drop(permit);
                 url = next_url;
                 continue;
             }
-            return Ok(response);
+            return Ok((response, host, permit));
         }
         Err(AttemptErr::Fatal(
             DownloadError("The database redirected too many times.".to_string()).into(),
@@ -601,6 +727,20 @@ impl ArchiveClient {
                     DownloadError("The database gave an unsafe address.".to_string()).into(),
                 ));
             }
+            let permit = if let Some(host) = url.host_str() {
+                let p = self
+                    .limiter
+                    .acquire(host, cancel)
+                    .await
+                    .map_err(AttemptErr::classify)?;
+                self.limiter
+                    .pace(host, cancel)
+                    .await
+                    .map_err(AttemptErr::classify)?;
+                Some(p)
+            } else {
+                None
+            };
             let response = cancel
                 .run_cancellable(async {
                     timeout(CONNECT_TIMEOUT, self.http.head(url.clone()).send())
@@ -621,6 +761,7 @@ impl ArchiveClient {
                         DownloadError("The database gave an unsafe address.".to_string()).into(),
                     )
                 })?;
+                drop(permit);
                 url = next_url;
                 continue;
             }
@@ -629,6 +770,27 @@ impl ArchiveClient {
         Err(AttemptErr::Fatal(
             DownloadError("The database redirected too many times.".to_string()).into(),
         ))
+    }
+}
+
+struct RangeChunk {
+    start: u64,
+    end: u64,
+}
+
+enum ParallelErr {
+    Cancelled,
+    Fallback,
+    Fatal(anyhow::Error),
+}
+
+impl ParallelErr {
+    fn from_anyhow(err: anyhow::Error) -> Self {
+        if err.downcast_ref::<DownloadCancelled>().is_some() {
+            Self::Cancelled
+        } else {
+            Self::Fatal(err)
+        }
     }
 }
 
@@ -654,76 +816,187 @@ pub async fn compute_file_md5(path: &Path, cancel: &CancelSignal) -> Result<Stri
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn download_range_part(
+async fn run_range_worker(
     http: &Client,
     is_allowed: &(dyn Fn(&Url) -> bool + Send + Sync),
-    throttle: &HostThrottle,
+    limiter: &HostLimiter,
+    retry_base: Duration,
+    start_url: &Url,
+    dest: &Path,
+    queue: &Mutex<VecDeque<RangeChunk>>,
+    cancel: &CancelSignal,
+    received_total: &AtomicU64,
+    retry_packed: &AtomicU64,
+    retry_notify: &Notify,
+) -> std::result::Result<(), ParallelErr> {
+    loop {
+        if cancel.is_cancelled() {
+            return Err(ParallelErr::Cancelled);
+        }
+        let chunk = {
+            let mut guard = queue.lock().unwrap_or_else(|e| e.into_inner());
+            guard.pop_front()
+        };
+        let Some(chunk) = chunk else {
+            return Ok(());
+        };
+        download_range_chunk(
+            http,
+            is_allowed,
+            limiter,
+            retry_base,
+            start_url,
+            dest,
+            chunk.start,
+            chunk.end,
+            cancel,
+            received_total,
+            retry_packed,
+            retry_notify,
+        )
+        .await?;
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn download_range_chunk(
+    http: &Client,
+    is_allowed: &(dyn Fn(&Url) -> bool + Send + Sync),
+    limiter: &HostLimiter,
     retry_base: Duration,
     start_url: &Url,
     dest: &Path,
     range_start: u64,
     range_end: u64,
-    _total_size: u64,
     cancel: &CancelSignal,
     received_total: &AtomicU64,
-) -> Result<()> {
+    retry_packed: &AtomicU64,
+    retry_notify: &Notify,
+) -> std::result::Result<(), ParallelErr> {
     let mut offset = range_start;
     for attempt in 1..=MAX_ATTEMPTS {
-        cancel.throw_if_cancelled()?;
+        if cancel.is_cancelled() {
+            return Err(ParallelErr::Cancelled);
+        }
         if offset > range_end {
             return Ok(());
         }
+
         let mut url = start_url.clone();
-        let mut response_opt = None;
+        let mut response_opt: Option<(reqwest::Response, Option<String>, Option<HostPermit>)> =
+            None;
+        let mut send_err: Option<anyhow::Error> = None;
+
         for _ in 0..=MAX_REDIRECTS {
             if !is_allowed(&url) {
-                return Err(
+                return Err(ParallelErr::Fatal(
                     DownloadError("The database gave an unsafe address.".to_string()).into(),
-                );
+                ));
             }
+            let host = url.host_str().map(str::to_string);
+            let permit = if let Some(h) = host.as_deref() {
+                let p = limiter
+                    .acquire(h, cancel)
+                    .await
+                    .map_err(ParallelErr::from_anyhow)?;
+                limiter
+                    .pace(h, cancel)
+                    .await
+                    .map_err(ParallelErr::from_anyhow)?;
+                Some(p)
+            } else {
+                None
+            };
             let req = http
                 .get(url.clone())
                 .header(RANGE, format!("bytes={offset}-{range_end}"));
-            let resp = cancel
+            let resp = match cancel
                 .run_cancellable(async {
                     timeout(RESPONSE_TIMEOUT, req.send())
                         .await
                         .map_err(|_| anyhow::anyhow!("Timed out waiting for range"))?
                         .map_err(Into::into)
                 })
-                .await?;
+                .await
+            {
+                Ok(resp) => resp,
+                Err(err) => {
+                    send_err = Some(err);
+                    break;
+                }
+            };
             if resp.status().is_redirection()
                 && let Some(loc) = resp.headers().get(LOCATION).and_then(|v| v.to_str().ok())
             {
-                url = url.join(loc)?;
+                let next_url = url.join(loc).map_err(|_| {
+                    ParallelErr::Fatal(
+                        DownloadError("The database gave an unsafe address.".to_string()).into(),
+                    )
+                })?;
+                let _ = resp.bytes().await;
+                drop(permit);
+                url = next_url;
                 continue;
             }
-            response_opt = Some(resp);
+            response_opt = Some((resp, host, permit));
             break;
         }
 
-        let Some(mut response) = response_opt else {
-            return Err(
+        if let Some(err) = send_err {
+            if err.downcast_ref::<DownloadCancelled>().is_some() {
+                return Err(ParallelErr::Cancelled);
+            }
+            if let Some(host) = url.host_str() {
+                limiter.on_transient_error(host);
+            }
+            if attempt >= MAX_ATTEMPTS {
+                return Err(ParallelErr::Fatal(
+                    DownloadError("The connection was interrupted. Try again.".to_string()).into(),
+                ));
+            }
+            record_retry(retry_packed, retry_notify, attempt);
+            let delay = jittered_backoff(retry_base, attempt, None);
+            limiter_wait(cancel, delay).await?;
+            continue;
+        }
+
+        let Some((mut response, active_host, _permit)) = response_opt else {
+            return Err(ParallelErr::Fatal(
                 DownloadError("The database redirected too many times.".to_string()).into(),
-            );
+            ));
         };
         let status = response.status();
         if status != StatusCode::PARTIAL_CONTENT {
-            if attempt < MAX_ATTEMPTS && is_busy(status) {
-                let delay = parse_retry_after(&response).unwrap_or(retry_base * attempt);
-                if let Some(host) = url.host_str() {
-                    throttle.push_back(host, delay).await;
+            let retry_after = parse_retry_after(&response);
+            let _ = response.bytes().await;
+            if is_busy(status) {
+                let delay = jittered_backoff(retry_base, attempt, retry_after);
+                if let Some(host) = active_host.as_deref().or_else(|| url.host_str()) {
+                    limiter.on_throttled(host, delay);
                 }
-                cancel.wait(delay).await?;
-                continue;
+                if attempt < MAX_ATTEMPTS {
+                    record_retry(retry_packed, retry_notify, attempt);
+                    limiter_wait(cancel, delay).await?;
+                    continue;
+                }
+                return Err(ParallelErr::Fatal(
+                    DownloadError(status_message(status)).into(),
+                ));
             }
-            return Err(anyhow::anyhow!(
-                "Server did not serve partial range ({status})"
+            if status == StatusCode::OK && received_total.load(Ordering::Relaxed) == 0 {
+                return Err(ParallelErr::Fallback);
+            }
+            return Err(ParallelErr::Fatal(
+                DownloadError(status_message(status)).into(),
             ));
         }
 
-        let mut file = OpenOptions::new().write(true).open(dest)?;
-        file.seek(SeekFrom::Start(offset))?;
+        let mut file = OpenOptions::new().write(true).open(dest).map_err(|e| {
+            ParallelErr::Fatal(DownloadError(format!("Could not save the download ({e}).")).into())
+        })?;
+        file.seek(SeekFrom::Start(offset)).map_err(|e| {
+            ParallelErr::Fatal(DownloadError(format!("Could not save the download ({e}).")).into())
+        })?;
         let mut writer = BufWriter::with_capacity(WRITE_BUF_SIZE, file);
         let mut stream_err: Option<anyhow::Error> = None;
         loop {
@@ -739,7 +1012,11 @@ async fn download_range_part(
                 Ok(Some(chunk)) => {
                     let remaining = (range_end - offset + 1) as usize;
                     let take = chunk.len().min(remaining);
-                    writer.write_all(&chunk[..take])?;
+                    writer.write_all(&chunk[..take]).map_err(|e| {
+                        ParallelErr::Fatal(
+                            DownloadError(format!("Could not save the download ({e}).")).into(),
+                        )
+                    })?;
                     offset += take as u64;
                     received_total.fetch_add(take as u64, Ordering::Relaxed);
                     if offset > range_end {
@@ -753,32 +1030,60 @@ async fn download_range_part(
                 }
             }
         }
-        writer.flush()?;
+        writer.flush().map_err(|e| {
+            ParallelErr::Fatal(DownloadError(format!("Could not save the download ({e}).")).into())
+        })?;
+        drop(_permit);
+
         if let Some(err) = stream_err {
-            if err.downcast_ref::<DownloadCancelled>().is_some() || attempt >= MAX_ATTEMPTS {
-                return Err(err);
+            if err.downcast_ref::<DownloadCancelled>().is_some() {
+                return Err(ParallelErr::Cancelled);
             }
-            cancel.wait(retry_base * attempt).await?;
+            if let Some(host) = active_host.as_deref().or_else(|| url.host_str()) {
+                limiter.on_transient_error(host);
+            }
+            if attempt >= MAX_ATTEMPTS {
+                return Err(ParallelErr::Fatal(
+                    DownloadError("The connection was interrupted. Try again.".to_string()).into(),
+                ));
+            }
+            record_retry(retry_packed, retry_notify, attempt);
+            let delay = jittered_backoff(retry_base, attempt, None);
+            limiter_wait(cancel, delay).await?;
             continue;
         }
         if offset > range_end {
+            if let Some(host) = active_host.as_deref().or_else(|| url.host_str()) {
+                limiter.on_success(host);
+            }
             return Ok(());
         }
-        if attempt >= MAX_ATTEMPTS {
-            return Err(
-                DownloadError("The connection was interrupted. Try again.".to_string()).into(),
-            );
+        if let Some(host) = active_host.as_deref().or_else(|| url.host_str()) {
+            limiter.on_transient_error(host);
         }
-        cancel.wait(retry_base * attempt).await?;
+        if attempt >= MAX_ATTEMPTS {
+            return Err(ParallelErr::Fatal(
+                DownloadError("The connection was interrupted. Try again.".to_string()).into(),
+            ));
+        }
+        record_retry(retry_packed, retry_notify, attempt);
+        let delay = jittered_backoff(retry_base, attempt, None);
+        limiter_wait(cancel, delay).await?;
     }
     Ok(())
 }
 
-async fn futures_all(handles: Vec<tokio::task::JoinHandle<Result<()>>>) -> Result<()> {
-    for handle in handles {
-        handle.await??;
-    }
-    Ok(())
+fn record_retry(retry_packed: &AtomicU64, retry_notify: &Notify, attempt: u32) {
+    let packed = ((attempt as u64 + 1) << 32) | (MAX_ATTEMPTS as u64);
+    retry_packed.store(packed, Ordering::Relaxed);
+    retry_notify.notify_one();
+}
+
+async fn limiter_wait(
+    cancel: &CancelSignal,
+    delay: Duration,
+) -> std::result::Result<(), ParallelErr> {
+    cancel.wait(delay).await.map_err(ParallelErr::from_anyhow)
 }
 
 enum AttemptErr {
@@ -788,6 +1093,7 @@ enum AttemptErr {
     Busy {
         status: StatusCode,
         retry_after: Option<Duration>,
+        host: Option<String>,
     },
     Transient(String),
 }
@@ -833,10 +1139,8 @@ fn status_message(status: StatusCode) -> String {
 }
 
 fn parse_retry_after(response: &reqwest::Response) -> Option<Duration> {
-    let val = response.headers().get(RETRY_AFTER)?.to_str().ok()?.trim();
-    val.parse::<u64>()
-        .ok()
-        .map(|s| Duration::from_secs(s.min(60)))
+    let val = response.headers().get(RETRY_AFTER)?.to_str().ok()?;
+    parse_retry_after_value(val)
 }
 
 fn parse_content_range_total(response: &reqwest::Response) -> Option<u64> {
@@ -1020,9 +1324,153 @@ mod tests {
             )
             .await
             .unwrap();
-        assert_eq!(range_gets.load(Ordering::SeqCst), 4);
+        assert!(range_gets.load(Ordering::SeqCst) >= 3);
         assert_eq!(res.md5.as_deref(), Some(expected_md5.as_str()));
         assert_eq!(std::fs::read(&dest).unwrap(), payload);
+    }
+
+    #[tokio::test]
+    async fn test_work_stealing_recovers_mid_chunk_failure() {
+        let payload: Vec<u8> = (0..9_000_000).map(|i| (i % 199) as u8).collect();
+        let expected_md5 = format!("{:x}", Md5::digest(&payload));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let range_gets = Arc::new(AtomicUsize::new(0));
+        let range_gets_srv = Arc::clone(&range_gets);
+        let payload_srv = Arc::new(payload.clone());
+
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut sock, _)) = listener.accept().await else {
+                    break;
+                };
+                let gets = Arc::clone(&range_gets_srv);
+                let data = Arc::clone(&payload_srv);
+                tokio::spawn(async move {
+                    let mut buf = [0u8; 2048];
+                    let n = sock.read(&mut buf).await.unwrap_or(0);
+                    let req = String::from_utf8_lossy(&buf[..n]);
+                    if req.starts_with("HEAD ") {
+                        let hdr = format!(
+                            "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                            data.len()
+                        );
+                        let _ = sock.write_all(hdr.as_bytes()).await;
+                        return;
+                    }
+                    if let Some(line) = req
+                        .lines()
+                        .find(|l| l.to_ascii_lowercase().starts_with("range:"))
+                    {
+                        let n_req = gets.fetch_add(1, Ordering::SeqCst);
+                        let spec = line.split('=').nth(1).unwrap().trim();
+                        let mut parts = spec.split('-');
+                        let start: usize = parts.next().unwrap().parse().unwrap();
+                        let end: usize = parts.next().unwrap().parse().unwrap();
+                        let slice = &data[start..=end];
+                        // Truncate the very first chunk GET mid-stream to force offset resume.
+                        let send_slice = if n_req == 0 {
+                            &slice[..slice.len() / 2]
+                        } else {
+                            slice
+                        };
+                        let hdr = format!(
+                            "HTTP/1.1 206 Partial Content\r\nContent-Length: {}\r\nContent-Range: bytes {}-{}/{}\r\nConnection: close\r\n\r\n",
+                            slice.len(),
+                            start,
+                            end,
+                            data.len()
+                        );
+                        let _ = sock.write_all(hdr.as_bytes()).await;
+                        let _ = sock.write_all(send_slice).await;
+                    }
+                });
+            }
+        });
+
+        let dir = TempDir::new().unwrap();
+        let dest = dir.path().join("recovered.bin");
+        let url = Url::parse(&format!("http://127.0.0.1:{}/big.fastq.gz", addr.port())).unwrap();
+        let retries = Arc::new(AtomicUsize::new(0));
+        let retries_cb = Arc::clone(&retries);
+        let res = test_client()
+            .save_file(
+                &url,
+                &dest,
+                &SaveOptions {
+                    allow_resume: true,
+                    allow_parallel_ranges: true,
+                    compute_md5: true,
+                    ..Default::default()
+                },
+                &CancelSignal::new(),
+                &|_, _| {},
+                &move |_, _| {
+                    retries_cb.fetch_add(1, Ordering::SeqCst);
+                },
+            )
+            .await
+            .unwrap();
+        assert!(range_gets.load(Ordering::SeqCst) >= 4);
+        assert!(retries.load(Ordering::SeqCst) >= 1);
+        assert_eq!(res.md5.as_deref(), Some(expected_md5.as_str()));
+        assert_eq!(std::fs::read(&dest).unwrap(), payload);
+    }
+
+    #[tokio::test]
+    async fn test_single_worker_skips_head_probe() {
+        let payload = vec![b'A'; 128];
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let head_calls = Arc::new(AtomicUsize::new(0));
+        let head_srv = Arc::clone(&head_calls);
+        let payload_srv = Arc::new(payload.clone());
+
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut sock, _)) = listener.accept().await else {
+                    break;
+                };
+                let heads = Arc::clone(&head_srv);
+                let data = Arc::clone(&payload_srv);
+                tokio::spawn(async move {
+                    let mut buf = [0u8; 2048];
+                    let n = sock.read(&mut buf).await.unwrap_or(0);
+                    let req = String::from_utf8_lossy(&buf[..n]);
+                    if req.starts_with("HEAD ") {
+                        heads.fetch_add(1, Ordering::SeqCst);
+                    }
+                    let hdr = format!(
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        data.len()
+                    );
+                    let _ = sock.write_all(hdr.as_bytes()).await;
+                    let _ = sock.write_all(&data).await;
+                });
+            }
+        });
+
+        let dir = TempDir::new().unwrap();
+        let dest = dir.path().join("single.bin");
+        let url = Url::parse(&format!("http://127.0.0.1:{}/small.fastq.gz", addr.port())).unwrap();
+        let res = test_client()
+            .save_file(
+                &url,
+                &dest,
+                &SaveOptions {
+                    allow_resume: true,
+                    allow_parallel_ranges: true,
+                    concurrent_files: 8,
+                    ..Default::default()
+                },
+                &CancelSignal::new(),
+                &|_, _| {},
+                &|_, _| {},
+            )
+            .await
+            .unwrap();
+        assert_eq!(head_calls.load(Ordering::SeqCst), 0);
+        assert_eq!(res.bytes_written as usize, payload.len());
     }
 
     #[tokio::test]
