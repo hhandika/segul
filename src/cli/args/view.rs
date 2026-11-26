@@ -62,13 +62,14 @@ pub(crate) struct ViewAlignArgs {
     )]
     pub(crate) residue_colors: String,
     #[arg(
-        long = "chunk",
-        help = "Sites per chunk",
+        long = "window",
+        alias = "chunk",
+        help = "Sites per window",
         default_value_t = 1000,
         value_parser = builder::PossibleValuesParser::new(["250", "500", "1000", "2000"])
-            .map(|s| s.parse::<usize>().expect("Failed parsing chunk size")),
+            .map(|s| s.parse::<usize>().expect("Failed parsing window size")),
     )]
-    pub(crate) chunk: usize,
+    pub(crate) window: usize,
 }
 
 #[derive(Args)]

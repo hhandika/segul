@@ -19,6 +19,7 @@ New Features:
 - The contig summary CSV adds N count, unknown characters, and contig length SD as the last columns.
 - `segul partition convert` and `segul align split` now support merged and multi-range partitions (e.g., PartitionFinder `1-100, 201-300` or `1-100 201-300`), arbitrary site strides (`start-end\step`), NEXUS `charpartition` model assignments and charset merges (such as IQ-TREE `best_scheme.nex`), NEXUS `[comments]`, multi-line statements, `#` comments, and single-site ranges.
 - `segul partition convert` infers input partition formats automatically when `-p` is omitted and supports `-o` to write converted files into a target directory.
+- `segul view align` calls runs of sites windows instead of chunks. Set their size with `--window`; `--chunk` still works.
 
 Bug Fixes:
 
@@ -44,6 +45,7 @@ Library Changes:
 - New `stats::fastq::qc` module with the read quality checks and their thresholds (`QcRule`, `QcCheck`, `qc_checks`, `overall_status`), shared by the terminal and SEGUI viewers.
 - New `stats::contig_report::ContigReport`, which serializes with serde and reads with `from_path`. `ContigSummary` adds `length_distribution`, binned by `stats::contigs::LENGTH_BIN_EDGES`.
 - `CommonStats` and `NStats` stay zero for empty input, and `CommonStats` gives an SD of 0 for one value.
+- `AlignmentView::chunk_stats` and `ChunkStat` are renamed to `window_stats` and `WindowStat`. The old names remain as deprecated aliases.
 
 Breaking Changes:
 

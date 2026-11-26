@@ -55,7 +55,7 @@ pub(super) struct App<'a> {
     pub(super) zoom: usize,
     pub(super) color: ColorMode,
     pub(super) letters: bool,
-    pub(super) chunk_size: usize,
+    pub(super) window_size: usize,
     pub(super) paged: bool,
     pub(super) selected: BTreeSet<usize>,
     anchor: Option<usize>,
@@ -84,7 +84,7 @@ impl<'a> App<'a> {
         input_fmt: &'a InputFmt,
         datatype: &'a DataType,
         view: AlignmentView,
-        chunk_size: usize,
+        window_size: usize,
     ) -> Self {
         Self {
             files,
@@ -99,7 +99,7 @@ impl<'a> App<'a> {
             zoom: DEFAULT_ZOOM,
             color: ColorMode::Base,
             letters: true,
-            chunk_size,
+            window_size,
             paged: false,
             selected: BTreeSet::new(),
             anchor: None,
@@ -127,20 +127,20 @@ impl<'a> App<'a> {
         (self.grid_cols / self.zoom).max(1)
     }
 
-    pub(super) fn chunk_count(&self) -> usize {
-        self.view.length().div_ceil(self.chunk_size).max(1)
+    pub(super) fn window_count(&self) -> usize {
+        self.view.length().div_ceil(self.window_size).max(1)
     }
 
-    pub(super) fn chunk(&self) -> usize {
-        self.site / self.chunk_size
+    pub(super) fn window(&self) -> usize {
+        self.site / self.window_size
     }
 
-    /// Sites the cursor and view may reach: one chunk when paged.
+    /// Sites the cursor and view may reach: one window when paged.
     pub(super) fn site_range(&self) -> (usize, usize) {
         let length = self.view.length().max(1);
         if self.paged {
-            let start = self.chunk() * self.chunk_size;
-            (start, (start + self.chunk_size).min(length))
+            let start = self.window() * self.window_size;
+            (start, (start + self.window_size).min(length))
         } else {
             (0, length)
         }
@@ -209,7 +209,9 @@ impl<'a> App<'a> {
             KeyCode::Char('q') if ctrl => self.should_quit = true,
             KeyCode::Char('k') if ctrl => {
                 self.is_chord = true;
-                self.message = Some(String::from("Ctrl+K: C color · L letters · P paged chunks"));
+                self.message = Some(String::from(
+                    "Ctrl+K: C color · L letters · P paged windows",
+                ));
             }
             KeyCode::Char('p') if ctrl && alt => self.toggle_paged(),
             KeyCode::Char('g') if ctrl => self.overlay = Overlay::GoTo(String::new()),
@@ -231,8 +233,8 @@ impl<'a> App<'a> {
             // Option+← and Option+→ in macOS terminals that send Esc+b and Esc+f.
             KeyCode::Char('b') if alt => self.move_site(-(JUMP_SITES as isize)),
             KeyCode::Char('f') if alt => self.move_site(JUMP_SITES as isize),
-            KeyCode::Char('[') => self.step_chunk(-1),
-            KeyCode::Char(']') => self.step_chunk(1),
+            KeyCode::Char('[') => self.step_window(-1),
+            KeyCode::Char(']') => self.step_window(1),
             KeyCode::Char('<' | ',') => self.resize_names(-2),
             KeyCode::Char('>' | '.') => self.resize_names(2),
             KeyCode::Char('?') | KeyCode::F(1) => self.overlay = Overlay::Help,
@@ -552,16 +554,16 @@ impl<'a> App<'a> {
         self.paged = !self.paged;
         self.set_cursor(self.row, self.site);
         self.message = Some(String::from(if self.paged {
-            "Showing one chunk at a time"
+            "Showing one window at a time"
         } else {
             "Showing all sites"
         }));
     }
 
-    /// Moves to the start of the previous or next chunk.
-    pub(super) fn step_chunk(&mut self, step: isize) {
-        let chunk = offset(self.chunk(), step, self.chunk_count() - 1);
-        let site = chunk * self.chunk_size;
+    /// Moves to the start of the previous or next window.
+    pub(super) fn step_window(&mut self, step: isize) {
+        let window = offset(self.window(), step, self.window_count() - 1);
+        let site = window * self.window_size;
         self.jump_to(self.row, site);
         self.left_site = site;
         self.clamp_scroll();
@@ -818,12 +820,12 @@ mod test {
     }
 
     #[test]
-    fn test_chunks() {
+    fn test_windows() {
         let files = [PathBuf::from(FILE)];
         let mut app = app(&files);
-        assert_eq!(app.chunk_count(), 3);
+        assert_eq!(app.window_count(), 3);
         app.handle_key(key(KeyCode::Char(']')));
-        assert_eq!((app.chunk(), app.site), (1, 2));
+        assert_eq!((app.window(), app.site), (1, 2));
         app.handle_key(with(KeyCode::Char('k'), KeyModifiers::CONTROL));
         app.handle_key(key(KeyCode::Char('p')));
         assert!(app.paged);

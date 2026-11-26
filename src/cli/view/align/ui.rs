@@ -99,11 +99,11 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
     if !view.is_aligned() {
         summary.push_str(" · unaligned");
     }
-    let (start, end) = (app.chunk() * app.chunk_size, app.site_range().1);
-    let chunk_end = if app.paged {
+    let (start, end) = (app.window() * app.window_size, app.site_range().1);
+    let window_end = if app.paged {
         end
     } else {
-        (start + app.chunk_size).min(view.length())
+        (start + app.window_size).min(view.length())
     };
     let mut spans = vec![Span::from(name).bold()];
     if app.files.len() > 1 {
@@ -125,11 +125,11 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
         Span::from(format!(" · Zoom {}", app.zoom)),
         Span::from("  │ ").dim(),
         Span::from(format!(
-            "Chunk {}–{} ({} of {}){}",
+            "Window {}–{} ({} of {}){}",
             count(start + 1),
-            count(chunk_end),
-            count(app.chunk() + 1),
-            count(app.chunk_count()),
+            count(window_end),
+            count(app.window() + 1),
+            count(app.window_count()),
             if app.paged { " · Page" } else { "" }
         )),
     ]);
@@ -198,20 +198,20 @@ fn render_legend(frame: &mut Frame, area: Rect, palette: &Palette) {
 fn render_sidebar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     let block = Block::bordered()
         .border_type(BorderType::Rounded)
-        .title(" Chunks ");
+        .title(" Windows ");
     let inner = block.inner(area);
     frame.render_widget(block, area);
-    // Three lines per chunk, the current one near the top.
+    // Three lines per window, the current one near the top.
     let shown = (inner.height as usize / 3).max(1);
     let first = app
-        .chunk()
+        .window()
         .saturating_sub(shown / 3)
-        .min(app.chunk_count().saturating_sub(shown));
-    let stats = app.view.chunk_stats(app.chunk_size, first, shown);
+        .min(app.window_count().saturating_sub(shown));
+    let stats = app.view.window_stats(app.window_size, first, shown);
     let bar_width = inner.width.saturating_sub(1) as usize;
     let mut lines = Vec::with_capacity(stats.len() * 3);
     for (i, stat) in stats.iter().enumerate() {
-        let is_current = first + i == app.chunk();
+        let is_current = first + i == app.window();
         let marker = if is_current { "▌" } else { " " };
         let range = format!("{}{}–{}", marker, count(stat.start + 1), count(stat.end));
         lines.push(if is_current {
@@ -283,8 +283,8 @@ fn render_ruler(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
     for i in 0..sites {
         let site = app.left_site + i;
         let x = i * app.zoom;
-        // Labels drawn before take precedence over chunk marks.
-        if !app.paged && site > 0 && site.is_multiple_of(app.chunk_size) && x >= free_from {
+        // Labels drawn before take precedence over window marks.
+        if !app.paged && site > 0 && site.is_multiple_of(app.window_size) && x >= free_from {
             buf[(area.x + x as u16, area.y)]
                 .set_char('┃')
                 .set_fg(palette.tertiary);
@@ -450,7 +450,7 @@ const HELP: &[(&str, &str, &str)] = &[
     ("Ctrl+Home / End", "Ctrl+fn+← / →", "First / last taxon"),
     ("PgUp / PgDn", "Option+↑ / ↓", "Page rows"),
     ("Alt+PgUp / PgDn", "Option+Shift+← / →", "Page sites"),
-    ("[ / ]", "[ / ]", "Previous / next chunk"),
+    ("[ / ]", "[ / ]", "Previous / next window"),
     ("Ctrl+G", "Ctrl+G", "Go to site, taxon, or taxon:site"),
     (
         "Ctrl+F, F3",
@@ -460,8 +460,8 @@ const HELP: &[(&str, &str, &str)] = &[
     ("+ / - / Ctrl+0", "+ / - / Ctrl+0", "Zoom in / out / reset"),
     ("F2 or Ctrl+K C", "Ctrl+K C", "Cycle color mode"),
     ("F4 or Ctrl+K L", "Ctrl+K L", "Toggle letters"),
-    ("Ctrl+K P", "Ctrl+K P", "Toggle paged chunks"),
-    ("Ctrl+B", "Ctrl+B", "Toggle chunk sidebar"),
+    ("Ctrl+K P", "Ctrl+K P", "Toggle paged windows"),
+    ("Ctrl+B", "Ctrl+B", "Toggle window sidebar"),
     ("< / >", "< / >", "Narrow / widen names"),
     (
         "Space, Shift+↑↓, Ctrl+A",
@@ -634,7 +634,7 @@ mod test {
 
         app.show_sidebar = true;
         let text = screen(&mut app, &palette);
-        assert!(text.contains("Chunks"));
+        assert!(text.contains("Windows"));
 
         // The whole help fits a standard 80x24 terminal.
         app.overlay = Overlay::Help;

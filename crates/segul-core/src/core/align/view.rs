@@ -44,8 +44,8 @@ const DNA_SAMPLE_PER_ROW: usize = 4096;
 const DNA_SAMPLE_TOTAL: usize = 1 << 20;
 // Sites between stored ungapped counts. Lookups scan at most this many.
 const UNGAPPED_STEP: usize = 4096;
-// Sites counted together for chunk statistics. Blocks are counted in
-// parallel, only when a chunk over them is asked for, and then kept.
+// Sites counted together for window statistics. Blocks are counted in
+// parallel, only when a window over them is asked for, and then kept.
 const STAT_BLOCK: usize = 4096;
 const GAP: u8 = b'-';
 const MISSING: u8 = b'?';
@@ -68,7 +68,7 @@ pub struct AlignmentSummary {
 
 /// Gap and variable-site share of a run of sites.
 #[derive(Debug, Clone, PartialEq)]
-pub struct ChunkStat {
+pub struct WindowStat {
     /// Zero-based first site.
     pub start: usize,
     /// Exclusive last site.
@@ -78,6 +78,9 @@ pub struct ChunkStat {
     /// Share of sites with more than one residue, ignoring gaps and unknowns.
     pub variable_fraction: f64,
 }
+
+#[deprecated(since = "0.26.0", note = "Renamed to `WindowStat`")]
+pub type ChunkStat = WindowStat;
 
 /// An open sequence file. Residues are read on request.
 pub struct AlignmentView {
@@ -209,11 +212,11 @@ impl AlignmentView {
         out
     }
 
-    /// Gap and variable-site shares of up to `count` chunks of `chunk_size`
-    /// sites, from chunk `first`. Only the sites of those chunks are read;
-    /// their counts are kept, so later calls and other chunk sizes reuse them.
-    pub fn chunk_stats(&self, chunk_size: usize, first: usize, count: usize) -> Vec<ChunkStat> {
-        let size = chunk_size.max(1);
+    /// Gap and variable-site shares of up to `count` windows of `window_size`
+    /// sites, from window `first`. Only the sites of those windows are read;
+    /// their counts are kept, so later calls and other window sizes reuse them.
+    pub fn window_stats(&self, window_size: usize, first: usize, count: usize) -> Vec<WindowStat> {
+        let size = window_size.max(1);
         let start = first.saturating_mul(size).min(self.length);
         let end = first
             .saturating_add(count)
@@ -227,15 +230,15 @@ impl AlignmentView {
         let rows = self.rows();
         (start..end)
             .step_by(size)
-            .map(|chunk_start| {
-                let chunk_end = (chunk_start + size).min(end);
+            .map(|window_start| {
+                let window_end = (window_start + size).min(end);
                 let mut gaps = 0u64;
                 let mut variable = 0usize;
-                let mut site = chunk_start;
-                while site < chunk_end {
+                let mut site = window_start;
+                while site < window_end {
                     let block = &blocks[site / STAT_BLOCK - first_block];
                     let block_start = site / STAT_BLOCK * STAT_BLOCK;
-                    let to = chunk_end.min(block_start + STAT_BLOCK);
+                    let to = window_end.min(block_start + STAT_BLOCK);
                     let range = site - block_start..to - block_start;
                     gaps += block.gaps[range.clone()]
                         .iter()
@@ -244,11 +247,11 @@ impl AlignmentView {
                     variable += block.variable[range].iter().filter(|&&v| v).count();
                     site = to;
                 }
-                let sites = chunk_end - chunk_start;
+                let sites = window_end - window_start;
                 let cells = sites * rows;
-                ChunkStat {
-                    start: chunk_start,
-                    end: chunk_end,
+                WindowStat {
+                    start: window_start,
+                    end: window_end,
                     gap_fraction: if cells == 0 {
                         0.0
                     } else {
@@ -258,6 +261,11 @@ impl AlignmentView {
                 }
             })
             .collect()
+    }
+
+    #[deprecated(since = "0.26.0", note = "Renamed to `window_stats`")]
+    pub fn chunk_stats(&self, chunk_size: usize, first: usize, count: usize) -> Vec<WindowStat> {
+        self.window_stats(chunk_size, first, count)
     }
 
     /// One-based position of `site` in `row` without gaps, or none on a gap.
@@ -451,7 +459,7 @@ pub fn is_gap(code: u8) -> bool {
     code == GAP || code == MISSING
 }
 
-/// Per-site counts of a block of sites, behind the chunk statistics.
+/// Per-site counts of a block of sites, behind the window statistics.
 struct SiteBlock {
     /// Rows with a gap, missing data, or no residue at each site.
     gaps: Vec<u32>,
@@ -799,9 +807,9 @@ mod test {
     }
 
     #[test]
-    fn test_chunk_stats() {
+    fn test_window_stats() {
         let (view, _dir) = open("stats.fas", ">a\nACGT--\n>b\nATGTN-\n>c\nACGA\n");
-        let stats = view.chunk_stats(2, 0, usize::MAX);
+        let stats = view.window_stats(2, 0, usize::MAX);
         assert_eq!(stats.len(), 3);
         assert_eq!((stats[0].start, stats[0].end), (0, 2));
         assert_eq!(stats[0].variable_fraction, 0.5);
@@ -812,9 +820,9 @@ mod test {
     }
 
     #[test]
-    fn test_chunk_stats_ignore_unknowns() {
+    fn test_window_stats_ignore_unknowns() {
         let (view, _dir) = open("unknown.fas", ">a\nACGT\n>b\nACGA\n>c\nA-N-\n");
-        let stats = view.chunk_stats(2, 0, usize::MAX);
+        let stats = view.window_stats(2, 0, usize::MAX);
         assert_eq!(stats.len(), 2);
         // Sites 1-2: one gap in six cells, no variable site.
         assert!((stats[0].gap_fraction - 1.0 / 6.0).abs() < 1e-9);
@@ -825,17 +833,17 @@ mod test {
     }
 
     #[test]
-    fn test_chunk_stats_count_short_rows_as_gaps() {
+    fn test_window_stats_count_short_rows_as_gaps() {
         let (view, _dir) = open("short.fas", ">a\nACGT\n>b\nAC\n");
-        let stats = view.chunk_stats(4, 0, usize::MAX);
+        let stats = view.window_stats(4, 0, usize::MAX);
         assert_eq!(stats.len(), 1);
         assert_eq!(stats[0].gap_fraction, 0.25);
-        // Changing the chunk size reuses the per-site counts.
-        assert_eq!(view.chunk_stats(1, 0, usize::MAX).len(), 4);
+        // Changing the window size reuses the per-site counts.
+        assert_eq!(view.window_stats(1, 0, usize::MAX).len(), 4);
     }
 
     #[test]
-    fn test_chunk_stats_window_across_blocks() {
+    fn test_window_stats_across_blocks() {
         // Row b is variable at every 3rd site and stops before the end.
         let a = "A".repeat(3 * STAT_BLOCK);
         let b: String = (0..3 * STAT_BLOCK - 7)
@@ -843,18 +851,18 @@ mod test {
             .collect();
         let (view, _dir) = open("blocks.fas", &format!(">a\n{a}\n>b\n{b}\n"));
         let size = 1000;
-        let all = view.chunk_stats(size, 0, usize::MAX);
+        let all = view.window_stats(size, 0, usize::MAX);
         assert_eq!(all.len(), (3 * STAT_BLOCK).div_ceil(size));
-        // A window of chunks matches the same chunks of the whole.
-        let window = view.chunk_stats(size, 3, 6);
-        assert_eq!(window, all[3..9].to_vec());
-        // Chunk 4 (sites 4000-4999) crosses the first block boundary.
+        // A run of windows matches the same windows of the whole.
+        let part = view.window_stats(size, 3, 6);
+        assert_eq!(part, all[3..9].to_vec());
+        // Window 4 (sites 4000-4999) crosses the first block boundary.
         assert_eq!(all[4].variable_fraction, 0.333);
         let last = all.last().unwrap();
         assert_eq!(last.end, 3 * STAT_BLOCK);
         let sites = (last.end - last.start) as f64;
         assert_eq!(last.gap_fraction, 7.0 / (2.0 * sites));
-        assert!(view.chunk_stats(size, 999, 5).is_empty());
+        assert!(view.window_stats(size, 999, 5).is_empty());
     }
 
     #[test]

@@ -57,7 +57,7 @@ impl<'a> AlignViewParser<'a> {
             .residue_colors
             .parse::<ResidueScheme>()
             .unwrap_or_default();
-        let mut app = App::new(&files, &input_fmt, &datatype, view, self.args.chunk);
+        let mut app = App::new(&files, &input_fmt, &datatype, view, self.args.window);
         run(&mut app, theme, scheme).expect("Failed running the alignment viewer");
     }
 }
