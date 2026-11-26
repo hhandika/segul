@@ -21,6 +21,8 @@ const OVERVIEW_ROWS: usize = 4;
 const SIDEBAR_WIDTH: u16 = 24;
 // Columns between ruler labels, at least.
 const RULER_GAP: usize = 8;
+// Partition suggestions shown above the go-to prompt, at most.
+const GOTO_MATCHES: usize = 8;
 const RULER_STEPS: [usize; 13] = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
 
 pub(super) fn render(frame: &mut Frame, app: &mut App, palette: &Palette) {
@@ -101,6 +103,9 @@ pub(super) fn render(frame: &mut Frame, app: &mut App, palette: &Palette) {
     match &app.overlay {
         Overlay::Help => render_help(frame, area),
         Overlay::Files { query, index } => render_files(frame, area, app, query, *index, palette),
+        Overlay::GoTo { input, index } => {
+            render_goto_matches(frame, status, app, input, *index, palette)
+        }
         _ => (),
     }
 }
@@ -121,12 +126,8 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
     if !view.is_aligned() {
         summary.push_str(" · unaligned");
     }
-    let (start, end) = (app.window() * app.window_size, app.site_range().1);
-    let window_end = if app.paged {
-        end
-    } else {
-        (start + app.window_size).min(view.length())
-    };
+    let start = app.window() * app.window_size;
+    let window_end = (start + app.window_size).min(view.length());
     let mut spans = vec![Span::from(name).bold()];
     if app.files.len() > 1 {
         spans.push(
@@ -147,12 +148,11 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
         Span::from(format!(" · Zoom {}", app.zoom)),
         Span::from("  │ ").dim(),
         Span::from(format!(
-            "Window {}–{} ({} of {}){}",
+            "Window {}–{} ({} of {})",
             count(start + 1),
             count(window_end),
             count(app.window() + 1),
             count(app.window_count()),
-            if app.paged { " · Page" } else { "" }
         )),
     ]);
     frame.render_widget(Line::from(spans), area);
@@ -389,7 +389,7 @@ fn render_ruler(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
                 .blocks
                 .binary_search_by_key(&site, |b| b.start)
                 .is_ok(),
-            None => !app.paged && site.is_multiple_of(app.window_size),
+            None => site.is_multiple_of(app.window_size),
         };
         if site > 0 && is_boundary && x >= free_from {
             buf[(area.x + x as u16, area.y)]
@@ -495,13 +495,15 @@ fn cell_style(
 
 fn render_status(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     let left = match &app.overlay {
-        Overlay::GoTo(input) => Line::from(vec![
-            Span::from(format!(
-                " Go to site (1–{}), taxon, partition, or taxon:site: ",
-                count(app.view.length())
-            ))
-            .fg(palette.accent),
+        Overlay::GoTo { input, .. } => Line::from(vec![
+            Span::from(" Go to: ").fg(palette.accent),
             Span::from(format!("{input}▏")),
+            Span::from(if app.partitions.is_some() {
+                "  site · partition · partition:site · taxon"
+            } else {
+                "  site · taxon · taxon:site"
+            })
+            .dim(),
         ]),
         Overlay::Find(input) => {
             let matches = app.find_matches(input);
@@ -596,7 +598,7 @@ const HELP: &[(&str, &str, &str)] = &[
     (
         "Ctrl+G",
         "Ctrl+G",
-        "Go to site, taxon, partition, or taxon:site",
+        "Go to site, partition, partition:site, or taxon",
     ),
     (
         "Ctrl+F, F3",
@@ -606,7 +608,6 @@ const HELP: &[(&str, &str, &str)] = &[
     ("+ / - / Ctrl+0", "+ / - / Ctrl+0", "Zoom in / out / reset"),
     ("F2 or Ctrl+K C", "Ctrl+K C", "Cycle color mode"),
     ("F4 or Ctrl+K L", "Ctrl+K L", "Toggle letters"),
-    ("Ctrl+K P", "Ctrl+K P", "Toggle paged windows"),
     (
         "Ctrl+B, Ctrl+K T",
         "Ctrl+B, Ctrl+K T",
@@ -708,6 +709,60 @@ fn render_files(
         })
         .collect();
     frame.render_widget(Paragraph::new(lines), list);
+}
+
+// Partitions matching the go-to text, in a box just above the status bar.
+fn render_goto_matches(
+    frame: &mut Frame,
+    status: Rect,
+    app: &App,
+    input: &str,
+    index: Option<usize>,
+    palette: &Palette,
+) {
+    let Some(track) = &app.partitions else {
+        return;
+    };
+    let matches = app.goto_matches(input);
+    if matches.is_empty() {
+        return;
+    }
+    let shown = matches
+        .len()
+        .min(GOTO_MATCHES)
+        .min((status.y as usize).saturating_sub(2));
+    let width = 60.min(status.width);
+    let height = shown as u16 + 2;
+    let popup = Rect::new(status.x, status.y.saturating_sub(height), width, height);
+    let block = Block::bordered()
+        .border_type(BorderType::Rounded)
+        .title(format!(" Partitions ({}) ", count(matches.len())))
+        .title_bottom(Line::from(" ↑↓ choose · Tab fill · Enter go ").right_aligned());
+    let inner = block.inner(popup);
+    frame.render_widget(Clear, popup);
+    frame.render_widget(block, popup);
+    // Keep the picked match in view.
+    let first = index.map_or(0, |i| i.saturating_sub(shown.saturating_sub(1)));
+    let name_width = (inner.width as usize).saturating_sub(26).max(8);
+    let lines: Vec<Line> = matches
+        .iter()
+        .enumerate()
+        .skip(first)
+        .take(shown)
+        .map(|(i, &b)| {
+            let block = &track.blocks[b];
+            let range = format!("{}–{}", count(block.start + 1), count(block.end));
+            let sites = format!("{} sites", count(block.end - block.start));
+            let name = truncate(&block.name, name_width);
+            let line = Line::from(format!(" {name:name_width$} {range:>13} {sites:>9}"));
+            if Some(i) == index {
+                line.fg(palette.accent).bold().reversed()
+            } else {
+                line
+            }
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(lines), inner);
 }
 
 fn centered(area: Rect, width: u16, height: u16) -> Rect {
@@ -812,6 +867,15 @@ mod test {
         let text = screen(&mut app, &palette);
         assert!(text.contains("Windows · Partitions"));
         assert!(text.contains("▌locus1 · 5"));
+
+        app.overlay = Overlay::GoTo {
+            input: String::from("loc"),
+            index: Some(1),
+        };
+        let text = screen(&mut app, &palette);
+        assert!(text.contains("Go to: loc"));
+        assert!(text.contains("6–10"));
+        assert!(text.contains("Enter go"));
     }
 
     #[test]

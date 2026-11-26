@@ -20,7 +20,8 @@ New Features:
 - `segul partition convert` and `segul align split` now support merged and multi-range partitions (e.g., PartitionFinder `1-100, 201-300` or `1-100 201-300`), arbitrary site strides (`start-end\step`), NEXUS `charpartition` model assignments and charset merges (such as IQ-TREE `best_scheme.nex`), NEXUS `[comments]`, multi-line statements, `#` comments, and single-site ranges.
 - `segul partition convert` infers input partition formats automatically when `-p` is omitted and supports `-o` to write converted files into a target directory.
 - `segul view align` calls runs of sites windows instead of chunks. Set their size with `--window`; `--chunk` still works.
-- `segul view align` shows the partitions of concatenated alignments, read from a NEXUS `sets` block in the file or a `<name>_partition.nex` or `<name>_partition.txt` file next to it. A track above the ruler names each partition, `{` and `}` jump between them, Ctrl+G accepts a partition name, and the sidebar lists partitions with their gap and variable-site shares (Ctrl+K T switches between windows and partitions). Codon position subsets of a gene share one band.
+- `segul view align` shows the partitions of concatenated alignments, read from a NEXUS `sets` block in the file or a `<name>_partition.nex` or `<name>_partition.txt` file next to it. A track above the ruler names each partition, `{` and `}` jump between them, Ctrl+G goes to a site, partition, `partition:site` (a site counted within the partition), or taxon and suggests matching partitions as you type, and the sidebar lists partitions with their gap and variable-site shares (Ctrl+K T switches between windows and partitions). Codon position subsets of a gene share one band.
+- `segul view align` no longer has paged windows (Ctrl+K P), which showed one window at a time. Windows, their sizes, and `[` and `]` stay.
 
 Bug Fixes:
 

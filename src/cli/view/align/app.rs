@@ -27,9 +27,16 @@ pub(super) const DEFAULT_NAME_WIDTH: u16 = 16;
 #[derive(Debug, PartialEq)]
 pub(super) enum Overlay {
     None,
-    GoTo(String),
+    /// Go-to prompt, with the partition suggestion picked by ↑ or ↓.
+    GoTo {
+        input: String,
+        index: Option<usize>,
+    },
     Find(String),
-    Files { query: String, index: usize },
+    Files {
+        query: String,
+        index: usize,
+    },
     Help,
 }
 
@@ -71,7 +78,6 @@ pub(super) struct App<'a> {
     pub(super) color: ColorMode,
     pub(super) letters: bool,
     pub(super) window_size: usize,
-    pub(super) paged: bool,
     pub(super) selected: BTreeSet<usize>,
     anchor: Option<usize>,
     pub(super) show_sidebar: bool,
@@ -123,7 +129,6 @@ impl<'a> App<'a> {
             color: ColorMode::Base,
             letters: true,
             window_size,
-            paged: false,
             selected: BTreeSet::new(),
             anchor: None,
             show_sidebar: false,
@@ -158,15 +163,41 @@ impl<'a> App<'a> {
         self.site / self.window_size
     }
 
-    /// Sites the cursor and view may reach: one window when paged.
+    /// Sites the cursor and view may reach.
     pub(super) fn site_range(&self) -> (usize, usize) {
-        let length = self.view.length().max(1);
-        if self.paged {
-            let start = self.window() * self.window_size;
-            (start, (start + self.window_size).min(length))
-        } else {
-            (0, length)
+        (0, self.view.length().max(1))
+    }
+
+    /// Partition blocks suggested for go-to `input`: those whose name holds
+    /// the text before any `:`. Exact and prefix matches come first.
+    pub(super) fn goto_matches(&self, input: &str) -> Vec<usize> {
+        let Some(track) = &self.partitions else {
+            return Vec::new();
+        };
+        let name = input.split(':').next().unwrap_or("").trim().to_lowercase();
+        if name.is_empty() || name.chars().all(|c| c.is_ascii_digit()) {
+            return Vec::new();
         }
+        let mut matches: Vec<(u8, usize)> = track
+            .blocks
+            .iter()
+            .enumerate()
+            .filter_map(|(i, b)| {
+                let block = b.name.to_lowercase();
+                let rank = if block == name {
+                    0
+                } else if block.starts_with(&name) {
+                    1
+                } else if block.contains(&name) {
+                    2
+                } else {
+                    return None;
+                };
+                Some((rank, i))
+            })
+            .collect();
+        matches.sort_unstable();
+        matches.into_iter().map(|(_, i)| i).collect()
     }
 
     /// Partition block under the cursor.
@@ -234,7 +265,7 @@ impl<'a> App<'a> {
                     self.overlay = Overlay::None;
                 }
             }
-            Overlay::GoTo(_) => self.handle_goto_key(key),
+            Overlay::GoTo { .. } => self.handle_goto_key(key),
             Overlay::Find(_) => self.handle_find_key(key),
             Overlay::Files { .. } => self.handle_files_key(key),
         }
@@ -249,7 +280,6 @@ impl<'a> App<'a> {
             match key.code {
                 KeyCode::Char('c' | 'C') => self.color = self.color.next(),
                 KeyCode::Char('l' | 'L') => self.letters = !self.letters,
-                KeyCode::Char('p' | 'P') => self.toggle_paged(),
                 KeyCode::Char('t' | 'T') => self.toggle_sidebar_tab(),
                 _ => self.message = Some(String::from("Unknown chord")),
             }
@@ -261,12 +291,14 @@ impl<'a> App<'a> {
             KeyCode::Char('q') if ctrl => self.should_quit = true,
             KeyCode::Char('k') if ctrl => {
                 self.is_chord = true;
-                self.message = Some(String::from(
-                    "Ctrl+K: C color · L letters · P paged windows · T sidebar tab",
-                ));
+                self.message = Some(String::from("Ctrl+K: C color · L letters · T sidebar tab"));
             }
-            KeyCode::Char('p') if ctrl && alt => self.toggle_paged(),
-            KeyCode::Char('g') if ctrl => self.overlay = Overlay::GoTo(String::new()),
+            KeyCode::Char('g') if ctrl => {
+                self.overlay = Overlay::GoTo {
+                    input: String::new(),
+                    index: None,
+                }
+            }
             KeyCode::Char('f') if ctrl => self.overlay = Overlay::Find(String::new()),
             KeyCode::Char('p') if ctrl => {
                 self.overlay = Overlay::Files {
@@ -330,22 +362,51 @@ impl<'a> App<'a> {
     }
 
     fn handle_goto_key(&mut self, key: KeyEvent) {
-        let Overlay::GoTo(input) = &mut self.overlay else {
+        let matches = match &self.overlay {
+            Overlay::GoTo { input, .. } => self.goto_matches(input),
+            _ => return,
+        };
+        let Overlay::GoTo { input, index } = &mut self.overlay else {
             return;
         };
+        let count = matches.len();
         match key.code {
             KeyCode::Esc => self.overlay = Overlay::None,
+            KeyCode::Up if count > 0 => {
+                *index = Some(index.map_or(count - 1, |i| (i + count - 1) % count));
+            }
+            KeyCode::Down if count > 0 => {
+                *index = Some(index.map_or(0, |i| (i + 1) % count));
+            }
+            // Fill in the picked or first suggestion, ready for `:site`.
+            KeyCode::Tab if count > 0 => {
+                let block = matches[index.unwrap_or(0).min(count - 1)];
+                if let Some(track) = &self.partitions {
+                    *input = track.blocks[block].name.clone();
+                }
+                *index = None;
+            }
             KeyCode::Enter => {
+                let picked = index.and_then(|i| matches.get(i).copied());
                 let input = input.trim().to_string();
                 self.overlay = Overlay::None;
-                if let Err(msg) = self.go_to(&input) {
-                    self.message = Some(msg);
+                match picked {
+                    Some(block) => self.jump_to_block(block),
+                    None => {
+                        if let Err(msg) = self.go_to(&input) {
+                            self.message = Some(msg);
+                        }
+                    }
                 }
             }
             KeyCode::Backspace => {
                 input.pop();
+                *index = None;
             }
-            KeyCode::Char(c) if !key.modifiers.contains(KeyModifiers::CONTROL) => input.push(c),
+            KeyCode::Char(c) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                input.push(c);
+                *index = None;
+            }
             _ => (),
         }
     }
@@ -466,11 +527,26 @@ impl<'a> App<'a> {
         }
     }
 
-    /// Goes to `123` (a site), `name:123`, a partition, or a taxon name.
+    /// Goes to `123` (a site), a partition, `partition:12` (a site within
+    /// it), a taxon, or `taxon:123`. Partitions win over taxa of the same
+    /// name; text matching only part of a partition name goes to the first
+    /// such partition when no taxon matches.
     pub(super) fn go_to(&mut self, input: &str) -> Result<(), String> {
-        if let Some(block) = self.partitions.as_ref().and_then(|t| t.find(input)) {
-            self.jump_to_block(block);
-            return Ok(());
+        if input.is_empty() {
+            return Err(String::from("Enter a site, partition, or taxon."));
+        }
+        let (name, local) = match input.rsplit_once(':') {
+            Some((name, site)) => (name.trim(), Some(site.trim())),
+            None => (input, None),
+        };
+        if let Some(block) = self.partitions.as_ref().and_then(|t| t.find(name)) {
+            return match local {
+                Some(site) => self.go_to_partition_site(block, site),
+                None => {
+                    self.jump_to_block(block);
+                    Ok(())
+                }
+            };
         }
         let length = self.view.length();
         let site_error = || format!("Enter a site from 1 to {}.", length);
@@ -480,10 +556,18 @@ impl<'a> App<'a> {
             None => (Some(input), None),
         };
         let row = match name.filter(|n| !n.is_empty()) {
-            Some(name) => *self
-                .find_matches(name)
-                .first()
-                .ok_or_else(|| format!("No taxon or partition matches \"{}\".", name))?,
+            Some(name) => match self.find_matches(name).first() {
+                Some(&row) => row,
+                None => {
+                    if local.is_none()
+                        && let Some(&block) = self.goto_matches(name).first()
+                    {
+                        self.jump_to_block(block);
+                        return Ok(());
+                    }
+                    return Err(format!("No taxon or partition matches \"{}\".", name));
+                }
+            },
             None => self.row,
         };
         let site = match site {
@@ -527,15 +611,35 @@ impl<'a> App<'a> {
         self.set_cursor(row, self.site);
     }
 
+    // Goes to one-based `site` counted from the start of partition `block`.
+    fn go_to_partition_site(&mut self, block: usize, site: &str) -> Result<(), String> {
+        let Some(track) = &self.partitions else {
+            return Ok(());
+        };
+        let block = &track.blocks[block];
+        let sites = block.end - block.start;
+        match site.parse::<usize>() {
+            Ok(s) if (1..=sites).contains(&s) => {
+                let target = block.start + s - 1;
+                self.jump_to(self.row, target);
+                self.center_on_cursor();
+                Ok(())
+            }
+            _ => Err(format!(
+                "Enter a site from 1 to {} in {}.",
+                sites, block.name
+            )),
+        }
+    }
+
     pub(super) fn move_site(&mut self, delta: isize) {
         let (start, end) = self.site_range();
         let site = offset(self.site, delta, end - 1).max(start);
         self.set_cursor(self.row, site);
     }
 
-    /// Moves the cursor anywhere. When paged, the page follows the cursor.
+    /// Moves the cursor anywhere.
     fn jump_to(&mut self, row: usize, site: usize) {
-        self.site = site.min(self.view.length().saturating_sub(1));
         self.set_cursor(row, site);
     }
 
@@ -570,7 +674,7 @@ impl<'a> App<'a> {
         self.clamp_scroll();
     }
 
-    /// Keeps the view inside the alignment, or inside the page when paged.
+    /// Keeps the view inside the alignment.
     pub(super) fn clamp_scroll(&mut self) {
         let max_top = self.view.rows().saturating_sub(self.grid_rows.max(1));
         self.top_row = self.top_row.min(max_top);
@@ -610,16 +714,6 @@ impl<'a> App<'a> {
         self.zoom = zoom;
         self.left_site = center.saturating_sub(self.grid_sites() / 2);
         self.clamp_scroll();
-    }
-
-    fn toggle_paged(&mut self) {
-        self.paged = !self.paged;
-        self.set_cursor(self.row, self.site);
-        self.message = Some(String::from(if self.paged {
-            "Showing one window at a time"
-        } else {
-            "Showing all sites"
-        }));
     }
 
     /// Moves to the start of the previous or next window.
@@ -977,16 +1071,11 @@ mod test {
         assert_eq!(app.window_count(), 3);
         app.handle_key(key(KeyCode::Char(']')));
         assert_eq!((app.window(), app.site), (1, 2));
-        app.handle_key(with(KeyCode::Char('k'), KeyModifiers::CONTROL));
-        app.handle_key(key(KeyCode::Char('p')));
-        assert!(app.paged);
-        // The cursor stays inside the page.
-        app.handle_key(key(KeyCode::Right));
-        app.handle_key(key(KeyCode::Right));
-        assert_eq!(app.site, 3);
         app.handle_key(key(KeyCode::Char(']')));
         assert_eq!(app.site, 4);
-        assert!(app.paged);
+        app.handle_key(key(KeyCode::Char('[')));
+        app.handle_key(key(KeyCode::Char('[')));
+        assert_eq!(app.site, 0);
     }
 
     #[test]
@@ -1034,10 +1123,53 @@ mod test {
         assert_eq!(app.message.as_deref(), Some("At the first partition"));
         assert!(app.go_to("locus3").is_ok());
         assert_eq!(app.site, 10);
+        assert!(app.go_to("LOCUS2:3").is_ok());
+        assert_eq!(app.site, 7);
+        assert_eq!(
+            app.go_to("locus2:9").unwrap_err(),
+            "Enter a site from 1 to 5 in locus2."
+        );
+        // Part of a name goes to the first match when no taxon matches.
+        assert!(app.go_to("cus3").is_ok());
+        assert_eq!(app.site, 10);
+        // A taxon still wins over a partial partition match.
+        assert!(app.go_to("abce").is_ok());
+        assert_eq!(app.row, 1);
         app.handle_key(with(KeyCode::Char('k'), KeyModifiers::CONTROL));
         app.handle_key(key(KeyCode::Char('t')));
         assert_eq!(app.sidebar_tab, SidebarTab::Windows);
         assert!(app.show_sidebar);
+    }
+
+    #[test]
+    fn test_go_to_suggestions() {
+        let files = [PathBuf::from(
+            "crates/segul-core/tests/files/view/concat_charset.nex",
+        )];
+        let mut app = app(&files);
+        assert_eq!(app.goto_matches("locus2"), vec![1]);
+        assert_eq!(app.goto_matches("2"), Vec::<usize>::new());
+        assert_eq!(app.goto_matches("cus"), vec![0, 1, 2]);
+        assert!(app.goto_matches("12").is_empty());
+        app.handle_key(with(KeyCode::Char('g'), KeyModifiers::CONTROL));
+        for c in "loc".chars() {
+            app.handle_key(key(KeyCode::Char(c)));
+        }
+        app.handle_key(key(KeyCode::Down));
+        app.handle_key(key(KeyCode::Down));
+        app.handle_key(key(KeyCode::Enter));
+        assert_eq!(app.overlay, Overlay::None);
+        assert_eq!(app.block(), Some(1));
+        // Tab fills the name, then a site within the partition.
+        app.handle_key(with(KeyCode::Char('g'), KeyModifiers::CONTROL));
+        for c in "us3".chars() {
+            app.handle_key(key(KeyCode::Char(c)));
+        }
+        app.handle_key(key(KeyCode::Tab));
+        app.handle_key(key(KeyCode::Char(':')));
+        app.handle_key(key(KeyCode::Char('2')));
+        app.handle_key(key(KeyCode::Enter));
+        assert_eq!(app.site, 11);
     }
 
     #[test]
