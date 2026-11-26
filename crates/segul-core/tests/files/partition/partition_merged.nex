@@ -1,0 +1,7 @@
+#nexus
+[ PartitionFinder / merged NEXUS example ]
+begin sets;
+    charset Subset1 = 1-5\3
+        2-5\3 11-15;
+    charset Subset2 = 3-5\3 6-10;
+end;

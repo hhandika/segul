@@ -1,6 +1,7 @@
 //! Convert partitioned sequence file to another format.
 use std::path::Path;
 
+use anyhow::Result;
 use colored::Colorize;
 
 use crate::core::PartitionPrint;
@@ -19,7 +20,6 @@ pub struct PartitionConverter<'a> {
     input: &'a Path,
     input_partition_fmt: &'a PartitionFmt,
     output: &'a Path,
-
     output_partition_fmt: &'a PartitionFmt,
 }
 
@@ -39,17 +39,11 @@ impl<'a> PartitionConverter<'a> {
         }
     }
 
-    /// Convert partitioned sequence file to another format.
-    /// It accepts input in in-file NEXUS, NEXUS, and RaXML format.
-    /// The output format can be in in-file NEXUS (Charset), NEXUS, or RaXML format.
-    /// The output file will be named as `output_partition_fmt`.
-    /// For example, if the output format is `Nexus`, the output file will be `partition.nex`.
-    /// If the output format is `Raxml`, the output file will be `partition.txt`.
-    /// If the output format is `Charset`, the output file will be `partition.nex`.
+    /// Convert partitioned sequence file to another format, panicking on failure.
     ///
     /// # Example
     /// ```
-    /// use std::path::{Path, PathBuf};
+    /// use std::path::Path;
     /// use segul_core::core::align::partition::PartitionConverter;
     /// use segul_core::helper::partition::construct_partition_path;
     /// use segul_core::helper::types::{DataType, PartitionFmt};
@@ -59,8 +53,8 @@ impl<'a> PartitionConverter<'a> {
     /// let output_dir = TempDir::with_prefix("temp").unwrap();
     /// let output_file = output_dir.path().join("partition");
     /// let final_output = construct_partition_path(&output_file, &PartitionFmt::Raxml);
-    /// let mut handle = PartitionConverter::new(
-    ///    &input,
+    /// let handle = PartitionConverter::new(
+    ///    input,
     ///    &PartitionFmt::Charset,
     ///    &final_output,
     ///    &PartitionFmt::Raxml,
@@ -68,8 +62,14 @@ impl<'a> PartitionConverter<'a> {
     /// handle.convert(&DataType::Dna, false);
     /// ```
     pub fn convert(&self, datatype: &DataType, is_uncheck: bool) {
+        self.try_convert(datatype, is_uncheck)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+
+    /// Convert partitioned sequence file to another format, returning an error on failure.
+    pub fn try_convert(&self, datatype: &DataType, is_uncheck: bool) -> Result<()> {
         let partitions =
-            PartitionParser::new(self.input, self.input_partition_fmt, is_uncheck).parse();
+            PartitionParser::new(self.input, self.input_partition_fmt, is_uncheck).try_parse()?;
         self.print_partition_info(self.input, &partitions.len());
         let spin = utils::set_spinner();
         spin.set_message("Converting partitions...");
@@ -79,9 +79,10 @@ impl<'a> PartitionConverter<'a> {
             self.output_partition_fmt,
             datatype,
         );
-        writer.write_partition();
+        writer.try_write_partition()?;
         spin.finish_with_message("Finished converting partitions!\n");
-        self.print_output_info()
+        self.print_output_info();
+        Ok(())
     }
 
     fn print_output_info(&self) {

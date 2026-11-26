@@ -466,14 +466,86 @@ impl std::str::FromStr for DataType {
 /// Data types for sequence data
 pub type SeqMatrix = IndexMap<String, String>;
 
-/// Data types for partition data
-pub struct Partition {
-    /// Gene/locus name
-    pub gene: String,
-    /// Start position
+/// A 1-based inclusive site range with a positive stride (`step >= 1`).
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct SiteRange {
+    /// 1-based inclusive start position.
     pub start: usize,
-    /// End position
+    /// 1-based inclusive end position.
     pub end: usize,
+    /// Stride between sites (1 for contiguous ranges, 3 for codon positions).
+    pub step: usize,
+}
+
+impl SiteRange {
+    /// Create a contiguous 1-based inclusive range (`step = 1`).
+    pub fn new(start: usize, end: usize) -> Self {
+        Self {
+            start,
+            end,
+            step: 1,
+        }
+    }
+
+    /// Create a strided 1-based inclusive range.
+    pub fn with_step(start: usize, end: usize, step: usize) -> Self {
+        Self { start, end, step }
+    }
+
+    /// Create a single-site range (`start = end = pos`, `step = 1`).
+    pub fn single(pos: usize) -> Self {
+        Self {
+            start: pos,
+            end: pos,
+            step: 1,
+        }
+    }
+
+    /// Return true when `start >= 1`, `start <= end`, and `step >= 1`.
+    pub fn is_valid(&self) -> bool {
+        self.start >= 1 && self.start <= self.end && self.step >= 1
+    }
+
+    /// Number of sites selected by this range.
+    pub fn site_count(&self) -> usize {
+        if !self.is_valid() {
+            0
+        } else {
+            (self.end - self.start) / self.step + 1
+        }
+    }
+
+    /// Iterate over all 1-based site positions in this range.
+    pub fn iter_sites(&self) -> std::iter::StepBy<std::ops::RangeInclusive<usize>> {
+        (self.start..=self.end).step_by(self.step.max(1))
+    }
+}
+
+impl std::fmt::Display for SiteRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if self.step > 1 {
+            write!(f, "{}-{}\\{}", self.start, self.end, self.step)
+        } else if self.start == self.end {
+            write!(f, "{}", self.start)
+        } else {
+            write!(f, "{}-{}", self.start, self.end)
+        }
+    }
+}
+
+/// Data types for partition data
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Partition {
+    /// Gene, locus, or subset name
+    pub gene: String,
+    /// Minimum 1-based start position across all ranges
+    pub start: usize,
+    /// Maximum 1-based end position across all ranges
+    pub end: usize,
+    /// One or more 1-based inclusive site ranges belonging to this partition
+    pub ranges: Vec<SiteRange>,
+    /// Optional substitution model label (e.g., `GTR+I+G`)
+    pub model: Option<String>,
 }
 
 impl Default for Partition {
@@ -488,7 +560,99 @@ impl Partition {
             gene: String::new(),
             start: 0,
             end: 0,
+            ranges: Vec::new(),
+            model: None,
         }
+    }
+
+    /// Create a partition covering a single contiguous range.
+    pub fn from_range(gene: impl Into<String>, start: usize, end: usize) -> Self {
+        Self {
+            gene: gene.into(),
+            start,
+            end,
+            ranges: vec![SiteRange::new(start, end)],
+            model: None,
+        }
+    }
+
+    /// Create a partition from one or more site ranges and an optional model.
+    pub fn from_ranges(
+        gene: impl Into<String>,
+        ranges: Vec<SiteRange>,
+        model: Option<String>,
+    ) -> Self {
+        let start = ranges.iter().map(|r| r.start).min().unwrap_or(0);
+        let end = ranges.iter().map(|r| r.end).max().unwrap_or(0);
+        Self {
+            gene: gene.into(),
+            start,
+            end,
+            ranges,
+            model,
+        }
+    }
+
+    /// Return `ranges` when present, or fall back to `[start..=end]` for legacy structs.
+    pub fn effective_ranges(&self) -> std::borrow::Cow<'_, [SiteRange]> {
+        if !self.ranges.is_empty() {
+            std::borrow::Cow::Borrowed(&self.ranges)
+        } else if self.start > 0 && self.end >= self.start {
+            std::borrow::Cow::Owned(vec![SiteRange::new(self.start, self.end)])
+        } else {
+            std::borrow::Cow::Borrowed(&[])
+        }
+    }
+
+    /// Return true if any range in this partition uses a stride greater than 1.
+    pub fn has_stride(&self) -> bool {
+        self.effective_ranges().iter().any(|r| r.step > 1)
+    }
+
+    /// Return the maximum 1-based site position referenced by this partition.
+    pub fn max_site(&self) -> usize {
+        self.effective_ranges()
+            .iter()
+            .map(|r| r.end)
+            .max()
+            .unwrap_or(self.end)
+    }
+
+    /// Expand all ranges into sorted, deduplicated 1-based site positions.
+    pub fn sorted_site_positions(&self) -> Vec<usize> {
+        let ranges = self.effective_ranges();
+        let total: usize = ranges.iter().map(SiteRange::site_count).sum();
+        let mut sites = Vec::with_capacity(total);
+        for range in ranges.iter() {
+            sites.extend(range.iter_sites());
+        }
+        sites.sort_unstable();
+        sites.dedup();
+        sites
+    }
+
+    /// Group sorted unique sites into maximal 0-based half-open `[start, end)` intervals.
+    pub fn contiguous_site_runs(&self) -> Vec<(usize, usize)> {
+        let sites = self.sorted_site_positions();
+        let mut runs = Vec::new();
+        let mut iter = sites.into_iter();
+        let Some(first) = iter.next() else {
+            return runs;
+        };
+        let mut run_start = first - 1;
+        let mut run_end = first;
+        for site in iter {
+            let zero_idx = site - 1;
+            if zero_idx == run_end {
+                run_end += 1;
+            } else {
+                runs.push((run_start, run_end));
+                run_start = zero_idx;
+                run_end = site;
+            }
+        }
+        runs.push((run_start, run_end));
+        runs
     }
 }
 

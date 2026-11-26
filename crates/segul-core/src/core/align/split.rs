@@ -1,8 +1,10 @@
 //! Split a concatenated alignment
 //! into multiple alignments based on partitions
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use anyhow::{Result, bail};
 use colored::Colorize;
 use indexmap::IndexMap;
 use rayon::prelude::*;
@@ -10,7 +12,9 @@ use rayon::prelude::*;
 use crate::core::{OutputPrint, PartitionPrint};
 use crate::helper::files;
 use crate::helper::sequence::SeqParser;
-use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, PartitionFmt, SeqMatrix};
+use crate::helper::types::{
+    DataType, Header, InputFmt, OutputFmt, Partition, PartitionFmt, SeqMatrix,
+};
 use crate::helper::utils;
 use crate::parser::partition::PartitionParser;
 use crate::writer::sequences::SeqWriter;
@@ -43,6 +47,7 @@ impl<'a> AlignmentSplitting<'a> {
         }
     }
 
+    /// Split the alignment by partitions, panicking on error.
     pub fn split(
         &self,
         part_path: &Path,
@@ -50,34 +55,86 @@ impl<'a> AlignmentSplitting<'a> {
         prefix: &Option<String>,
         is_uncheck: bool,
     ) {
-        let partitions = PartitionParser::new(part_path, partition_fmt, is_uncheck).parse();
+        self.try_split(part_path, partition_fmt, prefix, is_uncheck)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+
+    /// Split the alignment by partitions, returning an error on invalid partitions or I/O failure.
+    pub fn try_split(
+        &self,
+        part_path: &Path,
+        partition_fmt: &PartitionFmt,
+        prefix: &Option<String>,
+        is_uncheck: bool,
+    ) -> Result<()> {
+        let partitions = PartitionParser::new(part_path, partition_fmt, is_uncheck).try_parse()?;
         self.print_partition_info(part_path, &partitions.len());
         let spin = utils::set_spinner();
         spin.set_message("Parsing input sequence file...");
         let aln_matrix = self.parse_sequence();
+        let aln_len = aln_matrix.values().next().map_or(0, String::len);
+        self.validate_split_targets(&partitions, aln_len, prefix)?;
+
         spin.set_message("Splitting alignment...");
         let file_counts = AtomicUsize::new(0);
-        partitions.par_iter().for_each(|part| {
-            let start_pos = part.start - 1;
-            let end_pos = part.end;
-            let matrix = self.generate_new_matrix(&aln_matrix, start_pos, end_pos);
+        partitions.par_iter().try_for_each(|part| -> Result<()> {
+            let runs = part.contiguous_site_runs();
+            let nchar: usize = runs.iter().map(|(s, e)| e - s).sum();
+            let matrix = self.generate_matrix_from_runs(&aln_matrix, &runs, nchar);
+            if matrix.is_empty() {
+                log::warn!(
+                    "Skipping partition '{}': all sequences are gaps or missing.",
+                    part.gene
+                );
+                return Ok(());
+            }
             let mut header = Header::new();
             if let DataType::Aa = self.datatype {
                 header.datatype = String::from("protein");
             }
-            header.nchar = end_pos - start_pos;
+            header.nchar = nchar;
             header.ntax = matrix.len();
             header.aligned = true;
             let filename = self.parse_filename(&part.gene, prefix);
             let output_path = files::create_output_fname(self.output, &filename, self.output_fmt);
             let mut out = SeqWriter::new(&output_path, &matrix, &header);
-            out.write_sequence(self.output_fmt)
-                .expect("Failed writing the output file");
+            out.write_sequence(self.output_fmt)?;
             file_counts.fetch_add(1, Ordering::Relaxed);
-        });
+            Ok(())
+        })?;
 
         spin.finish_with_message("Finished splitting alignment!\n");
         self.print_output_info(file_counts.load(Ordering::Relaxed));
+        Ok(())
+    }
+
+    fn validate_split_targets(
+        &self,
+        partitions: &[Partition],
+        aln_len: usize,
+        prefix: &Option<String>,
+    ) -> Result<()> {
+        let mut out_paths = HashSet::with_capacity(partitions.len());
+        for part in partitions {
+            let max_site = part.max_site();
+            if max_site > aln_len {
+                bail!(
+                    "Partition '{}' references site {}, which exceeds alignment length ({}).",
+                    part.gene,
+                    max_site,
+                    aln_len
+                );
+            }
+            let fname = self.parse_filename(&part.gene, prefix);
+            let out_path = files::create_output_fname(self.output, &fname, self.output_fmt);
+            if !out_paths.insert(out_path.clone()) {
+                bail!(
+                    "Multiple partitions resolve to the same output file '{}'.",
+                    out_path.display()
+                );
+            }
+        }
+        Ok(())
     }
 
     // Generate a filename for each locus based on the locus name
@@ -91,20 +148,19 @@ impl<'a> AlignmentSplitting<'a> {
         PathBuf::from(filename)
     }
 
-    fn generate_new_matrix(
+    fn generate_matrix_from_runs(
         &self,
         matrix: &SeqMatrix,
-        start_pos: usize,
-        end_pos: usize,
+        runs: &[(usize, usize)],
+        total_len: usize,
     ) -> SeqMatrix {
         let mut seq_matrix: SeqMatrix = IndexMap::new();
-        matrix.iter().for_each(|(taxon, seq)| {
-            // We subtract the start position to match rust indexing.
-            let part_seq = self.slice_sequence(seq, start_pos, end_pos);
+        for (taxon, seq) in matrix {
+            let part_seq = self.slice_runs(seq, runs, total_len);
             if !self.is_empty_seq(&part_seq) {
                 seq_matrix.insert(taxon.clone(), part_seq);
             }
-        });
+        }
         seq_matrix
     }
 
@@ -113,10 +169,15 @@ impl<'a> AlignmentSplitting<'a> {
         seq.bytes().all(|char| empty_seq.contains(&char))
     }
 
-    fn slice_sequence(&self, seq: &str, start: usize, end: usize) -> String {
-        seq.get(start..end)
-            .expect("Errors in slicing the alignment")
-            .to_string()
+    fn slice_runs(&self, seq: &str, runs: &[(usize, usize)], total_len: usize) -> String {
+        let mut out = String::with_capacity(total_len);
+        for &(start, end) in runs {
+            let slice = seq
+                .get(start..end)
+                .expect("Errors in slicing the alignment");
+            out.push_str(slice);
+        }
+        out
     }
 
     fn parse_sequence(&self) -> SeqMatrix {
@@ -136,6 +197,8 @@ impl<'a> AlignmentSplitting<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::helper::types::SiteRange;
+    use tempfile::TempDir;
 
     macro_rules! input_split {
         ($var:ident, $input:expr_2021) => {
@@ -159,24 +222,70 @@ mod test {
     }
 
     #[test]
-    fn test_sequence_slicing() {
+    fn test_sequence_slicing_runs() {
         input_split!(split, "tests/files/test_aln.fasta");
         let seq = "AAAAAAAAGGGGTTTTCCCC";
 
-        let slice = split.slice_sequence(seq, 0, 10);
-        let slice_2 = split.slice_sequence(seq, 10, 15);
+        let slice = split.slice_runs(seq, &[(0, 10)], 10);
+        let slice_2 = split.slice_runs(seq, &[(10, 15)], 5);
         assert_eq!(slice, "AAAAAAAAGG");
         assert_eq!(slice_2, "GGTTT");
     }
 
     #[test]
-    fn test_generate_new_matrix() {
+    fn test_generate_matrix_merged_and_out_of_order_column_order() {
         input_split!(split, "tests/files/partition/concat_part.fas");
         let matrix = split.parse_sequence();
-        let new_matrix = split.generate_new_matrix(&matrix, 0, 10);
-        let new_matrix_2 = split.generate_new_matrix(&matrix, 10, 15);
+        // Sites 11-15 and 1-5 given out of order -> sorted ascending [0..5, 10..15]
+        let part = Partition::from_ranges(
+            "merged",
+            vec![SiteRange::new(11, 15), SiteRange::new(1, 5)],
+            None,
+        );
+        let runs = part.contiguous_site_runs();
+        assert_eq!(runs, vec![(0, 5), (10, 15)]);
+        let new_matrix = split.generate_matrix_from_runs(&matrix, &runs, 10);
         assert_eq!(new_matrix.len(), 4);
-        assert_eq!(new_matrix.get("ABCD").unwrap(), "aaaaaggggg");
-        assert_eq!(new_matrix_2.get("ABCD").unwrap(), "ttttt");
+        assert_eq!(new_matrix.get("ABCD").unwrap(), "aaaaattttt");
+        assert_eq!(new_matrix.get("ABCG").unwrap(), "aaaaaccccc");
+    }
+
+    #[test]
+    fn test_generate_matrix_strided_codon_column_order() {
+        input_split!(split, "tests/files/partition/concat_part.fas");
+        let matrix = split.parse_sequence();
+        // 1-based sites: 1,4,7,10,13 (from 1-15\3) and 2,5,8,11,14 (from 2-15\3)
+        // Sorted 1-based: 1,2, 4,5, 7,8, 10,11, 13,14 -> runs: (0,2),(3,5),(6,8),(9,11),(12,14)
+        let part = Partition::from_ranges(
+            "pos12",
+            vec![
+                SiteRange::with_step(1, 15, 3),
+                SiteRange::with_step(2, 15, 3),
+            ],
+            None,
+        );
+        let runs = part.contiguous_site_runs();
+        assert_eq!(runs, vec![(0, 2), (3, 5), (6, 8), (9, 11), (12, 14)]);
+        let new_matrix = split.generate_matrix_from_runs(&matrix, &runs, 10);
+        // ABCG is aaaaagggggccccc -> positions 1,2='aa', 4,5='aa', 7,8='gg', 10,11='gc', 13,14='cc'
+        assert_eq!(new_matrix.get("ABCG").unwrap(), "aaaagggccc");
+    }
+
+    #[test]
+    fn test_split_out_of_bounds_returns_error() {
+        let tmp = TempDir::with_prefix("segul_split_oob").unwrap();
+        let part_file = tmp.path().join("oob.txt");
+        std::fs::write(&part_file, "DNA, p1 = 1-20\n").unwrap();
+        let split = AlignmentSplitting::new(
+            Path::new("tests/files/partition/concat_part.fas"),
+            &DataType::Dna,
+            &InputFmt::Fasta,
+            tmp.path(),
+            &OutputFmt::Fasta,
+        );
+        let err = split
+            .try_split(&part_file, &PartitionFmt::Raxml, &None, true)
+            .unwrap_err();
+        assert!(err.to_string().contains("exceeds alignment length"));
     }
 }

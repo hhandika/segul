@@ -2,6 +2,7 @@ use std::path::Path;
 
 use crate::core::align::split::AlignmentSplitting;
 use crate::helper::logger::AlignSeqLogger;
+use crate::helper::partition::infer_partition_fmt;
 use crate::helper::types::PartitionFmt;
 
 use crate::cli::args::align::AlignSplitArgs;
@@ -28,7 +29,7 @@ impl<'a> SplitParser<'a> {
 
         // If users do not specify input partition.
         // Assume partition is in the sequence file.
-        let partitions = match &&self.args.input_partition {
+        let partitions = match &self.args.input_partition {
             Some(path) => path,
             None => &self.args.input,
         };
@@ -44,48 +45,31 @@ impl<'a> SplitParser<'a> {
             &self.args.output,
             &output_fmt,
         );
-        split.split(
-            partitions,
-            &part_fmt,
-            &self.args.prefix,
-            self.args.skip_checking,
-        );
+        split
+            .try_split(
+                partitions,
+                &part_fmt,
+                &self.args.prefix,
+                self.args.skip_checking,
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 
     fn parse_part_fmt(&self, part_path: &Path) -> PartitionFmt {
         match &self.args.part_fmt {
             Some(fmt) => self.parse_partition_fmt(fmt),
-            None => self.infer_part_fmt(part_path),
+            None => infer_partition_fmt(part_path).unwrap_or_else(|err| panic!("{err}")),
         }
-    }
-
-    fn infer_part_fmt(&self, part_path: &Path) -> PartitionFmt {
-        let ext = part_path
-            .extension()
-            .expect("Failed getting file extension")
-            .to_str()
-            .expect("Failed getting file extension as string");
-        self.parse_partition_ext(ext)
     }
 
     fn parse_partition_fmt(&self, fmt: &str) -> PartitionFmt {
         match fmt {
+            "charset" => PartitionFmt::Charset,
             "raxml" => PartitionFmt::Raxml,
             "nexus" => PartitionFmt::Nexus,
             _ => unreachable!(
                 "Cannot infer partition format from the file extension.\
-                Please, specify using the --partition (or -p in short version) option"
-            ),
-        }
-    }
-
-    fn parse_partition_ext(&self, ext: &str) -> PartitionFmt {
-        match ext {
-            "txt" | "raxml" => PartitionFmt::Raxml,
-            "nex" | "nexus" | "charset" => PartitionFmt::Nexus,
-            _ => panic!(
-                "Cannot infer partition format from the file extension.\
-                Please, specify using the --partition (or -p in short version) option"
+                Please, specify using the --partition-format (or -p in short version) option"
             ),
         }
     }

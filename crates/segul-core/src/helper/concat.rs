@@ -150,11 +150,7 @@ impl<'a> Concat<'a> {
     }
 
     fn get_partition(&self, gene_name: &str, start: usize, end: usize) -> Partition {
-        let mut part = Partition::new();
-        part.gene = gene_name.to_string();
-        part.start = start;
-        part.end = end;
-        part
+        Partition::from_range(gene_name, start, end)
     }
 
     fn parse_aln_name(&self, file: &Path) -> String {

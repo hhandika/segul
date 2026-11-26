@@ -17,6 +17,8 @@ New Features:
 - `segul view summary` shows read reports like the SEGUI read viewer.
 - `segul contig summary` also writes `contig-report.json` with totals across samples, per-sample statistics, and contig length distributions. Open it with `segul view summary`.
 - The contig summary CSV adds N count, unknown characters, and contig length SD as the last columns.
+- `segul partition convert` and `segul align split` now support merged and multi-range partitions (e.g., PartitionFinder `1-100, 201-300` or `1-100 201-300`), arbitrary site strides (`start-end\step`), NEXUS `charpartition` model assignments and charset merges (such as IQ-TREE `best_scheme.nex`), NEXUS `[comments]`, multi-line statements, `#` comments, and single-site ranges.
+- `segul partition convert` infers input partition formats automatically when `-p` is omitted and supports `-o` to write converted files into a target directory.
 
 Bug Fixes:
 
@@ -25,9 +27,12 @@ Bug Fixes:
 - Contig summaries of empty files no longer fail, and single-contig files report a length SD of 0 instead of NaN.
 - Long contig charts are labeled ">750 bp" and so on, matching the counts of contigs longer than each length.
 - Automatic reading frame detection accepts the stop codon at the end of a complete coding sequence, including before a partial codon, gaps, or missing data, instead of picking another frame or failing.
+- `segul align split` now extracts merged and strided partitions in ascending alignment column order and validates site bounds against alignment length before writing output files.
 
 Library Changes:
 
+- Added `SiteRange` in `helper::types` and extended `Partition` with `ranges: Vec<SiteRange>`, `model: Option<String>`, and helpers (`from_range`, `from_ranges`, `effective_ranges`, `has_stride`, `max_site`, `sorted_site_positions`, `contiguous_site_runs`).
+- Added fallible `PartitionParser::try_parse`, `PartWriter::try_write_partition`, `PartitionConverter::try_convert`, `AlignmentSplitting::try_split`, and `helper::partition::infer_partition_fmt`.
 - `ReadMetrics` and `SampleReadReport` add error-rate quality, expected-error, complexity, homopolymer, relative-position, length × quality, and FASTQ header metadata fields (all `#[serde(default)]` for compatibility with older `read-report.json` files).
 - New `stats::fastq::cohort` module (`PairedReadSummary`, `CohortSummary`, `CohortOutlier`, `pair_samples`, `summarize_cohort`) and `ReadReport::from_samples`, plus technology-aware `QcProfile`, `effective_profile`, `qc_checks_with_profile`, and `pair_qc_checks` in `stats::fastq::qc`.
 - New `stats::fastq::qc` module with the read quality checks and their thresholds (`QcRule`, `QcCheck`, `qc_checks`, `overall_status`), shared by the terminal and SEGUI viewers.
@@ -36,16 +41,18 @@ Library Changes:
 
 Breaking Changes:
 
+- `PartitionParser` now preserves strided codon ranges (`\3`) and subset names faithfully instead of stripping `\3` and collapsing `_Subset1`/`_Subset2`/`_Subset3` lines into a single unstrided range.
 - `SummaryMode::Default` is renamed to `SummaryMode::Basic`, and `SummaryMode::default()` now returns `SummaryMode::Complete`. `SummaryMode::from_str` still accepts `"default"` as an alias for `Basic`.
 - The per-sample read summary CSV is written as `read-summary.csv` instead of `default-read-summary.csv`.
 - `ContigSummaryHandler::summarize` and `try_summarize` return `ContigSummaryFiles` instead of the summary path.
 
 Migration:
 
+- Callers expecting `PartitionParser` to collapse codon subsets into a single whole-locus range should read each subset entry directly or combine ranges across subsets explicitly.
 - Replace `SummaryMode::Default` with `SummaryMode::Basic` in Rust callers, and pass `--mode basic` on the CLI if you only want the single CSV without Complete mode outputs.
 - Use `files.summary` for the CSV path and `files.report` for the JSON report.
 
-## v0.25.0
+## v0.25.0 - 2026-11-09
 
 New Features:
 
@@ -83,7 +90,7 @@ Bug Fixes:
 
 - Fix a missing `-i` input file on Windows reporting "Empty folders!" instead of naming the file.
 
-## v0.24.0
+## v0.24.0 - 2026-10-21
 
 Installation:
 
@@ -159,15 +166,15 @@ Bug Fixes:
 - Fix consecutive MAF blocks merging when a file with CRLF line endings is read on Linux or macOS.
 - Fix negative MAF block scores being ignored.
 
-## v0.23.2
+## v0.23.2 - 2026-01-30
 
 - Add Windows ARM64 support.
 
-## v0.23.1
+## v0.23.1 - 2026-01-30
 
 - Fix ARM support for Linux.
 
-## v0.23.0
+## v0.23.0 - 2026-01-30
 
 New Features:
 
@@ -195,11 +202,11 @@ Other Changes:
 - Migrate to Rust 2024 edition.
 - Update dependencies.
 
-## v0.22.1
+## v0.22.1 - 2024-08-08
 
 - Sequence filtering now does not enforce input is an alignment.
 
-## v0.22.0
+## v0.22.0 - 2024-08-05
 
 New Features:
 
@@ -213,15 +220,15 @@ API Breaking Changes:
 - Partition conversion moved to align module.
 - Output directory and output format arguments for extraction are now required in the new instance of the extraction struct.
 
-## v0.21.3
+## v0.21.3 - 2024-05-14
 
 - Try to fix ARM CI issues.
 
-## v0.21.2
+## v0.21.2 - 2024-05-14
 
 - Fix auto detect sequence format issue does not match the GUI input.
 
-## v0.21.1
+## v0.21.1 - 2024-05-06
 
 - Fix extra commas in the alignment summary CSV output.
 - Fix missing proportion of missing data in alignment summary.
@@ -235,28 +242,28 @@ API Breaking Changes:
 - Prefix option for read, contig summary, and ID extraction.
 - More consistent CSV header names for all summary statistics, and sequence ID map.
 
-## v0.20.2
+## v0.20.2 - 2024-02-05
 
 - Fix CI issues.
 
-## v0.20.1
+## v0.20.1 - 2024-02-05
 
 - Fix empty result when summarizing a single contig file.
 - Fix CI issues.
 
-## v0.20.0
+## v0.20.0 - 2024-01-20
 
 - ID parsing result is now in a directory consistent with other subcommands.
 
-## v0.19.2
+## v0.19.2 - 2023-07-09
 
 - Fix CI issues.
 
-## v0.19.1
+## v0.19.1 - 2023-07-08
 
 - Fix CI issue when building windows binary.
 
-## v0.19.0
+## v0.19.0 - 2023-07-08
 
 New features:
 
@@ -270,12 +277,12 @@ Bug fixes:
 - Update deprecated dependencies.
 - Fix extract output issues.
 
-## v0.18.1
+## v0.18.1 - 2022-09-21
 
 - Fix colored terminal dependency deprecation issues.
 - Fix inconsistent header alignment when printing summary statistics to the terminal.
 
-## v0.18.0
+## v0.18.0 - 2022-08-03
 
 New features:
 
@@ -288,7 +295,7 @@ Bug Fixes:
 - Fix compiling issues.
 - Fix command conflicts when using the option `remove-re-all`.
 
-## v0.17.0
+## v0.17.0 - 2022-07-01
 
 New Features:
 
@@ -308,20 +315,20 @@ Bug Fixes:
 - Fix command conflict errors.
 - Make output name consistent with subcommand name for statistics function.
 
-## v0.16.3
+## v0.16.3 - 2022-03-10
 
 - Fix output option show up when it does not use by the partition subcommand.
 - Fix unclear error messages when failing to infer partition based on the file extension.
 
-## v0.16.2
+## v0.16.2 - 2022-03-09
 
 - Fix version number errors.
 
-## v0.16.1
+## v0.16.1 - 2022-03-09
 
 - Fix conflicting short commands.
 
-## v0.16.0
+## v0.16.0 - 2022-03-09
 
 - New feature to convert partition formats.
 - Now, can parse codon partition.
@@ -329,106 +336,106 @@ Bug Fixes:
 - Fix incorrect data type in raxml partition when the input is amino acid sequences.
 - Clearer command help output (now use [clap](https://docs.rs/clap/latest/clap/) v3).
 
-## v0.15.0
+## v0.15.0 - 2022-03-07
 
 - Add an overwriting flag to all subcommands to allow overwriting existing output files or directories.
 - Fix typos in error messages.
 - Check sequences for duplicate IDs are the same. Let users know in the error messages.
 
-## v0.14.0
+## v0.14.0 - 2022-03-05
 
 - Add support for RaXML partition that does not contain datatype.
 - Add an option to prefix output filename when splitting alignments.
 - Replace dot with underscore in the partition locus name.
 - Print partition information when splitting alignments.
 
-## v0.13.1
+## v0.13.1 - 2022-03-02
 
 - Fix issues including empty sequences in split alignments.
 - Fix unmatched number of character counts in nexus and phylip output when splitting alignments.
 
-## v0.13.0
+## v0.13.0 - 2022-03-02
 
 - Fix errors in the nexus output datatype for amino acid sequence.
 - Add a feature to split alignment given partition information.
 
-## v0.12.0
+## v0.12.0 - 2022-02-14
 
 - Add taxon summary to the summary stats feature.
 - Summary stats now write the csv output files to a directory.
 - Allow to add prefix for summary stats csv output files.
 - Fix spaces issue in showing filtering parameters in the log output.
 
-## v0.11.2
+## v0.11.2 - 2022-02-10
 
 - Fix confusing input name in the terminal output.
 - Improve fasta parsing performance.
 - Fix issues when the app keeps processing when no alignments left after filtering.
 
-## v0.11.1
+## v0.11.1 - 2021-12-29
 
 - Fix file count formatting for sequence extraction terminal output.
 - Fix outdated error messages.
 
-## v0.11.0
+## v0.11.0 - 2021-12-28
 
 - Add feature to map sample distribution across a collection of alignments.
 - Dir and file exist prompts now show the file names.
 - Simplify input option. Wildcard option is now a part of input option.
 - Print output format.
 
-## v0.10.1
+## v0.10.1 - 2021-12-22
 
 - Fix spinner messages.
 - Fix dry-run terminal output.
 
-## v0.10.0
+## v0.10.0 - 2021-12-21
 
 - Add feature to batch renaming sequence IDs.
 
-## v0.9.1
+## v0.9.1 - 2021-11-29
 
 - Fix missing file extension issues when converting multiple sequences
 
-## v0.9.0
+## v0.9.0 - 2021-11-29
 
 - Add a DNA to Amino Acid translation feature.
 
-## v0.8.6
+## v0.8.6 - 2021-11-03
 
 - Fix inconsistent DNA character ordering when using a single input for summary statistics.
 
-## v0.8.5
+## v0.8.5 - 2021-10-31
 
 - Fix missing wildcard options for filter and id subcommands.
 
-## v0.8.4
+## v0.8.4 - 2021-09-15
 
 - Fix errors in displaying proportion of parsimony informative sites for a single file input.
 
-## v0.8.3
+## v0.8.3 - 2021-09-03
 
 - Minor performance improvement for sequence extraction.
 - Fix multiple newlines after spinners when using ID subcommands.
 
-## v0.8.2
+## v0.8.2 - 2021-08-24
 
 - Fix wrong help messages in the extract command arguments.
 - Shows output directory in the stdout after extracting sequences.
 
-## v0.8.1
+## v0.8.1 - 2021-08-23
 
 - Fix issues missing summary subcommands.
 
-## v0.8.0
+## v0.8.0 - 2021-08-22
 
 - Add new feature to extract sequence file based on user-defined IDs.
 
-## v0.7.1
+## v0.7.1 - 2021-08-12
 
 - Fix version unmatched version numbers.
 
-## v0.7.0
+## v0.7.0 - 2021-08-11
 
 - Add spinner for converting a single file.
 - Output names for concatenating filtered sequences is now default to the directory name with parameters as suffixes.
@@ -437,99 +444,99 @@ Bug Fixes:
 - Help info now shows the type of values required for the arguments.
 - Fix typos in panic messages.
 
-## v0.6.6
+## v0.6.6 - 2021-08-08
 
 - Try to fix Windows CI issues.
 
-## v0.6.5
+## v0.6.5 - 2021-08-08
 
 - Fix CI issues
 
-## v0.6.4
+## v0.6.4 - 2021-08-08
 
 - Update release rules.
 
-## v0.6.3
+## v0.6.3 - 2021-08-08
 
 - CI release changes.
 
-## v0.6.2
+## v0.6.2 - 2021-08-08
 
 - Clearer terminal messages.
 
-## v0.6.1
+## v0.6.1 - 2021-08-08
 
 - Fix CI token access.
 
-## v0.6.0
+## v0.6.0 - 2021-08-08
 
 - Add support for percent parsimony informative.
 
-## v0.5.0
+## v0.5.0 - 2021-08-05
 
 - Allow to specify both the directory and file name for concatenating alignments.
 - Clearer prompt messages.
 - More consistent letter cases and spacing for spinner.
 - Concat filtered alignment now default to nexus. No need to specify.
 
-## v0.4.0
+## v0.4.0 - 2021-08-04
 
 - Avoid overwriting existing files or directory. Now, ask user to remove or abort.
 - Concatenate results now in a directory.
 - Better error handling
 - Fix stack overflow when getting unique ids.
 
-## v0.3.16
+## v0.3.16 - 2021-08-03
 
 - Change panic implementation to C-style abort.
 - Fix issues with too many redundant error messages when panic occurs in multi-threading tasks.
 
-## v0.3.15
+## v0.3.15 - 2021-08-02
 
 - Print data type in the input information.
 
-## v0.3.14
+## v0.3.14 - 2021-08-02
 
 - Fix another CI issue.
 
-## v0.3.13
+## v0.3.13 - 2021-08-02
 
 - Update release steps.
 
-## v0.3.12
+## v0.3.12 - 2021-08-02
 
 - CI fix with newer container.
 
-## v0.3.11
+## v0.3.11 - 2021-08-02
 
 - Add support for older linux.
 
-## v0.3.10
+## v0.3.10 - 2021-08-02
 
 - Change CI implementation.
 
-## v0.3.9
+## v0.3.9 - 2021-08-02
 
 - Fix CI errors.
 
-## v0.3.8
+## v0.3.8 - 2021-08-02
 
 - More consistent error messages for the filter subcommand.
 
-## v0.3.7
+## v0.3.7 - 2021-08-02
 
 - Better error handling.
 
-## v0.3.6
+## v0.3.6 - 2021-08-02
 
 - Fix issues when concatenating filtered alignments. Now, enforce users to input required arguments.
 
-## v0.3.5
+## v0.3.5 - 2021-08-01
 
 - Change option "format" to "input-format" for consistency with "output-format".
 - Fix missing a new line after spinner message in converting sequences in a directory.
 
-## v0.3.4
+## v0.3.4 - 2021-08-01
 
 - Fix wildcard issues on windows.
 
@@ -537,15 +544,15 @@ Bug Fixes:
 
 - Fix issue with summary printing.
 
-## v0.3.2
+## v0.3.2 - 2021-07-31
 
 - Fix error prematurely writing a log file.
 
-## v0.3.1
+## v0.3.1 - 2021-07-30
 
 - Fix welcome screen showing up when checking the app version.
 
-## v0.3.0
+## v0.3.0 - 2021-07-30
 
 - Add new features: alignment filtering, id finding, and summary statistics.
 - More consistent terminal output.
@@ -553,7 +560,7 @@ Bug Fixes:
 - Faster parser.
 - Improvement in memory allocation.
 
-## v0.2.0
+## v0.2.0 - 2021-06-24
 
 - Add support for interleaved outputs.
 
