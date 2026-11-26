@@ -7,7 +7,6 @@ use std::{
 };
 
 use colored::Colorize;
-use indexmap::IndexMap;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -182,21 +181,18 @@ impl<'a> AlignmentTrimming<'a> {
         }
     }
 
-    fn generate_new_matrix(&self, matrix: &SeqMatrix, site_pos: Vec<usize>) -> SeqMatrix {
-        let mut new_matrix: SeqMatrix = IndexMap::new();
-        // Iterate over the columns of the matrix
-        matrix.iter().for_each(|(k, v)| {
-            let new_row = v
-                .bytes()
-                .enumerate()
-                .filter(|(i, _)| site_pos.contains(i))
-                .map(|(_, b)| b)
-                .collect::<Vec<u8>>();
-            new_matrix.insert(
-                k.clone(),
-                String::from_utf8(new_row).expect("Invalid UTF-8"),
-            );
-        });
+    fn generate_new_matrix(&self, matrix: &SeqMatrix, mut site_pos: Vec<usize>) -> SeqMatrix {
+        site_pos.sort_unstable();
+        let mut new_matrix = SeqMatrix::with_capacity(matrix.len(), matrix.len() * site_pos.len());
+        for (k, seq) in matrix.iter() {
+            new_matrix.push_with(k.clone(), |buf| {
+                for &pos in &site_pos {
+                    if let Some(&b) = seq.get(pos) {
+                        buf.push(b);
+                    }
+                }
+            });
+        }
 
         new_matrix
     }

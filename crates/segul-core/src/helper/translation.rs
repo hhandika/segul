@@ -41,6 +41,166 @@
 use ahash::AHashMap as HashMap;
 use lazy_static::lazy_static;
 
+use crate::helper::types::GeneticCodes;
+
+/// Direct 64-entry codon lookup table indexed by `(b0 << 4) | (b1 << 2) | b2`,
+/// where `A/a = 0`, `C/c = 1`, `G/g = 2`, `T/t = 3`.
+pub type CodonTable = [u8; 64];
+
+const INVALID_BASE: u8 = 0xFF;
+
+const BASE_2BIT: [u8; 256] = {
+    let mut table = [INVALID_BASE; 256];
+    table[b'A' as usize] = 0;
+    table[b'a' as usize] = 0;
+    table[b'C' as usize] = 1;
+    table[b'c' as usize] = 1;
+    table[b'G' as usize] = 2;
+    table[b'g' as usize] = 2;
+    table[b'T' as usize] = 3;
+    table[b't' as usize] = 3;
+    table
+};
+
+const fn encode_codon(c: &[u8]) -> Option<usize> {
+    if c.len() != 3 {
+        return None;
+    }
+    let b0 = BASE_2BIT[c[0] as usize];
+    let b1 = BASE_2BIT[c[1] as usize];
+    let b2 = BASE_2BIT[c[2] as usize];
+    if b0 < 4 && b1 < 4 && b2 < 4 {
+        Some(((b0 as usize) << 4) | ((b1 as usize) << 2) | (b2 as usize))
+    } else {
+        None
+    }
+}
+
+const fn build_codon_table(overrides: &[(&[u8; 3], u8)]) -> CodonTable {
+    let mut table = [b'X'; 64];
+    let mut i = 0;
+    while i < STD_CODE.len() {
+        let (codon, aa) = STD_CODE[i];
+        if let Some(idx) = encode_codon(codon.as_bytes()) {
+            table[idx] = aa.as_bytes()[0];
+        }
+        i += 1;
+    }
+    let mut j = 0;
+    while j < overrides.len() {
+        let (codon, aa) = overrides[j];
+        if let Some(idx) = encode_codon(codon) {
+            table[idx] = aa;
+        }
+        j += 1;
+    }
+    table
+}
+
+/// Return the compile-time 64-entry byte lookup table for `code`.
+pub const fn codon_table(code: GeneticCodes) -> CodonTable {
+    match code {
+        GeneticCodes::StandardCode | GeneticCodes::BacArchPlantPlast => build_codon_table(&[]),
+        GeneticCodes::VertMtDna => build_codon_table(&[
+            (b"AGA", b'*'),
+            (b"AGG", b'*'),
+            (b"ATA", b'M'),
+            (b"TGA", b'W'),
+        ]),
+        GeneticCodes::YeastMtDna => build_codon_table(&[
+            (b"ATA", b'M'),
+            (b"CTT", b'T'),
+            (b"CTC", b'T'),
+            (b"CTA", b'T'),
+            (b"CTG", b'T'),
+            (b"TGA", b'W'),
+        ]),
+        GeneticCodes::MoldProtCoelMtDna => build_codon_table(&[(b"TGA", b'W')]),
+        GeneticCodes::InvertMtDna => build_codon_table(&[
+            (b"AGA", b'S'),
+            (b"AGG", b'S'),
+            (b"ATA", b'M'),
+            (b"TGA", b'W'),
+        ]),
+        GeneticCodes::CilDasHexNu => build_codon_table(&[(b"TAA", b'Q'), (b"TAG", b'Q')]),
+        GeneticCodes::EchiFlatwormMtDna => build_codon_table(&[
+            (b"AAA", b'N'),
+            (b"AGA", b'S'),
+            (b"AGG", b'S'),
+            (b"TGA", b'W'),
+        ]),
+        GeneticCodes::EuplotidNu => build_codon_table(&[(b"TGA", b'C')]),
+        GeneticCodes::AltYeastNu => build_codon_table(&[(b"CTG", b'S')]),
+        GeneticCodes::AsciMtDna => build_codon_table(&[
+            (b"AGA", b'G'),
+            (b"AGG", b'G'),
+            (b"ATA", b'M'),
+            (b"TGA", b'W'),
+        ]),
+        GeneticCodes::AltFlatwormMtDna => build_codon_table(&[
+            (b"AAA", b'N'),
+            (b"AGA", b'S'),
+            (b"AGG", b'S'),
+            (b"TAA", b'Y'),
+            (b"TGA", b'W'),
+        ]),
+        GeneticCodes::ChlorMtDna => build_codon_table(&[(b"TAG", b'L')]),
+        GeneticCodes::TrematodeMtDna => build_codon_table(&[
+            (b"TGA", b'W'),
+            (b"ATA", b'M'),
+            (b"AGA", b'S'),
+            (b"AGG", b'S'),
+            (b"AAA", b'N'),
+        ]),
+        GeneticCodes::ScenedesmusMtDna => build_codon_table(&[(b"TCA", b'*'), (b"TAG", b'L')]),
+        GeneticCodes::ThrausMtDna => build_codon_table(&[(b"TTA", b'*')]),
+        GeneticCodes::RhabdopMtDna => {
+            build_codon_table(&[(b"AGA", b'S'), (b"AGG", b'K'), (b"TGA", b'W')])
+        }
+        GeneticCodes::CaDivSR1GraciBac => build_codon_table(&[(b"TGA", b'G')]),
+        GeneticCodes::PachyNu => build_codon_table(&[(b"CTG", b'A')]),
+        GeneticCodes::MesodiniumNu => build_codon_table(&[(b"TAA", b'Y'), (b"TAG", b'Y')]),
+        GeneticCodes::PeritrichNu => build_codon_table(&[(b"TAA", b'E'), (b"TAG", b'E')]),
+        GeneticCodes::CephalodiscidaeMtDna => build_codon_table(&[
+            (b"TAA", b'Y'),
+            (b"TGA", b'W'),
+            (b"AGA", b'S'),
+            (b"AGG", b'K'),
+        ]),
+    }
+}
+
+/// Translate nucleotide sequence bytes into amino acid bytes using `table`,
+/// starting at 1-based reading `frame` and appending into `out`.
+#[inline]
+pub fn translate_bytes(seq: &[u8], frame: usize, table: &CodonTable, out: &mut Vec<u8>) {
+    let offset = frame.saturating_sub(1).min(seq.len());
+    let slice = &seq[offset..];
+    out.reserve(slice.len().div_ceil(3));
+    for chunk in slice.chunks(3) {
+        if chunk.len() < 3 {
+            out.push(b'X');
+            continue;
+        }
+        let aa = match chunk {
+            [b'-', b'-', b'-'] => b'-',
+            [b'?', b'?', b'?'] => b'?',
+            [b0, b1, b2] => {
+                let i0 = BASE_2BIT[*b0 as usize];
+                let i1 = BASE_2BIT[*b1 as usize];
+                let i2 = BASE_2BIT[*b2 as usize];
+                if (i0 | i1 | i2) < 4 {
+                    table[((i0 as usize) << 4) | ((i1 as usize) << 2) | (i2 as usize)]
+                } else {
+                    b'X'
+                }
+            }
+            _ => unreachable!(),
+        };
+        out.push(aa);
+    }
+}
+
 lazy_static! {
     /// A version of lazyly initialized of standard translation code.
     /// It may provide better performance than the `NcbiTables::standard_code()` method.
@@ -448,5 +608,77 @@ impl NcbiTables<'_> {
             };
         });
         code
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn codon_tables_match_ncbi_tables_exhaustively() {
+        let tables = NcbiTables::new();
+        let variants = [
+            (GeneticCodes::StandardCode, tables.standard_code()),
+            (GeneticCodes::VertMtDna, tables.vert_mtdna()),
+            (GeneticCodes::YeastMtDna, tables.yeast_mtdna()),
+            (GeneticCodes::MoldProtCoelMtDna, tables.moldprotocoe_mtdna()),
+            (GeneticCodes::InvertMtDna, tables.invert_mtdna()),
+            (GeneticCodes::CilDasHexNu, tables.cildashex_nudna()),
+            (GeneticCodes::EchiFlatwormMtDna, tables.echiflatworm_mtdna()),
+            (GeneticCodes::EuplotidNu, tables.euplotid_nudna()),
+            (GeneticCodes::BacArchPlantPlast, tables.standard_code()),
+            (GeneticCodes::AltYeastNu, tables.alt_yeast_nu()),
+            (GeneticCodes::AsciMtDna, tables.ascidian_mtdna()),
+            (GeneticCodes::AltFlatwormMtDna, tables.alt_flatworm_mtdna()),
+            (GeneticCodes::ChlorMtDna, tables.chlorophycean_mtdna()),
+            (GeneticCodes::TrematodeMtDna, tables.trematode_mtdna()),
+            (GeneticCodes::ScenedesmusMtDna, tables.scenedesmus_mtdna()),
+            (GeneticCodes::ThrausMtDna, tables.thraustochytrium_mtdna()),
+            (GeneticCodes::RhabdopMtDna, tables.rhabdopleuridae_mtdna()),
+            (
+                GeneticCodes::CaDivSR1GraciBac,
+                tables.candid_div_sr1_gracil(),
+            ),
+            (GeneticCodes::PachyNu, tables.pachysolen_tanno_nu()),
+            (GeneticCodes::MesodiniumNu, tables.mesodinium_nu()),
+            (GeneticCodes::PeritrichNu, tables.peritrich_nu()),
+            (
+                GeneticCodes::CephalodiscidaeMtDna,
+                tables.cephalodiscidae_mtdna(),
+            ),
+        ];
+
+        let bases = *b"ACGT";
+        for (code, legacy) in variants {
+            let table = codon_table(code);
+            let mut out = Vec::new();
+            for &b0 in &bases {
+                for &b1 in &bases {
+                    for &b2 in &bases {
+                        let codon = [b0, b1, b2];
+                        let codon_str = std::str::from_utf8(&codon).unwrap();
+                        let expected = legacy.get(codon_str).unwrap().as_bytes()[0];
+                        out.clear();
+                        translate_bytes(&codon, 1, &table, &mut out);
+                        assert_eq!(out, vec![expected], "{code:?} codon {codon_str}");
+
+                        let lower = [
+                            b0.to_ascii_lowercase(),
+                            b1.to_ascii_lowercase(),
+                            b2.to_ascii_lowercase(),
+                        ];
+                        out.clear();
+                        translate_bytes(&lower, 1, &table, &mut out);
+                        assert_eq!(out, vec![expected], "{code:?} lower {codon_str}");
+                    }
+                }
+            }
+            for (special, expected) in [(b"---", b'-'), (b"???", b'?'), (b"NNN", b'X')] {
+                out.clear();
+                translate_bytes(special, 1, &table, &mut out);
+                assert_eq!(out, vec![expected], "{code:?} special");
+            }
+        }
     }
 }

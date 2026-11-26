@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
 use colored::Colorize;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::core::align::concat::AlignmentConcatenation;
@@ -246,10 +246,8 @@ impl<'a> AlignmentFiltering<'a> {
     }
 
     fn count_missing_data(&self, matrix: &SeqMatrix) -> usize {
-        matrix
-            .iter()
-            .map(|(_, seq)| seq.bytes().filter(|&c| c == b'-' || c == b'?').count())
-            .sum()
+        let bytes = matrix.as_bytes();
+        bytecount::count(bytes, b'-') + bytecount::count(bytes, b'?')
     }
 
     fn get_pars_inf(&self, file: &Path) -> usize {
@@ -271,7 +269,7 @@ impl<'a> AlignmentFiltering<'a> {
         header
     }
 
-    fn get_alignment(&self, file: &Path) -> (IndexMap<String, String>, Header) {
+    fn get_alignment(&self, file: &Path) -> (SeqMatrix, Header) {
         let aln = SeqParser::new(file, self.datatype);
         aln.get_alignment(self.input_fmt)
     }

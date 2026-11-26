@@ -29,8 +29,14 @@ Bug Fixes:
 - Automatic reading frame detection accepts the stop codon at the end of a complete coding sequence, including before a partial codon, gaps, or missing data, instead of picking another frame or failing.
 - `segul align split` now extracts merged and strided partitions in ascending alignment column order and validates site bounds against alignment length before writing output files.
 
+Performance:
+
+- Sequence parsing, writing, concatenation, splitting, trimming, translation, and alignment/contig summaries now operate on contiguous raw bytes instead of per-sequence `String`s, reducing memory usage and speeding up large and multi-locus runs.
+- `segul sequence id --map` reads only taxon IDs instead of loading full sequence data.
+
 Library Changes:
 
+- Added byte-slice helpers for alphabet validation, distance encoding, translation (`codon_table`, `translate_bytes`), and streaming FASTA reading (`for_each_record`).
 - Added `SiteRange` in `helper::types` and extended `Partition` with `ranges: Vec<SiteRange>`, `model: Option<String>`, and helpers (`from_range`, `from_ranges`, `effective_ranges`, `has_stride`, `max_site`, `sorted_site_positions`, `contiguous_site_runs`).
 - Added fallible `PartitionParser::try_parse`, `PartWriter::try_write_partition`, `PartitionConverter::try_convert`, `AlignmentSplitting::try_split`, and `helper::partition::infer_partition_fmt`.
 - `ReadMetrics` and `SampleReadReport` add error-rate quality, expected-error, complexity, homopolymer, relative-position, length × quality, and FASTQ header metadata fields (all `#[serde(default)]` for compatibility with older `read-report.json` files).
@@ -45,9 +51,11 @@ Breaking Changes:
 - `SummaryMode::Default` is renamed to `SummaryMode::Basic`, and `SummaryMode::default()` now returns `SummaryMode::Complete`. `SummaryMode::from_str` still accepts `"default"` as an alias for `Basic`.
 - The per-sample read summary CSV is written as `read-summary.csv` instead of `default-read-summary.csv`.
 - `ContigSummaryHandler::summarize` and `try_summarize` return `ContigSummaryFiles` instead of the summary path.
+- `SeqMatrix` is now a contiguous byte-backed struct instead of `IndexMap<String, String>`, `FastaReader` returns `Vec<u8>` sequences, and `Sites` counts site patterns case-insensitively.
 
 Migration:
 
+- Update `segul-core` callers reading `SeqMatrix` or `FastaReader` to work with `&[u8]` / `Vec<u8>` and `SeqMatrix` methods (`get`, `iter`, `insert`) instead of `String` / `IndexMap`.
 - Callers expecting `PartitionParser` to collapse codon subsets into a single whole-locus range should read each subset entry directly or combine ranges across subsets explicitly.
 - Replace `SummaryMode::Default` with `SummaryMode::Basic` in Rust callers, and pass `--mode basic` on the CLI if you only want the single CSV without Complete mode outputs.
 - Use `files.summary` for the CSV path and `files.report` for the JSON report.

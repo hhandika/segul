@@ -50,9 +50,15 @@ const AA: &[u8] = b"?-ARNDCQEGHILKMFPSTWYVYXBZJU*.~";
 /// alphabet::check_valid_seq(sample, &datatype, id, &seq);
 ///```
 pub fn check_valid_seq(input: &Path, datatype: &DataType, id: &str, seq: &str) {
+    check_valid_seq_bytes(input, datatype, id, seq.as_bytes());
+}
+
+/// Check for valid DNA or amino acid sequence bytes.
+/// Panic if the sequence is invalid.
+pub fn check_valid_seq_bytes(input: &Path, datatype: &DataType, id: &str, seq: &[u8]) {
     match datatype {
-        DataType::Dna => check_valid_dna(input, id, seq),
-        DataType::Aa => check_valid_aa(input, id, seq),
+        DataType::Dna => check_valid_dna_bytes(input, id, seq),
+        DataType::Aa => check_valid_aa_bytes(input, id, seq),
         DataType::Ignore => (),
     }
 }
@@ -60,7 +66,12 @@ pub fn check_valid_seq(input: &Path, datatype: &DataType, id: &str, seq: &str) {
 /// Check for valid DNA sequence only.
 /// Similar behavior as check_valid_seq().
 pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
-    if !is_valid_dna(dna) {
+    check_valid_dna_bytes(input, id, dna.as_bytes());
+}
+
+/// Check for valid DNA sequence bytes.
+pub fn check_valid_dna_bytes(input: &Path, id: &str, dna: &[u8]) {
+    if !is_valid_dna_bytes(dna) {
         panic!(
             "Ups... The sequence {} in file {} is not a dna sequence. \
             Check whether the sequence is amino acid",
@@ -70,8 +81,8 @@ pub fn check_valid_dna(input: &Path, id: &str, dna: &str) {
     }
 }
 
-fn check_valid_aa(input: &Path, id: &str, aa: &str) {
-    if !is_valid_aa(aa) {
+fn check_valid_aa_bytes(input: &Path, id: &str, aa: &[u8]) {
+    if !is_valid_aa_bytes(aa) {
         panic!(
             "Ups... The sequence {} in file {} is not an amino acid sequence.",
             id,
@@ -96,7 +107,12 @@ fn check_valid_aa(input: &Path, id: &str, aa: &str) {
 /// ```
 // Public for library only. Do not use directly by the Cli app.
 pub fn is_valid_dna(dna: &str) -> bool {
-    is_valid(dna.as_bytes(), &DNA_TABLE)
+    is_valid_dna_bytes(dna.as_bytes())
+}
+
+/// Check for valid DNA sequence bytes.
+pub fn is_valid_dna_bytes(dna: &[u8]) -> bool {
+    is_valid(dna, &DNA_TABLE)
 }
 
 /// Check for valid amino acid sequence.
@@ -114,7 +130,12 @@ pub fn is_valid_dna(dna: &str) -> bool {
 /// ```
 // Public for library only. Do not use directly by the Cli app.
 pub fn is_valid_aa(aa: &str) -> bool {
-    is_valid(aa.as_bytes(), &AA_TABLE)
+    is_valid_aa_bytes(aa.as_bytes())
+}
+
+/// Check for valid amino acid sequence bytes.
+pub fn is_valid_aa_bytes(aa: &[u8]) -> bool {
+    is_valid(aa, &AA_TABLE)
 }
 
 /// Lookup tables of valid bytes, built from `DNA` and `AA`.

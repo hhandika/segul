@@ -2,7 +2,7 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use indicatif::ProgressBar;
 use rayon::prelude::*;
 
@@ -76,7 +76,7 @@ impl<'a> Concat<'a> {
         Self {
             input_fmt,
             datatype,
-            alignment: IndexMap::new(),
+            alignment: SeqMatrix::new(),
             header: Header::new(),
             partition: Vec::new(),
             files,
@@ -87,9 +87,10 @@ impl<'a> Concat<'a> {
     pub fn concat_alignment(&mut self, spin: &ProgressBar) {
         alphanumeric_sort::sort_path_slice(self.files);
         spin.set_message("Indexing alignments...");
-        let id = IDs::new(self.files, self.input_fmt, self.datatype).id_unique();
+        let (id, file_nchars) =
+            IDs::new(self.files, self.input_fmt, self.datatype).id_unique_with_nchars();
         spin.set_message("Concatenating alignments...");
-        self.concat(&id);
+        self.concat(id, &file_nchars);
         self.header.ntax = self.alignment.len();
         self.match_header_datatype();
     }
@@ -97,44 +98,62 @@ impl<'a> Concat<'a> {
     /// Concatenate alignments, without a spinner.
     pub fn concat_alignment_no_spinner(&mut self) {
         alphanumeric_sort::sort_path_slice(self.files);
-        let id = IDs::new(self.files, self.input_fmt, self.datatype).id_unique();
-        self.concat(&id);
+        let (id, file_nchars) =
+            IDs::new(self.files, self.input_fmt, self.datatype).id_unique_with_nchars();
+        self.concat(id, &file_nchars);
         self.header.ntax = self.alignment.len();
         self.match_header_datatype();
     }
 
-    fn concat(&mut self, id: &IndexSet<String>) {
-        // Start with every taxon in ID order,
-        // so each locus appends without looking up the alignment.
-        let mut alignment: SeqMatrix = id.iter().map(|id| (id.clone(), String::new())).collect();
-        let mut nchar = 0;
-        let mut gene_start = 1;
-        let mut partition = Vec::new();
-        // Parse a small batch of files in parallel, then append them in file order.
+    fn concat(&mut self, id: IndexSet<String>, file_nchars: &[usize]) {
+        let ntax = id.len();
+        let total_nchar: usize = file_nchars.iter().sum();
+        let total_bytes = ntax
+            .checked_mul(total_nchar)
+            .expect("Concatenated alignment size overflow");
+        // Pre-fill with `?` once so missing taxa require no per-locus filling.
+        let mut data = vec![b'?'; total_bytes];
+        let mut col_offset = 0usize;
+        let mut gene_start = 1usize;
+        let mut partition = Vec::with_capacity(self.files.len());
+        // Parse a small batch of files in parallel, then copy them in file order.
         // Batching bounds how many parsed alignments are held in memory at once.
         let batch_size = rayon::current_num_threads().max(1) * 2;
-        for files in self.files.chunks(batch_size) {
+        for (files, expected_nchars) in self
+            .files
+            .chunks(batch_size)
+            .zip(file_nchars.chunks(batch_size))
+        {
             let parsed: Vec<(SeqMatrix, Header)> = files
                 .par_iter()
                 .map(|file| self.get_alignment(file))
                 .collect();
-            for (file, (matrix, header)) in files.iter().zip(parsed) {
-                nchar += header.nchar; // increment sequence length using the value from parser
+            for ((file, &expected_nchar), (matrix, header)) in
+                files.iter().zip(expected_nchars).zip(parsed)
+            {
+                assert_eq!(
+                    header.nchar,
+                    expected_nchar,
+                    "Sequence length mismatch in {}",
+                    file.display()
+                );
+                let locus_end = col_offset + header.nchar;
                 let gene_name = self.parse_aln_name(file);
-                let part = self.get_partition(&gene_name, gene_start, nchar);
+                let part = self.get_partition(&gene_name, gene_start, locus_end);
                 partition.push(part);
-                gene_start = nchar + 1;
-                alignment
-                    .iter_mut()
-                    .for_each(|(id, seqs)| match matrix.get(id) {
-                        Some(seq) => seqs.push_str(seq),
-                        None => seqs.extend(std::iter::repeat_n('?', header.nchar)),
-                    });
+                gene_start = locus_end + 1;
+                for (taxon_id, seq) in matrix.iter() {
+                    if let Some(tax_idx) = id.get_index_of(taxon_id) {
+                        let dst_start = tax_idx * total_nchar + col_offset;
+                        data[dst_start..dst_start + header.nchar].copy_from_slice(seq);
+                    }
+                }
+                col_offset = locus_end;
             }
         }
 
-        self.alignment = alignment;
-        self.header.nchar = nchar;
+        self.alignment = SeqMatrix::from_uniform(id, data, total_nchar);
+        self.header.nchar = total_nchar;
         self.partition = partition;
     }
 
@@ -203,8 +222,8 @@ mod test {
         let spin = utils::set_spinner();
         concat.concat_alignment(&spin);
         let abce = concat.alignment.get("ABCE").unwrap();
-        let res = "??????????????gatattagtata";
-        assert_eq!(res, abce);
+        let res = b"??????????????gatattagtata";
+        assert_eq!(res.as_slice(), abce);
     }
 
     #[test]

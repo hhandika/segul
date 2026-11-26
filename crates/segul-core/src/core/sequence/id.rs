@@ -9,9 +9,11 @@ use indexmap::IndexSet;
 use rayon::prelude::*;
 
 use crate::helper::finder::IDs;
-use crate::helper::sequence::SeqParser;
-use crate::helper::types::{DataType, InputFmt};
+use crate::helper::types::{self, DataType, InputFmt};
 use crate::helper::utils;
+use crate::parser::fasta;
+use crate::parser::nexus::Nexus;
+use crate::parser::phylip::Phylip;
 use crate::writer::text::IdWriter;
 
 /// The `Id` struct is used to generate unique IDs
@@ -115,12 +117,24 @@ impl<'a> SequenceID<'a> {
     fn map_id_to_aln(&self, file: &Path, ids: &IndexSet<String>) -> IdRecords {
         let fstem = self.get_aln_name(file);
         let mut rec = IdRecords::new(fstem, ids.len());
-        let (seq, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
+        let file_ids = self.parse_file_ids(file);
         ids.iter().for_each(|id| {
-            let is_id_present = seq.contains_key(id);
-            rec.records.push(is_id_present);
+            rec.records.push(file_ids.contains(id));
         });
         rec
+    }
+
+    fn parse_file_ids(&self, file: &Path) -> IndexSet<String> {
+        let fmt = match self.input_fmt {
+            InputFmt::Auto => types::infer_input_auto(file),
+            other => *other,
+        };
+        match fmt {
+            InputFmt::Fasta => fasta::parse_only_id(file),
+            InputFmt::Nexus => Nexus::new(file, self.datatype).parse_only_id(),
+            InputFmt::Phylip => Phylip::new(file, self.datatype).parse_only_id(),
+            InputFmt::Auto => unreachable!(),
+        }
     }
 
     fn get_aln_name(&self, file: &Path) -> String {

@@ -1,11 +1,11 @@
 //! Extract sequences from a collection of sequence files.
 //!
 //! Support extraction of sequences based on matching IDs or regular expressions.
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use colored::Colorize;
-use indexmap::IndexMap;
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -64,9 +64,24 @@ impl<'a> SequenceExtraction<'a> {
         let file_counts = AtomicUsize::new(0);
         let spin = utils::set_spinner();
         spin.set_message("Extracting sequences with matching IDs...");
+        let compiled_re = match self.opts {
+            SeqExtractionParameters::Regex(re) => {
+                Some(Regex::new(re).expect("Failed capturing nexus commands"))
+            }
+            SeqExtractionParameters::Id(_) => None,
+            SeqExtractionParameters::None => panic!("Please, specify a matching parameter!"),
+        };
+        let id_set: Option<HashSet<&str>> = match self.opts {
+            SeqExtractionParameters::Id(ids) => Some(ids.iter().map(String::as_str).collect()),
+            _ => None,
+        };
         files.par_iter().for_each(|file| {
-            let (seq, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
-            let matrix = self.get_matrix(seq);
+            let (mut matrix, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
+            match (&compiled_re, &id_set) {
+                (Some(re), _) => matrix.retain(|id, _| re.is_match(id)),
+                (_, Some(ids)) => matrix.retain(|id, _| ids.contains(id)),
+                _ => unreachable!(),
+            }
             if !matrix.is_empty() {
                 let header = self.get_header(&matrix);
                 let output_name =
@@ -84,27 +99,23 @@ impl<'a> SequenceExtraction<'a> {
         self.print_output_info(&counts, self.output_dir, self.output_fmt);
     }
 
-    fn get_matrix(&self, matrix: SeqMatrix) -> SeqMatrix {
-        let mut new_matrix: SeqMatrix = IndexMap::new();
+    #[cfg(test)]
+    fn get_matrix(&self, mut matrix: SeqMatrix) -> SeqMatrix {
         match self.opts {
-            SeqExtractionParameters::Regex(re) => matrix.iter().for_each(|(id, seq)| {
-                let matched_id = self.match_id(id, re);
-                if matched_id {
-                    new_matrix.insert(id.to_string(), seq.to_string());
-                }
-            }),
-            SeqExtractionParameters::Id(ids) => matrix.iter().for_each(|(id, seq)| {
-                ids.iter().for_each(|match_id| {
-                    if match_id == id {
-                        new_matrix.insert(id.to_string(), seq.to_string());
-                    }
-                })
-            }),
+            SeqExtractionParameters::Regex(re) => {
+                let re = Regex::new(re).expect("Failed capturing nexus commands");
+                matrix.retain(|id, _| re.is_match(id));
+            }
+            SeqExtractionParameters::Id(ids) => {
+                let id_set: HashSet<&str> = ids.iter().map(String::as_str).collect();
+                matrix.retain(|id, _| id_set.contains(id));
+            }
             SeqExtractionParameters::None => panic!("Please, specify a matching parameter!"),
-        };
-        new_matrix
+        }
+        matrix
     }
 
+    #[cfg(test)]
     fn match_id(&self, id: &str, re: &str) -> bool {
         let re = Regex::new(re).expect("Failed capturing nexus commands");
         re.is_match(id)

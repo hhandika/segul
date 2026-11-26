@@ -5,15 +5,13 @@ use std::io::prelude::*;
 use std::path::Path;
 
 use colored::Colorize;
-use indexmap::{IndexMap, IndexSet};
-use lazy_static::lazy_static;
+use indexmap::IndexSet;
 use nom::{IResult, Parser, bytes::complete, character, sequence};
-use regex::Regex;
 
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
 use crate::helper::types::{DataType, Header, SeqMatrix};
-use crate::parser;
+use crate::parser::{self, InterleavedMatrixBuilder};
 
 /// Parse a nexus file and return a sequence matrix.
 pub struct Nexus<'a> {
@@ -29,7 +27,7 @@ impl<'a> Nexus<'a> {
         Self {
             input,
             datatype,
-            matrix: IndexMap::new(),
+            matrix: SeqMatrix::new(),
             header: Header::new(),
             interleave: false,
         }
@@ -50,6 +48,12 @@ impl<'a> Nexus<'a> {
         ids
     }
 
+    #[cfg(feature = "align")]
+    pub(crate) fn parse_id_and_nchar(&mut self) -> (IndexSet<String>, usize) {
+        let ids = self.parse_only_id();
+        (ids, self.header.nchar)
+    }
+
     /// Stream the file line by line. Header commands are buffered
     /// until their terminating semicolon (they are small),
     /// matrix lines are inserted directly into the matrix
@@ -58,7 +62,7 @@ impl<'a> Nexus<'a> {
     /// and the IDs are returned instead.
     fn read_matrix(&mut self, only_id: bool) -> IndexSet<String> {
         let file = File::open(self.input).expect("Failed opening nexus file");
-        let mut reader = BufReader::new(file);
+        let mut reader = BufReader::with_capacity(parser::IO_BUF_SIZE, file);
         let mut line = Vec::new();
         reader
             .read_until(b'\n', &mut line)
@@ -68,6 +72,7 @@ impl<'a> Nexus<'a> {
         let mut ids = IndexSet::new();
         let mut command = String::new();
         let mut in_matrix = false;
+        let mut interleaved: Option<InterleavedMatrixBuilder> = None;
         loop {
             line.clear();
             let bytes = reader
@@ -76,17 +81,46 @@ impl<'a> Nexus<'a> {
             if bytes == 0 {
                 break;
             }
-            let text = self.line_to_str(&line);
             let done = if in_matrix {
-                self.read_matrix_line(text, only_id, &mut ids)
+                self.read_matrix_bytes(&line, only_id, &mut ids, interleaved.as_mut())
             } else {
+                let text = self.line_to_str(&line);
                 in_matrix = self.read_header_line(text, &mut command);
-                // Data that follows the matrix command on the same line.
-                in_matrix && self.read_matrix_line(&command, only_id, &mut ids)
+                if in_matrix {
+                    if !only_id {
+                        if self.interleave {
+                            interleaved = Some(InterleavedMatrixBuilder::new(
+                                self.header.ntax,
+                                self.header.nchar,
+                            ));
+                        } else {
+                            self.matrix.reserve(self.header.ntax);
+                            self.matrix.reserve_bytes(
+                                self.header
+                                    .ntax
+                                    .saturating_mul(self.header.nchar)
+                                    .min(parser::MAX_RESERVE),
+                            );
+                        }
+                    }
+                    // Data that follows the matrix command on the same line.
+                    self.read_matrix_bytes(
+                        command.as_bytes(),
+                        only_id,
+                        &mut ids,
+                        interleaved.as_mut(),
+                    )
+                } else {
+                    false
+                }
             };
             if done {
                 break;
             }
+        }
+
+        if let Some(builder) = interleaved {
+            self.matrix = builder.into_matrix();
         }
 
         ids
@@ -121,7 +155,6 @@ impl<'a> Nexus<'a> {
         let trimmed = command.trim_start();
         let data = trimmed["matrix".len()..].to_string();
         *command = data;
-        self.matrix.reserve(self.header.ntax);
     }
 
     fn parse_command(&mut self, command: &str) {
@@ -138,25 +171,32 @@ impl<'a> Nexus<'a> {
         }
     }
 
-    /// Parse a matrix line. Returns true when the matrix ends
+    /// Parse a matrix line as raw bytes. Returns true when the matrix ends
     /// or, for ID-only parsing, when IDs start repeating.
-    fn read_matrix_line(&mut self, text: &str, only_id: bool, ids: &mut IndexSet<String>) -> bool {
-        let (data, end) = match text.find(';') {
-            Some(pos) => (&text[..pos], true),
-            None => (text, false),
+    fn read_matrix_bytes(
+        &mut self,
+        line: &[u8],
+        only_id: bool,
+        ids: &mut IndexSet<String>,
+        interleaved: Option<&mut InterleavedMatrixBuilder>,
+    ) -> bool {
+        let (data, end) = match line.iter().position(|&b| b == b';') {
+            Some(pos) => (&line[..pos], true),
+            None => (line, false),
         };
-        if let Some((id, seq)) = parser::split_id_seq(data) {
+        if let Some((id_bytes, seq_bytes)) = parser::split_id_seq(data) {
+            let id = self.line_to_str(id_bytes);
             if only_id {
                 if ids.contains(id) {
                     return true;
                 }
                 ids.insert(id.to_string());
             } else {
-                alphabet::check_valid_seq(self.input, self.datatype, id, seq);
-                if self.interleave {
-                    self.insert_matrix_interleave(id, seq);
+                alphabet::check_valid_seq_bytes(self.input, self.datatype, id, seq_bytes);
+                if let Some(builder) = interleaved {
+                    builder.append_by_id(id, seq_bytes);
                 } else {
-                    parser::insert_matrix!(self, id, seq);
+                    parser::insert_matrix!(self, id, seq_bytes);
                 }
             }
         }
@@ -190,19 +230,6 @@ impl<'a> Nexus<'a> {
             token if token.starts_with("interleave") => self.parse_interleave(format),
             _ => (),
         });
-    }
-
-    fn insert_matrix_interleave(&mut self, id: &str, seq: &str) {
-        match self.matrix.get_mut(id) {
-            Some(value) => value.push_str(seq),
-            None => {
-                // Reserve the full length upfront to avoid
-                // growing (and over-allocating) the string.
-                let mut value = String::with_capacity(self.header.nchar.min(parser::MAX_RESERVE));
-                value.push_str(seq);
-                self.matrix.insert(id.to_string(), value);
-            }
-        }
     }
 
     fn parse_interleave(&mut self, tokens: &str) {
@@ -319,14 +346,11 @@ fn parse_header_tokens(command: &str) -> Vec<String> {
 }
 
 fn get_commands(text: &str) -> String {
-    lazy_static! { // Match the first word in the block
-        static ref RE: Regex = Regex::new(r"^(\w+)").expect("Failed capturing nexus commands");
-    }
-
-    match RE.captures(text) {
-        Some(word) => word[0].to_lowercase(),
-        None => String::from(""),
-    }
+    let end = text
+        .bytes()
+        .take_while(|b| b.is_ascii_alphanumeric() || *b == b'_')
+        .count();
+    text[..end].to_ascii_lowercase()
 }
 
 #[cfg(test)]
@@ -425,9 +449,7 @@ mod test {
         let sample = Path::new("tests/files/tabulated.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
-        let key = String::from("ABEF");
-        let res = String::from("gatata---");
-        assert_eq!(Some(&res), nex.matrix.get(&key));
+        assert_eq!(Some(b"gatata---".as_slice()), nex.matrix.get("ABEF"));
     }
 
     #[test]
@@ -443,9 +465,7 @@ mod test {
         let sample = Path::new("tests/files/interleave.nex");
         let mut nex = Nexus::new(sample, &DNA);
         nex.parse();
-        let key = String::from("ABCD");
-        let res = String::from("gatatagatatt");
-        assert_eq!(Some(&res), nex.matrix.get(&key));
+        assert_eq!(Some(b"gatatagatatt".as_slice()), nex.matrix.get("ABCD"));
     }
 
     #[test]
@@ -453,9 +473,7 @@ mod test {
         let sample = Path::new("tests/files/simple_aa.nex");
         let mut nex = Nexus::new(sample, &AA);
         nex.parse();
-        let key = String::from("ABCE");
-        let res = String::from("MAYPMQLGFQDATSPI");
-        assert_eq!(Some(&res), nex.matrix.get(&key));
+        assert_eq!(Some(b"MAYPMQLGFQDATSPI".as_slice()), nex.matrix.get("ABCE"));
     }
 
     #[test]
@@ -483,5 +501,21 @@ mod test {
     fn test_regex_command() {
         let text = "Matrix\n ABCD AGTC";
         assert_eq!(String::from("matrix"), get_commands(text));
+    }
+
+    #[test]
+    #[should_panic(expected = "NCHAR value in the header does not match")]
+    fn test_nexus_interleave_overflow_nchar_panics() {
+        let dir = tempfile::TempDir::with_prefix("nex_oob").unwrap();
+        let path = dir.path().join("oob.nex");
+        std::fs::write(
+            &path,
+            "#NEXUS\nbegin data;\ndimensions ntax=2 nchar=4;\n\
+             format datatype=dna missing=? gap=- interleave;\nmatrix\n\
+             A ACGT\nB ACGT\n\nA TT\nB TT\n;\nend;\n",
+        )
+        .unwrap();
+        let mut nex = Nexus::new(&path, &DNA);
+        nex.parse();
     }
 }

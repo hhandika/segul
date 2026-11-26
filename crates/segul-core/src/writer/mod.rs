@@ -33,7 +33,7 @@ trait FileWriter {
         create_parent_directory(path)?;
         let file = OpenOptions::new().write(true).create_new(true).open(path);
         match file {
-            Ok(writer) => Ok(BufWriter::new(writer)),
+            Ok(writer) => Ok(BufWriter::with_capacity(64 * 1024, writer)),
             Err(error) => panic!("Failed writing to {}: {}", path.display(), error),
         }
     }
@@ -55,7 +55,7 @@ trait FileWriter {
         create_parent_directory(path)?;
         let file = OpenOptions::new().append(true).create(true).open(path);
         match file {
-            Ok(writer) => Ok(BufWriter::new(writer)),
+            Ok(writer) => Ok(BufWriter::with_capacity(64 * 1024, writer)),
             Err(error) => panic!("Failed appending to {}: {}", path.display(), error),
         }
     }

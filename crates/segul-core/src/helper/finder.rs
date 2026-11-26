@@ -457,6 +457,38 @@ impl<'a> IDs<'a> {
         self.filter_unique(&all_ids)
     }
 
+    /// Parse unique IDs across files in file order along with each file's `nchar`.
+    #[cfg(feature = "align")]
+    pub(crate) fn id_unique_with_nchars(&self) -> (IndexSet<String>, Vec<usize>) {
+        let per_file: Vec<(IndexSet<String>, usize)> = self
+            .files
+            .par_iter()
+            .map(|file| {
+                let fmt = match self.input_fmt {
+                    InputFmt::Auto => types::infer_input_auto(file),
+                    other => *other,
+                };
+                match fmt {
+                    InputFmt::Fasta => fasta::parse_id_and_nchar(file),
+                    InputFmt::Nexus => Nexus::new(file, self.datatype).parse_id_and_nchar(),
+                    InputFmt::Phylip => Phylip::new(file, self.datatype).parse_id_and_nchar(),
+                    InputFmt::Auto => unreachable!(),
+                }
+            })
+            .collect();
+        let mut unique = IndexSet::new();
+        let mut nchars = Vec::with_capacity(per_file.len());
+        for (ids, nchar) in per_file {
+            nchars.push(nchar);
+            for val in ids {
+                if !unique.contains(&val) {
+                    unique.insert(val);
+                }
+            }
+        }
+        (unique, nchars)
+    }
+
     fn filter_unique(&self, all_ids: &[IndexSet<String>]) -> IndexSet<String> {
         let mut id = IndexSet::new();
         all_ids.iter().for_each(|ids| {

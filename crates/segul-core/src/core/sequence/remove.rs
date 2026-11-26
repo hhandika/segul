@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use colored::Colorize;
@@ -90,8 +91,8 @@ impl<'a> SequenceRemoval<'a> {
 
     fn remove_sequence(&self, fpath: &Path, ids: &[String]) -> (SeqMatrix, Header) {
         let (mut matrix, header) = SeqParser::new(fpath, self.datatype).parse(self.input_fmt);
-        ids.iter()
-            .for_each(|id| if matrix.shift_remove(id).is_some() {});
+        let id_set: HashSet<&str> = ids.iter().map(String::as_str).collect();
+        matrix.retain(|id, _| !id_set.contains(id));
 
         let fnl_header = if !matrix.is_empty() && header.ntax != matrix.len() {
             self.get_header(&matrix)

@@ -1,15 +1,16 @@
 //! Statistics for contigs
-use std::{io::BufRead, path::Path};
-
-use crate::{
-    helper::{
-        files,
-        types::{ContigFmt, infer_contig_fmt_auto},
-    },
-    stats::common::{CommonStats, NStats},
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    path::Path,
 };
 
-use crate::parser::fasta::FastaReader;
+use flate2::read::MultiGzDecoder;
+
+use crate::{
+    helper::types::{ContigFmt, infer_contig_fmt_auto},
+    stats::common::{CommonStats, NStats},
+};
 
 /// Lower bounds of the contig length bins, in bp. The last bin is open.
 pub const LENGTH_BIN_EDGES: [usize; 10] = [
@@ -103,13 +104,15 @@ impl ContigSummary {
     }
 
     fn parse_file(&mut self, path: &Path, file_fmt: &ContigFmt) -> Vec<usize> {
+        const BUF_SIZE: usize = 64 * 1024;
+        let file = File::open(path).expect("Failed opening a contig file");
         match file_fmt {
             ContigFmt::Fasta => {
-                let mut buff = files::open_file(path);
+                let mut buff = BufReader::with_capacity(BUF_SIZE, file);
                 self.count(&mut buff)
             }
             ContigFmt::Gzip => {
-                let mut buff = files::decode_gzip(path);
+                let mut buff = BufReader::with_capacity(BUF_SIZE, MultiGzDecoder::new(file));
                 self.count(&mut buff)
             }
             ContigFmt::Auto => {
@@ -120,15 +123,31 @@ impl ContigSummary {
     }
 
     fn count<R: BufRead>(&mut self, buff: &mut R) -> Vec<usize> {
-        let reader = FastaReader::new(buff);
         let mut contigs = Vec::new();
         // Byte histogram for the whole file, split into four lanes
         // so consecutive identical bases do not update the same counter.
         let mut counts = [[0usize; 256]; 4];
-        reader.into_iter().for_each(|r| {
-            contigs.push(r.seq.len());
-            count_bytes(r.seq.as_bytes(), &mut counts);
-        });
+        let mut line = Vec::new();
+        let mut current_len = 0usize;
+        let mut in_record = false;
+        while matches!(buff.read_until(b'\n', &mut line), Ok(n) if n > 0) {
+            let trimmed = line.trim_ascii_end();
+            if trimmed.starts_with(b">") {
+                if in_record {
+                    contigs.push(current_len);
+                }
+                in_record = true;
+                current_len = 0;
+            } else if in_record {
+                let seq = trimmed.trim_ascii_start();
+                current_len += seq.len();
+                count_bytes(seq, &mut counts);
+            }
+            line.clear();
+        }
+        if in_record {
+            contigs.push(current_len);
+        }
         self.tally_bases(&counts);
         contigs
     }
@@ -300,5 +319,40 @@ mod test {
                 parser.unknown
             )
         );
+    }
+
+    #[test]
+    fn test_streaming_wrapped_crlf_and_gzip_contigs() {
+        use flate2::{Compression, write::GzEncoder};
+        use std::io::Write;
+        use tempfile::TempDir;
+
+        let dir = TempDir::with_prefix("contig_stream").unwrap();
+        let fasta_path = dir.path().join("wrapped.fa");
+        let gz_path = dir.path().join("wrapped.fa.gz");
+        let empty_path = dir.path().join("empty.fa");
+        let content = b">c1 desc\r\nACGT\r\nTGCA\r\n>c2\r\nGG\r\n";
+        std::fs::write(&fasta_path, content).unwrap();
+        std::fs::write(&empty_path, b"").unwrap();
+        let mut gz = GzEncoder::new(Vec::new(), Compression::default());
+        gz.write_all(content).unwrap();
+        std::fs::write(&gz_path, gz.finish().unwrap()).unwrap();
+
+        let mut plain = ContigSummary::new();
+        plain.summarize(&fasta_path, &ContigFmt::Fasta);
+        let mut gzipped = ContigSummary::new();
+        gzipped.summarize(&gz_path, &ContigFmt::Gzip);
+        assert_eq!(plain.contig_count, 2);
+        assert_eq!(plain.base_count, 10);
+        assert_eq!(plain.stats.min, 2);
+        assert_eq!(plain.stats.max, 8);
+        assert_eq!(gzipped.contig_count, plain.contig_count);
+        assert_eq!(gzipped.base_count, plain.base_count);
+        assert_eq!(gzipped.g_count, plain.g_count);
+
+        let mut empty = ContigSummary::new();
+        empty.summarize(&empty_path, &ContigFmt::Fasta);
+        assert_eq!(empty.contig_count, 0);
+        assert_eq!(empty.base_count, 0);
     }
 }

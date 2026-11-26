@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use anyhow::{Result, bail};
 use colored::Colorize;
-use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::core::{OutputPrint, PartitionPrint};
@@ -72,7 +71,7 @@ impl<'a> AlignmentSplitting<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Parsing input sequence file...");
         let aln_matrix = self.parse_sequence();
-        let aln_len = aln_matrix.values().next().map_or(0, String::len);
+        let aln_len = aln_matrix.values().next().map_or(0, <[u8]>::len);
         self.validate_split_targets(&partitions, aln_len, prefix)?;
 
         spin.set_message("Splitting alignment...");
@@ -80,8 +79,15 @@ impl<'a> AlignmentSplitting<'a> {
         partitions.par_iter().try_for_each(|part| -> Result<()> {
             let runs = part.contiguous_site_runs();
             let nchar: usize = runs.iter().map(|(s, e)| e - s).sum();
-            let matrix = self.generate_matrix_from_runs(&aln_matrix, &runs, nchar);
-            if matrix.is_empty() {
+            let kept_rows: Vec<usize> = (0..aln_matrix.len())
+                .filter(|&row| {
+                    let (_, seq) = aln_matrix.get_index(row).expect("Row index out of bounds");
+                    !runs
+                        .iter()
+                        .all(|&(start, end)| self.is_empty_seq(&seq[start..end]))
+                })
+                .collect();
+            if kept_rows.is_empty() {
                 log::warn!(
                     "Skipping partition '{}': all sequences are gaps or missing.",
                     part.gene
@@ -93,12 +99,12 @@ impl<'a> AlignmentSplitting<'a> {
                 header.datatype = String::from("protein");
             }
             header.nchar = nchar;
-            header.ntax = matrix.len();
+            header.ntax = kept_rows.len();
             header.aligned = true;
             let filename = self.parse_filename(&part.gene, prefix);
             let output_path = files::create_output_fname(self.output, &filename, self.output_fmt);
-            let mut out = SeqWriter::new(&output_path, &matrix, &header);
-            out.write_sequence(self.output_fmt)?;
+            let mut out = SeqWriter::new(&output_path, &aln_matrix, &header);
+            out.write_runs(self.output_fmt, &kept_rows, &runs)?;
             file_counts.fetch_add(1, Ordering::Relaxed);
             Ok(())
         })?;
@@ -148,34 +154,35 @@ impl<'a> AlignmentSplitting<'a> {
         PathBuf::from(filename)
     }
 
+    #[cfg_attr(not(test), allow(dead_code))]
     fn generate_matrix_from_runs(
         &self,
         matrix: &SeqMatrix,
         runs: &[(usize, usize)],
         total_len: usize,
     ) -> SeqMatrix {
-        let mut seq_matrix: SeqMatrix = IndexMap::new();
-        for (taxon, seq) in matrix {
+        let mut seq_matrix = SeqMatrix::with_capacity(matrix.len(), matrix.len() * total_len);
+        for (taxon, seq) in matrix.iter() {
             let part_seq = self.slice_runs(seq, runs, total_len);
             if !self.is_empty_seq(&part_seq) {
-                seq_matrix.insert(taxon.clone(), part_seq);
+                seq_matrix.insert(taxon.clone(), &part_seq);
             }
         }
         seq_matrix
     }
 
-    fn is_empty_seq(&self, seq: &str) -> bool {
-        let empty_seq = b"-?";
-        seq.bytes().all(|char| empty_seq.contains(&char))
+    fn is_empty_seq(&self, seq: &[u8]) -> bool {
+        seq.iter().all(|&b| b == b'-' || b == b'?')
     }
 
-    fn slice_runs(&self, seq: &str, runs: &[(usize, usize)], total_len: usize) -> String {
-        let mut out = String::with_capacity(total_len);
+    #[cfg_attr(not(test), allow(dead_code))]
+    fn slice_runs(&self, seq: &[u8], runs: &[(usize, usize)], total_len: usize) -> Vec<u8> {
+        let mut out = Vec::with_capacity(total_len);
         for &(start, end) in runs {
             let slice = seq
                 .get(start..end)
                 .expect("Errors in slicing the alignment");
-            out.push_str(slice);
+            out.extend_from_slice(slice);
         }
         out
     }
@@ -224,12 +231,12 @@ mod test {
     #[test]
     fn test_sequence_slicing_runs() {
         input_split!(split, "tests/files/test_aln.fasta");
-        let seq = "AAAAAAAAGGGGTTTTCCCC";
+        let seq = b"AAAAAAAAGGGGTTTTCCCC";
 
         let slice = split.slice_runs(seq, &[(0, 10)], 10);
         let slice_2 = split.slice_runs(seq, &[(10, 15)], 5);
-        assert_eq!(slice, "AAAAAAAAGG");
-        assert_eq!(slice_2, "GGTTT");
+        assert_eq!(slice, b"AAAAAAAAGG");
+        assert_eq!(slice_2, b"GGTTT");
     }
 
     #[test]
@@ -246,8 +253,8 @@ mod test {
         assert_eq!(runs, vec![(0, 5), (10, 15)]);
         let new_matrix = split.generate_matrix_from_runs(&matrix, &runs, 10);
         assert_eq!(new_matrix.len(), 4);
-        assert_eq!(new_matrix.get("ABCD").unwrap(), "aaaaattttt");
-        assert_eq!(new_matrix.get("ABCG").unwrap(), "aaaaaccccc");
+        assert_eq!(new_matrix.get("ABCD").unwrap(), b"aaaaattttt");
+        assert_eq!(new_matrix.get("ABCG").unwrap(), b"aaaaaccccc");
     }
 
     #[test]
@@ -268,7 +275,7 @@ mod test {
         assert_eq!(runs, vec![(0, 2), (3, 5), (6, 8), (9, 11), (12, 14)]);
         let new_matrix = split.generate_matrix_from_runs(&matrix, &runs, 10);
         // ABCG is aaaaagggggccccc -> positions 1,2='aa', 4,5='aa', 7,8='gg', 10,11='gc', 13,14='cc'
-        assert_eq!(new_matrix.get("ABCG").unwrap(), "aaaagggccc");
+        assert_eq!(new_matrix.get("ABCG").unwrap(), b"aaaagggccc");
     }
 
     #[test]

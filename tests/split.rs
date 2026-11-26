@@ -46,9 +46,9 @@ fn test_splitting_merged_raxml_and_codon() {
     let (sub2, _) = SeqParser::new(&out_dir.join("Subset2.fas"), &DataType::Dna)
         .get_alignment(&InputFmt::Fasta);
     // Subset1 = 1-5\3 (1,4), 2-5\3 (2,5), 11-15 -> 1,2,4,5 + 11..=15
-    assert_eq!(sub1.get("ABCG").unwrap(), "aaaaccccc");
+    assert_eq!(sub1.get("ABCG").unwrap(), b"aaaaccccc");
     // Subset2 = 3-5\3 (3), 6-10 -> 3 + 6..=10
-    assert_eq!(sub2.get("ABCG").unwrap(), "aggggg");
+    assert_eq!(sub2.get("ABCG").unwrap(), b"aggggg");
 }
 
 #[test]
@@ -60,8 +60,8 @@ fn test_splitting_iqtree_charpartition() {
         .get_alignment(&InputFmt::Fasta);
     let (single, _) =
         SeqParser::new(&out_dir.join("locus2.fas"), &DataType::Dna).get_alignment(&InputFmt::Fasta);
-    assert_eq!(merged.get("ABCG").unwrap(), "aaaaaccccc");
-    assert_eq!(single.get("ABCG").unwrap(), "ggggg");
+    assert_eq!(merged.get("ABCG").unwrap(), b"aaaaaccccc");
+    assert_eq!(single.get("ABCG").unwrap(), b"ggggg");
 }
 
 #[test]

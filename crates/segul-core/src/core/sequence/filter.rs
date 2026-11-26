@@ -171,11 +171,11 @@ impl<'a> SequenceFiltering<'a> {
         filter_by_length!(self, length, is_shorter_sequence)
     }
 
-    fn is_longer_sequence(&self, sequence: &str, length: &usize) -> bool {
+    fn is_longer_sequence(&self, sequence: &[u8], length: &usize) -> bool {
         self.count_non_gaps(sequence) >= *length
     }
 
-    fn is_shorter_sequence(&self, sequence: &str, length: &usize) -> bool {
+    fn is_shorter_sequence(&self, sequence: &[u8], length: &usize) -> bool {
         self.count_non_gaps(sequence) <= *length
     }
 
@@ -207,12 +207,12 @@ impl<'a> SequenceFiltering<'a> {
         header.ntax = matrix.len();
     }
 
-    fn count_non_gaps(&self, seq: &str) -> usize {
-        seq.bytes().filter(|&c| c != b'-' && c != b'?').count()
+    fn count_non_gaps(&self, seq: &[u8]) -> usize {
+        seq.len() - self.count_gaps(seq)
     }
 
-    fn count_gaps(&self, seq: &str) -> usize {
-        seq.bytes().filter(|&c| c == b'-' || c == b'?').count()
+    fn count_gaps(&self, seq: &[u8]) -> usize {
+        bytecount::count(seq, b'-') + bytecount::count(seq, b'?')
     }
 
     fn count_max_gaps(&self, length: usize, threshold: f64) -> usize {
@@ -289,12 +289,12 @@ mod tests {
         let alignment_len = 10;
         let max_gaps = handle.count_max_gaps(alignment_len, threshold);
         assert_eq!(max_gaps, 5);
-        let seq = "ataggata--??nn";
+        let seq = b"ataggata--??nn";
         let gaps = handle.count_gaps(seq);
         assert_eq!(gaps, 4);
         let non_gaps = handle.count_non_gaps(seq);
         assert_eq!(non_gaps, 10);
-        let seq_2 = "ataggata--";
+        let seq_2 = b"ataggata--";
         let non_gap_2 = handle.count_non_gaps(seq_2);
         assert_eq!(non_gap_2, 8);
     }

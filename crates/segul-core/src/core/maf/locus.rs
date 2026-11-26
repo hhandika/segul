@@ -65,10 +65,10 @@ pub(crate) fn build_locus(
     if samples.is_empty() || stats.columns == 0 {
         return (None, stats);
     }
-    let matrix = samples
-        .iter()
-        .map(|&sample| {
-            let mut seq = Vec::with_capacity(stats.columns);
+    let mut matrix = SeqMatrix::with_capacity(samples.len(), samples.len() * stats.columns);
+    for &sample in &samples {
+        matrix.push_with(sample.to_string(), |seq| {
+            let start = seq.len();
             for piece in &kept {
                 match piece.rows.get(sample) {
                     Some(row) => seq.extend_from_slice(row),
@@ -76,14 +76,11 @@ pub(crate) fn build_locus(
                 }
             }
             if reverse_complement {
-                seq = alphabet::reverse_complement_dna(&seq);
+                let rev = alphabet::reverse_complement_dna(&seq[start..]);
+                seq[start..].copy_from_slice(&rev);
             }
-            (
-                sample.to_string(),
-                String::from_utf8_lossy(&seq).into_owned(),
-            )
-        })
-        .collect();
+        });
+    }
     (Some(matrix), stats)
 }
 
@@ -115,9 +112,9 @@ mod tests {
         let (matrix, stats) = build_locus(pieces, "ref", false);
         let matrix = matrix.unwrap();
         assert_eq!(matrix.keys().collect::<Vec<_>>(), ["ref", "b", "c"]);
-        assert_eq!(matrix["ref"], "ACGGC");
-        assert_eq!(matrix["b"], "AAA--");
-        assert_eq!(matrix["c"], "---GG");
+        assert_eq!(&matrix["ref"], b"ACGGC");
+        assert_eq!(&matrix["b"], b"AAA--");
+        assert_eq!(&matrix["c"], b"---GG");
         assert_eq!((stats.blocks, stats.columns, stats.samples), (2, 5, 3));
     }
 
@@ -138,14 +135,14 @@ mod tests {
             piece(2, 2, &[("ref", "GT")]),
         ];
         let (matrix, stats) = build_locus(pieces, "ref", false);
-        assert_eq!(matrix.unwrap()["ref"], "ACGA");
+        assert_eq!(&matrix.unwrap()["ref"], b"ACGA");
         assert_eq!(stats.overlapping, 2);
     }
 
     #[test]
     fn test_reverse_complement_and_empty() {
         let (matrix, _) = build_locus(vec![piece(0, 0, &[("ref", "AACg")])], "ref", true);
-        assert_eq!(matrix.unwrap()["ref"], "cGTT");
+        assert_eq!(&matrix.unwrap()["ref"], b"cGTT");
         assert!(build_locus(Vec::new(), "ref", false).0.is_none());
     }
 }

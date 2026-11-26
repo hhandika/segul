@@ -8,6 +8,68 @@ use crate::helper::types::{DataType, Header, SeqMatrix};
 
 pub type SiteMap = HashMap<usize, Vec<u8>>;
 
+const SITE_BLOCK: usize = 4096;
+
+const DNA_STATE_BIT: [u32; 256] = build_dna_state_bits();
+const AA_STATE_BIT: [u32; 256] = build_aa_state_bits();
+
+const fn build_dna_state_bits() -> [u32; 256] {
+    let mut table = [0u32; 256];
+    table[b'A' as usize] = 1 << 0;
+    table[b'a' as usize] = 1 << 0;
+    table[b'C' as usize] = 1 << 1;
+    table[b'c' as usize] = 1 << 1;
+    table[b'G' as usize] = 1 << 2;
+    table[b'g' as usize] = 1 << 2;
+    table[b'T' as usize] = 1 << 3;
+    table[b't' as usize] = 1 << 3;
+    table
+}
+
+const fn build_aa_state_bits() -> [u32; 256] {
+    let mut table = [0u32; 256];
+    let mut b = b'A';
+    while b <= b'Z' {
+        let ambiguous = matches!(b, b'X' | b'B' | b'Z' | b'J' | b'U');
+        if !ambiguous {
+            let bit = 1u32 << (b - b'A');
+            table[b as usize] = bit;
+            table[b.to_ascii_lowercase() as usize] = bit;
+        }
+        b += 1;
+    }
+    table
+}
+
+fn state_bit_table(datatype: &DataType) -> &'static [u32; 256] {
+    match datatype {
+        DataType::Dna => &DNA_STATE_BIT,
+        DataType::Aa => &AA_STATE_BIT,
+        _ => unreachable!(),
+    }
+}
+
+#[inline]
+fn scan_site_block(
+    rows: &[&[u8]],
+    start: usize,
+    width: usize,
+    table: &[u32; 256],
+    seen1: &mut [u32; SITE_BLOCK],
+    seen2: &mut [u32; SITE_BLOCK],
+) {
+    seen1[..width].fill(0);
+    seen2[..width].fill(0);
+    for row in rows {
+        let n = row.len().saturating_sub(start).min(width);
+        for (i, &b) in row[start..start + n].iter().enumerate() {
+            let bit = table[b as usize];
+            seen2[i] |= seen1[i] & bit;
+            seen1[i] |= bit;
+        }
+    }
+}
+
 /// Get parsimony informative sites.
 ///
 /// # Example
@@ -349,8 +411,7 @@ impl Sites {
 
     /// Get the site statistics from an alignment.
     pub fn get_stats(&mut self, matrix: &SeqMatrix, datatype: &DataType) {
-        let site_matrix = self.index_site_without_ambiguity(matrix, datatype);
-        self.compute_parsimony_informative(&site_matrix);
+        self.scan_sites(matrix, datatype, |_, _| {});
         self.count_sites();
         self.get_proportion();
     }
@@ -362,14 +423,9 @@ impl Sites {
         matrix: &SeqMatrix,
         datatype: &DataType,
     ) -> Vec<(usize, usize)> {
-        let site_matrix = self.index_site_without_ambiguity(matrix, datatype);
-        self.compute_parsimony_informative(&site_matrix);
         let mut pars_inf_per_site: Vec<(usize, usize)> = Vec::new();
-        site_matrix.iter().for_each(|(site, seq)| {
-            let n_patterns = self.get_patterns(seq);
-            if n_patterns >= 2 {
-                pars_inf_per_site.push((*site, n_patterns));
-            }
+        self.scan_sites(matrix, datatype, |site, n_patterns| {
+            pars_inf_per_site.push((site, n_patterns));
         });
         pars_inf_per_site
     }
@@ -377,15 +433,30 @@ impl Sites {
     /// Get sites with missing data less than a threshold.
     /// Return the site location
     pub fn get_site_without_missing_data(&self, matrix: &SeqMatrix, threshold: f64) -> Vec<usize> {
-        let site_matrix = self.index_site_with_missing_data(matrix);
-        // Site base count is the total number of taxa
-        let site_count = matrix.len();
-        let sites = self.get_missing_data_per_site(&site_matrix, site_count);
+        let rows: Vec<&[u8]> = matrix.values().collect();
+        let ntax = rows.len();
+        if ntax == 0 {
+            return Vec::new();
+        }
+        let nchar = rows.iter().map(|r| r.len()).max().unwrap_or(0);
+        let mut sites = Vec::with_capacity(nchar);
+        let mut missing = [0u32; SITE_BLOCK];
+        for start in (0..nchar).step_by(SITE_BLOCK) {
+            let width = (nchar - start).min(SITE_BLOCK);
+            missing[..width].fill(0);
+            for row in &rows {
+                let n = row.len().saturating_sub(start).min(width);
+                for (i, &b) in row[start..start + n].iter().enumerate() {
+                    missing[i] += u32::from(b == b'-' || b == b'?');
+                }
+            }
+            for (i, &count) in missing[..width].iter().enumerate() {
+                if (count as f64 / ntax as f64) < threshold {
+                    sites.push(start + i);
+                }
+            }
+        }
         sites
-            .iter()
-            .filter(|(_, prop)| *prop < threshold)
-            .map(|(site, _)| *site)
-            .collect()
     }
 
     /// Get sites with parsimony informative greater than a threshold.
@@ -396,12 +467,13 @@ impl Sites {
         datatype: &DataType,
         threshold: usize,
     ) -> Vec<(usize, usize)> {
-        let sites = self.get_pars_inf_per_site(matrix, datatype);
+        let mut sites = Vec::new();
+        self.scan_sites(matrix, datatype, |site, n_patterns| {
+            if n_patterns >= threshold {
+                sites.push((site, n_patterns));
+            }
+        });
         sites
-            .iter()
-            .filter(|(_, n)| *n >= threshold)
-            .map(|(s, n)| (*s, *n))
-            .collect()
     }
 
     /// Get missing data per site
@@ -424,7 +496,8 @@ impl Sites {
     pub fn index_site_with_missing_data(&self, matrix: &SeqMatrix) -> SiteMap {
         let mut site_matrix: SiteMap = HashMap::new();
         matrix.values().for_each(|seq| {
-            seq.bytes()
+            seq.iter()
+                .copied()
                 .enumerate()
                 .for_each(|(idx, dna)| match site_matrix.get_mut(&idx) {
                     Some(value) => value.push(dna),
@@ -446,29 +519,56 @@ impl Sites {
     }
 
     fn get_pars_inf_only(&mut self, matrix: &SeqMatrix, datatype: &DataType) -> usize {
-        let site_matrix = self.index_site_without_ambiguity(matrix, datatype);
-        self.compute_parsimony_informative(&site_matrix);
+        self.scan_sites(matrix, datatype, |_, _| {});
         self.pars_inf
+    }
+
+    fn scan_sites<F>(&mut self, matrix: &SeqMatrix, datatype: &DataType, mut on_pis: F)
+    where
+        F: FnMut(usize, usize),
+    {
+        let table = state_bit_table(datatype);
+        let rows: Vec<&[u8]> = matrix.values().collect();
+        let nchar = rows.iter().map(|r| r.len()).max().unwrap_or(0);
+        let mut seen1 = [0u32; SITE_BLOCK];
+        let mut seen2 = [0u32; SITE_BLOCK];
+        for start in (0..nchar).step_by(SITE_BLOCK) {
+            let width = (nchar - start).min(SITE_BLOCK);
+            scan_site_block(&rows, start, width, table, &mut seen1, &mut seen2);
+            for i in 0..width {
+                let s1 = seen1[i];
+                let n_states = s1.count_ones();
+                if n_states == 0 {
+                    continue;
+                }
+                if n_states == 1 {
+                    self.conserved += 1;
+                } else {
+                    self.variable += 1;
+                    let n_patterns = seen2[i].count_ones() as usize;
+                    if n_patterns >= 2 {
+                        self.pars_inf += 1;
+                        on_pis(start + i, n_patterns);
+                    }
+                }
+            }
+        }
     }
 
     fn index_site_dna(&self, matrix: &SeqMatrix) -> SiteMap {
         let mut site_matrix: SiteMap = HashMap::new();
         matrix.values().for_each(|seq| {
-            seq.bytes()
-                .enumerate()
-                .for_each(|(idx, dna)| match site_matrix.get_mut(&idx) {
-                    Some(value) => {
-                        // ignore ambiguous characters
-                        if self.is_non_ambiguous_dna(&dna) {
-                            value.push(dna);
+            seq.iter().copied().enumerate().for_each(|(idx, dna)| {
+                if self.is_non_ambiguous_dna(&dna) {
+                    let base = dna.to_ascii_uppercase();
+                    match site_matrix.get_mut(&idx) {
+                        Some(value) => value.push(base),
+                        None => {
+                            site_matrix.insert(idx, vec![base]);
                         }
                     }
-                    None => {
-                        if self.is_non_ambiguous_dna(&dna) {
-                            site_matrix.insert(idx, vec![dna]);
-                        }
-                    }
-                })
+                }
+            })
         });
 
         site_matrix
@@ -477,17 +577,13 @@ impl Sites {
     fn index_site_aa(&self, matrix: &SeqMatrix) -> SiteMap {
         let mut site_matrix: SiteMap = HashMap::new();
         matrix.values().for_each(|seq| {
-            seq.bytes().enumerate().for_each(|(idx, aa)| {
-                match site_matrix.get_mut(&idx) {
-                    Some(value) => {
-                        // ignore ambiguous characters
-                        if !self.is_ambiguous_aa(&aa) {
-                            value.push(aa)
-                        }
-                    }
-                    None => {
-                        if !self.is_ambiguous_aa(&aa) {
-                            site_matrix.insert(idx, vec![aa]);
+            seq.iter().copied().enumerate().for_each(|(idx, aa)| {
+                if !self.is_ambiguous_aa(&aa) {
+                    let res = aa.to_ascii_uppercase();
+                    match site_matrix.get_mut(&idx) {
+                        Some(value) => value.push(res),
+                        None => {
+                            site_matrix.insert(idx, vec![res]);
                         }
                     }
                 }
@@ -506,9 +602,10 @@ impl Sites {
     // then matching non-ambiguous aa
     fn is_ambiguous_aa(&self, ch: &u8) -> bool {
         let ambiguous_aa = b"XBZJU?-.~*";
-        ambiguous_aa.contains(ch)
+        ambiguous_aa.contains(&ch.to_ascii_uppercase())
     }
 
+    #[cfg(test)]
     fn compute_parsimony_informative(&mut self, site_matrix: &SiteMap) {
         site_matrix.values().for_each(|site| {
             let n_patterns = self.get_patterns(site);
@@ -518,6 +615,7 @@ impl Sites {
         });
     }
 
+    #[cfg(test)]
     fn get_patterns(&mut self, site: &[u8]) -> usize {
         let mut uniques: Vec<u8> = site.to_vec();
         uniques.sort_unstable();
@@ -590,13 +688,28 @@ impl CharMatrix {
         self.chars.calculate_prop_missing_data();
     }
 
+    /// Derive alignment character counts from already-computed per-taxon counts.
+    pub fn count_from_taxa(&mut self, taxa: &Taxa, header: &Header, datatype: &DataType) {
+        self.ntax = header.ntax;
+        self.chars.total_chars = header.nchar * self.ntax;
+        for t_chars in taxa.records.values() {
+            for (ch, count) in &t_chars.chars {
+                *self.chars.chars.entry(*ch).or_insert(0) += count;
+            }
+            self.chars.missing_data += t_chars.missing_data;
+            if DataType::Dna == *datatype {
+                self.chars.gc_count += t_chars.gc_count;
+                self.chars.at_count += t_chars.at_count;
+                self.chars.nucleotides += t_chars.nucleotides;
+            }
+        }
+        self.chars.calculate_prop_missing_data();
+    }
+
     fn parse_chars(&mut self, matrix: &SeqMatrix) {
-        matrix
-            .values()
-            .flat_map(|seqs| seqs.chars())
-            .for_each(|ch| {
-                *self.chars.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += 1;
-            });
+        let mut counts = [[0usize; 256]; 4];
+        count_bytes_4lane(matrix.as_bytes(), &mut counts);
+        self.chars.chars = histogram_to_chars(&counts);
     }
 }
 
@@ -627,12 +740,12 @@ impl Taxa {
     /// * `aln` - A sequence matrix.
     /// * `datatype` - The datatype of the alignment.
     pub fn summarize_taxa(&mut self, aln: &SeqMatrix, datatype: &DataType) {
+        let mut counts = [[0usize; 256]; 4];
         aln.iter().for_each(|(id, seq)| {
+            counts.iter_mut().for_each(|lane| lane.fill(0));
+            count_bytes_4lane(seq, &mut counts);
             let mut chars = Chars::new();
-            // insert character to matrix
-            seq.chars().for_each(|ch| {
-                *chars.chars.entry(ch.to_ascii_uppercase()).or_insert(0) += 1;
-            });
+            chars.chars = histogram_to_chars(&counts);
             chars.total_chars = seq.len();
             if DataType::Dna == *datatype {
                 chars.count_gc();
@@ -643,6 +756,32 @@ impl Taxa {
             self.records.insert(id.to_string(), chars);
         });
     }
+}
+
+#[inline]
+fn count_bytes_4lane(seq: &[u8], counts: &mut [[usize; 256]; 4]) {
+    let (chunks, remainder) = seq.as_chunks::<4>();
+    for c in chunks {
+        counts[0][c[0] as usize] += 1;
+        counts[1][c[1] as usize] += 1;
+        counts[2][c[2] as usize] += 1;
+        counts[3][c[3] as usize] += 1;
+    }
+    for &b in remainder {
+        counts[0][b as usize] += 1;
+    }
+}
+
+fn histogram_to_chars(counts: &[[usize; 256]; 4]) -> HashMap<char, usize> {
+    let mut map = HashMap::new();
+    for b in 0..=255u8 {
+        let total: usize = counts.iter().map(|lane| lane[b as usize]).sum();
+        if total > 0 {
+            let ch = (b as char).to_ascii_uppercase();
+            *map.entry(ch).or_insert(0) += total;
+        }
+    }
+    map
 }
 
 /// A struct to hold the character counts.
@@ -734,14 +873,13 @@ mod test {
     use super::*;
     use crate::helper::sequence::SeqParser;
     use crate::helper::types::{DataType, InputFmt};
-    use indexmap::IndexMap;
 
     const DNA: DataType = DataType::Dna;
 
     fn get_matrix(id: &[&str], seq: &[&str]) -> SeqMatrix {
-        let mut matrix = IndexMap::new();
+        let mut matrix = SeqMatrix::new();
         id.iter().zip(seq.iter()).for_each(|(i, s)| {
-            matrix.insert(i.to_string(), s.to_string());
+            matrix.insert(i.to_string(), s.as_bytes());
         });
 
         matrix
@@ -864,5 +1002,52 @@ mod test {
         assert_eq!(Some(&24), dna.chars.chars.get(&'?'));
         assert_eq!(24, dna.chars.missing_data);
         assert_eq!(None, dna.chars.chars.get(&'-'));
+    }
+
+    #[test]
+    fn bitmask_matches_legacy_sitemap_dna_and_aa() {
+        let ids = ["t1", "t2", "t3", "t4"];
+        // Site 0: conserved mixed-case a/A
+        // Site 1: variable non-PIS (A, A, C, G)
+        // Site 2: PIS (A, A, T, T)
+        // Site 3: all gaps/ambiguous (skipped)
+        // Site 4: PIS with trailing gap (C, C, g, -)
+        let dna_seqs = ["aAC-C", "AAC?C", "ACtNg", "AGt-g"];
+        let dna_mat = get_matrix(&ids, &dna_seqs);
+
+        let mut fast_dna = Sites::default();
+        fast_dna.get_stats(&dna_mat, &DataType::Dna);
+
+        let mut legacy_dna = Sites::default();
+        let smat = legacy_dna.index_site_without_ambiguity(&dna_mat, &DataType::Dna);
+        legacy_dna.compute_parsimony_informative(&smat);
+        legacy_dna.count_sites();
+
+        assert_eq!(fast_dna.conserved, legacy_dna.conserved);
+        assert_eq!(fast_dna.variable, legacy_dna.variable);
+        assert_eq!(fast_dna.pars_inf, legacy_dna.pars_inf);
+        assert_eq!(fast_dna.counts, legacy_dna.counts);
+        assert_eq!(fast_dna.conserved, 1);
+        assert_eq!(fast_dna.variable, 3);
+        assert_eq!(fast_dna.pars_inf, 2);
+
+        let pis_sites =
+            Sites::default().get_site_with_pars_informative(&dna_mat, &DataType::Dna, 2);
+        assert_eq!(pis_sites, vec![(2, 2), (4, 2)]);
+
+        let aa_seqs = ["mARK-", "MaSK?", "MASRx", "MASK*"];
+        let aa_mat = get_matrix(&ids, &aa_seqs);
+        let mut fast_aa = Sites::default();
+        fast_aa.get_stats(&aa_mat, &DataType::Aa);
+
+        let mut legacy_aa = Sites::default();
+        let aa_smat = legacy_aa.index_site_without_ambiguity(&aa_mat, &DataType::Aa);
+        legacy_aa.compute_parsimony_informative(&aa_smat);
+        legacy_aa.count_sites();
+
+        assert_eq!(fast_aa.conserved, legacy_aa.conserved);
+        assert_eq!(fast_aa.variable, legacy_aa.variable);
+        assert_eq!(fast_aa.pars_inf, legacy_aa.pars_inf);
+        assert_eq!(fast_aa.counts, legacy_aa.counts);
     }
 }
