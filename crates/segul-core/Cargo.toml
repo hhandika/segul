@@ -13,13 +13,14 @@ categories = ["science"]
 
 [features]
 default = ["align", "sequence", "read", "contig", "maf", "plot", "pdf"]
-align = ["dep:memchr", "dep:memmap2"]
+align = ["dep:memmap2"]
 sequence = []
-read = ["dep:noodles", "noodles/bgzf", "dep:memchr", "dep:xxhash-rust"]
+read = ["dep:noodles", "noodles/bgzf", "dep:xxhash-rust"]
 contig = []
 maf = []
 plot = ["dep:plotters", "dep:resvg", "dep:usvg"]
 pdf = ["plot", "dep:svg2pdf"]
+download = ["dep:reqwest", "dep:tokio", "dep:md-5"]
 
 [dependencies]
 ahash.workspace = true
@@ -33,7 +34,7 @@ indicatif.workspace = true
 lazy_static.workspace = true
 log.workspace = true
 log4rs.workspace = true
-memchr = { workspace = true, optional = true }
+memchr.workspace = true
 memmap2 = { workspace = true, optional = true }
 nom.workspace = true
 num-format.workspace = true
@@ -54,6 +55,9 @@ resvg = { workspace = true, optional = true }
 usvg = { workspace = true, optional = true }
 svg2pdf = { workspace = true, optional = true }
 colorous.workspace = true
+reqwest = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+md-5 = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true

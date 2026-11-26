@@ -1,0 +1,9 @@
+#nexus
+begin sets;
+    charset locus1 = 1-5;
+    charset locus2 = 6-10;
+    charset locus3 = 11-15;
+    charpartition mymodels =
+        GTR+F+G4: locus1 locus3,
+        HKY+F+I: locus2;
+end;

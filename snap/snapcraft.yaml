@@ -1,10 +1,10 @@
 name: segul
 base: core20 # the base snap is the execution environment for this snap
 version: "0.22.0"
-summary: A phylogenomic data manipulation and summary statistic tool # 79 char long summary
+summary: A genomic data manipulation and summary statistic tool # 79 char long summary
 description: |
   SEGUL is an ultrafast, memory efficient, 
-  cross-platform tool for phylogenomic data manipulation and summary statistics calculation.
+  cross-platform tool for genomic data manipulation and summary statistics calculation.
 
 grade: stable
 confinement: strict

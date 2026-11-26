@@ -5,13 +5,13 @@ use std::io::{BufReader, Result};
 use std::path::Path;
 
 use colored::Colorize;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use nom::{IResult, Parser, character::complete, sequence};
 
 use crate::helper::alphabet;
 use crate::helper::sequence::SeqCheck;
 use crate::helper::types::{DataType, Header, SeqMatrix};
-use crate::parser;
+use crate::parser::{self, InterleavedMatrixBuilder};
 
 /// Parse a phylip file sequence IDs.
 /// return an instance of `IndexSet<String>` containing sequence IDs
@@ -28,7 +28,7 @@ impl<'a> Phylip<'a> {
         Self {
             input,
             datatype,
-            matrix: IndexMap::new(),
+            matrix: SeqMatrix::new(),
             header: Header::new(),
         }
     }
@@ -45,14 +45,15 @@ impl<'a> Phylip<'a> {
 
     pub fn parse_only_id(&mut self) -> IndexSet<String> {
         let mut reader = self.get_header().expect("Cannot read phylip file");
-        let mut line = String::new();
+        let mut line = Vec::new();
         let mut ids = IndexSet::new();
         let mut rows = 0;
         // IDs are only in the first block, stop reading after it.
         while rows < self.header.ntax && read_next_line(&mut reader, &mut line) {
-            let text = line.trim();
+            let text = line.trim_ascii();
             if !text.is_empty() {
-                let (id, _) = split_id_seq(text);
+                let (id_bytes, _) = split_id_seq(text);
+                let id = self.bytes_to_str(id_bytes);
                 ids.insert(id.to_string());
                 rows += 1;
             }
@@ -63,35 +64,45 @@ impl<'a> Phylip<'a> {
         ids
     }
 
+    #[cfg(feature = "align")]
+    pub(crate) fn parse_id_and_nchar(&mut self) -> (IndexSet<String>, usize) {
+        let ids = self.parse_only_id();
+        (ids, self.header.nchar)
+    }
+
     fn parse_matrix(&mut self) -> Result<()> {
         let mut reader = self.get_header()?;
         let ntax = self.header.ntax;
-        self.matrix.reserve(ntax);
-        let mut line = String::new();
+        let mut builder = InterleavedMatrixBuilder::new(ntax, self.header.nchar);
+        let mut line = Vec::new();
         // Row position within the current block.
         // Rows keep the same order across blocks,
         // so it matches the matrix index.
         let mut pos = 0;
         let mut interleave = false;
-        let mut reserved = false;
         while read_next_line(&mut reader, &mut line) {
-            let text = line.trim();
+            let text = line.trim_ascii();
             if text.is_empty() {
                 continue;
             }
             if !interleave {
-                let (id, seq) = split_id_seq(text);
-                alphabet::check_valid_seq(self.input, self.datatype, id, seq);
-                parser::insert_matrix!(self, id, seq);
-            } else {
-                if !reserved {
-                    self.reserve_full_length();
-                    reserved = true;
+                let (id_bytes, seq_bytes) = split_id_seq(text);
+                let id = self.bytes_to_str(id_bytes);
+                if let Some(original_seq) = builder.get_by_id(id) {
+                    panic!(
+                        "Found duplicate IDs for file {}. \
+                        First duplicate ID found: {}. \
+                        Both sequences are the same: {}.",
+                        self.input.display(),
+                        id,
+                        original_seq == seq_bytes
+                    );
                 }
-                if let Some((id, seq)) = self.matrix.get_index_mut(pos) {
-                    alphabet::check_valid_seq(self.input, self.datatype, id, text);
-                    seq.push_str(text);
-                }
+                alphabet::check_valid_seq_bytes(self.input, self.datatype, id, seq_bytes);
+                builder.append_by_id(id, seq_bytes);
+            } else if let Some(id) = builder.id_at(pos) {
+                alphabet::check_valid_seq_bytes(self.input, self.datatype, id, text);
+                builder.append_by_index(pos, text);
             }
 
             pos += 1;
@@ -101,23 +112,20 @@ impl<'a> Phylip<'a> {
             }
         }
 
+        self.matrix = builder.into_matrix();
         Ok(())
     }
 
-    // Reserve the full sequence length once the file is known
-    // to be interleaved, avoiding repeated reallocations.
-    fn reserve_full_length(&mut self) {
-        let nchar = self.header.nchar.min(parser::MAX_RESERVE);
-        self.matrix
-            .values_mut()
-            .for_each(|seq| seq.reserve_exact(nchar.saturating_sub(seq.len())));
+    fn bytes_to_str<'b>(&self, bytes: &'b [u8]) -> &'b str {
+        std::str::from_utf8(bytes)
+            .unwrap_or_else(|_| panic!("Failed parsing phylip file {}", self.input.display()))
     }
 
     // We return the buffer after reading the header.
     // So we can use the buffer to read the rest of the file.
     fn get_header(&mut self) -> Result<BufReader<File>> {
         let file = File::open(self.input)?;
-        let mut buff = BufReader::new(file);
+        let mut buff = BufReader::with_capacity(parser::IO_BUF_SIZE, file);
         let mut header_line = String::new();
         buff.read_line(&mut header_line)?;
         self.parse_header(header_line.trim());
@@ -192,16 +200,16 @@ impl<'a> Phylip<'a> {
     }
 }
 
-/// Read the next line into a reused buffer.
+/// Read the next line into a reused byte buffer.
 /// Returns false at the end of the file.
-fn read_next_line<R: BufRead>(reader: &mut R, line: &mut String) -> bool {
+fn read_next_line<R: BufRead>(reader: &mut R, line: &mut Vec<u8>) -> bool {
     line.clear();
-    matches!(reader.read_line(line), Ok(n) if n > 0)
+    matches!(reader.read_until(b'\n', line), Ok(n) if n > 0)
 }
 
 /// Split a sequential (or first interleaved block) line
-/// into its ID and sequence.
-fn split_id_seq(line: &str) -> (&str, &str) {
+/// into its ID and sequence bytes.
+fn split_id_seq(line: &[u8]) -> (&[u8], &[u8]) {
     parser::split_id_seq(line)
         .unwrap_or_else(|| panic!("An invalid sequence found. Check if IDs contain spaces."))
 }
@@ -258,7 +266,7 @@ mod test {
         let mut phy = Phylip::new(path, &DNA);
         phy.parse_matrix().unwrap();
         let res = phy.matrix.get("ABCD");
-        assert_eq!(Some(&String::from("agccatggaa")), res);
+        assert_eq!(Some(b"agccatggaa".as_slice()), res);
     }
 
     #[test]
@@ -267,7 +275,7 @@ mod test {
         let mut phy = Phylip::new(path, &DNA);
         phy.parse();
         let res = phy.matrix.get("ABCD");
-        assert_eq!(Some(&String::from("agccatggaa")), res);
+        assert_eq!(Some(b"agccatggaa".as_slice()), res);
     }
 
     #[test]
@@ -276,7 +284,7 @@ mod test {
         let mut phy = Phylip::new(path, &DNA);
         phy.parse();
         let res = phy.matrix.get("ABCD");
-        assert_eq!(Some(&String::from("agccatggcc")), res);
+        assert_eq!(Some(b"agccatggcc".as_slice()), res);
     }
 
     #[test]
@@ -310,7 +318,7 @@ mod test {
         let path = Path::new("tests/files/interleave.phy");
         let mut phy = Phylip::new(path, &DNA);
         phy.parse();
-        assert!(phy.matrix.values().all(|seq| seq.capacity() == 10));
+        assert_eq!(phy.matrix.data_capacity(), 20);
     }
 
     #[test]
@@ -318,9 +326,8 @@ mod test {
         let sample = Path::new("tests/files/simple_aa.phy");
         let mut phy = Phylip::new(sample, &AA);
         phy.parse();
-        let key = String::from("ABCE");
-        let res = String::from("MAYPMQLGFQDATSPI");
-        assert_eq!(Some(&res), phy.matrix.get(&key));
+        let res = b"MAYPMQLGFQDATSPI".as_slice();
+        assert_eq!(Some(res), phy.matrix.get("ABCE"));
         assert_eq!(String::from("protein"), phy.header.datatype);
     }
 }

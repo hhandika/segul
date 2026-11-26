@@ -1,6 +1,7 @@
 //! Interactive viewer of summary reports in the terminal.
 mod app;
 mod data;
+mod reads;
 mod ui;
 
 use std::io::{self, stdout};
@@ -9,6 +10,7 @@ use std::path::Path;
 use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyEventKind};
 use crossterm::execute;
 use segul_core::color::Theme;
+use segul_core::stats::fastq::report::ReadReport;
 
 use crate::cli::args::view::ViewSummaryArgs;
 
@@ -26,6 +28,17 @@ impl<'a> SummaryViewParser<'a> {
 
     pub(in crate::cli) fn view(&self) {
         let path: &Path = &self.args.input;
+        let file_name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let theme = self.args.theme.parse::<Theme>().unwrap_or(Theme::Dark);
+        ui::set_accent(theme);
+        // Read reports have a viewer of their own, matching the GUI.
+        if let Ok(report) = ReadReport::from_path(path) {
+            reads::view(report, file_name, theme, self.args.colormap);
+            return;
+        }
         let data = match SummaryData::from_path(path) {
             Ok(data) => data,
             Err(e) => {
@@ -33,12 +46,6 @@ impl<'a> SummaryViewParser<'a> {
                 std::process::exit(1);
             }
         };
-        let file_name = path
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default();
-        let theme = self.args.theme.parse::<Theme>().unwrap_or(Theme::Dark);
-        ui::set_accent(theme);
         let mut app = App::new(data, file_name, self.args.colormap);
         run(&mut app).expect("Failed running the summary viewer");
     }

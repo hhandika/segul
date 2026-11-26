@@ -6,6 +6,8 @@ writes:
 
 - **JSON** results in `results/` (committed), used by the website to show
   performance across versions.
+- **SVG** copies of the scorecard and scatter charts in `charts/`
+  (committed), shown below.
 - **PNG** charts in `figures/` (ignored by git), for checking results by eye:
   - `scorecard.png`: how much faster and smaller the newest version is than
     the oldest, per task, grouped by analysis, with the mean values. Cells
@@ -19,6 +21,14 @@ writes:
 
   Tasks are grouped into analyses by their segul command (`align concat`,
   `align convert`, ...) and labeled by dataset name.
+
+## Latest results
+
+Charts of `results/latest.json`. Regenerate with `uv run segul-bench plot`.
+
+![Scorecard: newest version against the oldest](charts/scorecard.svg)
+
+![Time against memory per analysis](charts/scatter.svg)
 
 ## Requirements
 
@@ -58,7 +68,7 @@ Other commands:
 uv run segul-bench data --scale full        # generate the synthetic datasets only
 uv run segul-bench fetch v0.22.1 v0.23.2    # download release binaries only
 uv run segul-bench report                   # print the table of results/latest.json
-uv run segul-bench plot                     # draw charts of results/latest.json
+uv run segul-bench plot                     # draw charts of results/latest.json (PNG and SVG)
 uv run segul-bench export <path-to-segui>/website/src/data/segul-versions.json
 ```
 

@@ -123,29 +123,21 @@ impl SeqCheck {
 
     /// Check if the sequences are aligned.
     pub fn check(&mut self, matrix: &SeqMatrix) {
-        self.shortest_seq_len(matrix);
-        self.longest_seq_len(matrix);
-        self.check_is_alignment();
-    }
-
-    fn shortest_seq_len(&mut self, matrix: &SeqMatrix) {
-        self.shortest = matrix
-            .values()
-            .map(|s| s.len())
-            .min_by(|a, b| a.cmp(b))
-            .expect("Failed getting the shortest sequence length");
-    }
-
-    fn longest_seq_len(&mut self, matrix: &SeqMatrix) {
-        self.longest = matrix
-            .values()
-            .map(|s| s.len())
-            .max_by(|a, b| a.cmp(b))
-            .expect("Failed getting the longest sequence length");
-    }
-
-    fn check_is_alignment(&mut self) {
-        self.is_alignment = self.shortest == self.longest;
+        let mut iter = matrix.values();
+        let first = iter
+            .next()
+            .expect("Failed getting the shortest sequence length")
+            .len();
+        let mut min_len = first;
+        let mut max_len = first;
+        for seq in iter {
+            let len = seq.len();
+            min_len = min_len.min(len);
+            max_len = max_len.max(len);
+        }
+        self.shortest = min_len;
+        self.longest = max_len;
+        self.is_alignment = min_len == max_len;
     }
 }
 

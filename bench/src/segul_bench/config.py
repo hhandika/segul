@@ -12,6 +12,8 @@ REPO_DIR = BENCH_DIR.parent
 CACHE_DIR = BENCH_DIR / ".cache"
 RESULTS_DIR = BENCH_DIR / "results"
 FIGURES_DIR = BENCH_DIR / "figures"
+# SVG copies of the summary charts, committed and shown in the README.
+CHARTS_DIR = BENCH_DIR / "charts"
 DEFAULT_CONFIG = BENCH_DIR / "bench.toml"
 
 SCALES = ("small", "full")

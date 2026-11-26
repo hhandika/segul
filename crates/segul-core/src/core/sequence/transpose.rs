@@ -86,20 +86,29 @@ impl<'a> SequenceTranspose<'a> {
             // We ignore the header because we only need the sequence
             let (matrix, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
             let locus_id = self.get_locus_id(file);
-            matrix.into_iter().for_each(|(sample_id, seq)| {
+            matrix.into_iter().for_each(|(sample_id, mut seq)| {
+                self.remove_gaps_in_place(&mut seq);
                 // Add sample id as key if not exists
                 // Or insert sequence (locus_id, sequence) to existing sample id
                 sequence_map
                     .entry(sample_id)
                     .or_default()
-                    .insert(locus_id.clone(), self.remove_gaps(&seq));
+                    .insert(locus_id.clone(), &seq);
             });
         });
         sequence_map
     }
 
-    fn remove_gaps(&self, seq: &str) -> String {
-        seq.replace(['?', '-'], "")
+    fn remove_gaps_in_place(&self, seq: &mut Vec<u8>) {
+        seq.retain(|&b| b != b'?' && b != b'-');
+    }
+
+    #[cfg(test)]
+    fn remove_gaps(&self, seq: &[u8]) -> Vec<u8> {
+        seq.iter()
+            .copied()
+            .filter(|&b| b != b'?' && b != b'-')
+            .collect()
     }
 
     fn write_transposed_sequences(&self, sequence_map: &HashMap<String, SeqMatrix>) {
@@ -154,7 +163,7 @@ mod tests {
             Path::new("."),
             &OutputFmt::Fasta,
         );
-        assert_eq!(handle.remove_gaps("AT-G?C--"), "ATGC");
+        assert_eq!(handle.remove_gaps(b"AT-G?C--"), b"ATGC");
     }
 
     #[test]
@@ -245,7 +254,7 @@ mod tests {
         // ABCF is only present in gene_2
         let sample = map.get("ABCF").expect("Missing sample ABCF");
         assert_eq!(sample.len(), 1);
-        assert_eq!(sample.get("gene_2").unwrap(), "gatataat");
+        assert_eq!(sample.get("gene_2").unwrap(), b"gatataat");
     }
 
     #[test]
@@ -260,11 +269,11 @@ mod tests {
         );
         let map = handle.collect_sequences(&files);
         let abcd = map.get("ABCD").expect("Missing sample ABCD");
-        assert_eq!(abcd.get("locus_1").unwrap(), "ATGC");
-        assert_eq!(abcd.get("locus_2").unwrap(), "GGCC");
+        assert_eq!(abcd.get("locus_1").unwrap(), b"ATGC");
+        assert_eq!(abcd.get("locus_2").unwrap(), b"GGCC");
         let abcf = map.get("ABCF").expect("Missing sample ABCF");
         assert_eq!(abcf.len(), 1);
-        assert_eq!(abcf.get("locus_1").unwrap(), "ATTGCA");
+        assert_eq!(abcf.get("locus_1").unwrap(), b"ATTGCA");
     }
 
     #[test]
@@ -303,12 +312,12 @@ mod tests {
 
         let (matrix, _) = SeqParser::new(&abcd, &DataType::Dna).parse(&InputFmt::Fasta);
         assert_eq!(matrix.len(), 2);
-        assert_eq!(matrix.get("locus_1").unwrap(), "ATGC");
-        assert_eq!(matrix.get("locus_2").unwrap(), "GGCC");
+        assert_eq!(matrix.get("locus_1").unwrap(), b"ATGC");
+        assert_eq!(matrix.get("locus_2").unwrap(), b"GGCC");
 
         let (matrix, _) = SeqParser::new(&abcf, &DataType::Dna).parse(&InputFmt::Fasta);
         assert_eq!(matrix.len(), 1);
-        assert_eq!(matrix.get("locus_1").unwrap(), "ATTGCA");
+        assert_eq!(matrix.get("locus_1").unwrap(), b"ATTGCA");
     }
 
     #[test]
@@ -329,8 +338,8 @@ mod tests {
         let abcd = output.path().join("ABCD").join("ABCD.fas");
         assert!(abcd.is_file());
         let (matrix, _) = SeqParser::new(&abcd, &DataType::Dna).parse(&InputFmt::Fasta);
-        assert_eq!(matrix.get("gene_1").unwrap(), "gatata");
-        assert_eq!(matrix.get("gene_2").unwrap(), "gatataaa");
+        assert_eq!(matrix.get("gene_1").unwrap(), b"gatata");
+        assert_eq!(matrix.get("gene_2").unwrap(), b"gatataaa");
         assert!(output.path().join("ABCF").join("ABCF.fas").is_file());
     }
 }

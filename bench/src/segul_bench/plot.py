@@ -7,6 +7,9 @@
   to the newest.
 - <task>.png: time and memory of one task per version (ColorBrewer Blues,
   light for older versions and dark for newer).
+
+The scorecard and scatter charts are also written as SVG to a committed
+directory, for the README.
 """
 
 from __future__ import annotations
@@ -18,6 +21,8 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+# Stable SVG ids, so unchanged charts do not show up as git diffs.
+matplotlib.rcParams["svg.hashsalt"] = "segul-bench"
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib import colormaps  # noqa: E402
 from matplotlib.colors import TwoSlopeNorm, to_hex, to_rgb  # noqa: E402
@@ -53,12 +58,14 @@ ANALYSES = {
 MARKERS = ["o", "s", "^", "D", "v", "P", "X", "<", ">", "h", "p", "*"]
 
 
-def plot_report(report: dict, out_dir: Path) -> list[Path]:
+def plot_report(report: dict, out_dir: Path, svg_dir: Path | None = None) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
+    if svg_dir is not None:
+        svg_dir.mkdir(parents=True, exist_ok=True)
     for stale in ("time.png", "memory.png", "combined.png"):  # earlier chart names
         (out_dir / stale).unlink(missing_ok=True)
     versions = [v["id"] for v in report["versions"]]
-    written = [plot_scorecard(report, versions, out_dir), plot_scatter(report, versions, out_dir)]
+    written = [plot_scorecard(report, versions, out_dir, svg_dir), plot_scatter(report, versions, out_dir, svg_dir)]
     colors = version_colors(versions)
     labels = {d["id"]: dataset_label(d) for d in report["datasets"]}
     for task in report["tasks"]:
@@ -125,7 +132,7 @@ def compare(values: dict, versions: list[str]) -> tuple[str, str] | None:
 # Scorecard ---------------------------------------------------------------
 
 
-def plot_scorecard(report: dict, versions: list[str], out_dir: Path) -> Path:
+def plot_scorecard(report: dict, versions: list[str], out_dir: Path, svg_dir: Path | None = None) -> Path:
     """One row per task: how much faster and smaller the newest version is
     than the oldest, colored on a diverging scale centered on no change."""
     rows = grouped_rows(report, versions)
@@ -177,8 +184,15 @@ def plot_scorecard(report: dict, versions: list[str], out_dir: Path) -> Path:
     fig.tight_layout(rect=(0, 0.02, 1, 0.93), pad=0.4)
     path = out_dir / "scorecard.png"
     fig.savefig(path, dpi=150, facecolor=SURFACE)
+    save_svg(fig, svg_dir, "scorecard")
     plt.close(fig)
     return path
+
+
+def save_svg(fig, svg_dir: Path | None, name: str) -> None:
+    if svg_dir is not None:
+        # No date in the metadata, so reruns with the same results match.
+        fig.savefig(svg_dir / f"{name}.svg", facecolor=SURFACE, metadata={"Date": None})
 
 
 def change_text(ratio: float, metric_idx: int) -> str:
@@ -208,7 +222,7 @@ def fmt(value: float) -> str:
 # Scatter -----------------------------------------------------------------
 
 
-def plot_scatter(report: dict, versions: list[str], out_dir: Path) -> Path:
+def plot_scatter(report: dict, versions: list[str], out_dir: Path, svg_dir: Path | None = None) -> Path:
     """Time against memory, one panel per analysis. Each dataset has its own
     color and marker; hollow markers are older versions and the arrow points
     to the newest (filled). Lower left is better."""
@@ -285,6 +299,7 @@ def plot_scatter(report: dict, versions: list[str], out_dir: Path) -> Path:
     fig.tight_layout(rect=(0.01, legend_top + label_h + 0.01, 1, 0.96))
     path = out_dir / "scatter.png"
     fig.savefig(path, dpi=150, facecolor=SURFACE)
+    save_svg(fig, svg_dir, "scatter")
     plt.close(fig)
     return path
 

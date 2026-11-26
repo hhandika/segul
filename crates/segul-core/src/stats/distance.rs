@@ -57,11 +57,19 @@ const fn build_aa_table() -> [u8; 256] {
 /// everything else (gaps, missing data, ambiguous characters) as [`INVALID`].
 /// Matching is case-insensitive. For DNA, `U` is treated as `T`.
 pub fn encode(seq: &str, datatype: &DataType) -> Vec<u8> {
+    encode_bytes(seq.as_bytes(), datatype)
+}
+
+/// Encode sequence bytes for distance computation.
+/// Unambiguous characters are encoded as indices,
+/// everything else (gaps, missing data, ambiguous characters) as [`INVALID`].
+/// Matching is case-insensitive. For DNA, `U` is treated as `T`.
+pub fn encode_bytes(seq: &[u8], datatype: &DataType) -> Vec<u8> {
     let table = match datatype {
         DataType::Aa => &AA_TABLE,
         _ => &DNA_TABLE,
     };
-    seq.bytes().map(|b| table[b as usize]).collect()
+    seq.iter().map(|&b| table[b as usize]).collect()
 }
 
 /// Distance models.

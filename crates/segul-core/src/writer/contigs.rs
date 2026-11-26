@@ -62,12 +62,13 @@ impl<'a> ContigSummaryWriter<'a> {
             sum,min,max,mean,median,\
             N50,N75,N90,\
             contig_750,contig_1000,contig_1500,\
-            G_Count,C_Count,A_Count,T_Count"
+            G_Count,C_Count,A_Count,T_Count,\
+            N_Count,unknown,stdev"
         )?;
         for summary in self.summary {
             writeln!(
                 writer,
-                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
                 summary.file_path,
                 summary.contig_name,
                 summary.contig_count,
@@ -90,6 +91,9 @@ impl<'a> ContigSummaryWriter<'a> {
                 summary.c_count,
                 summary.a_count,
                 summary.t_count,
+                summary.n_count,
+                summary.unknown,
+                summary.stats.stdev,
             )?;
         }
 

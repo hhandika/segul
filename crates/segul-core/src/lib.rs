@@ -37,6 +37,7 @@
 //! | `maf`      | Multiple alignment format (MAF) conversion                |
 //! | `plot`     | Charts from summary statistics (SVG, PNG)                 |
 //! | `pdf`      | PDF output for charts (adds `plot`)                       |
+//! | `download` | Concurrent GenBank and ENA archive downloader             |
 //!
 //! ```toml
 //! segul-core = { version = "0.24", default-features = false, features = ["read"] }

@@ -116,16 +116,17 @@ impl<'a> UnalignAlignment<'a> {
     fn get_unalign(&self, input: &Path) -> (SeqMatrix, Header) {
         let (mut matrix, header) =
             SeqParser::new(input, self.datatype).get_alignment(self.input_fmt);
-        matrix.values_mut().for_each(|seq| {
-            *seq = self.remove_gaps(seq);
-        });
+        matrix.remove_bytes(|b| b == b'?' || b == b'-');
 
         (matrix, header)
     }
 
-    // Iterate over map and replace '?' with '-' of each values
-    fn remove_gaps(&self, seq: &str) -> String {
-        seq.replace(['?', '-'], "")
+    #[cfg(test)]
+    fn remove_gaps(&self, seq: &[u8]) -> Vec<u8> {
+        seq.iter()
+            .copied()
+            .filter(|&b| b != b'?' && b != b'-')
+            .collect()
     }
 
     fn write_results(&self, input: &Path, matrix: &SeqMatrix, header: &Header) {
@@ -149,9 +150,9 @@ mod tests {
 
     #[test]
     fn test_unalign() {
-        let seq = "ATG-?C";
+        let seq = b"ATG-?C";
         let unalign = UnalignAlignment::default();
         let res = unalign.remove_gaps(seq);
-        assert_eq!(res, "ATGC");
+        assert_eq!(res, b"ATGC");
     }
 }

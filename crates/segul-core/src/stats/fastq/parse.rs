@@ -7,6 +7,7 @@ const CARRIAGE_RETURN: u8 = b'\r';
 /// One FASTQ record borrowed from a block.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct RawRecord<'a> {
+    pub(crate) header: &'a [u8],
     pub(crate) sequence: &'a [u8],
     pub(crate) quality: &'a [u8],
 }
@@ -62,7 +63,11 @@ impl<'a> RecordParser<'a> {
                 quality.len()
             );
         }
-        Ok(RawRecord { sequence, quality })
+        Ok(RawRecord {
+            header,
+            sequence,
+            quality,
+        })
     }
 }
 

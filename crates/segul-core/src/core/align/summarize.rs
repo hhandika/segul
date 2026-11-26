@@ -184,12 +184,12 @@ impl<'a> AlignmentSummary<'a> {
     fn get_stats(&self, path: &Path) -> (Sites, CharMatrix, Taxa) {
         let aln = SeqParser::new(path, self.datatype);
         let (matrix, header) = aln.get_alignment(self.input_fmt);
-        let mut dna = CharMatrix::new();
-        dna.count_chars(&matrix, &header, self.datatype);
-        let mut sites = Sites::new(path);
-        sites.get_stats(&matrix, self.datatype);
         let mut taxa = Taxa::new();
         taxa.summarize_taxa(&matrix, self.datatype);
+        let mut dna = CharMatrix::new();
+        dna.count_from_taxa(&taxa, &header, self.datatype);
+        let mut sites = Sites::new(path);
+        sites.get_stats(&matrix, self.datatype);
 
         (sites, dna, taxa)
     }

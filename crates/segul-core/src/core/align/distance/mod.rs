@@ -398,7 +398,7 @@ impl<'a> AlignmentDistance<'a> {
     fn compute_distances(&self, matrix: &SeqMatrix) -> PairDistances {
         let seqs: Vec<Vec<u8>> = matrix
             .values()
-            .map(|seq| distance::encode(seq, self.datatype))
+            .map(|seq| distance::encode_bytes(seq, self.datatype))
             .collect();
         let freqs = match self.model {
             DistanceModel::TamuraNei => BaseFreqs::from_encoded(&seqs),

@@ -21,6 +21,7 @@
 # Benchmark (bench/): downloaded binaries, generated data, and charts
 bench/.cache/
 bench/figures/
+!bench/charts/*.svg
 bench/.venv/
 __pycache__/
 *.py[cod]

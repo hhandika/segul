@@ -49,8 +49,11 @@ impl CommonStats {
         }
     }
 
-    /// Calculate the common statistics
+    /// Calculate the common statistics. All stay zero for no values.
     pub fn calculate(&mut self, values: &[usize]) {
+        if values.is_empty() {
+            return;
+        }
         self.sum(values);
         self.mean(values);
         self.median(values);
@@ -94,6 +97,10 @@ impl CommonStats {
     }
 
     fn variance(&self, values: &[usize]) -> f64 {
+        // Sample variance is undefined for a single value.
+        if values.len() < 2 {
+            return 0.0;
+        }
         let d_mean = self.dev_mean(values);
         let n = values.len() as f64 - 1.0;
         self.sum_of_square(&d_mean) / n
@@ -216,7 +223,11 @@ impl NStats {
         }
     }
 
+    /// Calculate the N statistics. All stay zero for no contigs.
     pub fn calculate(&mut self, contigs: &[usize], total_len: usize) {
+        if contigs.is_empty() {
+            return;
+        }
         self.sum = total_len;
         let sorted_contig = self.sort_vec_desc(contigs);
         let csum = self.cumsum(&sorted_contig);
@@ -331,5 +342,17 @@ mod test {
         assert_eq!(8, seq.n50);
         assert_eq!(6, seq.n75);
         assert_eq!(4, seq.n90);
+    }
+
+    #[test]
+    fn test_empty_and_single_values() {
+        let mut stats = CommonStats::new();
+        stats.calculate(&[]);
+        assert_eq!((stats.mean, stats.median, stats.stdev), (0.0, 0.0, 0.0));
+        stats.calculate(&[42]);
+        assert_eq!((stats.mean, stats.stdev), (42.0, 0.0));
+        let mut nstats = NStats::new();
+        nstats.calculate(&[], 0);
+        assert_eq!(nstats.n50, 0);
     }
 }

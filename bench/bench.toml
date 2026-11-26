@@ -5,7 +5,7 @@
 # Results are reported relative to the first version.
 
 [defaults]
-versions = ["v0.20.0", "v0.24.0", "current"]
+versions = ["v0.20.0", "v0.23.2", "current"]
 replicates = 5
 warmup = 1
 scale = "full"
@@ -302,12 +302,6 @@ args = [
     "-o",
     "{output}",
 ]
-
-[[tasks]]
-id = "read-summary"
-label = "Summarize reads"
-dataset = "bunomys-reads"
-args = ["read", "summary", "-d", "{input}", "--mode", "complete", "-o", "{output}"]
 
 # [[tasks]]
 # id = "convert-nexus-fasta"

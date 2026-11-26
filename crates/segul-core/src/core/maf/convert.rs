@@ -542,13 +542,11 @@ impl<'a> MafConverter<'a> {
                 if block.rows.is_empty() {
                     return Ok(0);
                 }
-                let matrix: SeqMatrix = block
-                    .rows
-                    .iter()
-                    .map(|(sample, row)| {
-                        (sample.clone(), String::from_utf8_lossy(row).into_owned())
-                    })
-                    .collect();
+                let mut matrix =
+                    SeqMatrix::with_capacity(block.rows.len(), block.rows.len() * block.ncols());
+                for (sample, row) in &block.rows {
+                    matrix.insert(sample.clone(), row);
+                }
                 self.write_matrix(dir, name, &matrix)?;
                 Ok(1)
             })

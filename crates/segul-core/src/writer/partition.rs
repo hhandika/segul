@@ -4,21 +4,10 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::helper::types::{DataType, Partition, PartitionFmt};
+use crate::helper::types::{DataType, Partition, PartitionFmt, SiteRange};
 use crate::writer::FileWriter;
 
 impl FileWriter for PartWriter<'_> {}
-
-macro_rules! write_partition {
-    ($self:ident, $write_type:ident, $partition:ident, $is_codon: expr_2021) => {{
-        let mut writer = $self
-            .$write_type($self.fpath)
-            .expect("Failed creating/appending a partition file");
-        $self
-            .$partition(&mut writer, $is_codon)
-            .expect("Failed writing a partition file");
-    }};
-}
 
 pub struct PartWriter<'a> {
     fpath: &'a Path,
@@ -42,25 +31,38 @@ impl<'a> PartWriter<'a> {
         }
     }
 
+    /// Write partitions to disk, panicking on I/O failure.
     pub fn write_partition(&self) {
+        self.try_write_partition()
+            .expect("Failed writing a partition file");
+    }
+
+    /// Write partitions to disk, returning any I/O error.
+    pub fn try_write_partition(&self) -> Result<()> {
         match self.part_fmt {
             PartitionFmt::Charset => {
-                write_partition!(self, append_output_file, write_part_charset, false);
+                let mut writer = self.append_output_file(self.fpath)?;
+                self.write_part_charset(&mut writer, false)
             }
             PartitionFmt::CharsetCodon => {
-                write_partition!(self, append_output_file, write_part_charset, true);
+                let mut writer = self.append_output_file(self.fpath)?;
+                self.write_part_charset(&mut writer, true)
             }
             PartitionFmt::Nexus => {
-                write_partition!(self, create_output_file, write_part_nexus, false);
+                let mut writer = self.create_output_file(self.fpath)?;
+                self.write_part_nexus(&mut writer, false)
             }
             PartitionFmt::NexusCodon => {
-                write_partition!(self, create_output_file, write_part_nexus, true);
+                let mut writer = self.create_output_file(self.fpath)?;
+                self.write_part_nexus(&mut writer, true)
             }
             PartitionFmt::Raxml => {
-                write_partition!(self, create_output_file, write_part_raxml, false);
+                let mut writer = self.create_output_file(self.fpath)?;
+                self.write_part_raxml(&mut writer, false)
             }
             PartitionFmt::RaxmlCodon => {
-                write_partition!(self, create_output_file, write_part_raxml, true)
+                let mut writer = self.create_output_file(self.fpath)?;
+                self.write_part_raxml(&mut writer, true)
             }
         }
     }
@@ -72,108 +74,211 @@ impl<'a> PartWriter<'a> {
     }
 
     fn write_part_raxml<W: Write>(&self, writer: &mut W, is_codon: bool) -> Result<()> {
-        let dtype = if DataType::Dna == *self.datatype {
-            "DNA, "
-        } else {
-            ""
-        };
-        self.partition.iter().for_each(|part| {
-            if is_codon {
-                self.write_raxml_codon(writer, part, dtype).unwrap();
+        for part in self.partition {
+            let prefix = self.raxml_prefix(part);
+            let ranges = part.effective_ranges();
+            if is_codon && !part.has_stride() {
+                for offset in 0..3usize {
+                    let shifted = shift_codon_ranges(&ranges, offset);
+                    if !shifted.is_empty() {
+                        writeln!(
+                            writer,
+                            "{}{}_Subset{} = {}",
+                            prefix,
+                            part.gene,
+                            offset + 1,
+                            format_ranges(&shifted, ", ")
+                        )?;
+                    }
+                }
             } else {
                 writeln!(
                     writer,
-                    "{}{} = {}-{}",
-                    dtype, part.gene, part.start, part.end
-                )
-                .expect("Failed writing a partition file");
+                    "{}{} = {}",
+                    prefix,
+                    part.gene,
+                    format_ranges(&ranges, ", ")
+                )?;
             }
-        });
+        }
         writer.flush()?;
         Ok(())
     }
 
     fn write_part_charset<W: Write>(&self, writer: &mut W, is_codon: bool) -> Result<()> {
         writeln!(writer, "begin sets;")?;
-        self.partition.iter().for_each(|part| {
-            if is_codon {
-                self.write_nex_codon(writer, part).unwrap();
+        let mut model_entries: Vec<(String, Option<&str>)> = Vec::new();
+        for part in self.partition {
+            let ranges = part.effective_ranges();
+            let model = part.model.as_deref();
+            if is_codon && !part.has_stride() {
+                for offset in 0..3usize {
+                    let shifted = shift_codon_ranges(&ranges, offset);
+                    if !shifted.is_empty() {
+                        let subset_name = format!("{}_Subset{}", part.gene, offset + 1);
+                        let quoted = self.get_gene_name(&subset_name);
+                        writeln!(
+                            writer,
+                            "charset {} = {};",
+                            quoted,
+                            format_ranges(&shifted, " ")
+                        )?;
+                        model_entries.push((quoted, model));
+                    }
+                }
             } else {
+                let quoted = self.get_gene_name(&part.gene);
                 writeln!(
                     writer,
-                    "charset {} = {}-{};",
-                    self.get_gene_name(&part.gene),
-                    part.start,
-                    part.end
-                )
-                .unwrap();
+                    "charset {} = {};",
+                    quoted,
+                    format_ranges(&ranges, " ")
+                )?;
+                model_entries.push((quoted, model));
             }
-        });
+        }
+        if model_entries.iter().any(|(_, m)| m.is_some()) {
+            self.write_charpartition(writer, &model_entries)?;
+        }
         writeln!(writer, "end;")?;
         writer.flush()?;
         Ok(())
     }
 
+    fn write_charpartition<W: Write>(
+        &self,
+        writer: &mut W,
+        entries: &[(String, Option<&str>)],
+    ) -> Result<()> {
+        let fallback = match self.datatype {
+            DataType::Dna => "DNA",
+            DataType::Aa => "AA",
+            DataType::Ignore => "AUTO",
+        };
+        writeln!(writer, "charpartition models =")?;
+        for (idx, (gene, model)) in entries.iter().enumerate() {
+            let label = format_model_label(model.unwrap_or(fallback));
+            let sep = if idx + 1 == entries.len() { ";" } else { "," };
+            writeln!(writer, "    {}: {}{}", label, gene, sep)?;
+        }
+        Ok(())
+    }
+
+    fn raxml_prefix(&self, part: &Partition) -> String {
+        if let Some(model) = &part.model {
+            format!("{model}, ")
+        } else if DataType::Dna == *self.datatype {
+            "DNA, ".to_string()
+        } else {
+            String::new()
+        }
+    }
+
     fn get_gene_name(&self, name: &str) -> String {
-        if name.contains('-') {
+        if name.contains(['-', '+', '.', '\'', ' ']) {
             format!("'{}'", name)
         } else {
             name.to_string()
         }
     }
+}
 
-    fn write_raxml_codon<W: Write>(
-        &self,
-        writer: &mut W,
-        part: &Partition,
-        dtype: &str,
-    ) -> Result<()> {
-        writeln!(
-            writer,
-            "{}{}_Subset1 = {}-{}\\3",
-            dtype, part.gene, part.start, part.end
-        )?;
-        writeln!(
-            writer,
-            "{}{}_Subset2 = {}-{}\\3",
-            dtype,
-            part.gene,
-            part.start + 1,
-            part.end
-        )?;
-        writeln!(
-            writer,
-            "{}{}_Subset3 = {}-{}\\3",
-            dtype,
-            part.gene,
-            part.start + 2,
-            part.end
-        )?;
+fn shift_codon_ranges(ranges: &[SiteRange], offset: usize) -> Vec<SiteRange> {
+    ranges
+        .iter()
+        .filter_map(|r| {
+            let start = r.start + offset;
+            (start <= r.end).then_some(SiteRange::with_step(start, r.end, 3))
+        })
+        .collect()
+}
 
-        Ok(())
+fn format_ranges(ranges: &[SiteRange], sep: &str) -> String {
+    ranges
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(sep)
+}
+
+fn format_model_label(label: &str) -> String {
+    if label.contains([' ', ';', ':', ',']) {
+        format!("'{label}'")
+    } else {
+        label.to_string()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::parser::partition::PartitionParser;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_write_merged_raxml_and_nexus_roundtrip() {
+        let dir = TempDir::with_prefix("segul_part_writer").unwrap();
+        let nex_path = dir.path().join("out.nex");
+        let rax_path = dir.path().join("out.txt");
+
+        let parts = vec![
+            Partition::from_ranges(
+                "Subset1",
+                vec![SiteRange::new(1, 5), SiteRange::new(11, 15)],
+                Some("GTR+I+G".to_string()),
+            ),
+            Partition::from_ranges(
+                "Subset2",
+                vec![SiteRange::with_step(6, 10, 3)],
+                Some("HKY+G".to_string()),
+            ),
+        ];
+
+        PartWriter::new(&nex_path, &parts, &PartitionFmt::Nexus, &DataType::Dna)
+            .try_write_partition()
+            .unwrap();
+        let nex_text = std::fs::read_to_string(&nex_path).unwrap();
+        assert!(nex_text.contains("charset Subset1 = 1-5 11-15;"));
+        assert!(nex_text.contains("charset Subset2 = 6-10\\3;"));
+        assert!(nex_text.contains("charpartition models ="));
+        assert!(nex_text.contains("GTR+I+G: Subset1,"));
+        assert!(nex_text.contains("HKY+G: Subset2;"));
+
+        let parsed_nex = PartitionParser::new(&nex_path, &PartitionFmt::Nexus, true)
+            .try_parse()
+            .unwrap();
+        assert_eq!(parsed_nex, parts);
+
+        PartWriter::new(&rax_path, &parsed_nex, &PartitionFmt::Raxml, &DataType::Dna)
+            .try_write_partition()
+            .unwrap();
+        let rax_text = std::fs::read_to_string(&rax_path).unwrap();
+        assert_eq!(
+            rax_text.lines().collect::<Vec<_>>(),
+            vec!["GTR+I+G, Subset1 = 1-5, 11-15", "HKY+G, Subset2 = 6-10\\3",]
+        );
     }
 
-    fn write_nex_codon<W: Write>(&self, writer: &mut W, part: &Partition) -> Result<()> {
-        writeln!(
-            writer,
-            "charset {}_Subset1 = {}-{}\\3;",
-            part.gene, part.start, part.end
-        )?;
-        writeln!(
-            writer,
-            "charset {}_Subset2 = {}-{}\\3;",
-            part.gene,
-            part.start + 1,
-            part.end
-        )?;
-        writeln!(
-            writer,
-            "charset {}_Subset3 = {}-{}\\3;",
-            part.gene,
-            part.start + 2,
-            part.end
-        )?;
-
-        Ok(())
+    #[test]
+    fn test_write_codon_expansion_on_merged_unstrided() {
+        let dir = TempDir::with_prefix("segul_part_codon").unwrap();
+        let rax_path = dir.path().join("codon.txt");
+        let parts = vec![Partition::from_ranges(
+            "geneA",
+            vec![SiteRange::new(1, 6), SiteRange::new(10, 12)],
+            None,
+        )];
+        PartWriter::new(&rax_path, &parts, &PartitionFmt::RaxmlCodon, &DataType::Dna)
+            .try_write_partition()
+            .unwrap();
+        let rax_text = std::fs::read_to_string(&rax_path).unwrap();
+        assert_eq!(
+            rax_text.lines().collect::<Vec<_>>(),
+            vec![
+                "DNA, geneA_Subset1 = 1-6\\3, 10-12\\3",
+                "DNA, geneA_Subset2 = 2-6\\3, 11-12\\3",
+                "DNA, geneA_Subset3 = 3-6\\3, 12-12\\3",
+            ]
+        );
     }
 }

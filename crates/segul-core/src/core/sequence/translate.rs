@@ -1,14 +1,12 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use ahash::AHashMap as HashMap;
 use colored::Colorize;
-use indexmap::IndexMap;
 use rayon::prelude::*;
 
 use crate::core::OutputPrint;
 use crate::helper::sequence::{SeqCheck, SeqParser};
-use crate::helper::translation::NcbiTables;
+use crate::helper::translation::{CodonTable, codon_table, translate_bytes};
 use crate::helper::types::{DataType, GeneticCodes, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{files, utils};
 use crate::writer::sequences::SeqWriter;
@@ -41,9 +39,10 @@ impl<'a> SequenceTranslation<'a> {
         let spin = utils::set_spinner();
         spin.set_message("Translating dna sequences...");
         fs::create_dir_all(output).expect("Failed creating an output directory");
+        let table = codon_table(*self.trans_table);
         files.par_iter().for_each(|file| {
             let (mut seq, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
-            let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
+            let (trans_mat, header) = self.translate_matrix(&mut seq, frame, &table);
             let output_fname = files::create_output_fname(output, file, self.output_fmt);
             let mut writer = SeqWriter::new(&output_fname, &trans_mat, &header);
             writer
@@ -58,11 +57,12 @@ impl<'a> SequenceTranslation<'a> {
     pub fn translate_all_autoframe(&self, files: &[PathBuf], output: &Path) {
         let spin = utils::set_spinner();
         spin.set_message("Translating dna sequences...");
+        let table = codon_table(*self.trans_table);
         files.par_iter().for_each(|file| {
             let (mut seq, _) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
             let mut frame = 1;
-            self.get_reading_frame(file, &seq, &mut frame);
-            let (trans_mat, header) = self.translate_matrix(&mut seq, frame);
+            self.get_reading_frame(file, &seq, &mut frame, &table);
+            let (trans_mat, header) = self.translate_matrix(&mut seq, frame, &table);
             let output_dir = output.join(format!("RF-{}", frame));
             fs::create_dir_all(output).expect("Failed creating an output directory");
             let outname = files::create_output_fname(&output_dir, file, self.output_fmt);
@@ -76,16 +76,22 @@ impl<'a> SequenceTranslation<'a> {
         self.print_output_info(output);
     }
 
-    fn get_reading_frame(&self, file: &Path, matrix: &SeqMatrix, frame: &mut usize) {
+    fn get_reading_frame(
+        &self,
+        file: &Path,
+        matrix: &SeqMatrix,
+        frame: &mut usize,
+        table: &CodonTable,
+    ) {
         let seq = matrix
             .values()
             .next()
             .expect("Failed getting the first sequence");
-        let trans = self.translate_seq(seq, *frame);
-        if trans.contains('*') && *frame < 3 {
+        let has_internal_stop = self.has_internal_stop(seq, *frame, table);
+        if has_internal_stop && *frame < 3 {
             *frame += 1;
-            self.get_reading_frame(file, matrix, frame);
-        } else if trans.contains('*') && *frame == 3 {
+            self.get_reading_frame(file, matrix, frame, table);
+        } else if has_internal_stop && *frame == 3 {
             panic!(
                 "The alignment {} still contains stop codons \
             after testing all possible reading frames",
@@ -94,67 +100,50 @@ impl<'a> SequenceTranslation<'a> {
         }
     }
 
-    fn translate_matrix(&self, matrix: &mut SeqMatrix, frame: usize) -> (SeqMatrix, Header) {
-        let mut trans_matrix: SeqMatrix = IndexMap::new();
-        matrix.iter().for_each(|(id, seq)| {
-            let sequences = self.translate_seq(seq, frame);
-            trans_matrix.insert(id.to_string(), sequences);
-        });
+    // A complete CDS ends in a stop, so a stop is internal only if a full codon follows it.
+    // We count bases because X in the translation can be a partial, missing, or ambiguous codon.
+    fn has_internal_stop(&self, seq: &[u8], frame: usize, table: &CodonTable) -> bool {
+        let mut translated = Vec::with_capacity(seq.len().div_ceil(3));
+        translate_bytes(seq, frame, table, &mut translated);
+        translated
+            .iter()
+            .position(|&aa| aa == b'*')
+            .is_some_and(|pos| {
+                let start = frame - 1 + (pos + 1) * 3;
+                let bases_after_stop = seq
+                    .get(start..)
+                    .unwrap_or(&[])
+                    .iter()
+                    .filter(|&&b| !matches!(b, b'-' | b'?' | b'.' | b'N' | b'n'))
+                    .count();
+                bases_after_stop >= 3
+            })
+    }
+
+    fn translate_matrix(
+        &self,
+        matrix: &mut SeqMatrix,
+        frame: usize,
+        table: &CodonTable,
+    ) -> (SeqMatrix, Header) {
+        let mut trans_matrix =
+            SeqMatrix::with_capacity(matrix.len(), matrix.as_bytes().len() / 3 + matrix.len());
+        for (id, seq) in matrix.iter() {
+            trans_matrix.push_with(id.clone(), |buf| {
+                translate_bytes(seq, frame, table, buf);
+            });
+        }
         matrix.clear();
         let header = self.get_header(&trans_matrix);
         (trans_matrix, header)
     }
 
-    // We iter over the sequence and translate each codon to its corresponding amino acid
-    // We collect minus the first frame - 1 characters and then collect the rest in chunks of 3
-    // This allow us to adjust the reading frame when it doesn't start from the first character
+    #[cfg(test)]
     fn translate_seq(&self, seq: &str, frame: usize) -> String {
-        let table = self.get_ncbi_tables();
-        let mut translation = String::new();
-        seq.to_uppercase()
-            .chars()
-            .skip(frame - 1)
-            .collect::<Vec<char>>()
-            .chunks(3)
-            .map(|c| c.iter().collect::<String>())
-            .for_each(|c| {
-                let aa = table.get(&c);
-                match aa {
-                    Some(c) => translation.push_str(c),
-                    None => translation.push('X'),
-                }
-            });
-
-        translation
-    }
-
-    /// Match user input with supported genetic codes
-    /// and return the corresponding translation table
-    fn get_ncbi_tables(&self) -> HashMap<String, String> {
-        match self.trans_table {
-            GeneticCodes::StandardCode => NcbiTables::new().standard_code(), // Table 1
-            GeneticCodes::VertMtDna => NcbiTables::new().vert_mtdna(),       // Table 2
-            GeneticCodes::YeastMtDna => NcbiTables::new().yeast_mtdna(),     // Table 3
-            GeneticCodes::MoldProtCoelMtDna => NcbiTables::new().moldprotocoe_mtdna(), // Table 4
-            GeneticCodes::InvertMtDna => NcbiTables::new().invert_mtdna(),   // Table 5
-            GeneticCodes::CilDasHexNu => NcbiTables::new().cildashex_nudna(), // Table 6
-            GeneticCodes::EchiFlatwormMtDna => NcbiTables::new().echiflatworm_mtdna(), // Table 9
-            GeneticCodes::EuplotidNu => NcbiTables::new().euplotid_nudna(),  // Table 10
-            GeneticCodes::BacArchPlantPlast => NcbiTables::new().standard_code(), // Table 11
-            GeneticCodes::AltYeastNu => NcbiTables::new().alt_yeast_nu(),    // Table 12
-            GeneticCodes::AsciMtDna => NcbiTables::new().ascidian_mtdna(),   // Table 13
-            GeneticCodes::AltFlatwormMtDna => NcbiTables::new().alt_flatworm_mtdna(), // Table 14
-            GeneticCodes::ChlorMtDna => NcbiTables::new().chlorophycean_mtdna(), // Table 16
-            GeneticCodes::TrematodeMtDna => NcbiTables::new().trematode_mtdna(), // Table 21
-            GeneticCodes::ScenedesmusMtDna => NcbiTables::new().scenedesmus_mtdna(), // Table 22
-            GeneticCodes::ThrausMtDna => NcbiTables::new().thraustochytrium_mtdna(), // Table 23
-            GeneticCodes::RhabdopMtDna => NcbiTables::new().rhabdopleuridae_mtdna(), // Table 24
-            GeneticCodes::CaDivSR1GraciBac => NcbiTables::new().candid_div_sr1_gracil(), // Table 25
-            GeneticCodes::PachyNu => NcbiTables::new().pachysolen_tanno_nu(), // Table 26
-            GeneticCodes::MesodiniumNu => NcbiTables::new().mesodinium_nu(), // Table 29
-            GeneticCodes::PeritrichNu => NcbiTables::new().peritrich_nu(),   // Table 30
-            GeneticCodes::CephalodiscidaeMtDna => NcbiTables::new().cephalodiscidae_mtdna(), // Table 33
-        }
+        let table = codon_table(*self.trans_table);
+        let mut out = Vec::new();
+        translate_bytes(seq.as_bytes(), frame, &table, &mut out);
+        String::from_utf8(out).expect("Translation output is ASCII")
     }
 
     fn get_header(&self, matrix: &SeqMatrix) -> Header {
@@ -188,6 +177,23 @@ mod tests {
                 &OutputFmt::Fasta,
             );
             assert_eq!($result, trans.translate_seq($input, $frame));
+        };
+    }
+
+    macro_rules! test_reading_frame {
+        ($input:expr_2021, $result:expr_2021, $code:ident) => {
+            let trans = SequenceTranslation::new(
+                &InputFmt::Fasta,
+                &GeneticCodes::$code,
+                &DataType::Dna,
+                &OutputFmt::Fasta,
+            );
+            let mut matrix = SeqMatrix::new();
+            matrix.insert(String::from("seq"), $input.as_bytes());
+            let mut frame = 1;
+            let table = codon_table(GeneticCodes::$code);
+            trans.get_reading_frame(Path::new("cds.fas"), &matrix, &mut frame, &table);
+            assert_eq!($result, frame, "{}", $input);
         };
     }
 
@@ -442,5 +448,63 @@ mod tests {
         let dna = "nnnaaaggggatttagttagaa?????";
         let frame = 1;
         test_translate!(dna, frame, String::from("XKGDLVRX?"), StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_complete_cds() {
+        // Frame 2 has no stop codons, so it must not win over the complete CDS in frame 1.
+        test_reading_frame!("ATGGCCTAA", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_complete_cds_stops_in_other_frames() {
+        test_reading_frame!("ATGATAGTTAGCTAA", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_stop_with_partial_codon() {
+        test_reading_frame!("ATGGCCTAAG", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAAGC", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_stop_with_gaps() {
+        test_reading_frame!("ATGGCCTAA------", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAA--", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAAG-----", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAA--G--C", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_stop_with_missing() {
+        test_reading_frame!("ATGGCCTAA??????", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAANNNNNN", 1, StandardCode);
+        test_reading_frame!("ATGGCCTAA......", 1, StandardCode);
+        test_reading_frame!("atggcctaannn---", 1, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_complete_cds_offset() {
+        test_reading_frame!("TAATGATAGTTAGCTAA", 3, StandardCode);
+        test_reading_frame!("TATGATAGTTAGCTAA", 2, StandardCode);
+    }
+
+    #[test]
+    fn test_reading_frame_complete_cds_vertmtdna() {
+        test_reading_frame!("ATGGCCAGA", 1, VertMtDna);
+    }
+
+    #[test]
+    fn test_reading_frame_internal_stop() {
+        test_reading_frame!("ATGTAAGCC", 2, StandardCode);
+        test_reading_frame!("ATGGCCTAATAA", 2, StandardCode);
+        test_reading_frame!("ATGTAA---GCC", 2, StandardCode);
+        test_reading_frame!("ATGGCCTAARAC", 2, StandardCode);
+    }
+
+    #[test]
+    #[should_panic(expected = "still contains stop codons")]
+    fn test_reading_frame_internal_stop_all_frames() {
+        test_reading_frame!("TAAATAAATAAATAA", 1, StandardCode);
     }
 }

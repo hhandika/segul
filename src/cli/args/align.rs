@@ -181,7 +181,7 @@ pub(crate) struct AlignFilterArgs {
 
 #[derive(Args)]
 pub(crate) struct AlignSplitArgs {
-    #[arg(short = 'i', long = "input", help = "Input partition path")]
+    #[arg(short = 'i', long = "input", help = "Input alignment path")]
     pub(crate) input: PathBuf,
     #[command(flatten)]
     pub(crate) in_fmt: CommonSeqInput,
@@ -189,7 +189,7 @@ pub(crate) struct AlignSplitArgs {
     pub(crate) out_fmt: CommonSeqOutput,
     #[arg(short, long, help = "Output path", default_value = "Align-Split")]
     pub(crate) output: PathBuf,
-    #[arg(short = 'I', long = "input-partition", help = "Input partition format")]
+    #[arg(short = 'I', long = "input-partition", help = "Input partition path")]
     pub(crate) input_partition: Option<PathBuf>,
     #[arg(long = "skip-checking", help = "Skip checking partition format")]
     pub(crate) skip_checking: bool,
@@ -201,7 +201,7 @@ pub(crate) struct AlignSplitArgs {
         short = 'p',
         long = "partition-format",
         help = "Specify partition format",
-        value_parser = builder::PossibleValuesParser::new(["nexus", "raxml"]),
+        value_parser = builder::PossibleValuesParser::new(["charset", "nexus", "raxml"]),
     )]
     pub(crate) part_fmt: Option<String>,
 }
@@ -246,8 +246,12 @@ pub(crate) struct PartitionArgs {
     pub(crate) in_fmt: CommonSeqInput,
     #[command(flatten)]
     pub(crate) out_fmt: CommonSeqOutput,
-    #[arg(short, long, help = "Output path", default_value = "Partition-Convert")]
-    pub(crate) output: String,
+    #[arg(
+        short,
+        long,
+        help = "Output directory path (defaults to input file directory)"
+    )]
+    pub(crate) output: Option<PathBuf>,
     #[arg(
         short = 'p',
         long = "input-partition",

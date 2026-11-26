@@ -32,7 +32,8 @@ fn test_view_summary_help() {
         .assert()
         .success()
         .stdout(predicates::str::contains("alignment-report.json"))
-        .stdout(predicates::str::contains("distance-report.json"));
+        .stdout(predicates::str::contains("distance-report.json"))
+        .stdout(predicates::str::contains("contig-report.json"));
 }
 
 #[test]

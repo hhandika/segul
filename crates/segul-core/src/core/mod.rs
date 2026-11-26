@@ -3,6 +3,8 @@
 pub mod align;
 #[cfg(feature = "contig")]
 pub mod contig;
+#[cfg(feature = "download")]
+pub mod download;
 #[cfg(feature = "maf")]
 pub mod maf;
 #[cfg(feature = "read")]

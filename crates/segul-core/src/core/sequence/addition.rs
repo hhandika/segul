@@ -111,7 +111,7 @@ impl<'a> SequenceAddition<'a> {
                 if to_matrix.contains_key(&sequence_name) {
                     counter.lock().expect("Failed to lock counter.").skip();
                 } else {
-                    to_matrix.insert(sequence_name, sequence.to_string());
+                    to_matrix.insert(sequence_name, sequence);
                     counter
                         .lock()
                         .expect("Failed to lock counter.")
@@ -207,7 +207,7 @@ impl<'a> SequenceAddition<'a> {
                     .expect("Failed to lock counter.")
                     .skip_sequence(sequence);
             } else {
-                dest_matrix.insert(name.to_string(), sequence.to_string());
+                dest_matrix.insert(name.to_string(), sequence);
                 counter
                     .lock()
                     .expect("Failed to lock counter.")
@@ -250,9 +250,7 @@ impl<'a> SequenceAddition<'a> {
     }
 
     fn clean_missing_data(&self, matrix: &mut SeqMatrix) {
-        matrix.values_mut().for_each(|seq| {
-            *seq = seq.replace(['?', '-'], "");
-        });
+        matrix.remove_bytes(|b| b == b'?' || b == b'-');
     }
 
     fn write_output(&self, final_matrix: &SeqMatrix, file: &Path) {
@@ -341,7 +339,7 @@ impl SingleSequenceCounter {
         }
     }
 
-    fn add(&mut self, sequence: &str) {
+    fn add(&mut self, sequence: &[u8]) {
         self.sequence_counts += 1;
         self.total_length_added += sequence.len();
         self.calculate_mean();
@@ -408,14 +406,14 @@ impl SequenceCounter {
         self.mean_length = self.total_length as f64 / self.total_sequence_counts as f64;
     }
 
-    fn add_sequence(&mut self, sequence: &str) {
+    fn add_sequence(&mut self, sequence: &[u8]) {
         self.total_sequence_counts += 1;
         self.total_sequence_added += 1;
         self.total_length += sequence.len();
         self.total_added_length += sequence.len();
     }
 
-    fn skip_sequence(&mut self, sequence: &str) {
+    fn skip_sequence(&mut self, sequence: &[u8]) {
         self.total_sequence_counts += 1;
         self.skipped_sequences += 1;
         self.total_length += sequence.len();
@@ -441,10 +439,10 @@ mod tests {
     #[test]
     fn test_stat_counter() {
         let mut counter = SequenceCounter::new(2, 2);
-        counter.add_sequence("ATCG");
-        counter.add_sequence("ATCG");
-        counter.skip_sequence("ATCG");
-        counter.skip_sequence("ATCG");
+        counter.add_sequence(b"ATCG");
+        counter.add_sequence(b"ATCG");
+        counter.skip_sequence(b"ATCG");
+        counter.skip_sequence(b"ATCG");
         counter.add_file("file");
         counter.calculate_mean();
         assert_eq!(counter.total_input_files, 2);

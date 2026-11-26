@@ -6,7 +6,7 @@ version = "0.25.0"
 authors = ["Heru Handika <herubiolog@gmail.com>"]
 edition = "2024"
 license = "MIT"
-description = "An ultrafast and memory-efficient tool for phylogenomics"
+description = "An ultrafast and memory-efficient tool for genomics"
 homepage = "https://www.segul.app/"
 repository = "https://github.com/hhandika/segul"
 
@@ -60,6 +60,9 @@ svg2pdf = { version = "0.13.0", default-features = false, features = ["text"] }
 colorous = "1.0.16"
 ratatui = "0.30.*"
 crossterm = { version = "0.29.*", features = ["osc52"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "http2"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "macros"] }
+md-5 = "0.10"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
@@ -90,6 +93,7 @@ segul-core = { workspace = true, features = [
     "maf",
     "plot",
 ] }
+alphanumeric-sort.workspace = true
 anyhow.workspace = true
 clap.workspace = true
 colored.workspace = true

@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use colored::Colorize;
-use indexmap::IndexMap;
 use indexmap::IndexSet;
 use rayon::prelude::*;
 use regex::Regex;
@@ -144,9 +143,9 @@ impl<'a> SequenceRenamingDry<'a> {
         to: &str,
         all: &bool,
     ) -> Vec<(String, String)> {
+        let re = Regex::new(from).expect("Failed parsing regex");
         let mut new_ids: Vec<(String, String)> = Vec::new();
         ids.iter().for_each(|id| {
-            let re = Regex::new(from).expect("Failed parsing regex");
             let new_id = if *all {
                 re.replace_all(id, to)
             } else {
@@ -200,13 +199,15 @@ impl<'a> SequenceRenaming<'a> {
                 process_files!(self, files, replace_str, input_str, "");
             }
             SeqRenamingParameters::RmRegex(input_re, is_all) => {
-                process_files!(self, files, replace_re, input_re, "", is_all);
+                let re = Regex::new(input_re).expect("Failed parsing regex");
+                process_files!(self, files, replace_re_compiled, &re, "", *is_all);
             }
             SeqRenamingParameters::RpStr(from, to) => {
                 process_files!(self, files, replace_str, from, to);
             }
             SeqRenamingParameters::RpRegex(from, to, is_all) => {
-                process_files!(self, files, replace_re, from, to, is_all);
+                let re = Regex::new(from).expect("Failed parsing regex");
+                process_files!(self, files, replace_re_compiled, &re, to, *is_all);
             }
             SeqRenamingParameters::None => unreachable!("Missing rename parameters"),
         }
@@ -237,10 +238,10 @@ impl<'a> SequenceRenaming<'a> {
                         destination
                     );
                     if existing_value.len() > value.len() {
-                        matrix.insert(origin.to_string(), value);
+                        matrix.insert(origin.to_string(), &value);
                     }
                 } else {
-                    matrix.insert(destination.to_string(), value);
+                    matrix.insert(destination.to_string(), &value);
                 }
             }
         });
@@ -260,30 +261,41 @@ impl<'a> SequenceRenaming<'a> {
 
     fn replace_str(&self, file: &Path, from: &str, to: &str) -> (SeqMatrix, Header) {
         let (matrix, header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
-        let mut new_matrix = IndexMap::with_capacity(matrix.len());
+        let mut new_matrix = SeqMatrix::with_capacity(matrix.len(), matrix.as_bytes().len());
         matrix.iter().for_each(|(id, seq)| {
             if id.contains(from) {
                 let new_id = id.replace(from, to);
-                new_matrix.insert(new_id, seq.to_string());
+                new_matrix.insert(new_id, seq);
             } else {
-                new_matrix.insert(id.to_string(), seq.to_string());
+                new_matrix.insert(id.to_string(), seq);
             }
         });
 
         (new_matrix, header)
     }
 
+    #[cfg(test)]
     fn replace_re(&self, file: &Path, from: &str, to: &str, all: &bool) -> (SeqMatrix, Header) {
+        let re = Regex::new(from).expect("Failed parsing regex");
+        self.replace_re_compiled(file, &re, to, *all)
+    }
+
+    fn replace_re_compiled(
+        &self,
+        file: &Path,
+        re: &Regex,
+        to: &str,
+        all: bool,
+    ) -> (SeqMatrix, Header) {
         let (matrix, header) = SeqParser::new(file, self.datatype).parse(self.input_fmt);
-        let mut new_matrix = IndexMap::with_capacity(matrix.len());
+        let mut new_matrix = SeqMatrix::with_capacity(matrix.len(), matrix.as_bytes().len());
         matrix.iter().for_each(|(id, seq)| {
-            let re = Regex::new(from).expect("Failed parsing regex");
-            let new_id = if *all {
+            let new_id = if all {
                 re.replace_all(id, to)
             } else {
                 re.replace(id, to)
             };
-            new_matrix.insert(new_id.to_string(), seq.to_string());
+            new_matrix.insert(new_id.to_string(), seq);
         });
 
         (new_matrix, header)
@@ -319,7 +331,7 @@ mod test {
         let names = [(String::from("ABCD"), String::from("WXYZ"))];
         let (seq, _) = rename.replace_id(file, &names);
         assert_eq!(seq.len(), 2);
-        assert_eq!(seq.get("WXYZ"), Some(&String::from("AGTATG")));
+        assert_eq!(seq.get("WXYZ"), Some(b"AGTATG".as_slice()));
         assert_eq!(seq.get("ABCD"), None);
     }
 
@@ -327,7 +339,7 @@ mod test {
     fn test_rename_rm_str() {
         input!(rename, file);
         let (seq, _) = rename.replace_str(file, "BC", "");
-        assert_eq!(seq.get("AD"), Some(&String::from("AGTATG")));
+        assert_eq!(seq.get("AD"), Some(b"AGTATG".as_slice()));
     }
 
     #[test]
@@ -335,7 +347,7 @@ mod test {
         input!(rename, file);
         let (seq, _) = rename.replace_re(file, "^A", "", &false);
         let (seq2, _) = rename.replace_re(file, "[^ABC]", "", &false);
-        assert_eq!(seq.get("BCD"), Some(&String::from("AGTATG")));
-        assert_eq!(seq2.get("ABC"), Some(&String::from("AGTATG")));
+        assert_eq!(seq.get("BCD"), Some(b"AGTATG".as_slice()));
+        assert_eq!(seq2.get("ABC"), Some(b"AGTATG".as_slice()));
     }
 }

@@ -1,6 +1,6 @@
 # segul-core
 
-Library crate behind [SEGUL](https://www.segul.app/), an ultrafast and memory-efficient tool for phylogenomics. It provides the parsers, writers, summary statistics and core operations used by the `segul` command-line app.
+Library crate behind [SEGUL](https://www.segul.app/), an ultrafast and memory-efficient tool for genomics. It provides the parsers, writers, summary statistics and core operations used by the `segul` command-line app.
 
 If you only need the command-line app, install [`segul`](https://crates.io/crates/segul) instead.
 

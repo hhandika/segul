@@ -92,7 +92,9 @@ fn test_summary_without_plot() {
         .arg(fixture("contigs"))
         .args(["-o", "Contig-Summary"]);
     cmd.assert().success();
-    assert!(!tmp_dir.path().join("Contig-Summary").join("plots").exists());
+    let output = tmp_dir.path().join("Contig-Summary");
+    assert!(output.join("contig-report.json").is_file());
+    assert!(!output.join("plots").exists());
     tmp_dir.close().unwrap();
 }
 

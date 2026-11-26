@@ -346,8 +346,7 @@ impl AlignmentView {
         .map_err(|_| anyhow::anyhow!("Failed to read {} as a sequence file", path.display()))?;
         let mut names = Vec::with_capacity(matrix.len());
         let mut rows = Vec::with_capacity(matrix.len());
-        for (name, seq) in matrix {
-            let mut seq = seq.into_bytes();
+        for (name, mut seq) in matrix.into_rows() {
             seq.make_ascii_uppercase();
             names.push(name);
             rows.push(seq);

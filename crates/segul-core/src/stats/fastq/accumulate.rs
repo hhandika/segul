@@ -1,14 +1,15 @@
 //! Single-pass accumulator for FASTQ statistics.
 //!
-//! Every field is a count or a histogram, so accumulators built from
-//! different blocks of a file merge by addition. The result does not depend
-//! on how the file was split between threads.
+//! Every field is an integer count, fixed-point sum, or histogram, so
+//! accumulators built from different blocks of a file merge by addition. The
+//! result does not depend on how the file was split between threads.
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
 use anyhow::{Result, bail};
 use memchr::memmem::Finder;
 
+use super::header::HeaderAccumulator;
 use super::parse::RecordParser;
 use super::sketch::{DuplicationSketch, HEAVY_HITTERS, HeavyHitters};
 
@@ -20,6 +21,18 @@ pub(crate) const LOW_QSCORE: usize = 20;
 /// Positions tracked one by one. Later positions are grouped in bins.
 pub(crate) const EXACT_POSITIONS: usize = 1_000;
 pub(crate) const POSITION_BIN_WIDTH: usize = 1_000;
+/// Number of equal-width relative-position bins along each read (5% each).
+pub(crate) const RELATIVE_POSITION_BINS: usize = 20;
+/// Histogram bins for normalized dinucleotide sequence complexity (5% each).
+pub(crate) const COMPLEXITY_BINS: usize = 20;
+/// Reads with normalized dinucleotide entropy below this are low complexity.
+pub(crate) const LOW_COMPLEXITY_THRESHOLD: f64 = 0.50;
+/// Minimum run length counted as a homopolymer.
+pub(crate) const HOMOPOLYMER_MIN_LEN: usize = 6;
+/// Minimum 3'-terminal homopolymer run counted as a poly-base tail.
+pub(crate) const TERMINAL_HOMOPOLYMER_MIN_LEN: usize = 10;
+/// Fixed-point multiplier so per-read float sums stay exact integers on merge.
+pub(crate) const FIXED_SCALE: u128 = 1_000_000;
 // Read lengths up to this are counted in a vector, longer ones in a map.
 const MAX_DENSE_LENGTH: usize = 1 << 16;
 /// Reads are split between neighboring GC bins in these units, so
@@ -36,9 +49,60 @@ pub(crate) const BASE_C: usize = 1;
 pub(crate) const BASE_G: usize = 2;
 pub(crate) const BASE_T: usize = 3;
 pub(crate) const BASE_N: usize = 4;
-const BASE_OTHER: usize = 5;
+pub(crate) const BASE_OTHER: usize = 5;
+
+/// Upper bounds and labels of per-read expected-error buckets.
+pub(crate) const EE_BOUNDS: [(f64, &str); 8] = [
+    (0.1, "<0.1"),
+    (0.25, "0.1-0.25"),
+    (0.5, "0.25-0.5"),
+    (1.0, "0.5-1"),
+    (2.0, "1-2"),
+    (5.0, "2-5"),
+    (10.0, "5-10"),
+    (f64::INFINITY, ">=10"),
+];
+pub(crate) const EE_BINS: usize = EE_BOUNDS.len();
+
+/// Length ranges used for the joint length x quality summary.
+pub(crate) const LENGTH_QUALITY_BOUNDS: [(&str, u64, Option<u64>); 14] = [
+    ("1-49", 1, Some(49)),
+    ("50-99", 50, Some(99)),
+    ("100-149", 100, Some(149)),
+    ("150-199", 150, Some(199)),
+    ("200-299", 200, Some(299)),
+    ("300-499", 300, Some(499)),
+    ("500-999", 500, Some(999)),
+    ("1k-2k", 1_000, Some(1_999)),
+    ("2k-5k", 2_000, Some(4_999)),
+    ("5k-10k", 5_000, Some(9_999)),
+    ("10k-25k", 10_000, Some(24_999)),
+    ("25k-50k", 25_000, Some(49_999)),
+    ("50k-100k", 50_000, Some(99_999)),
+    ("100k+", 100_000, None),
+];
+pub(crate) const LENGTH_QUALITY_BINS: usize = LENGTH_QUALITY_BOUNDS.len();
 
 static BASE_INDEX: [u8; 256] = build_base_index();
+
+/// Per-base error probability `10^(-Q/10)` indexed by Phred score.
+pub(crate) static ERROR_PROB: LazyLock<[f64; QSCORE_BINS]> = LazyLock::new(|| {
+    let mut table = [0.0; QSCORE_BINS];
+    for (q, slot) in table.iter_mut().enumerate() {
+        *slot = 10f64.powf(-(q as f64) / 10.0);
+    }
+    table
+});
+
+/// `-ln(1 - 10^(-Q/10))` for `Q >= 1` (`0.0` placeholder at `Q == 0`).
+static NEG_LN_ONE_MINUS_P: LazyLock<[f64; QSCORE_BINS]> = LazyLock::new(|| {
+    let mut table = [0.0; QSCORE_BINS];
+    for (q, slot) in table.iter_mut().enumerate().skip(1) {
+        let p = 10f64.powf(-(q as f64) / 10.0);
+        *slot = -(1.0 - p).ln();
+    }
+    table
+});
 
 const fn build_base_index() -> [u8; 256] {
     let mut table = [BASE_OTHER as u8; 256];
@@ -74,6 +138,16 @@ static ADAPTER_FINDERS: LazyLock<Vec<Finder<'static>>> = LazyLock::new(|| {
         .collect()
 });
 
+/// Convert a non-negative floating-point value to fixed-point units for exact merges.
+fn to_fixed(value: f64) -> u128 {
+    (value.max(0.0) * FIXED_SCALE as f64).round() as u128
+}
+
+/// Convert fixed-point units back to floating-point.
+pub(crate) fn from_fixed(value: u128) -> f64 {
+    value as f64 / FIXED_SCALE as f64
+}
+
 /// Bin of a 0-based read position.
 pub(crate) fn position_bin(pos: usize) -> usize {
     if pos < EXACT_POSITIONS {
@@ -93,10 +167,26 @@ pub(crate) fn bin_range(bin: usize) -> (usize, usize) {
     }
 }
 
+/// Bin of a read length for the joint length x quality table.
+fn length_quality_bin(len: usize) -> usize {
+    let len = len as u64;
+    LENGTH_QUALITY_BOUNDS
+        .iter()
+        .position(|(_, _, max)| max.is_none_or(|hi| len <= hi))
+        .unwrap_or(LENGTH_QUALITY_BINS - 1)
+}
+
+/// Bucket of a per-read expected-error count.
+fn expected_error_bin(ee: f64) -> usize {
+    EE_BOUNDS
+        .iter()
+        .position(|(upper, _)| ee < *upper)
+        .unwrap_or(EE_BINS - 1)
+}
+
 /// Detect the quality offset from the first reads of a block.
 ///
-/// Like FastQC, any score below '@' means Phred+33, because Phred+64
-/// data cannot contain it.
+/// Any score below '@' means Phred+33, because Phred+64 data cannot contain it.
 pub(crate) fn detect_offset(data: &[u8]) -> u8 {
     let lowest = RecordParser::new(data, 0)
         .take(OFFSET_SAMPLE_READS)
@@ -175,6 +265,188 @@ impl PositionCounts {
     }
 }
 
+/// Read quality counts accumulated within one length range.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct LengthQualityCounts {
+    pub(crate) reads: u64,
+    pub(crate) bases: u64,
+    pub(crate) base_quality_sum: u64,
+    pub(crate) expected_errors_sum: u128,
+    pub(crate) read_qualities: [u64; QSCORE_BINS],
+}
+
+impl LengthQualityCounts {
+    fn new() -> Self {
+        Self {
+            reads: 0,
+            bases: 0,
+            base_quality_sum: 0,
+            expected_errors_sum: 0,
+            read_qualities: [0; QSCORE_BINS],
+        }
+    }
+
+    fn merge(&mut self, other: &Self) {
+        self.reads += other.reads;
+        self.bases += other.bases;
+        self.base_quality_sum += other.base_quality_sum;
+        self.expected_errors_sum += other.expected_errors_sum;
+        add_arrays(&mut self.read_qualities, &other.read_qualities);
+    }
+}
+
+/// Single-pass per-read scan outputs returned from base counting.
+struct PerReadScan {
+    bases: [u32; BASE_CLASSES],
+    quality_sum: u64,
+    expected_errors: f64,
+    error_free_prob: f64,
+    complexity: f64,
+    has_homopolymer: bool,
+    homopolymer_bases: [u32; 4],
+    max_homopolymer_len: u32,
+    homopolymer_q_sum: u64,
+    homopolymer_q_count: u64,
+    non_homopolymer_q_sum: u64,
+    non_homopolymer_q_count: u64,
+    terminal_homopolymer: Option<usize>,
+}
+
+/// Running state for per-read base, error, complexity, and homopolymer stats.
+struct ReadScanState {
+    bases: [u32; BASE_CLASSES],
+    quality_sum: u64,
+    expected_errors: f64,
+    neg_ln_one_minus_p: f64,
+    has_q0: bool,
+    dinuc: [u32; 16],
+    valid_dinucs: u32,
+    prev_base: usize,
+    run_base: usize,
+    run_len: u32,
+    run_q_sum: u64,
+    has_homopolymer: bool,
+    homopolymer_bases: [u32; 4],
+    max_homopolymer_len: u32,
+    homopolymer_q_sum: u64,
+    homopolymer_q_count: u64,
+    non_homopolymer_q_sum: u64,
+    non_homopolymer_q_count: u64,
+    invalid: bool,
+}
+
+impl ReadScanState {
+    fn new() -> Self {
+        Self {
+            bases: [0; BASE_CLASSES],
+            quality_sum: 0,
+            expected_errors: 0.0,
+            neg_ln_one_minus_p: 0.0,
+            has_q0: false,
+            dinuc: [0; 16],
+            valid_dinucs: 0,
+            prev_base: BASE_OTHER,
+            run_base: BASE_OTHER,
+            run_len: 0,
+            run_q_sum: 0,
+            has_homopolymer: false,
+            homopolymer_bases: [0; 4],
+            max_homopolymer_len: 0,
+            homopolymer_q_sum: 0,
+            homopolymer_q_count: 0,
+            non_homopolymer_q_sum: 0,
+            non_homopolymer_q_count: 0,
+            invalid: false,
+        }
+    }
+
+    #[inline(always)]
+    fn push(
+        &mut self,
+        base: u8,
+        raw_q: u8,
+        offset: u8,
+        err_prob: &[f64; QSCORE_BINS],
+        neg_ln_lut: &[f64; QSCORE_BINS],
+    ) -> (usize, usize) {
+        let q = raw_q.wrapping_sub(offset) as usize;
+        self.invalid |= q > MAX_QSCORE;
+        let q = q.min(MAX_QSCORE);
+        let base = BASE_INDEX[base as usize] as usize;
+        self.bases[base] += 1;
+        self.quality_sum += q as u64;
+        self.expected_errors += err_prob[q];
+        if q == 0 {
+            self.has_q0 = true;
+        } else {
+            self.neg_ln_one_minus_p += neg_ln_lut[q];
+        }
+        if self.prev_base < 4 && base < 4 {
+            self.dinuc[self.prev_base * 4 + base] += 1;
+            self.valid_dinucs += 1;
+        }
+        self.prev_base = base;
+        if base == self.run_base {
+            self.run_len += 1;
+            self.run_q_sum += q as u64;
+        } else {
+            self.flush_run();
+            self.run_base = base;
+            self.run_len = 1;
+            self.run_q_sum = q as u64;
+        }
+        (base, q)
+    }
+
+    #[inline(always)]
+    fn flush_run(&mut self) {
+        if self.run_base < 4 && self.run_len > 0 {
+            if self.run_len > self.max_homopolymer_len {
+                self.max_homopolymer_len = self.run_len;
+            }
+            if self.run_len as usize >= HOMOPOLYMER_MIN_LEN {
+                self.has_homopolymer = true;
+                self.homopolymer_bases[self.run_base] += self.run_len;
+                self.homopolymer_q_sum += self.run_q_sum;
+                self.homopolymer_q_count += u64::from(self.run_len);
+            } else {
+                self.non_homopolymer_q_sum += self.run_q_sum;
+                self.non_homopolymer_q_count += u64::from(self.run_len);
+            }
+        }
+    }
+
+    fn finish(mut self) -> (PerReadScan, bool) {
+        let terminal_homopolymer = (self.run_base < 4
+            && self.run_len as usize >= TERMINAL_HOMOPOLYMER_MIN_LEN)
+            .then_some(self.run_base);
+        self.flush_run();
+        let error_free_prob = if self.has_q0 {
+            0.0
+        } else {
+            (-self.neg_ln_one_minus_p).exp()
+        };
+        let complexity = dinucleotide_complexity(&self.dinuc, self.valid_dinucs);
+        let invalid = self.invalid;
+        let scan = PerReadScan {
+            bases: self.bases,
+            quality_sum: self.quality_sum,
+            expected_errors: self.expected_errors,
+            error_free_prob,
+            complexity,
+            has_homopolymer: self.has_homopolymer,
+            homopolymer_bases: self.homopolymer_bases,
+            max_homopolymer_len: self.max_homopolymer_len,
+            homopolymer_q_sum: self.homopolymer_q_sum,
+            homopolymer_q_count: self.homopolymer_q_count,
+            non_homopolymer_q_sum: self.non_homopolymer_q_sum,
+            non_homopolymer_q_count: self.non_homopolymer_q_count,
+            terminal_homopolymer,
+        };
+        (scan, invalid)
+    }
+}
+
 /// Counts collected from FASTQ records.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct ReadAccumulator {
@@ -185,12 +457,46 @@ pub(crate) struct ReadAccumulator {
     pub(crate) lengths: LengthHistogram,
     /// Base quality counts. In Complete mode they are summed from `positions`.
     pub(crate) qualities: [u64; QSCORE_BINS],
-    /// Reads by their mean quality, rounded down.
+    /// Reads by their mean quality, rounded to the nearest integer.
     pub(crate) read_qualities: [u64; QSCORE_BINS],
+    /// Sum of exact per-read arithmetic mean quality scores (scaled by `FIXED_SCALE`).
+    pub(crate) read_qscore_sum: u128,
+    /// Sum of per-read expected error counts (scaled by `FIXED_SCALE`).
+    pub(crate) expected_errors_sum: u128,
+    /// Sum of per-read error-free probabilities (scaled by `FIXED_SCALE`).
+    pub(crate) error_free_prob_sum: u128,
+    /// Reads by expected-error bucket.
+    pub(crate) ee_hist: [u64; EE_BINS],
+    /// Bases belonging to reads with mean quality at or above 10, 20, and 30.
+    pub(crate) q10_read_bases: u64,
+    pub(crate) q20_read_bases: u64,
+    pub(crate) q30_read_bases: u64,
+    /// Reads with exact mean quality below 20.
+    pub(crate) low_quality_reads: u64,
+    /// Sum of normalized dinucleotide complexity per read (scaled by `FIXED_SCALE`).
+    pub(crate) complexity_sum: u128,
+    pub(crate) low_complexity_reads: u64,
+    pub(crate) complexity_hist: [u64; COMPLEXITY_BINS],
+    /// Bases in homopolymer runs of length >= 6, indexed by A, C, G, T.
+    pub(crate) homopolymer_bases: [u64; 4],
+    pub(crate) homopolymer_reads: u64,
+    /// Reads ending in a 3'-terminal homopolymer of length >= 10, indexed by A, C, G, T.
+    pub(crate) terminal_homopolymer_reads: [u64; 4],
+    pub(crate) homopolymer_q_sum: u64,
+    pub(crate) homopolymer_q_count: u64,
+    pub(crate) non_homopolymer_q_sum: u64,
+    pub(crate) non_homopolymer_q_count: u64,
+    pub(crate) max_homopolymer_length: u64,
+    /// Metadata parsed from FASTQ header lines.
+    pub(crate) header: HeaderAccumulator,
     /// Reads by GC percentage of their A, C, G, and T bases, in units of
     /// [`GC_WEIGHT`]. See [`add_gc`] for how a read is split between bins.
     pub(crate) gc: [u64; 101],
     pub(crate) positions: Vec<PositionCounts>,
+    /// Base and quality counts across 20 equal relative-position bins (Complete mode).
+    pub(crate) relative_positions: Vec<PositionCounts>,
+    /// Quality counts stratified by read-length range (Complete mode).
+    pub(crate) length_quality: Vec<LengthQualityCounts>,
     /// Reads by the bin where each adapter first starts.
     pub(crate) adapters: Vec<Vec<u64>>,
     /// Reads with any library adapter.
@@ -201,8 +507,19 @@ pub(crate) struct ReadAccumulator {
 }
 
 impl ReadAccumulator {
-    /// `complete` adds per-position, adapter, and overrepresented counts.
+    /// `complete` adds per-position, relative-position, length-quality,
+    /// adapter, and overrepresented counts.
     pub(crate) fn new(complete: bool, offset: u8) -> Self {
+        let relative_positions = if complete {
+            vec![PositionCounts::new(); RELATIVE_POSITION_BINS]
+        } else {
+            Vec::new()
+        };
+        let length_quality = if complete {
+            vec![LengthQualityCounts::new(); LENGTH_QUALITY_BINS]
+        } else {
+            Vec::new()
+        };
         Self {
             complete,
             offset,
@@ -211,8 +528,30 @@ impl ReadAccumulator {
             lengths: LengthHistogram::default(),
             qualities: [0; QSCORE_BINS],
             read_qualities: [0; QSCORE_BINS],
+            read_qscore_sum: 0,
+            expected_errors_sum: 0,
+            error_free_prob_sum: 0,
+            ee_hist: [0; EE_BINS],
+            q10_read_bases: 0,
+            q20_read_bases: 0,
+            q30_read_bases: 0,
+            low_quality_reads: 0,
+            complexity_sum: 0,
+            low_complexity_reads: 0,
+            complexity_hist: [0; COMPLEXITY_BINS],
+            homopolymer_bases: [0; 4],
+            homopolymer_reads: 0,
+            terminal_homopolymer_reads: [0; 4],
+            homopolymer_q_sum: 0,
+            homopolymer_q_count: 0,
+            non_homopolymer_q_sum: 0,
+            non_homopolymer_q_count: 0,
+            max_homopolymer_length: 0,
+            header: HeaderAccumulator::new(),
             gc: [0; 101],
             positions: Vec::new(),
+            relative_positions,
+            length_quality,
             adapters: vec![Vec::new(); ADAPTERS.len()],
             adapter_reads: 0,
             heavy_hitters: HeavyHitters::new(HEAVY_HITTERS),
@@ -235,6 +574,7 @@ impl ReadAccumulator {
     ) -> Result<()> {
         for record in RecordParser::new(data, first_read) {
             let record = record?;
+            self.header.add(record.header);
             self.add_record(record.sequence, record.quality);
             if let Some(sketch) = duplicates
                 && !record.sequence.is_empty()
@@ -259,79 +599,131 @@ impl ReadAccumulator {
         if len == 0 {
             return;
         }
-        let (counts, quality_sum) = if self.complete {
+        let scan = if self.complete {
             self.count_positions(sequence, quality)
         } else {
             self.count_bases(sequence, quality)
         };
-        add_arrays(&mut self.bases, &counts.map(u64::from));
-        let mean_quality = (quality_sum / len as u64) as usize;
-        self.read_qualities[mean_quality.min(MAX_QSCORE)] += 1;
-        let acgt = counts[BASE_A] + counts[BASE_C] + counts[BASE_G] + counts[BASE_T];
+        let len_u64 = len as u64;
+        add_arrays(&mut self.bases, &scan.bases.map(u64::from));
+        let exact_mean_q = scan.quality_sum as f64 / len_u64 as f64;
+        let rounded_q = ((scan.quality_sum + len_u64 / 2) / len_u64) as usize;
+        let rounded_q = rounded_q.min(MAX_QSCORE);
+        self.read_qualities[rounded_q] += 1;
+        self.read_qscore_sum += to_fixed(exact_mean_q);
+        if scan.quality_sum >= 10 * len_u64 {
+            self.q10_read_bases += len_u64;
+        }
+        if scan.quality_sum >= 20 * len_u64 {
+            self.q20_read_bases += len_u64;
+        } else {
+            self.low_quality_reads += 1;
+        }
+        if scan.quality_sum >= 30 * len_u64 {
+            self.q30_read_bases += len_u64;
+        }
+        let ee_fixed = to_fixed(scan.expected_errors);
+        self.expected_errors_sum += ee_fixed;
+        self.error_free_prob_sum += to_fixed(scan.error_free_prob);
+        self.ee_hist[expected_error_bin(scan.expected_errors)] += 1;
+
+        self.complexity_sum += to_fixed(scan.complexity);
+        if scan.complexity < LOW_COMPLEXITY_THRESHOLD {
+            self.low_complexity_reads += 1;
+        }
+        let cbin =
+            ((scan.complexity * COMPLEXITY_BINS as f64).floor() as usize).min(COMPLEXITY_BINS - 1);
+        self.complexity_hist[cbin] += 1;
+
+        for i in 0..4 {
+            self.homopolymer_bases[i] += u64::from(scan.homopolymer_bases[i]);
+        }
+        if scan.has_homopolymer {
+            self.homopolymer_reads += 1;
+        }
+        if let Some(base) = scan.terminal_homopolymer {
+            self.terminal_homopolymer_reads[base] += 1;
+        }
+        self.homopolymer_q_sum += scan.homopolymer_q_sum;
+        self.homopolymer_q_count += scan.homopolymer_q_count;
+        self.non_homopolymer_q_sum += scan.non_homopolymer_q_sum;
+        self.non_homopolymer_q_count += scan.non_homopolymer_q_count;
+        self.max_homopolymer_length = self
+            .max_homopolymer_length
+            .max(u64::from(scan.max_homopolymer_len));
+
+        let acgt =
+            scan.bases[BASE_A] + scan.bases[BASE_C] + scan.bases[BASE_G] + scan.bases[BASE_T];
         if acgt > 0 {
-            add_gc(&mut self.gc, counts[BASE_G] + counts[BASE_C], acgt);
+            add_gc(&mut self.gc, scan.bases[BASE_G] + scan.bases[BASE_C], acgt);
         }
         if self.complete {
+            let lq = &mut self.length_quality[length_quality_bin(len)];
+            lq.reads += 1;
+            lq.bases += len_u64;
+            lq.base_quality_sum += scan.quality_sum;
+            lq.expected_errors_sum += ee_fixed;
+            lq.read_qualities[rounded_q] += 1;
             self.find_adapters(sequence);
             self.heavy_hitters.add(sequence);
         }
     }
 
-    /// Count bases and qualities for the whole file only.
-    fn count_bases(&mut self, sequence: &[u8], quality: &[u8]) -> ([u32; BASE_CLASSES], u64) {
-        let mut counts = [0u32; BASE_CLASSES];
-        let mut quality_sum = 0u64;
-        let mut invalid = false;
+    /// Count bases, qualities, errors, complexity, and homopolymers for the whole file.
+    fn count_bases(&mut self, sequence: &[u8], quality: &[u8]) -> PerReadScan {
+        let err_prob = &*ERROR_PROB;
+        let neg_ln_lut = &*NEG_LN_ONE_MINUS_P;
+        let offset = self.offset;
+        let mut state = ReadScanState::new();
         for (&base, &q) in sequence.iter().zip(quality) {
-            let q = q.wrapping_sub(self.offset) as usize;
-            invalid |= q > MAX_QSCORE;
-            let q = q.min(MAX_QSCORE);
-            counts[BASE_INDEX[base as usize] as usize] += 1;
+            let (_, q) = state.push(base, q, offset, err_prob, neg_ln_lut);
             self.qualities[q] += 1;
-            quality_sum += q as u64;
         }
+        let (scan, invalid) = state.finish();
         self.invalid_quality |= invalid;
-        (counts, quality_sum)
+        scan
     }
 
-    /// Count bases and qualities at each read position.
-    fn count_positions(&mut self, sequence: &[u8], quality: &[u8]) -> ([u32; BASE_CLASSES], u64) {
+    /// Count bases and qualities at each absolute and relative read position.
+    fn count_positions(&mut self, sequence: &[u8], quality: &[u8]) -> PerReadScan {
         let len = sequence.len();
         let bins = position_bin(len - 1) + 1;
         if self.positions.len() < bins {
             self.positions.resize(bins, PositionCounts::new());
             self.adapters.iter_mut().for_each(|a| a.resize(bins, 0));
         }
-        let mut counts = [0u32; BASE_CLASSES];
-        let mut quality_sum = 0u64;
-        let mut invalid = false;
+        let err_prob = &*ERROR_PROB;
+        let neg_ln_lut = &*NEG_LN_ONE_MINUS_P;
         let offset = self.offset;
-        let mut count = |base: u8, q: u8, position: &mut PositionCounts| {
-            let q = q.wrapping_sub(offset) as usize;
-            invalid |= q > MAX_QSCORE;
-            let q = q.min(MAX_QSCORE);
-            let base = BASE_INDEX[base as usize] as usize;
-            counts[base] += 1;
-            quality_sum += q as u64;
-            position.bases[base] += 1;
-            position.qualities[q] += 1;
-        };
+        let mut state = ReadScanState::new();
         let exact = len.min(EXACT_POSITIONS);
-        // Zipped slices avoid bounds checks in the common short-read case.
-        sequence[..exact]
+        let rel = &mut self.relative_positions;
+        for (i, ((&base, &q), position)) in sequence[..exact]
             .iter()
             .zip(&quality[..exact])
             .zip(&mut self.positions[..exact])
-            .for_each(|((&base, &q), position)| count(base, q, position));
-        for i in exact..len {
-            count(
-                sequence[i],
-                quality[i],
-                &mut self.positions[position_bin(i)],
-            );
+            .enumerate()
+        {
+            let (base_idx, q_idx) = state.push(base, q, offset, err_prob, neg_ln_lut);
+            position.bases[base_idx] += 1;
+            position.qualities[q_idx] += 1;
+            let rbin = (i * RELATIVE_POSITION_BINS) / len;
+            rel[rbin].bases[base_idx] += 1;
+            rel[rbin].qualities[q_idx] += 1;
         }
+        for i in exact..len {
+            let (base_idx, q_idx) =
+                state.push(sequence[i], quality[i], offset, err_prob, neg_ln_lut);
+            let position = &mut self.positions[position_bin(i)];
+            position.bases[base_idx] += 1;
+            position.qualities[q_idx] += 1;
+            let rbin = (i * RELATIVE_POSITION_BINS) / len;
+            rel[rbin].bases[base_idx] += 1;
+            rel[rbin].qualities[q_idx] += 1;
+        }
+        let (scan, invalid) = state.finish();
         self.invalid_quality |= invalid;
-        (counts, quality_sum)
+        scan
     }
 
     fn find_adapters(&mut self, sequence: &[u8]) {
@@ -356,6 +748,31 @@ impl ReadAccumulator {
         self.lengths.merge(other.lengths);
         add_arrays(&mut self.qualities, &other.qualities);
         add_arrays(&mut self.read_qualities, &other.read_qualities);
+        self.read_qscore_sum += other.read_qscore_sum;
+        self.expected_errors_sum += other.expected_errors_sum;
+        self.error_free_prob_sum += other.error_free_prob_sum;
+        add_arrays(&mut self.ee_hist, &other.ee_hist);
+        self.q10_read_bases += other.q10_read_bases;
+        self.q20_read_bases += other.q20_read_bases;
+        self.q30_read_bases += other.q30_read_bases;
+        self.low_quality_reads += other.low_quality_reads;
+        self.complexity_sum += other.complexity_sum;
+        self.low_complexity_reads += other.low_complexity_reads;
+        add_arrays(&mut self.complexity_hist, &other.complexity_hist);
+        add_arrays(&mut self.homopolymer_bases, &other.homopolymer_bases);
+        self.homopolymer_reads += other.homopolymer_reads;
+        add_arrays(
+            &mut self.terminal_homopolymer_reads,
+            &other.terminal_homopolymer_reads,
+        );
+        self.homopolymer_q_sum += other.homopolymer_q_sum;
+        self.homopolymer_q_count += other.homopolymer_q_count;
+        self.non_homopolymer_q_sum += other.non_homopolymer_q_sum;
+        self.non_homopolymer_q_count += other.non_homopolymer_q_count;
+        self.max_homopolymer_length = self
+            .max_homopolymer_length
+            .max(other.max_homopolymer_length);
+        self.header.merge(other.header);
         add_arrays(&mut self.gc, &other.gc);
         if other.positions.len() > self.positions.len() {
             std::mem::swap(&mut self.positions, &mut other.positions);
@@ -364,6 +781,14 @@ impl ReadAccumulator {
         self.positions
             .iter_mut()
             .zip(&other.positions)
+            .for_each(|(a, b)| a.merge(b));
+        self.relative_positions
+            .iter_mut()
+            .zip(&other.relative_positions)
+            .for_each(|(a, b)| a.merge(b));
+        self.length_quality
+            .iter_mut()
+            .zip(&other.length_quality)
             .for_each(|(a, b)| a.merge(b));
         self.adapters
             .iter_mut()
@@ -387,12 +812,33 @@ impl ReadAccumulator {
     }
 }
 
+/// Normalized dinucleotide Shannon entropy in `[0.0, 1.0]`.
+fn dinucleotide_complexity(dinuc: &[u32; 16], total: u32) -> f64 {
+    if total <= 1 {
+        return 0.0;
+    }
+    let total_f = f64::from(total);
+    let entropy: f64 = dinuc
+        .iter()
+        .filter(|&&c| c > 0)
+        .map(|&c| {
+            let p = f64::from(c) / total_f;
+            -p * p.log2()
+        })
+        .sum();
+    let max_entropy = total_f.min(16.0).log2();
+    if max_entropy <= 0.0 {
+        0.0
+    } else {
+        (entropy / max_entropy).clamp(0.0, 1.0)
+    }
+}
+
 /// Add one read with `gc` G and C bases out of `acgt` to a GC histogram.
 ///
-/// Like FastQC, the read covers the percentages from `gc - 0.5` to
-/// `gc + 0.5` bases and is split between bins by overlap. Rounding to the
-/// nearest percentage instead leaves some bins empty for 150 bp reads,
-/// which draws a saw-tooth curve.
+/// The read covers the percentages from `gc - 0.5` to `gc + 0.5` bases and is
+/// split between bins by overlap. Rounding to the nearest percentage instead
+/// leaves some bins empty for 150 bp reads, which draws a saw-tooth curve.
 fn add_gc(hist: &mut [u64; 101], gc: u32, acgt: u32) {
     let to_percent = |bases: f64| (100.0 * bases / acgt as f64).clamp(-0.5, 100.5);
     let low = to_percent(gc as f64 - 0.5);
@@ -437,9 +883,12 @@ mod test {
         assert_eq!(acc.qualities[40], 12);
         assert_eq!(acc.qualities[20], 1);
         assert_eq!(acc.qualities[0], 1);
-        // Mean of 40, 40, 20, 2, 0 is 20.4.
+        // Mean of 40, 40, 20, 2, 0 is 20.4, rounding to 20.
         assert_eq!(acc.read_qualities[20], 1);
         assert_eq!(acc.read_qualities[40], 2);
+        assert_eq!(acc.low_quality_reads, 0);
+        assert_eq!(acc.q20_read_bases, 15);
+        assert_eq!(acc.q30_read_bases, 10);
         // Three reads, centered on 50% GC (r1) and 80% GC (r2 and r3).
         assert_eq!(acc.gc.iter().sum::<u64>(), 3 * GC_WEIGHT);
         // r1 spreads over 37.5-62.5%, r2 and r3 over 70-90%.
@@ -450,11 +899,16 @@ mod test {
 
     #[test]
     fn test_complete_matches_default_totals() {
-        let default = accumulate(RECORDS, false);
+        let basic = accumulate(RECORDS, false);
         let complete = accumulate(RECORDS, true);
-        assert_eq!(default.qualities, complete.qualities);
-        assert_eq!(default.bases, complete.bases);
+        assert_eq!(basic.qualities, complete.qualities);
+        assert_eq!(basic.bases, complete.bases);
+        assert_eq!(basic.expected_errors_sum, complete.expected_errors_sum);
+        assert_eq!(basic.error_free_prob_sum, complete.error_free_prob_sum);
+        assert_eq!(basic.complexity_sum, complete.complexity_sum);
+        assert_eq!(basic.homopolymer_bases, complete.homopolymer_bases);
         assert_eq!(complete.positions.len(), 5);
+        assert_eq!(complete.relative_positions.len(), RELATIVE_POSITION_BINS);
         assert_eq!(complete.positions[4].bases[BASE_N], 1);
         assert_eq!(complete.positions[4].qualities[0], 1);
         assert_eq!(complete.heavy_hitters.reads(), 3);
@@ -472,6 +926,24 @@ mod test {
         let mut merged = first.merge(rest);
         merged.finish();
         assert_eq!(merged, whole);
+    }
+
+    #[test]
+    fn test_complexity_and_homopolymers() {
+        // 12-base homopolymer tail (G) at Q20 vs 4 non-homopolymer bases at Q40.
+        let data = b"@r1\nACGTGGGGGGGGGGGG\n+\nIIII555555555555\n@r2\nATATATATATATATAT\n+\nIIIIIIIIIIIIIIII\n";
+        let acc = accumulate(data, true);
+        assert_eq!(acc.homopolymer_reads, 1);
+        assert_eq!(acc.homopolymer_bases[BASE_G], 12);
+        assert_eq!(acc.terminal_homopolymer_reads[BASE_G], 1);
+        assert_eq!(acc.max_homopolymer_length, 12);
+        assert_eq!(acc.homopolymer_q_sum, 12 * 20);
+        assert_eq!(acc.homopolymer_q_count, 12);
+        // 4 non-homopolymer bases in r1 + 16 bases in r2, all Q40.
+        assert_eq!(acc.non_homopolymer_q_count, 20);
+        assert_eq!(acc.non_homopolymer_q_sum, 20 * 40);
+        // Both reads are low complexity (homopolymer tail and dinucleotide repeat).
+        assert_eq!(acc.low_complexity_reads, 2);
     }
 
     #[test]
@@ -513,6 +985,7 @@ mod test {
         acc.add_record(&seq, &qual);
         assert_eq!(acc.positions.len(), 1_002);
         assert_eq!(acc.positions[1_001].bases[BASE_A], 500);
+        assert_eq!(acc.length_quality[length_quality_bin(2_500)].reads, 1);
     }
 
     #[test]
