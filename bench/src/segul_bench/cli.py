@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from . import datasets as ds
-from .config import DEFAULT_CONFIG, FIGURES_DIR, RESULTS_DIR, SCALES, load_config
+from .config import CHARTS_DIR, DEFAULT_CONFIG, FIGURES_DIR, RESULTS_DIR, SCALES, load_config
 from .results import (
     build_report,
     load_report,
@@ -55,6 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     plot = sub.add_parser("plot", help="write PNG charts of a results file")
     plot.add_argument("results", type=Path, nargs="?", default=LATEST)
     plot.add_argument("--output-dir", type=Path, default=FIGURES_DIR)
+    plot.add_argument("--svg-dir", type=Path, default=CHARTS_DIR, help="where to write SVG summary charts")
 
     export = sub.add_parser("export", help="copy a results file for the website")
     export.add_argument("destination", type=Path, help="e.g. ../segui/website/src/data/segul-versions.json")
@@ -119,7 +120,7 @@ def cmd_run(args, config) -> int:
     regressions = print_table(report, config.regression_threshold)
     print(f"\nResults: {path}")
     if not args.no_plot:
-        plot_files(report, FIGURES_DIR)
+        plot_files(report, FIGURES_DIR, CHARTS_DIR)
     return 1 if regressions and args.fail_on_regression else 0
 
 
@@ -151,7 +152,6 @@ def cmd_report(args, config) -> int:
 
 
 def cmd_plot(args, config) -> int:
-<<<<<<< HEAD
     report = load_report(args.results)
     # Plot only the tasks still in bench.toml, so removed tasks drop out of
     # the charts without rerunning the benchmark.
@@ -165,10 +165,7 @@ def cmd_plot(args, config) -> int:
             d["name"] = dataset.name
             if dataset.bases:
                 d["bases"] = dataset.bases
-    plot_files(report, args.output_dir)
-=======
-    plot_files(load_report(args.results), args.output_dir)
->>>>>>> 9fc08870bdb88aeebce7887c4f9f0338e3dd35b7
+    plot_files(report, args.output_dir, args.svg_dir)
     return 0
 
 
@@ -180,11 +177,11 @@ def cmd_export(args, config) -> int:
     return 0
 
 
-def plot_files(report: dict, out_dir: Path) -> None:
+def plot_files(report: dict, out_dir: Path, svg_dir: Path) -> None:
     from .plot import plot_report  # matplotlib is only needed here
 
-    files = plot_report(report, out_dir)
-    print(f"Charts: {len(files)} PNG files in {out_dir}")
+    files = plot_report(report, out_dir, svg_dir)
+    print(f"Charts: {len(files)} PNG files in {out_dir}, SVG summaries in {svg_dir}")
 
 
 if __name__ == "__main__":

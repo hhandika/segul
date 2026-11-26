@@ -180,7 +180,7 @@ impl<'a> Nexus<'a> {
         ids: &mut IndexSet<String>,
         interleaved: Option<&mut InterleavedMatrixBuilder>,
     ) -> bool {
-        let (data, end) = match line.iter().position(|&b| b == b';') {
+        let (data, end) = match memchr::memchr(b';', line) {
             Some(pos) => (&line[..pos], true),
             None => (line, false),
         };
