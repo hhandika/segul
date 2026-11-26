@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::{Position, Rect};
 
-use crate::core::align::view::AlignmentView;
+use crate::core::align::view::{AlignmentView, PartitionTrack};
 use crate::helper::types::{DataType, InputFmt};
 
 use super::palette::ColorMode;
@@ -33,6 +33,13 @@ pub(super) enum Overlay {
     Help,
 }
 
+/// What the sidebar lists.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) enum SidebarTab {
+    Windows,
+    Partitions,
+}
+
 /// Screen areas from the last draw, used to place mouse clicks.
 #[derive(Debug, Default, Clone, Copy)]
 pub(super) struct Areas {
@@ -40,7 +47,13 @@ pub(super) struct Areas {
     pub(super) grid: Rect,
     pub(super) overview: Rect,
     pub(super) divider: Rect,
+    pub(super) track: Rect,
+    /// Inside of the sidebar border.
+    pub(super) sidebar: Rect,
 }
+
+/// Lines per sidebar entry: label, statistics, and bar.
+pub(super) const SIDEBAR_LINES: usize = 3;
 
 pub(super) struct App<'a> {
     pub(super) files: &'a [PathBuf],
@@ -48,6 +61,8 @@ pub(super) struct App<'a> {
     input_fmt: &'a InputFmt,
     datatype: &'a DataType,
     pub(super) view: AlignmentView,
+    /// Partitions of a concatenated alignment, when found.
+    pub(super) partitions: Option<PartitionTrack>,
     pub(super) row: usize,
     pub(super) site: usize,
     pub(super) top_row: usize,
@@ -60,6 +75,7 @@ pub(super) struct App<'a> {
     pub(super) selected: BTreeSet<usize>,
     anchor: Option<usize>,
     pub(super) show_sidebar: bool,
+    pub(super) sidebar_tab: SidebarTab,
     pub(super) name_width: u16,
     pub(super) overlay: Overlay,
     /// Last search, kept for F3 after the prompt closes.
@@ -86,12 +102,19 @@ impl<'a> App<'a> {
         view: AlignmentView,
         window_size: usize,
     ) -> Self {
+        let (partitions, message) = detect_partitions(&files[0], &view);
         Self {
             files,
             file_index: 0,
             input_fmt,
             datatype,
             view,
+            sidebar_tab: if partitions.is_some() {
+                SidebarTab::Partitions
+            } else {
+                SidebarTab::Windows
+            },
+            partitions,
             row: 0,
             site: 0,
             top_row: 0,
@@ -107,7 +130,7 @@ impl<'a> App<'a> {
             name_width: DEFAULT_NAME_WIDTH,
             overlay: Overlay::None,
             find_query: String::new(),
-            message: None,
+            message,
             is_chord: false,
             resizing: false,
             clipboard: None,
@@ -144,6 +167,34 @@ impl<'a> App<'a> {
         } else {
             (0, length)
         }
+    }
+
+    /// Partition block under the cursor.
+    pub(super) fn block(&self) -> Option<usize> {
+        self.partitions.as_ref()?.block_at(self.site)
+    }
+
+    /// Entries the sidebar lists: partition blocks or windows.
+    pub(super) fn sidebar_count(&self) -> usize {
+        match (&self.partitions, self.sidebar_tab) {
+            (Some(track), SidebarTab::Partitions) => track.len(),
+            _ => self.window_count(),
+        }
+    }
+
+    /// First sidebar entry shown when `shown` fit, keeping the current one
+    /// near the top.
+    pub(super) fn sidebar_first(&self, shown: usize) -> usize {
+        let current = match (&self.partitions, self.sidebar_tab) {
+            (Some(track), SidebarTab::Partitions) => self
+                .block()
+                .or_else(|| track.prev_block(self.site))
+                .unwrap_or(0),
+            _ => self.window(),
+        };
+        current
+            .saturating_sub(shown / 3)
+            .min(self.sidebar_count().saturating_sub(shown))
     }
 
     /// Files whose names contain the picker query, as indices into `files`.
@@ -199,6 +250,7 @@ impl<'a> App<'a> {
                 KeyCode::Char('c' | 'C') => self.color = self.color.next(),
                 KeyCode::Char('l' | 'L') => self.letters = !self.letters,
                 KeyCode::Char('p' | 'P') => self.toggle_paged(),
+                KeyCode::Char('t' | 'T') => self.toggle_sidebar_tab(),
                 _ => self.message = Some(String::from("Unknown chord")),
             }
             return;
@@ -210,7 +262,7 @@ impl<'a> App<'a> {
             KeyCode::Char('k') if ctrl => {
                 self.is_chord = true;
                 self.message = Some(String::from(
-                    "Ctrl+K: C color · L letters · P paged windows",
+                    "Ctrl+K: C color · L letters · P paged windows · T sidebar tab",
                 ));
             }
             KeyCode::Char('p') if ctrl && alt => self.toggle_paged(),
@@ -235,6 +287,8 @@ impl<'a> App<'a> {
             KeyCode::Char('f') if alt => self.move_site(JUMP_SITES as isize),
             KeyCode::Char('[') => self.step_window(-1),
             KeyCode::Char(']') => self.step_window(1),
+            KeyCode::Char('{') => self.step_partition(-1),
+            KeyCode::Char('}') => self.step_partition(1),
             KeyCode::Char('<' | ',') => self.resize_names(-2),
             KeyCode::Char('>' | '.') => self.resize_names(2),
             KeyCode::Char('?') | KeyCode::F(1) => self.overlay = Overlay::Help,
@@ -387,6 +441,10 @@ impl<'a> App<'a> {
                     self.resizing = true;
                 } else if self.areas.overview.contains(at) {
                     self.jump_overview(mouse.column);
+                } else if self.areas.track.contains(at) {
+                    self.click_track(at);
+                } else if self.areas.sidebar.contains(at) {
+                    self.click_sidebar(at);
                 } else if self.areas.grid.contains(at) {
                     if let Some((row, site)) = self.cell_at(at) {
                         self.set_cursor(row, site);
@@ -408,8 +466,12 @@ impl<'a> App<'a> {
         }
     }
 
-    /// Goes to `123` (a site), `name:123`, or a taxon name.
+    /// Goes to `123` (a site), `name:123`, a partition, or a taxon name.
     pub(super) fn go_to(&mut self, input: &str) -> Result<(), String> {
+        if let Some(block) = self.partitions.as_ref().and_then(|t| t.find(input)) {
+            self.jump_to_block(block);
+            return Ok(());
+        }
         let length = self.view.length();
         let site_error = || format!("Enter a site from 1 to {}.", length);
         let (name, site) = match input.rsplit_once(':') {
@@ -421,7 +483,7 @@ impl<'a> App<'a> {
             Some(name) => *self
                 .find_matches(name)
                 .first()
-                .ok_or_else(|| format!("No taxon matches \"{}\".", name))?,
+                .ok_or_else(|| format!("No taxon or partition matches \"{}\".", name))?,
             None => self.row,
         };
         let site = match site {
@@ -569,6 +631,76 @@ impl<'a> App<'a> {
         self.clamp_scroll();
     }
 
+    /// Moves to the start of the previous or next partition.
+    fn step_partition(&mut self, step: isize) {
+        let Some(track) = &self.partitions else {
+            self.message = Some(String::from("No partitions found"));
+            return;
+        };
+        let target = if step < 0 {
+            track.prev_block(self.site)
+        } else {
+            track.next_block(self.site)
+        };
+        match target {
+            Some(block) => self.jump_to_block(block),
+            None if step < 0 => self.message = Some(String::from("At the first partition")),
+            None => self.message = Some(String::from("At the last partition")),
+        }
+    }
+
+    /// Moves the cursor to the first site of partition block `index`.
+    pub(super) fn jump_to_block(&mut self, index: usize) {
+        let Some(start) = self
+            .partitions
+            .as_ref()
+            .and_then(|t| t.blocks.get(index))
+            .map(|b| b.start)
+        else {
+            return;
+        };
+        self.jump_to(self.row, start);
+        self.left_site = start;
+        self.clamp_scroll();
+    }
+
+    fn toggle_sidebar_tab(&mut self) {
+        if self.partitions.is_none() {
+            self.message = Some(String::from("No partitions found"));
+            return;
+        }
+        self.sidebar_tab = match self.sidebar_tab {
+            SidebarTab::Windows => SidebarTab::Partitions,
+            SidebarTab::Partitions => SidebarTab::Windows,
+        };
+        self.show_sidebar = true;
+    }
+
+    fn click_track(&mut self, at: Position) {
+        let site = self.left_site + (at.x - self.areas.track.x) as usize / self.zoom;
+        if let Some(block) = self.partitions.as_ref().and_then(|t| t.block_at(site)) {
+            self.jump_to_block(block);
+        }
+    }
+
+    fn click_sidebar(&mut self, at: Position) {
+        let area = self.areas.sidebar;
+        let shown = (area.height as usize / SIDEBAR_LINES).max(1);
+        let index = self.sidebar_first(shown) + (at.y - area.y) as usize / SIDEBAR_LINES;
+        if index >= self.sidebar_count() {
+            return;
+        }
+        match (&self.partitions, self.sidebar_tab) {
+            (Some(_), SidebarTab::Partitions) => self.jump_to_block(index),
+            _ => {
+                let site = index * self.window_size;
+                self.jump_to(self.row, site);
+                self.left_site = site;
+                self.clamp_scroll();
+            }
+        }
+    }
+
     fn resize_names(&mut self, delta: i16) {
         self.name_width = self
             .name_width
@@ -679,6 +811,14 @@ impl<'a> App<'a> {
         }
         match AlignmentView::open(&self.files[index], self.input_fmt, self.datatype) {
             Ok(view) => {
+                let (partitions, message) = detect_partitions(&self.files[index], &view);
+                if partitions.is_some() {
+                    self.sidebar_tab = SidebarTab::Partitions;
+                } else {
+                    self.sidebar_tab = SidebarTab::Windows;
+                }
+                self.partitions = partitions;
+                self.message = message;
                 self.view = view;
                 self.file_index = index;
                 self.selected.clear();
@@ -690,6 +830,17 @@ impl<'a> App<'a> {
             }
             Err(e) => self.message = Some(e.to_string()),
         }
+    }
+}
+
+// Partitions of `path`, or a note when its partition file cannot be read.
+fn detect_partitions(
+    path: &Path,
+    view: &AlignmentView,
+) -> (Option<PartitionTrack>, Option<String>) {
+    match PartitionTrack::detect(path, view.length()) {
+        Ok(track) => (track, None),
+        Err(e) => (None, Some(format!("Failed reading partitions: {e}"))),
     }
 }
 
@@ -862,6 +1013,40 @@ mod test {
         assert!(!app.view.is_dna());
         app.handle_key(with(KeyCode::PageDown, KeyModifiers::CONTROL));
         assert_eq!(app.file_index, 0);
+    }
+
+    #[test]
+    fn test_partitions() {
+        let files = [PathBuf::from(
+            "crates/segul-core/tests/files/view/concat_charset.nex",
+        )];
+        let mut app = app(&files);
+        assert_eq!(app.sidebar_tab, SidebarTab::Partitions);
+        assert_eq!(app.block(), Some(0));
+        app.handle_key(key(KeyCode::Char('}')));
+        assert_eq!((app.site, app.block()), (5, Some(1)));
+        app.handle_key(key(KeyCode::Right));
+        app.handle_key(key(KeyCode::Char('{')));
+        assert_eq!(app.site, 5);
+        app.handle_key(key(KeyCode::Char('{')));
+        assert_eq!(app.site, 0);
+        app.handle_key(key(KeyCode::Char('{')));
+        assert_eq!(app.message.as_deref(), Some("At the first partition"));
+        assert!(app.go_to("locus3").is_ok());
+        assert_eq!(app.site, 10);
+        app.handle_key(with(KeyCode::Char('k'), KeyModifiers::CONTROL));
+        app.handle_key(key(KeyCode::Char('t')));
+        assert_eq!(app.sidebar_tab, SidebarTab::Windows);
+        assert!(app.show_sidebar);
+    }
+
+    #[test]
+    fn test_no_partitions() {
+        let files = [PathBuf::from(FILE)];
+        let mut app = app(&files);
+        assert!(app.partitions.is_none());
+        app.handle_key(key(KeyCode::Char('}')));
+        assert_eq!(app.message.as_deref(), Some("No partitions found"));
     }
 
     #[test]

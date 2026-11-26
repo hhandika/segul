@@ -20,6 +20,7 @@ New Features:
 - `segul partition convert` and `segul align split` now support merged and multi-range partitions (e.g., PartitionFinder `1-100, 201-300` or `1-100 201-300`), arbitrary site strides (`start-end\step`), NEXUS `charpartition` model assignments and charset merges (such as IQ-TREE `best_scheme.nex`), NEXUS `[comments]`, multi-line statements, `#` comments, and single-site ranges.
 - `segul partition convert` infers input partition formats automatically when `-p` is omitted and supports `-o` to write converted files into a target directory.
 - `segul view align` calls runs of sites windows instead of chunks. Set their size with `--window`; `--chunk` still works.
+- `segul view align` shows the partitions of concatenated alignments, read from a NEXUS `sets` block in the file or a `<name>_partition.nex` or `<name>_partition.txt` file next to it. A track above the ruler names each partition, `{` and `}` jump between them, Ctrl+G accepts a partition name, and the sidebar lists partitions with their gap and variable-site shares (Ctrl+K T switches between windows and partitions). Codon position subsets of a gene share one band.
 
 Bug Fixes:
 
@@ -39,6 +40,7 @@ Library Changes:
 
 - Added byte-slice helpers for alphabet validation, distance encoding, translation (`codon_table`, `translate_bytes`), and streaming FASTA reading (`for_each_record`).
 - Added `SiteRange` in `helper::types` and extended `Partition` with `ranges: Vec<SiteRange>`, `model: Option<String>`, and helpers (`from_range`, `from_ranges`, `effective_ranges`, `has_stride`, `max_site`, `sorted_site_positions`, `contiguous_site_runs`).
+- Added `PartitionTrack` and `PartitionBlock` in `core::align::view` to find and look up the partitions of an alignment, and `AlignmentView::range_stats` for gap and variable-site shares of any run of sites.
 - Added fallible `PartitionParser::try_parse`, `PartWriter::try_write_partition`, `PartitionConverter::try_convert`, `AlignmentSplitting::try_split`, and `helper::partition::infer_partition_fmt`.
 - `ReadMetrics` and `SampleReadReport` add error-rate quality, expected-error, complexity, homopolymer, relative-position, length × quality, and FASTQ header metadata fields (all `#[serde(default)]` for compatibility with older `read-report.json` files).
 - New `stats::fastq::cohort` module (`PairedReadSummary`, `CohortSummary`, `CohortOutlier`, `pair_samples`, `summarize_cohort`) and `ReadReport::from_samples`, plus technology-aware `QcProfile`, `effective_profile`, `qc_checks_with_profile`, and `pair_qc_checks` in `stats::fastq::qc`.

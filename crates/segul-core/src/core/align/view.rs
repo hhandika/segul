@@ -24,17 +24,20 @@
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs::File;
+use std::io::{BufRead, BufReader, Read};
 use std::ops::Range;
 use std::panic::{self, AssertUnwindSafe};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 
 use memchr::memchr;
 use memmap2::Mmap;
 use rayon::prelude::*;
 
+use crate::helper::partition::{construct_partition_path, infer_partition_fmt};
 use crate::helper::sequence::SeqParser;
-use crate::helper::types::{DataType, InputFmt};
+use crate::helper::types::{DataType, InputFmt, Partition, PartitionFmt};
+use crate::parser::partition::PartitionParser;
 
 const DNA_CHARS: &[u8] = b"ACGTUNRYSWKMBDHV";
 // Share of residues that must be nucleotide codes to call a file DNA.
@@ -227,40 +230,30 @@ impl AlignmentView {
         }
         let blocks = self.site_blocks(start..end);
         let first_block = start / STAT_BLOCK;
-        let rows = self.rows();
         (start..end)
             .step_by(size)
             .map(|window_start| {
                 let window_end = (window_start + size).min(end);
-                let mut gaps = 0u64;
-                let mut variable = 0usize;
-                let mut site = window_start;
-                while site < window_end {
-                    let block = &blocks[site / STAT_BLOCK - first_block];
-                    let block_start = site / STAT_BLOCK * STAT_BLOCK;
-                    let to = window_end.min(block_start + STAT_BLOCK);
-                    let range = site - block_start..to - block_start;
-                    gaps += block.gaps[range.clone()]
-                        .iter()
-                        .map(|&g| g as u64)
-                        .sum::<u64>();
-                    variable += block.variable[range].iter().filter(|&&v| v).count();
-                    site = to;
-                }
-                let sites = window_end - window_start;
-                let cells = sites * rows;
-                WindowStat {
-                    start: window_start,
-                    end: window_end,
-                    gap_fraction: if cells == 0 {
-                        0.0
-                    } else {
-                        gaps as f64 / cells as f64
-                    },
-                    variable_fraction: variable as f64 / sites as f64,
-                }
+                self.stat_of(&blocks, first_block, window_start, window_end)
             })
             .collect()
+    }
+
+    /// Gap and variable-site shares of sites `start..end`, such as one
+    /// partition. Counts are shared with `window_stats`.
+    pub fn range_stats(&self, start: usize, end: usize) -> WindowStat {
+        let end = end.min(self.length);
+        let start = start.min(end);
+        if start == end {
+            return WindowStat {
+                start,
+                end,
+                gap_fraction: 0.0,
+                variable_fraction: 0.0,
+            };
+        }
+        let blocks = self.site_blocks(start..end);
+        self.stat_of(&blocks, start / STAT_BLOCK, start, end)
     }
 
     #[deprecated(since = "0.26.0", note = "Renamed to `window_stats`")]
@@ -433,6 +426,44 @@ impl AlignmentView {
         SiteBlock { gaps, variable }
     }
 
+    // Shares of sites `start..end` from `blocks`, which begin at block
+    // `first_block` and cover the range.
+    fn stat_of(
+        &self,
+        blocks: &[Arc<SiteBlock>],
+        first_block: usize,
+        start: usize,
+        end: usize,
+    ) -> WindowStat {
+        let mut gaps = 0u64;
+        let mut variable = 0usize;
+        let mut site = start;
+        while site < end {
+            let block = &blocks[site / STAT_BLOCK - first_block];
+            let block_start = site / STAT_BLOCK * STAT_BLOCK;
+            let to = end.min(block_start + STAT_BLOCK);
+            let range = site - block_start..to - block_start;
+            gaps += block.gaps[range.clone()]
+                .iter()
+                .map(|&g| g as u64)
+                .sum::<u64>();
+            variable += block.variable[range].iter().filter(|&&v| v).count();
+            site = to;
+        }
+        let sites = end - start;
+        let cells = sites * self.rows();
+        WindowStat {
+            start,
+            end,
+            gap_fraction: if cells == 0 {
+                0.0
+            } else {
+                gaps as f64 / cells as f64
+            },
+            variable_fraction: variable as f64 / sites as f64,
+        }
+    }
+
     fn ungapped_counts(&self, row: usize) -> Vec<usize> {
         let len = self.lengths[row];
         let mut counts = Vec::with_capacity(len / UNGAPPED_STEP + 1);
@@ -457,6 +488,239 @@ impl AlignmentView {
 /// Whether `code` is a gap or missing data.
 pub fn is_gap(code: u8) -> bool {
     code == GAP || code == MISSING
+}
+
+/// Partitions of a concatenated alignment, read from a NEXUS sets block in
+/// the alignment or from a `<name>_partition` file next to it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PartitionTrack {
+    /// File the partitions were read from.
+    pub source: PathBuf,
+    /// Whether the partitions came from the alignment file itself.
+    pub is_embedded: bool,
+    /// Partitions in file order, without those past the alignment's end.
+    pub partitions: Vec<Partition>,
+    /// Bands of sites in order, without overlaps.
+    pub blocks: Vec<PartitionBlock>,
+}
+
+/// Sites drawn as one band. Partitions that interleave, such as codon
+/// positions of a gene, share one block over their whole span.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PartitionBlock {
+    /// Zero-based first site.
+    pub start: usize,
+    /// Exclusive last site.
+    pub end: usize,
+    /// Partition name, or the shared prefix of interleaved partitions.
+    pub name: String,
+    /// Indices into `PartitionTrack::partitions`.
+    pub partitions: Vec<usize>,
+}
+
+impl PartitionTrack {
+    /// Finds the partitions of `alignment`, which has `length` sites. Returns
+    /// none when there are no partitions, and an error when a partition file
+    /// exists but cannot be read.
+    pub fn detect(alignment: &Path, length: usize) -> anyhow::Result<Option<Self>> {
+        if matches!(AlignmentView::format_of(alignment), Ok(InputFmt::Nexus))
+            && let Some(partitions) = Self::read_embedded(alignment)?
+        {
+            return Ok(Self::new(alignment.to_path_buf(), true, partitions, length));
+        }
+        for fmt in [PartitionFmt::Nexus, PartitionFmt::Raxml] {
+            let path = construct_partition_path(alignment, &fmt);
+            if !path.is_file() {
+                continue;
+            }
+            let fmt = infer_partition_fmt(&path)?;
+            let partitions = PartitionParser::new(&path, &fmt, true).try_parse()?;
+            return Ok(Self::new(path, false, partitions, length));
+        }
+        Ok(None)
+    }
+
+    /// Builds the track from `partitions`, dropping sites past `length`.
+    /// Returns none when no partition falls within the alignment.
+    pub fn new(
+        source: PathBuf,
+        is_embedded: bool,
+        partitions: Vec<Partition>,
+        length: usize,
+    ) -> Option<Self> {
+        let partitions: Vec<Partition> = partitions
+            .into_iter()
+            .filter(|p| p.start >= 1 && p.start <= length)
+            .collect();
+        let mut spans: Vec<(usize, usize, usize)> = partitions
+            .iter()
+            .enumerate()
+            .flat_map(|(i, p)| {
+                p.effective_ranges()
+                    .iter()
+                    .filter(|r| r.start >= 1 && r.start <= length)
+                    .map(|r| (r.start - 1, r.end.min(length), i))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        spans.sort_unstable();
+        let mut blocks: Vec<PartitionBlock> = Vec::new();
+        for (start, end, index) in spans {
+            match blocks.last_mut() {
+                Some(block) if start < block.end => {
+                    block.end = block.end.max(end);
+                    if !block.partitions.contains(&index) {
+                        block.partitions.push(index);
+                    }
+                }
+                _ => blocks.push(PartitionBlock {
+                    start,
+                    end,
+                    name: String::new(),
+                    partitions: vec![index],
+                }),
+            }
+        }
+        if blocks.is_empty() {
+            return None;
+        }
+        for block in &mut blocks {
+            block.name = Self::block_name(&partitions, &block.partitions);
+        }
+        Some(Self {
+            source,
+            is_embedded,
+            partitions,
+            blocks,
+        })
+    }
+
+    /// Number of blocks.
+    pub fn len(&self) -> usize {
+        self.blocks.len()
+    }
+
+    /// Whether the track has no blocks.
+    pub fn is_empty(&self) -> bool {
+        self.blocks.is_empty()
+    }
+
+    /// Block holding zero-based `site`.
+    pub fn block_at(&self, site: usize) -> Option<usize> {
+        let index = self
+            .blocks
+            .partition_point(|b| b.start <= site)
+            .checked_sub(1)?;
+        (site < self.blocks[index].end).then_some(index)
+    }
+
+    /// Partition holding zero-based `site`.
+    pub fn partition_at(&self, site: usize) -> Option<usize> {
+        let block = &self.blocks[self.block_at(site)?];
+        let site = site + 1;
+        block.partitions.iter().copied().find(|&i| {
+            self.partitions[i].effective_ranges().iter().any(|r| {
+                site >= r.start && site <= r.end && (site - r.start).is_multiple_of(r.step.max(1))
+            })
+        })
+    }
+
+    /// Blocks overlapping sites `start..end`.
+    pub fn blocks_in(&self, start: usize, end: usize) -> &[PartitionBlock] {
+        let first = self.blocks.partition_point(|b| b.end <= start);
+        let last = self.blocks.partition_point(|b| b.start < end);
+        &self.blocks[first..last.max(first)]
+    }
+
+    /// First block starting after `site`.
+    pub fn next_block(&self, site: usize) -> Option<usize> {
+        let index = self.blocks.partition_point(|b| b.start <= site);
+        (index < self.blocks.len()).then_some(index)
+    }
+
+    /// Last block starting before `site`.
+    pub fn prev_block(&self, site: usize) -> Option<usize> {
+        self.blocks
+            .partition_point(|b| b.start < site)
+            .checked_sub(1)
+    }
+
+    /// Index of the block named `name`, ignoring case.
+    pub fn find(&self, name: &str) -> Option<usize> {
+        self.blocks
+            .iter()
+            .position(|b| b.name.eq_ignore_ascii_case(name))
+            .or_else(|| {
+                let index = self
+                    .partitions
+                    .iter()
+                    .position(|p| p.gene.eq_ignore_ascii_case(name))?;
+                self.blocks
+                    .iter()
+                    .position(|b| b.partitions.contains(&index))
+            })
+    }
+
+    // Reads only the part of a NEXUS alignment after its matrix, so large
+    // files are not loaded twice.
+    fn read_embedded(path: &Path) -> anyhow::Result<Option<Vec<Partition>>> {
+        let mut reader = BufReader::new(File::open(path)?);
+        let mut line = Vec::new();
+        let mut tail = Vec::new();
+        loop {
+            line.clear();
+            if reader.read_until(b'\n', &mut line)? == 0 {
+                return Ok(None);
+            }
+            let lower = line.trim_ascii_start().to_ascii_lowercase();
+            if lower.starts_with(b"begin sets") || lower.starts_with(b"begin assumptions") {
+                tail.extend_from_slice(&line);
+                break;
+            }
+        }
+        reader.read_to_end(&mut tail)?;
+        let text = String::from_utf8_lossy(&tail);
+        let lower = text.to_ascii_lowercase();
+        // An empty sets block holds no partitions.
+        if !lower.contains("charset") && !lower.contains("charpartition") {
+            return Ok(None);
+        }
+        let partitions = PartitionParser::new(path, &PartitionFmt::Nexus, true)
+            .try_parse_nexus_from(&mut text.as_bytes())?;
+        Ok(Some(partitions))
+    }
+
+    fn block_name(partitions: &[Partition], indices: &[usize]) -> String {
+        let first = &partitions[indices[0]].gene;
+        if indices.len() == 1 {
+            return first.clone();
+        }
+        let mut prefix = first.as_str();
+        for &i in &indices[1..] {
+            let gene = &partitions[i].gene;
+            let shared = prefix
+                .char_indices()
+                .zip(gene.chars())
+                .find(|((_, a), b)| a != b)
+                .map_or(prefix.len().min(gene.len()), |((at, _), _)| at);
+            prefix = &prefix[..shared];
+        }
+        // Cut at a separator so `gene_Subset1` and `gene_Subset2` give `gene`.
+        let is_separator = |c: char| matches!(c, '_' | '-' | '.');
+        let at_boundary = indices.iter().all(|&i| {
+            let gene = &partitions[i].gene;
+            gene[prefix.len()..].chars().next().is_none_or(is_separator)
+        });
+        if !at_boundary {
+            prefix = prefix.rfind(is_separator).map_or("", |at| &prefix[..at]);
+        }
+        let prefix = prefix.trim_end_matches(is_separator);
+        if prefix.is_empty() {
+            format!("{} +{}", first, indices.len() - 1)
+        } else {
+            prefix.to_string()
+        }
+    }
 }
 
 /// Per-site counts of a block of sites, behind the window statistics.
@@ -925,5 +1189,91 @@ mod test {
         assert!(AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore).is_err());
         let path = Path::new("tests/files/missing.fas");
         assert!(AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore).is_err());
+    }
+
+    fn track(path: &str) -> Option<PartitionTrack> {
+        let path = Path::new(path);
+        let view = AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore)
+            .expect("Failed loading fixture");
+        PartitionTrack::detect(path, view.length()).expect("Failed reading partitions")
+    }
+
+    #[test]
+    fn test_partitions_embedded() {
+        let track = track("tests/files/view/concat_charset.nex").expect("No partitions");
+        assert!(track.is_embedded);
+        let names: Vec<&str> = track.blocks.iter().map(|b| b.name.as_str()).collect();
+        assert_eq!(names, vec!["locus1", "locus2", "locus3"]);
+        assert_eq!((track.blocks[1].start, track.blocks[1].end), (5, 10));
+    }
+
+    #[test]
+    fn test_partitions_sidecar() {
+        let track = track("tests/files/view/concat.fas").expect("No partitions");
+        assert!(!track.is_embedded);
+        assert!(track.source.ends_with("concat_partition.txt"));
+        assert_eq!(track.len(), 3);
+    }
+
+    #[test]
+    fn test_partitions_none() {
+        assert!(track("tests/files/simple.fas").is_none());
+        // An empty sets block holds no partitions.
+        assert!(track("tests/files/complete.nex").is_none());
+    }
+
+    #[test]
+    fn test_partitions_codon_share_block() {
+        let track = track("tests/files/view/codon.fas").expect("No partitions");
+        let names: Vec<&str> = track.blocks.iter().map(|b| b.name.as_str()).collect();
+        assert_eq!(names, vec!["geneA", "geneB"]);
+        assert_eq!(track.blocks[0].partitions, vec![0, 1, 2]);
+        assert_eq!(track.partition_at(0), Some(0));
+        assert_eq!(track.partition_at(4), Some(1));
+        assert_eq!(track.partition_at(8), Some(2));
+        assert_eq!(track.find("geneA_Subset2"), Some(0));
+    }
+
+    #[test]
+    fn test_partitions_lookup() {
+        let parts = vec![
+            Partition::from_range("a", 1, 5),
+            Partition::from_range("b", 6, 10),
+            Partition::from_range("c", 21, 30),
+            Partition::from_range("past_end", 41, 50),
+        ];
+        let track =
+            PartitionTrack::new(PathBuf::from("p.txt"), false, parts, 30).expect("No partitions");
+        assert_eq!(track.partitions.len(), 3);
+        assert_eq!(track.block_at(0), Some(0));
+        assert_eq!(track.block_at(4), Some(0));
+        assert_eq!(track.block_at(5), Some(1));
+        assert_eq!(track.block_at(15), None);
+        assert_eq!(track.block_at(29), Some(2));
+        assert_eq!(track.next_block(0), Some(1));
+        assert_eq!(track.next_block(15), Some(2));
+        assert_eq!(track.next_block(20), None);
+        assert_eq!(track.prev_block(5), Some(0));
+        assert_eq!(track.prev_block(7), Some(1));
+        assert_eq!(track.prev_block(0), None);
+        let names: Vec<&str> = track
+            .blocks_in(8, 22)
+            .iter()
+            .map(|b| b.name.as_str())
+            .collect();
+        assert_eq!(names, vec!["b", "c"]);
+        assert!(track.blocks_in(10, 20).is_empty());
+        assert_eq!(track.find("C"), Some(2));
+    }
+
+    #[test]
+    fn test_range_stats_matches_window() {
+        let path = Path::new("tests/files/view/concat.fas");
+        let view = AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore)
+            .expect("Failed loading fixture");
+        let window = view.window_stats(5, 1, 1);
+        assert_eq!(view.range_stats(5, 10), window[0]);
+        assert_eq!(view.range_stats(10, 15).variable_fraction, 1.0);
+        assert_eq!(view.range_stats(20, 30).end, 15);
     }
 }

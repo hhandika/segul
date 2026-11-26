@@ -1,0 +1,4 @@
+DNA, geneA_Subset1 = 1-9\3
+DNA, geneA_Subset2 = 2-9\3
+DNA, geneA_Subset3 = 3-9\3
+DNA, geneB = 10-15

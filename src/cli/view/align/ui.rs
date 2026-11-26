@@ -9,9 +9,9 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Clear, Paragraph, Wrap};
 
 use crate::cli::view::thousands;
-use crate::core::align::view::is_gap;
+use crate::core::align::view::{WindowStat, is_gap};
 
-use super::app::{App, Overlay};
+use super::app::{App, Overlay, SIDEBAR_LINES, SidebarTab};
 use super::palette::{ColorMode, Palette};
 
 const MIN_WIDTH: u16 = 40;
@@ -47,10 +47,21 @@ pub(super) fn render(frame: &mut Frame, app: &mut App, palette: &Palette) {
         Constraint::Min(1),
     ])
     .areas(main);
-    // The first row of the grid column holds the ruler.
-    let [ruler, cells] = Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(grid);
-    let [names_header, name_rows] =
-        Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(names);
+    // The grid column starts with the partition track, when there is one,
+    // and the ruler.
+    let track_height = if app.partitions.is_some() { 1 } else { 0 };
+    let [track, ruler, cells] = Layout::vertical([
+        Constraint::Length(track_height),
+        Constraint::Length(1),
+        Constraint::Min(1),
+    ])
+    .areas(grid);
+    let [track_header, names_header, name_rows] = Layout::vertical([
+        Constraint::Length(track_height),
+        Constraint::Length(1),
+        Constraint::Min(1),
+    ])
+    .areas(names);
 
     app.grid_rows = cells.height as usize;
     app.grid_cols = cells.width as usize;
@@ -59,6 +70,12 @@ pub(super) fn render(frame: &mut Frame, app: &mut App, palette: &Palette) {
     app.areas.names = name_rows;
     app.areas.divider = divider;
     app.areas.overview = overview;
+    app.areas.track = track;
+    app.areas.sidebar = if app.show_sidebar {
+        sidebar_block().inner(sidebar)
+    } else {
+        Rect::default()
+    };
 
     render_toolbar(frame, toolbar, app);
     if show_overview {
@@ -72,6 +89,11 @@ pub(super) fn render(frame: &mut Frame, app: &mut App, palette: &Palette) {
     frame.render_widget(Span::from(header).dim(), names_header);
     render_names(frame.buffer_mut(), name_rows, app, palette);
     render_divider(frame.buffer_mut(), divider);
+    if let Some(partitions) = &app.partitions {
+        let header = format!("Partitions ({})", count(partitions.len()));
+        frame.render_widget(Span::from(header).dim(), track_header);
+        render_track(frame.buffer_mut(), track, app, palette);
+    }
     render_ruler(frame.buffer_mut(), ruler, app, palette);
     render_grid(frame.buffer_mut(), cells, app, palette);
     render_status(frame, status, app, palette);
@@ -195,29 +217,75 @@ fn render_legend(frame: &mut Frame, area: Rect, palette: &Palette) {
     frame.render_widget(Line::from(spans), area);
 }
 
+fn sidebar_block() -> Block<'static> {
+    Block::bordered().border_type(BorderType::Rounded)
+}
+
 fn render_sidebar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let block = Block::bordered()
-        .border_type(BorderType::Rounded)
-        .title(" Windows ");
+    let is_partitions = app.partitions.is_some() && app.sidebar_tab == SidebarTab::Partitions;
+    let title = match &app.partitions {
+        Some(_) => {
+            let tab = |label: &'static str, active: bool| {
+                if active {
+                    Span::from(label).fg(palette.accent).bold()
+                } else {
+                    Span::from(label).dim()
+                }
+            };
+            Line::from(vec![
+                Span::from(" "),
+                tab("Windows", !is_partitions),
+                Span::from(" · ").dim(),
+                tab("Partitions", is_partitions),
+                Span::from(" "),
+            ])
+        }
+        None => Line::from(" Windows "),
+    };
+    let block = sidebar_block().title(title);
     let inner = block.inner(area);
     frame.render_widget(block, area);
-    // Three lines per window, the current one near the top.
-    let shown = (inner.height as usize / 3).max(1);
-    let first = app
-        .window()
-        .saturating_sub(shown / 3)
-        .min(app.window_count().saturating_sub(shown));
-    let stats = app.view.window_stats(app.window_size, first, shown);
+    let shown = (inner.height as usize / SIDEBAR_LINES).max(1);
+    let first = app.sidebar_first(shown);
+    let entries: Vec<(String, bool, WindowStat)> = match &app.partitions {
+        Some(track) if is_partitions => {
+            let current = app.block();
+            track
+                .blocks
+                .iter()
+                .enumerate()
+                .skip(first)
+                .take(shown)
+                .map(|(i, b)| {
+                    let label = format!("{} · {}", b.name, count(b.end - b.start));
+                    (
+                        label,
+                        Some(i) == current,
+                        app.view.range_stats(b.start, b.end),
+                    )
+                })
+                .collect()
+        }
+        _ => app
+            .view
+            .window_stats(app.window_size, first, shown)
+            .into_iter()
+            .enumerate()
+            .map(|(i, stat)| {
+                let label = format!("{}–{}", count(stat.start + 1), count(stat.end));
+                (label, first + i == app.window(), stat)
+            })
+            .collect(),
+    };
     let bar_width = inner.width.saturating_sub(1) as usize;
-    let mut lines = Vec::with_capacity(stats.len() * 3);
-    for (i, stat) in stats.iter().enumerate() {
-        let is_current = first + i == app.window();
+    let mut lines = Vec::with_capacity(entries.len() * SIDEBAR_LINES);
+    for (label, is_current, stat) in entries {
         let marker = if is_current { "▌" } else { " " };
-        let range = format!("{}{}–{}", marker, count(stat.start + 1), count(stat.end));
+        let label = truncate(&format!("{marker}{label}"), inner.width as usize);
         lines.push(if is_current {
-            Line::from(range).fg(palette.accent).bold()
+            Line::from(label).fg(palette.accent).bold()
         } else {
-            Line::from(range)
+            Line::from(label)
         });
         lines.push(
             Line::from(format!(
@@ -235,6 +303,37 @@ fn render_sidebar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         ]));
     }
     frame.render_widget(Paragraph::new(lines), inner);
+}
+
+// Partition bands in alternating colors, each named where it fits.
+fn render_track(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
+    let Some(track) = &app.partitions else {
+        return;
+    };
+    let zoom = app.zoom;
+    let sites = (area.width as usize / zoom).min(app.site_range().1 - app.left_site);
+    let (start, end) = (app.left_site, app.left_site + sites);
+    let current = app.block();
+    let first = track.blocks.partition_point(|b| b.end <= start);
+    for (offset, block) in track.blocks_in(start, end).iter().enumerate() {
+        let index = first + offset;
+        let bg = if index.is_multiple_of(2) {
+            palette.mono
+        } else {
+            palette.gap
+        };
+        let mut style = Style::new().bg(bg).fg(palette.on_residue);
+        if Some(index) == current {
+            style = style.bold();
+        }
+        let from = (block.start.max(start) - start) * zoom;
+        let to = (block.end.min(end) - start) * zoom;
+        let width = to - from;
+        let mut label = String::from(if Some(index) == current { "▸" } else { "" });
+        label.push_str(&block.name);
+        let text = format!("{:width$}", truncate(&label, width), width = width);
+        buf.set_stringn(area.x + from as u16, area.y, text, width, style);
+    }
 }
 
 fn render_names(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
@@ -283,8 +382,16 @@ fn render_ruler(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
     for i in 0..sites {
         let site = app.left_site + i;
         let x = i * app.zoom;
-        // Labels drawn before take precedence over window marks.
-        if !app.paged && site > 0 && site.is_multiple_of(app.window_size) && x >= free_from {
+        // Labels drawn before take precedence over boundary marks. Partition
+        // starts replace window marks when the alignment has partitions.
+        let is_boundary = match &app.partitions {
+            Some(track) => track
+                .blocks
+                .binary_search_by_key(&site, |b| b.start)
+                .is_ok(),
+            None => !app.paged && site.is_multiple_of(app.window_size),
+        };
+        if site > 0 && is_boundary && x >= free_from {
             buf[(area.x + x as u16, area.y)]
                 .set_char('┃')
                 .set_fg(palette.tertiary);
@@ -311,6 +418,15 @@ fn render_grid(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
         _ => vec![0; sites],
     };
     let letter_at = zoom / 2;
+    let starts: Vec<usize> = match &app.partitions {
+        Some(track) => track
+            .blocks_in(app.left_site, app.left_site + sites)
+            .iter()
+            .map(|b| b.start)
+            .filter(|&s| s > 0)
+            .collect(),
+        None => Vec::new(),
+    };
     for y in 0..rows {
         let row = app.top_row + y;
         let is_selected = app.selected.contains(&row);
@@ -335,12 +451,17 @@ fn render_grid(buf: &mut Buffer, area: Rect, app: &App, palette: &Palette) {
             if is_cursor {
                 (bg, fg) = (fg, bg);
             }
+            let is_start = starts.binary_search(&site).is_ok();
             for dx in 0..zoom {
                 let x = area.x + (i * zoom + dx) as u16;
                 let cell = &mut buf[(x, area.y + y as u16)];
                 cell.set_char(if dx == letter_at { letter } else { ' ' })
                     .set_bg(bg)
                     .set_fg(fg);
+                // Zoomed cells have room left of the letter for a boundary.
+                if is_start && dx == 0 && dx != letter_at {
+                    cell.set_char('▏').set_fg(palette.tertiary);
+                }
                 if is_cursor {
                     cell.modifier.insert(Modifier::BOLD);
                 }
@@ -376,7 +497,7 @@ fn render_status(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     let left = match &app.overlay {
         Overlay::GoTo(input) => Line::from(vec![
             Span::from(format!(
-                " Go to site (1–{}), or taxon:site: ",
+                " Go to site (1–{}), taxon, partition, or taxon:site: ",
                 count(app.view.length())
             ))
             .fg(palette.accent),
@@ -431,13 +552,30 @@ fn cursor_status(app: &App) -> String {
         (_, None) => String::from("gap"),
     };
     let residue = residue.map(|c| (c as char).to_string()).unwrap_or_default();
-    format!(
+    let mut status = format!(
         " {} · site {} · {} · {}",
         view.name(app.row),
         count(app.site + 1),
         position,
         residue
-    )
+    );
+    if let (Some(track), Some(index)) = (&app.partitions, app.block()) {
+        let block = &track.blocks[index];
+        // Name the exact subset when several share the block.
+        let name = match track.partition_at(app.site) {
+            Some(p) if block.partitions.len() > 1 => &track.partitions[p].gene,
+            _ => &block.name,
+        };
+        status.push_str(&format!(
+            " · {} ({}/{}) site {} of {}",
+            name,
+            count(index + 1),
+            count(track.len()),
+            count(app.site - block.start + 1),
+            count(block.end - block.start)
+        ));
+    }
+    status
 }
 
 // Keys for Windows and Linux, keys for macOS, and the action. macOS
@@ -450,8 +588,16 @@ const HELP: &[(&str, &str, &str)] = &[
     ("Ctrl+Home / End", "Ctrl+fn+← / →", "First / last taxon"),
     ("PgUp / PgDn", "Option+↑ / ↓", "Page rows"),
     ("Alt+PgUp / PgDn", "Option+Shift+← / →", "Page sites"),
-    ("[ / ]", "[ / ]", "Previous / next window"),
-    ("Ctrl+G", "Ctrl+G", "Go to site, taxon, or taxon:site"),
+    (
+        "[ / ], { / }",
+        "[ / ], { / }",
+        "Previous / next window, partition",
+    ),
+    (
+        "Ctrl+G",
+        "Ctrl+G",
+        "Go to site, taxon, partition, or taxon:site",
+    ),
     (
         "Ctrl+F, F3",
         "Ctrl+F, fn+F3",
@@ -461,7 +607,11 @@ const HELP: &[(&str, &str, &str)] = &[
     ("F2 or Ctrl+K C", "Ctrl+K C", "Cycle color mode"),
     ("F4 or Ctrl+K L", "Ctrl+K L", "Toggle letters"),
     ("Ctrl+K P", "Ctrl+K P", "Toggle paged windows"),
-    ("Ctrl+B", "Ctrl+B", "Toggle window sidebar"),
+    (
+        "Ctrl+B, Ctrl+K T",
+        "Ctrl+B, Ctrl+K T",
+        "Toggle sidebar / switch its list",
+    ),
     ("< / >", "< / >", "Narrow / widen names"),
     (
         "Space, Shift+↑↓, Ctrl+A",
@@ -641,6 +791,27 @@ mod test {
         let text = screen(&mut app, &palette);
         assert!(text.contains("Keyboard shortcuts"));
         assert!(text.contains("Quit"));
+    }
+
+    #[test]
+    fn test_render_partitions() {
+        let files = [PathBuf::from(
+            "crates/segul-core/tests/files/view/concat_charset.nex",
+        )];
+        let view = AlignmentView::open(&files[0], &InputFmt::Auto, &DataType::Ignore)
+            .expect("Failed opening fixture");
+        let mut app = App::new(&files, &InputFmt::Auto, &DataType::Ignore, view, 1000);
+        let palette = Palette::new(ResidueScheme::Clustal, Theme::Dark, true, true);
+        let text = screen(&mut app, &palette);
+        assert!(text.contains("Partitions (3)"));
+        // Five-site bands fit only part of each name.
+        assert!(text.contains("▸loc…locu…locu…"));
+        assert!(text.contains("locus1 (1/3) site 1 of 5"));
+
+        app.show_sidebar = true;
+        let text = screen(&mut app, &palette);
+        assert!(text.contains("Windows · Partitions"));
+        assert!(text.contains("▌locus1 · 5"));
     }
 
     #[test]

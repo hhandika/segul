@@ -1,0 +1,18 @@
+#NEXUS
+
+BEGIN DATA;
+DIMENSIONS  NTAX=3 NCHAR=15;
+FORMAT DATATYPE=DNA GAP=- MISSING=?;
+MATRIX
+
+ABCD AAAAAGGGGGTTTTT
+ABCE AAAAAGGGGGTTTTT
+ABCF AAAAAGG-GGCCCCC
+;
+END;
+
+begin sets;
+    charset locus1 = 1-5;
+    charset locus2 = 6-10;
+    charset locus3 = 11-15;
+end;

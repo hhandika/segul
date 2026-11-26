@@ -47,6 +47,15 @@ impl<'a> PartitionParser<'a> {
         }
     }
 
+    /// Parse NEXUS partition text from `reader` instead of the file at `path`.
+    /// Used to read only the tail of a large NEXUS alignment.
+    pub(crate) fn try_parse_nexus_from<R: BufRead>(
+        &self,
+        reader: &mut R,
+    ) -> Result<Vec<Partition>> {
+        self.parse_nexus(reader)
+    }
+
     /// Parse a RAxML / RAxML-NG / PartitionFinder RAxML-style partition file.
     fn parse_raxml<R: BufRead>(&self, reader: &mut R) -> Result<Vec<Partition>> {
         let mut partitions = Vec::new();
