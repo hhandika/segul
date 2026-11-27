@@ -6,13 +6,7 @@ const LOCI: [&str; 4] = ["gene_1", "gene_2", "gene_3", "gene_4"];
 
 #[test]
 fn test_align_distance() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.assert().success();
     let res_path = tmp_dir.path().join("Align-Distance");
     for locus in LOCI {
@@ -26,13 +20,7 @@ fn test_align_distance() {
 
 #[test]
 fn test_align_distance_k2p() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--model").arg("k2p").arg("--prefix").arg("k2p");
     cmd.assert().success();
     let res_path = tmp_dir.path().join("Align-Distance");
@@ -43,13 +31,7 @@ fn test_align_distance_k2p() {
 
 #[test]
 fn test_align_distance_invalid_model() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--model").arg("poisson");
     cmd.assert().failure();
     tmp_dir.close().unwrap();
@@ -57,13 +39,7 @@ fn test_align_distance_invalid_model() {
 
 #[test]
 fn test_align_distance_lower_triangle() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--triangle").arg("lower");
     cmd.assert().success();
     let matrix = tmp_dir
@@ -80,13 +56,7 @@ fn test_align_distance_lower_triangle() {
 
 #[test]
 fn test_align_distance_blank_diagonal() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--triangle")
         .arg("lower")
         .arg("--diagonal")
@@ -106,13 +76,7 @@ fn test_align_distance_blank_diagonal() {
 
 #[test]
 fn test_align_distance_group_long() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--group-regex").arg("^ABC").arg("--long");
     cmd.assert().success();
     let res_path = tmp_dir.path().join("Align-Distance");
@@ -137,13 +101,7 @@ fn test_align_distance_group_long() {
 
 #[test]
 fn test_align_distance_group_auto_fails_without_pattern() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--group-auto");
     cmd.assert().failure();
     tmp_dir.close().unwrap();
@@ -151,13 +109,7 @@ fn test_align_distance_group_auto_fails_without_pattern() {
 
 #[test]
 fn test_align_distance_group_delimiter_requires_fields() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--group-delimiter").arg("_");
     cmd.assert().failure();
     tmp_dir.close().unwrap();
@@ -165,13 +117,7 @@ fn test_align_distance_group_delimiter_requires_fields() {
 
 #[test]
 fn test_align_distance_group_diagonal_requires_grouping() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--diagonal").arg("mean");
     cmd.assert().failure();
     tmp_dir.close().unwrap();
@@ -179,13 +125,7 @@ fn test_align_distance_group_diagonal_requires_grouping() {
 
 #[test]
 fn test_align_distance_group_max_diagonal() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "distance",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "distance", "tests/files/alignments/", tmp_dir);
     cmd.arg("--group-regex")
         .arg("^ABC[DE]")
         .arg("--diagonal")

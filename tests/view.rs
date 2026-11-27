@@ -57,7 +57,7 @@ fn test_view_summary_not_a_report() {
         .arg(
             std::env::current_dir()
                 .unwrap()
-                .join("crates/segul-core/tests/files/plot/locus_summary.csv"),
+                .join("tests/files/plot/locus_summary.csv"),
         )
         .assert()
         .failure()

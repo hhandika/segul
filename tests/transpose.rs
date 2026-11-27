@@ -8,7 +8,7 @@ fn test_sequence_transpose() {
         cmd,
         "sequence",
         "transpose",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.assert().success();

@@ -12,9 +12,6 @@ pub mod stats;
 pub mod verify;
 pub mod workflow;
 
-#[cfg(test)]
-mod tests;
-
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};

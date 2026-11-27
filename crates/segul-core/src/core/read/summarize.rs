@@ -152,8 +152,8 @@ impl<'a> GenomicReadSummary<'a> {
     /// use tempfile::TempDir;
     ///
     /// let mut files = vec![
-    ///    PathBuf::from("tests/files/raw/read_1.fastq"),
-    ///    PathBuf::from("tests/files/raw/read_2.fastq"),
+    ///    PathBuf::from("../../tests/files/raw/read_1.fastq"),
+    ///    PathBuf::from("../../tests/files/raw/read_2.fastq"),
     /// ];
     /// let output = TempDir::with_prefix("tempt").unwrap();
     /// let spinner = segul_core::helper::utils::set_spinner();
@@ -412,8 +412,8 @@ mod test {
     #[test]
     fn test_summarize() {
         let mut files = vec![
-            PathBuf::from("tests/files/raw/read_1.fastq"),
-            PathBuf::from("tests/files/raw/read_2.fastq"),
+            PathBuf::from("../../tests/files/raw/read_1.fastq"),
+            PathBuf::from("../../tests/files/raw/read_2.fastq"),
         ];
         let output = TempDir::with_prefix("tempt").unwrap();
         let handler = GenomicReadSummary::new(
@@ -451,8 +451,8 @@ mod test {
     #[test]
     fn test_progress() {
         let mut files = vec![
-            PathBuf::from("tests/files/raw/read_1.fastq"),
-            PathBuf::from("tests/files/raw/read_2.fastq"),
+            PathBuf::from("../../tests/files/raw/read_1.fastq"),
+            PathBuf::from("../../tests/files/raw/read_2.fastq"),
         ];
         let output = TempDir::with_prefix("tempt").unwrap();
         let reporter = CountingReporter::default();
@@ -472,7 +472,7 @@ mod test {
 
     #[test]
     fn test_progress_cancelled() {
-        let mut files = vec![PathBuf::from("tests/files/raw/read_1.fastq")];
+        let mut files = vec![PathBuf::from("../../tests/files/raw/read_1.fastq")];
         let output = TempDir::with_prefix("tempt").unwrap();
         let reporter = CountingReporter {
             cancelled: true,
@@ -495,7 +495,7 @@ mod test {
     #[test]
     fn test_progress_cancelled_mid_file() {
         for mode in [SummaryMode::Minimal, SummaryMode::Complete] {
-            let mut files = vec![PathBuf::from("tests/files/raw/read_1.fastq")];
+            let mut files = vec![PathBuf::from("../../tests/files/raw/read_1.fastq")];
             let output = TempDir::with_prefix("tempt").unwrap();
             // The first check lets the file start; the next one is inside the file.
             let reporter = CancelAfter::new(1);
@@ -512,8 +512,8 @@ mod test {
     #[test]
     fn test_read_count_only() {
         let files = vec![
-            PathBuf::from("tests/files/raw/read_1.fastq"),
-            PathBuf::from("tests/files/raw/read_2.fastq"),
+            PathBuf::from("../../tests/files/raw/read_1.fastq"),
+            PathBuf::from("../../tests/files/raw/read_2.fastq"),
         ];
         let output = TempDir::with_prefix("tempt").unwrap();
         let mut files_copy = files.clone();
@@ -532,8 +532,8 @@ mod test {
     #[test]
     fn test_complete_outputs() {
         let mut files = vec![
-            PathBuf::from("tests/files/raw/read_2.fastq"),
-            PathBuf::from("tests/files/raw/read_1.fastq"),
+            PathBuf::from("../../tests/files/raw/read_2.fastq"),
+            PathBuf::from("../../tests/files/raw/read_1.fastq"),
         ];
         let output = TempDir::with_prefix("tempt").unwrap();
         let handler = GenomicReadSummary::new(

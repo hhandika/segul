@@ -38,7 +38,7 @@ impl<'a> SeqParser<'a> {
     /// use segul_core::helper::types::{DataType, InputFmt};
     /// use segul_core::helper::sequence::SeqParser;
     ///
-    /// let file = Path::new("tests/files/simple.fas");
+    /// let file = Path::new("../../tests/files/simple.fas");
     /// let datatype = &DataType::Dna;
     /// let input_fmt = &InputFmt::Fasta;
     ///
@@ -83,7 +83,7 @@ impl<'a> SeqParser<'a> {
 /// use segul_core::helper::types::{DataType, InputFmt};
 /// use segul_core::helper::sequence::{SeqParser, SeqCheck};
 ///
-/// let file = Path::new("tests/files/simple.fas");
+/// let file = Path::new("../../tests/files/simple.fas");
 /// let datatype = &DataType::Dna;
 /// let input_fmt = &InputFmt::Fasta;
 ///
@@ -147,7 +147,7 @@ mod test {
 
     #[test]
     fn test_alignment_simple() {
-        let file = Path::new("tests/files/simple.nex");
+        let file = Path::new("../../tests/files/simple.nex");
         let datatype = DataType::Dna;
         let input_fmt = InputFmt::Nexus;
         let aln = SeqParser::new(file, &datatype);

@@ -115,11 +115,11 @@ mod test {
     #[test]
     fn test_infer_partition_fmt() {
         assert_eq!(
-            infer_partition_fmt(Path::new("tests/files/partition/partition.nex")).unwrap(),
+            infer_partition_fmt(Path::new("../../tests/files/partition/partition.nex")).unwrap(),
             PartitionFmt::Nexus
         );
         assert_eq!(
-            infer_partition_fmt(Path::new("tests/files/partition/partition.txt")).unwrap(),
+            infer_partition_fmt(Path::new("../../tests/files/partition/partition.txt")).unwrap(),
             PartitionFmt::Raxml
         );
     }

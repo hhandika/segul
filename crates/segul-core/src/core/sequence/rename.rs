@@ -363,7 +363,7 @@ mod test {
         ($rename: ident, $file: ident) => {
             let input_fmt = InputFmt::Fasta;
             let datatype = DataType::Dna;
-            let $file = Path::new("tests/files/simple.fas");
+            let $file = Path::new("../../tests/files/simple.fas");
             let opts = SeqRenamingParameters::RmStr(String::from("test"));
             let output_dir = Path::new(".");
             let output_fmt = OutputFmt::Fasta;

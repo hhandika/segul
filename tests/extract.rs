@@ -13,7 +13,7 @@ fn test_extract() {
         cmd,
         "sequence",
         "extract",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.arg("--id=ABCD").assert().success();
@@ -27,7 +27,7 @@ fn test_conflicting_extract_cmd() {
         cmd,
         "sequence",
         "extract",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.arg("--id")
@@ -44,13 +44,13 @@ fn test_no_extract_cmd() {
         cmd,
         "sequence",
         "extract",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.arg("--id")
         .arg("ABCD")
         .arg("--file")
-        .arg("crates/segul-core/tests/files/alignments/alignments.nex")
+        .arg("tests/files/alignments/alignments.nex")
         .assert()
         .success();
 }
@@ -61,7 +61,7 @@ fn test_extract_re() {
         cmd,
         "sequence",
         "extract",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.arg("--re=^AB").assert().success();

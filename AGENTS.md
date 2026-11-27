@@ -30,8 +30,6 @@ The repo is a Cargo workspace (edition 2024, version set once in the root
   - `src/helper/`: shared types (`types.rs`: `InputFmt`, `OutputFmt`,
     `DataType`, `Header`, `SeqMatrix`, ...), file finders, logging, and
     utilities.
-  - `tests/files/`: small test inputs used by unit tests, doctests, and the
-    CLI integration tests.
 - `src/`: the `segul` command-line app.
   - `src/cli/args/`: clap argument definitions (`align.rs`, `sequence.rs`,
     `genomics.rs`), shared argument groups in `args/mod.rs`.
@@ -41,7 +39,8 @@ The repo is a Cargo workspace (edition 2024, version set once in the root
   - `src/lib.rs`: re-exports `core`, `helper`, `parser`, `stats`, `writer`
     from `segul-core` for backward compatibility. Do not add new code here.
 - `tests/`: CLI integration tests, one file per command, sharing macros in
-  `tests/utils.rs`.
+  `tests/utils.rs`, core report integration tests in `tests/report_core.rs`,
+  and shared test fixtures in `tests/files/`.
 - `bench/`: Python benchmark harness (`segul-bench`), managed with `uv`. See
   `bench/README.md`.
 - `scripts/`: release helper scripts (`gh-newrelease`, `gh-upload`, ...).
@@ -107,8 +106,9 @@ Match the code around you. In particular:
 ## Tests
 
 - Unit tests live in a `#[cfg(test)] mod test` at the bottom of each file and
-  read inputs from `crates/segul-core/tests/files/`. Add a small fixture file
-  there rather than generating data inline when a test needs a real format.
+  read inputs from `tests/files/` (`../../tests/files/` relative to
+  `crates/segul-core/`). Add a small fixture file in `tests/files/` rather
+  than generating data inline when a test needs a real format.
 - CLI tests in `tests/<command>.rs` run the binary with `assert_cmd` in a temp
   dir, using the macros in `tests/utils.rs` (`initiate_cmd!`,
   `test_results!`). Paths are relative to the repo root.

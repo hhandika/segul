@@ -951,7 +951,7 @@ fn offset(value: usize, delta: isize, max: usize) -> usize {
 mod test {
     use super::*;
 
-    const FILE: &str = "crates/segul-core/tests/files/simple.fas";
+    const FILE: &str = "tests/files/simple.fas";
 
     fn key(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -1094,7 +1094,7 @@ mod test {
     fn test_switch_files() {
         let files = [
             PathBuf::from(FILE),
-            PathBuf::from("crates/segul-core/tests/files/simple_aa.fas"),
+            PathBuf::from("tests/files/simple_aa.fas"),
         ];
         let mut app = app(&files);
         app.handle_key(with(KeyCode::PageDown, KeyModifiers::CONTROL));
@@ -1106,9 +1106,7 @@ mod test {
 
     #[test]
     fn test_partitions() {
-        let files = [PathBuf::from(
-            "crates/segul-core/tests/files/view/concat_charset.nex",
-        )];
+        let files = [PathBuf::from("tests/files/view/concat_charset.nex")];
         let mut app = app(&files);
         assert_eq!(app.sidebar_tab, SidebarTab::Partitions);
         assert_eq!(app.block(), Some(0));
@@ -1143,9 +1141,7 @@ mod test {
 
     #[test]
     fn test_go_to_suggestions() {
-        let files = [PathBuf::from(
-            "crates/segul-core/tests/files/view/concat_charset.nex",
-        )];
+        let files = [PathBuf::from("tests/files/view/concat_charset.nex")];
         let mut app = app(&files);
         assert_eq!(app.goto_matches("locus2"), vec![1]);
         assert_eq!(app.goto_matches("2"), Vec::<usize>::new());

@@ -376,7 +376,7 @@ mod test {
     use super::*;
     use crate::helper::finder::SeqFileFinder;
 
-    const PATH: &str = "tests/files/pinf/";
+    const PATH: &str = "../../tests/files/pinf/";
     const INPUT_FMT: InputFmt = InputFmt::Fasta;
 
     #[test]
@@ -412,7 +412,7 @@ mod test {
 
     #[test]
     fn test_missing_data() {
-        let path = Path::new("tests/files/gappy/");
+        let path = Path::new("../../tests/files/gappy/");
         let input_fmt = InputFmt::Nexus;
         let files = SeqFileFinder::new(path).find(&input_fmt);
         let ftr = AlignmentFiltering::new(

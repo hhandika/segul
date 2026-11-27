@@ -125,7 +125,7 @@ impl FileStats {
 /// use segul_core::core::maf::summary::MafSummary;
 ///
 /// let output = tempfile::TempDir::with_prefix("maf-summary").unwrap();
-/// let files = vec![PathBuf::from("tests/files/maf/simple.maf")];
+/// let files = vec![PathBuf::from("../../tests/files/maf/simple.maf")];
 /// MafSummary::new(&files, output.path(), None).summarize().unwrap();
 /// assert!(output.path().join("maf_summary_per_file.csv").exists());
 /// assert!(output.path().join("maf_summary_per_species.csv").exists());
@@ -555,7 +555,7 @@ mod tests {
     #[test]
     fn test_cancelled_mid_file() {
         let output = TempDir::with_prefix("maf-summary").unwrap();
-        let files = vec![PathBuf::from("tests/files/maf/simple.maf")];
+        let files = vec![PathBuf::from("../../tests/files/maf/simple.maf")];
         let reporter = CancelAfter::new(2);
         let error = MafSummary::new(&files, output.path(), None)
             .with_progress(&reporter)
@@ -568,7 +568,7 @@ mod tests {
     #[test]
     fn test_simple_summary() {
         let output = TempDir::with_prefix("maf-summary").unwrap();
-        let files = vec![PathBuf::from("tests/files/maf/simple.maf")];
+        let files = vec![PathBuf::from("../../tests/files/maf/simple.maf")];
         let (per_file, per_species) = MafSummary::new(&files, output.path(), Some("simple"))
             .summarize()
             .unwrap();
@@ -599,8 +599,8 @@ mod tests {
     fn test_combined_rows_for_many_files() {
         let output = TempDir::with_prefix("maf-summary-many").unwrap();
         let files = vec![
-            PathBuf::from("tests/files/maf/simple.maf"),
-            PathBuf::from("tests/files/maf/simple.maf"),
+            PathBuf::from("../../tests/files/maf/simple.maf"),
+            PathBuf::from("../../tests/files/maf/simple.maf"),
         ];
         let (_, per_species) = MafSummary::new(&files, output.path(), None)
             .with_species(Some(vec!["hg18".to_string(), "rn3".to_string()]))

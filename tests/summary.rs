@@ -53,13 +53,7 @@ macro_rules! generate_locus_test {
 
 #[test]
 fn test_summary() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "summary",
-        "crates/segul-core/tests/files/long-aln",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "summary", "tests/files/long-aln", tmp_dir);
     cmd.assert().success();
     let locus_counts = 4;
     let taxon_counts = 4;
@@ -70,13 +64,7 @@ fn test_summary() {
 
 #[test]
 fn test_summary_aa() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "summary",
-        "crates/segul-core/tests/files/concat-aa",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "summary", "tests/files/concat-aa", tmp_dir);
     cmd.arg("--datatype").arg("aa").assert().success();
     let locus_counts = 4;
     let taxon_counts = 3;
@@ -87,13 +75,7 @@ fn test_summary_aa() {
 
 #[test]
 fn test_locus_summary() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "summary",
-        "crates/segul-core/tests/files/long-aln",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "summary", "tests/files/long-aln", tmp_dir);
     cmd.arg("--per-locus").assert().success();
     let fcount = 4;
     let cols = 25;
@@ -102,13 +84,7 @@ fn test_locus_summary() {
 
 #[test]
 fn test_locus_summary_aa() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "summary",
-        "crates/segul-core/tests/files/concat-aa",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "summary", "tests/files/concat-aa", tmp_dir);
     cmd.arg("--datatype")
         .arg("aa")
         .arg("--per-locus")

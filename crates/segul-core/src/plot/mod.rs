@@ -23,7 +23,7 @@
 //! use segul_core::plot::render::PlotRenderer;
 //! use segul_core::plot::spec::{PlotFormat, PlotStyle};
 //!
-//! let input = Path::new("tests/files/plot/locus_summary.csv");
+//! let input = Path::new("../../tests/files/plot/locus_summary.csv");
 //! let style = PlotStyle::default();
 //! let spec = AlignmentPlot::new(input, &style)
 //!     .build(&AlignPlot::PisVsLength)

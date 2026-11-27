@@ -1,16 +1,18 @@
-//! Unit tests for unified `report.json`, checksums, verification, replay,
-//! workflow lineage, backward compatibility, and methods export.
+//! Integration tests for unified `report.json`, checksums, verification,
+//! replay, workflow lineage, backward compatibility, and methods export.
 
 use std::fs;
 use std::path::PathBuf;
 
 use tempfile::TempDir;
 
-use super::checksum::{ChecksumMode, sha256_file};
-use super::paths::{common_base_dir, relative_posix, resolve_portable_path, to_posix_string};
-use super::spec::AlignConcatParams;
-use super::verify::{FileVerifyStatus, VerifyScope, verify_report};
-use super::{FrontendInfo, ReportContext, TaskKind, write_task_report};
+use segul_core::report::checksum::{ChecksumMode, sha256_file};
+use segul_core::report::paths::{
+    common_base_dir, relative_posix, resolve_portable_path, to_posix_string,
+};
+use segul_core::report::spec::AlignConcatParams;
+use segul_core::report::verify::{FileVerifyStatus, VerifyScope, verify_report};
+use segul_core::report::{FrontendInfo, ReportContext, TaskKind, write_task_report};
 
 #[test]
 fn test_portable_posix_paths() {
@@ -142,18 +144,17 @@ fn test_sha256_and_synthetic_verify_statuses() {
     ));
 }
 
-#[cfg(feature = "align")]
 #[test]
 fn test_align_summary_v2_and_v1_compat_and_replay() {
-    use super::RunReport;
-    use super::methods::{MethodsFormat, render_methods};
-    use super::replay::{ReplayOptions, replay_report};
-    use super::stats::ReportStatistics;
-    use crate::core::align::summarize::AlignmentSummary;
-    use crate::helper::finder::SeqFileFinder;
-    use crate::helper::types::{DataType, InputFmt};
-    use crate::stats::align_report::AlignReport;
-    use crate::stats::distance_report::DistanceReport;
+    use segul_core::core::align::summarize::AlignmentSummary;
+    use segul_core::helper::finder::SeqFileFinder;
+    use segul_core::helper::types::{DataType, InputFmt};
+    use segul_core::report::RunReport;
+    use segul_core::report::methods::{MethodsFormat, render_methods};
+    use segul_core::report::replay::{ReplayOptions, replay_report};
+    use segul_core::report::stats::ReportStatistics;
+    use segul_core::stats::align_report::AlignReport;
+    use segul_core::stats::distance_report::DistanceReport;
 
     let tmp = TempDir::new().unwrap();
     let out1 = tmp.path().join("run1");
@@ -219,17 +220,16 @@ fn test_align_summary_v2_and_v1_compat_and_replay() {
     assert!(txt.contains("Methods"));
 }
 
-#[cfg(feature = "align")]
 #[test]
 fn test_lineage_workflow_export_and_replay_concat() {
-    use super::methods::{MethodsFormat, render_methods};
-    use super::replay::{ReplayOptions, replay_workflow};
-    use super::spec::TaskParameters;
-    use super::workflow::WorkflowRecipe;
-    use crate::core::align::concat::AlignmentConcatenation;
-    use crate::core::align::filter::{AlignmentFiltering, FilteringParameters};
-    use crate::helper::finder::SeqFileFinder;
-    use crate::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
+    use segul_core::core::align::concat::AlignmentConcatenation;
+    use segul_core::core::align::filter::{AlignmentFiltering, FilteringParameters};
+    use segul_core::helper::finder::SeqFileFinder;
+    use segul_core::helper::types::{DataType, InputFmt, OutputFmt, PartitionFmt};
+    use segul_core::report::methods::{MethodsFormat, render_methods};
+    use segul_core::report::replay::{ReplayOptions, replay_workflow};
+    use segul_core::report::spec::{AlignFilterCriterion, AlignFilterParams, TaskParameters};
+    use segul_core::report::workflow::WorkflowRecipe;
 
     let tmp = TempDir::new().unwrap();
     let step1_dir = tmp.path().join("step1_filter");
@@ -246,10 +246,10 @@ fn test_lineage_workflow_export_and_replay_concat() {
         AlignmentFiltering::new(&files, &InputFmt::Nexus, &DataType::Dna, &step1_dir, &param)
             .with_report_context(ctx.clone())
             .filter_with_report(
-                super::spec::AlignFilterParams {
+                AlignFilterParams {
                     input_format: "nexus".to_string(),
                     datatype: "dna".to_string(),
-                    criterion: super::spec::AlignFilterCriterion::MinTaxCount { min_taxa: 2 },
+                    criterion: AlignFilterCriterion::MinTaxCount { min_taxa: 2 },
                     concat: false,
                     output_format: None,
                     partition_format: None,
@@ -309,15 +309,14 @@ fn test_lineage_workflow_export_and_replay_concat() {
     assert!(methods.contains("2. **"));
 }
 
-#[cfg(feature = "contig")]
 #[test]
 fn test_contig_report_compat_and_replay() {
-    use super::replay::{ReplayOptions, replay_report};
-    use super::stats::ReportStatistics;
-    use crate::core::contig::summarize::ContigSummaryHandler;
-    use crate::helper::finder::ContigFileFinder;
-    use crate::helper::types::ContigFmt;
-    use crate::stats::contig_report::ContigReport;
+    use segul_core::core::contig::summarize::ContigSummaryHandler;
+    use segul_core::helper::finder::ContigFileFinder;
+    use segul_core::helper::types::ContigFmt;
+    use segul_core::report::replay::{ReplayOptions, replay_report};
+    use segul_core::report::stats::ReportStatistics;
+    use segul_core::stats::contig_report::ContigReport;
 
     let tmp = TempDir::new().unwrap();
     let out1 = tmp.path().join("c1");
@@ -350,14 +349,13 @@ fn test_contig_report_compat_and_replay() {
     assert_eq!(c1.summary, c2.summary);
 }
 
-#[cfg(feature = "read")]
 #[test]
 fn test_read_report_compat_and_replay() {
-    use super::replay::{ReplayOptions, replay_report};
-    use super::stats::ReportStatistics;
-    use crate::core::read::summarize::GenomicReadSummary;
-    use crate::helper::types::{SeqReadFmt, SummaryMode};
-    use crate::stats::fastq::report::ReadReport;
+    use segul_core::core::read::summarize::GenomicReadSummary;
+    use segul_core::helper::types::{SeqReadFmt, SummaryMode};
+    use segul_core::report::replay::{ReplayOptions, replay_report};
+    use segul_core::report::stats::ReportStatistics;
+    use segul_core::stats::fastq::report::ReadReport;
 
     let tmp = TempDir::new().unwrap();
     let out1 = tmp.path().join("r1");
@@ -400,12 +398,11 @@ fn test_read_report_compat_and_replay() {
     assert_eq!(r1.samples.len(), r2.samples.len());
 }
 
-#[cfg(feature = "maf")]
 #[test]
 fn test_maf_summary_replay() {
-    use super::replay::{ReplayOptions, replay_report};
-    use crate::core::maf::summary::MafSummary;
-    use crate::helper::finder::MafFileFinder;
+    use segul_core::core::maf::summary::MafSummary;
+    use segul_core::helper::finder::MafFileFinder;
+    use segul_core::report::replay::{ReplayOptions, replay_report};
 
     let tmp = TempDir::new().unwrap();
     let out1 = tmp.path().join("m1");
@@ -432,13 +429,12 @@ fn test_maf_summary_replay() {
     assert_eq!(replayed.statistics, written.run_report.statistics);
 }
 
-#[cfg(feature = "sequence")]
 #[test]
 fn test_sequence_id_replay() {
-    use super::replay::{ReplayOptions, replay_report};
-    use crate::core::sequence::id::SequenceID;
-    use crate::helper::finder::SeqFileFinder;
-    use crate::helper::types::{DataType, InputFmt};
+    use segul_core::core::sequence::id::SequenceID;
+    use segul_core::helper::finder::SeqFileFinder;
+    use segul_core::helper::types::{DataType, InputFmt};
+    use segul_core::report::replay::{ReplayOptions, replay_report};
 
     let tmp = TempDir::new().unwrap();
     let out1 = tmp.path().join("s1");

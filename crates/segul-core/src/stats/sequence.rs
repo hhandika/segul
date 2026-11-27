@@ -79,7 +79,7 @@ fn scan_site_block(
 /// use segul_core::helper::sequence::{SeqParser, SeqCheck};
 /// use segul_core::stats::sequence as stats;
 ///
-/// let file = Path::new("tests/files/concat.fasta");
+/// let file = Path::new("../../tests/files/concat.fasta");
 /// let datatype = &DataType::Dna;
 /// let input_fmt = &InputFmt::Fasta;
 ///
@@ -931,7 +931,7 @@ mod test {
 
     #[test]
     fn get_site_stats_test() {
-        let path = Path::new("tests/files/concat.fasta");
+        let path = Path::new("../../tests/files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let aln = SeqParser::new(path, &DNA);
         let (matrix, _) = aln.get_alignment(&input_format);
@@ -987,7 +987,7 @@ mod test {
 
     #[test]
     fn char_count_test() {
-        let path = Path::new("tests/files/concat.fasta");
+        let path = Path::new("../../tests/files/concat.fasta");
         let input_format = InputFmt::Fasta;
         let aln = SeqParser::new(path, &DNA);
         let (matrix, header) = aln.get_alignment(&input_format);

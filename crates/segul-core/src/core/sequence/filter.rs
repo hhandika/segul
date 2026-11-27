@@ -173,7 +173,7 @@ impl<'a> SequenceFiltering<'a> {
     ///
     /// let input_fmt = InputFmt::Nexus;
     /// let datatype = DataType::Dna;
-    /// let input_dir = Path::new("tests/files/alignments");
+    /// let input_dir = Path::new("../../tests/files/alignments");
     /// let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
     /// // Replace the temp directory with your own directory.
     /// let output = TempDir::with_prefix("tempt").unwrap();
@@ -304,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_filter_sequences_by_length() {
-        let dir = Path::new("tests/files/alignments");
+        let dir = Path::new("../../tests/files/alignments");
         let params = SeqFilteringParameters::MinSequenceLength(7);
         setup!(dir, handle, params, output);
         handle.filter();
@@ -314,7 +314,7 @@ mod tests {
 
     #[test]
     fn test_filter_sequences_by_gaps() {
-        let dir = Path::new("tests/files/gappy");
+        let dir = Path::new("../../tests/files/gappy");
         let params = SeqFilteringParameters::PercentMaxGap(0.5);
         setup!(dir, handle, params, output);
         handle.filter();
@@ -324,7 +324,7 @@ mod tests {
 
     #[test]
     fn test_gap_calculation() {
-        let input_dir = Path::new("tests/files/gappy");
+        let input_dir = Path::new("../../tests/files/gappy");
         let params = SeqFilteringParameters::MinSequenceLength(7);
         setup!(input_dir, handle, params, output);
         let threshold = 0.5;
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn test_threshold_calculation() {
-        let input_dir = Path::new("tests/files/gappy");
+        let input_dir = Path::new("../../tests/files/gappy");
         let params = SeqFilteringParameters::PercentMaxGap(0.5);
         setup!(input_dir, handle, params, output);
         let threshold = 0.5;

@@ -86,7 +86,7 @@ impl<'a> SeqReadFinder<'a> {
     /// use segul_core::helper::types::SeqReadFmt;
     /// use segul_core::helper::finder::SeqReadFinder;
     ///
-    /// let dir = Path::new("tests/files/raw");
+    /// let dir = Path::new("../../tests/files/raw");
     /// let input_fmt = SeqReadFmt::Fastq;
     /// let files = SeqReadFinder::new(&dir).find(&input_fmt);
     /// assert_eq!(files.len(), 4);
@@ -113,7 +113,7 @@ impl<'a> SeqReadFinder<'a> {
     /// use segul_core::helper::types::SeqReadFmt;
     /// use segul_core::helper::finder::SeqReadFinder;
     ///
-    /// let dir = Path::new("tests/files/raw");
+    /// let dir = Path::new("../../tests/files/raw");
     /// let files = SeqReadFinder::new(&dir).find_recursive();
     /// assert_eq!(files.len(), 4);
     /// ```
@@ -157,7 +157,7 @@ impl<'a> ContigFileFinder<'a> {
     /// use segul_core::helper::types::ContigFmt;
     /// use segul_core::helper::finder::ContigFileFinder;
     ///
-    /// let dir = Path::new("tests/files/contigs");
+    /// let dir = Path::new("../../tests/files/contigs");
     /// let input_fmt = ContigFmt::Fasta;
     /// let files = ContigFileFinder::new(&dir).find(&input_fmt);
     /// assert_eq!(files.len(), 2);
@@ -184,7 +184,7 @@ impl<'a> ContigFileFinder<'a> {
     /// use segul_core::helper::types::InputFmt;
     /// use segul_core::helper::finder::ContigFileFinder;
     ///
-    /// let dir = Path::new("tests/files/contigs");
+    /// let dir = Path::new("../../tests/files/contigs");
     /// let files = ContigFileFinder::new(&dir).find_recursive();
     /// assert_eq!(files.len(), 2);
     /// ```
@@ -227,7 +227,7 @@ impl<'a> MafFileFinder<'a> {
     /// use std::path::Path;
     /// use segul_core::helper::finder::MafFileFinder;
     ///
-    /// let dir = Path::new("tests/files/maf");
+    /// let dir = Path::new("../../tests/files/maf");
     /// let files = MafFileFinder::new(&dir).find();
     /// assert!(files.iter().any(|f| f.ends_with("simple.maf")));
     /// ```
@@ -257,7 +257,7 @@ impl<'a> MafFileFinder<'a> {
     /// use std::path::Path;
     /// use segul_core::helper::finder::MafFileFinder;
     ///
-    /// let dir = Path::new("tests/files/maf");
+    /// let dir = Path::new("../../tests/files/maf");
     /// let files = MafFileFinder::new(&dir).find_recursive();
     /// assert!(files.iter().any(|f| f.ends_with("simple.maf")));
     /// ```
@@ -297,7 +297,7 @@ impl<'a> SeqFileFinder<'a> {
     /// use segul_core::helper::types::InputFmt;
     /// use segul_core::helper::finder::SeqFileFinder;
     ///
-    /// let dir = Path::new("tests/files/alignments");
+    /// let dir = Path::new("../../tests/files/alignments");
     /// let input_fmt = InputFmt::Nexus;
     /// let files = SeqFileFinder::new(&dir).find(&input_fmt);
     /// assert_eq!(files.len(), 4);
@@ -323,7 +323,7 @@ impl<'a> SeqFileFinder<'a> {
     /// use std::path::Path;
     /// use segul_core::helper::finder::SeqFileFinder;
     ///
-    /// let dir = Path::new("tests/files/alignments");
+    /// let dir = Path::new("../../tests/files/alignments");
     /// let files = SeqFileFinder::new(&dir).find_recursive();
     /// assert_eq!(files.len(), 4);
     /// ```
@@ -342,7 +342,7 @@ impl<'a> SeqFileFinder<'a> {
     /// use segul_core::helper::types::InputFmt;
     /// use segul_core::helper::finder::SeqFileFinder;
     ///
-    /// let dir = Path::new("tests/files/alignments");
+    /// let dir = Path::new("../../tests/files/alignments");
     /// let files = SeqFileFinder::new(&dir).find_recursive_only(&InputFmt::Nexus);
     /// assert_eq!(files.len(), 4);
     pub fn find_recursive_only(&self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
@@ -433,8 +433,8 @@ fn re_match_phylip_lazy(fname: &str) -> bool {
 /// use indexmap::IndexSet;
 ///
 /// let files = vec![
-///    PathBuf::from("tests/files/alignments/gene_1.nex"),
-///    PathBuf::from("tests/files/alignments/gene_2.nex"),
+///    PathBuf::from("../../tests/files/alignments/gene_1.nex"),
+///    PathBuf::from("../../tests/files/alignments/gene_2.nex"),
 /// ];
 ///
 /// let input_fmt = InputFmt::Nexus;
@@ -557,7 +557,7 @@ mod test {
 
     macro_rules! input {
         ($files: ident) => {
-            let path = Path::new("tests/files/alignments");
+            let path = Path::new("../../tests/files/alignments");
 
             let mut $files = SeqFileFinder::new(path);
         };
@@ -581,22 +581,22 @@ mod test {
 
     #[test]
     fn test_raw_pattern() {
-        let path = Path::new("tests/files/raw");
+        let path = Path::new("../../tests/files/raw");
         let fmt = SeqReadFmt::Fastq;
         let mut files = SeqReadFinder::new(path);
         let found_files = files.find(&fmt);
         assert_eq!(4, found_files.len());
-        assert_eq!("tests/files/raw/*.f*q", files.pattern);
+        assert_eq!("../../tests/files/raw/*.f*q", files.pattern);
     }
 
     #[test]
     fn test_contig_file_pattern() {
-        let path = Path::new("tests/files/contigs");
+        let path = Path::new("../../tests/files/contigs");
         let fmt = ContigFmt::Fasta;
         let mut files = ContigFileFinder::new(path);
         let found_files = files.find(&fmt);
         assert_eq!(2, found_files.len());
-        assert_eq!("tests/files/contigs/*.f*a", files.pattern);
+        assert_eq!("../../tests/files/contigs/*.f*a", files.pattern);
     }
 
     #[test]
@@ -604,13 +604,13 @@ mod test {
         input!(files);
         let fmt = InputFmt::Nexus;
         files.pattern(&fmt);
-        assert_eq!("tests/files/alignments/*.nex*", files.pattern);
+        assert_eq!("../../tests/files/alignments/*.nex*", files.pattern);
     }
 
     #[test]
     #[should_panic]
     fn test_check_empty_files() {
-        let path = Path::new("tests/files/empty/");
+        let path = Path::new("../../tests/files/empty/");
         let mut finder = SeqFileFinder::new(path);
         let files = finder.find(&InputFmt::Nexus);
         finder.check_results(&files);

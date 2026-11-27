@@ -524,12 +524,12 @@ mod tests {
     #[test]
     fn test_sequence_addition() {
         let input_files = vec![
-            PathBuf::from("tests/files/gappy/gene_1.nex"),
-            PathBuf::from("tests/files/gappy/gene_2.nex"),
+            PathBuf::from("../../tests/files/gappy/gene_1.nex"),
+            PathBuf::from("../../tests/files/gappy/gene_2.nex"),
         ];
         let dest_files = vec![
-            PathBuf::from("tests/files/alignments/gene_1.nex"),
-            PathBuf::from("tests/files/alignments/gene_2.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_1.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_2.nex"),
         ];
         let output = TempDir::with_prefix("temp").unwrap();
         let addition = SequenceAddition::new(
@@ -554,9 +554,9 @@ mod tests {
         let mut counter = SequenceCounter::new(2, 3);
         counter.add_file("gene_1");
         let dest_files = vec![
-            PathBuf::from("tests/files/alignments/gene_1.nex"),
-            PathBuf::from("tests/files/alignments/gene_2.nex"),
-            PathBuf::from("tests/files/alignments/gene_3.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_1.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_2.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_3.nex"),
         ];
         let addition = SequenceAddition::default();
         let skipped_files = addition.get_skipped_files(&counter, &dest_files);
@@ -566,8 +566,8 @@ mod tests {
     #[test]
     fn test_adding_single_file() {
         let input_files = vec![
-            PathBuf::from("tests/files/gappy/gene_1.nex"),
-            PathBuf::from("tests/files/gappy/gene_2.nex"),
+            PathBuf::from("../../tests/files/gappy/gene_1.nex"),
+            PathBuf::from("../../tests/files/gappy/gene_2.nex"),
         ];
         let output = TempDir::with_prefix("temp").unwrap();
         let addition = SequenceAddition::new(

@@ -8,10 +8,7 @@ use segul_core::report::RunReport;
 use segul_core::report::verify::VerifyReport;
 
 fn fixture_dir(name: &str) -> PathBuf {
-    env::current_dir()
-        .unwrap()
-        .join("crates/segul-core/tests/files")
-        .join(name)
+    env::current_dir().unwrap().join("tests/files").join(name)
 }
 
 #[test]

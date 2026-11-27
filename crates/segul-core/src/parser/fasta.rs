@@ -263,7 +263,7 @@ mod test {
 
     #[test]
     fn read_fasta_simple_test() {
-        let path = Path::new("tests/files/simple.fas");
+        let path = Path::new("../../tests/files/simple.fas");
         let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
@@ -272,7 +272,7 @@ mod test {
 
     #[test]
     fn check_is_alignment_test() {
-        let path = Path::new("tests/files/simple.fas");
+        let path = Path::new("../../tests/files/simple.fas");
         let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
@@ -281,7 +281,7 @@ mod test {
 
     #[test]
     fn check_isnot_alignment_test() {
-        let path = Path::new("tests/files/unaligned.fas");
+        let path = Path::new("../../tests/files/unaligned.fas");
         let mut fasta = Fasta::new(path, &DNA);
         fasta.parse();
 
@@ -290,7 +290,7 @@ mod test {
 
     #[test]
     fn interleaved_fas_test() {
-        let path = Path::new("tests/files/interleave.fas");
+        let path = Path::new("../../tests/files/interleave.fas");
         let file = File::open(path).unwrap();
         let rec = FastaReader::new(file);
         let mut seq = SeqMatrix::new();
@@ -306,7 +306,7 @@ mod test {
 
     #[test]
     fn simple_aa_fas_test() {
-        let sample = Path::new("tests/files/simple_aa.fas");
+        let sample = Path::new("../../tests/files/simple_aa.fas");
         let mut fas = Fasta::new(sample, &AA);
         fas.parse();
         let res = b"MAYPMQLGFQDATSPI".as_slice();
@@ -316,7 +316,7 @@ mod test {
 
     #[test]
     fn simple_trailing_space_fas_test() {
-        let sample = Path::new("tests/files/simple_id_whitespaces.fas");
+        let sample = Path::new("../../tests/files/simple_id_whitespaces.fas");
         let mut fas = Fasta::new(sample, &DNA);
         fas.parse();
         let res = b"ATGTAT".as_slice();

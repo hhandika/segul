@@ -140,7 +140,7 @@ mod test {
         let output = TempDir::with_prefix("contig").unwrap();
         let files: Vec<PathBuf> = ["contigs1.fa", "contigs2.fa"]
             .iter()
-            .map(|f| PathBuf::from("tests/files/contigs").join(f))
+            .map(|f| PathBuf::from("../../tests/files/contigs").join(f))
             .collect();
         let written =
             ContigSummaryHandler::new(&files, &ContigFmt::Fasta, output.path(), Some("run"))

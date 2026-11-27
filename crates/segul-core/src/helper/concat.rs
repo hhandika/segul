@@ -43,8 +43,8 @@ impl ConcatParams {
 /// use segul_core::helper::types::{DataType, InputFmt};
 ///
 /// let mut files = vec![
-///     PathBuf::from("tests/files/alignments/gene_1.nex"),
-///    PathBuf::from("tests/files/alignments/gene_2.nex"),
+///     PathBuf::from("../../tests/files/alignments/gene_1.nex"),
+///    PathBuf::from("../../tests/files/alignments/gene_2.nex"),
 /// ];
 /// let spinner = segul_core::helper::utils::set_spinner();
 /// let input_fmt = InputFmt::Nexus;
@@ -197,7 +197,7 @@ mod test {
 
     #[test]
     fn test_concat_nexus() {
-        let path = Path::new("tests/files/alignments/");
+        let path = Path::new("../../tests/files/alignments/");
         let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
@@ -208,7 +208,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_get_alignment_panic() {
-        let path = Path::new("tests/files/alignments/");
+        let path = Path::new("../../tests/files/alignments/");
         let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         concat.get_alignment(Path::new("."));
@@ -216,7 +216,7 @@ mod test {
 
     #[test]
     fn test_concat_check_result() {
-        let path = Path::new("tests/files/alignments/");
+        let path = Path::new("../../tests/files/alignments/");
         let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
@@ -228,7 +228,7 @@ mod test {
 
     #[test]
     fn test_concat_partition() {
-        let path = Path::new("tests/files/alignments/");
+        let path = Path::new("../../tests/files/alignments/");
         let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DNA);
         let spin = utils::set_spinner();
@@ -245,7 +245,7 @@ mod test {
 
     #[test]
     fn test_header_datatype() {
-        let path = Path::new("tests/files/alignments/");
+        let path = Path::new("../../tests/files/alignments/");
         let mut files = SeqFileFinder::new(path).find(&InputFmt::Nexus);
         let mut concat = Concat::new(&mut files, &InputFmt::Nexus, &DataType::Aa);
         concat.match_header_datatype();

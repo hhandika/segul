@@ -189,7 +189,7 @@ mod test {
     fn test_remove_seq() {
         let ids = vec![String::from("ABCD")];
         input!(remove);
-        let file = Path::new("tests/files/simple.fas");
+        let file = Path::new("../../tests/files/simple.fas");
         let (_, header) = remove.remove_sequence(file, &ids);
         assert_eq!(header.ntax, 1);
     }
@@ -198,7 +198,7 @@ mod test {
     fn test_remove_regex() {
         let re = String::from("(?i)^abc");
         input!(remove);
-        let file = PathBuf::from("tests/files/simple.fas");
+        let file = PathBuf::from("../../tests/files/simple.fas");
         let files = [file.clone()];
         let ids = remove.find_matching_ids(&files, &re);
         let (_, header) = remove.remove_sequence(&file, &ids);

@@ -240,7 +240,7 @@ impl std::str::FromStr for InputFmt {
 /// use segul_core::helper::types::InputFmt;
 /// use segul_core::helper::types::infer_input_auto;
 ///
-/// let file = Path::new("tests/files/simple.fas");
+/// let file = Path::new("../../tests/files/simple.fas");
 /// let input_fmt = infer_input_auto(&file);
 /// assert_eq!(input_fmt, InputFmt::Fasta);
 /// ```
@@ -1297,7 +1297,7 @@ mod test {
 
     #[test]
     fn test_parsing_input_fmt() {
-        let file = Path::new("tests/files/simple.nex");
+        let file = Path::new("../../tests/files/simple.nex");
         let input_fmt = infer_input_auto(file);
         assert_eq!(InputFmt::Nexus, input_fmt);
     }

@@ -12,7 +12,7 @@
 //! use segul_core::core::align::view::AlignmentView;
 //! use segul_core::helper::types::{DataType, InputFmt};
 //!
-//! let path = Path::new("tests/files/simple.fas");
+//! let path = Path::new("../../tests/files/simple.fas");
 //! let view = AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore).unwrap();
 //! let summary = view.summary();
 //! assert_eq!(summary.names, vec!["ABCD", "CDEF"]);
@@ -977,7 +977,7 @@ mod test {
 
     #[test]
     fn test_open_fasta() {
-        let path = Path::new("tests/files/simple.fas");
+        let path = Path::new("../../tests/files/simple.fas");
         let view = AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore)
             .expect("Failed loading fixture");
         let summary = view.summary();
@@ -991,7 +991,7 @@ mod test {
 
     #[test]
     fn test_open_nexus_fixture() {
-        let path = Path::new("tests/files/alignments/gene_1.nex");
+        let path = Path::new("../../tests/files/alignments/gene_1.nex");
         let view = AlignmentView::open(path, &InputFmt::Nexus, &DataType::Dna)
             .expect("Failed loading fixture");
         assert!(matches!(view.store, Store::Memory(..)));
@@ -1155,7 +1155,7 @@ mod test {
 
     #[test]
     fn test_amino_acid_detection() {
-        let path = Path::new("tests/files/simple_aa.fas");
+        let path = Path::new("../../tests/files/simple_aa.fas");
         let view = AlignmentView::open(path, &InputFmt::Fasta, &DataType::Ignore)
             .expect("Failed loading fixture");
         assert!(!view.is_dna());
@@ -1164,7 +1164,7 @@ mod test {
 
     #[test]
     fn test_datatype_override() {
-        let path = Path::new("tests/files/simple_aa.fas");
+        let path = Path::new("../../tests/files/simple_aa.fas");
         let view = AlignmentView::open(path, &InputFmt::Fasta, &DataType::Dna)
             .expect("Failed loading fixture");
         assert!(view.is_dna());
@@ -1185,9 +1185,9 @@ mod test {
 
     #[test]
     fn test_missing_file() {
-        let path = Path::new("tests/files/missing.nex");
+        let path = Path::new("../../tests/files/missing.nex");
         assert!(AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore).is_err());
-        let path = Path::new("tests/files/missing.fas");
+        let path = Path::new("../../tests/files/missing.fas");
         assert!(AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore).is_err());
     }
 
@@ -1200,7 +1200,7 @@ mod test {
 
     #[test]
     fn test_partitions_embedded() {
-        let track = track("tests/files/view/concat_charset.nex").expect("No partitions");
+        let track = track("../../tests/files/view/concat_charset.nex").expect("No partitions");
         assert!(track.is_embedded);
         let names: Vec<&str> = track.blocks.iter().map(|b| b.name.as_str()).collect();
         assert_eq!(names, vec!["locus1", "locus2", "locus3"]);
@@ -1209,7 +1209,7 @@ mod test {
 
     #[test]
     fn test_partitions_sidecar() {
-        let track = track("tests/files/view/concat.fas").expect("No partitions");
+        let track = track("../../tests/files/view/concat.fas").expect("No partitions");
         assert!(!track.is_embedded);
         assert!(track.source.ends_with("concat_partition.txt"));
         assert_eq!(track.len(), 3);
@@ -1217,14 +1217,14 @@ mod test {
 
     #[test]
     fn test_partitions_none() {
-        assert!(track("tests/files/simple.fas").is_none());
+        assert!(track("../../tests/files/simple.fas").is_none());
         // An empty sets block holds no partitions.
-        assert!(track("tests/files/complete.nex").is_none());
+        assert!(track("../../tests/files/complete.nex").is_none());
     }
 
     #[test]
     fn test_partitions_codon_share_block() {
-        let track = track("tests/files/view/codon.fas").expect("No partitions");
+        let track = track("../../tests/files/view/codon.fas").expect("No partitions");
         let names: Vec<&str> = track.blocks.iter().map(|b| b.name.as_str()).collect();
         assert_eq!(names, vec!["geneA", "geneB"]);
         assert_eq!(track.blocks[0].partitions, vec![0, 1, 2]);
@@ -1268,7 +1268,7 @@ mod test {
 
     #[test]
     fn test_range_stats_matches_window() {
-        let path = Path::new("tests/files/view/concat.fas");
+        let path = Path::new("../../tests/files/view/concat.fas");
         let view = AlignmentView::open(path, &InputFmt::Auto, &DataType::Ignore)
             .expect("Failed loading fixture");
         let window = view.window_stats(5, 1, 1);

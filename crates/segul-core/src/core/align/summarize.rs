@@ -286,7 +286,7 @@ mod test {
         let output = TempDir::with_prefix("test").expect("Failed to create temp dir");
         let files: Vec<PathBuf> = ["gene_1.nex", "gene_2.nex", "gene_3.nex"]
             .iter()
-            .map(|f| PathBuf::from("tests/files/alignments").join(f))
+            .map(|f| PathBuf::from("../../tests/files/alignments").join(f))
             .collect();
         let mut summary = AlignmentSummary::new(&InputFmt::Nexus, output.path(), 5, &DataType::Dna);
         let written = summary.summarize_all(&files, Some("test"));

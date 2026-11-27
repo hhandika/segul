@@ -725,9 +725,9 @@ mod test {
     use crate::plot::fonts::PlotFonts;
     use crate::plot::spec::PlotFormat;
 
-    const SUMMARY: &str = "tests/files/plot/default-read-summary.csv";
-    const POSITIONS: &str = "tests/files/plot/read-pos-summary.zip";
-    const REPORT: &str = "tests/files/plot/read-report.json";
+    const SUMMARY: &str = "../../tests/files/plot/default-read-summary.csv";
+    const POSITIONS: &str = "../../tests/files/plot/read-pos-summary.zip";
+    const REPORT: &str = "../../tests/files/plot/read-report.json";
 
     fn build(input: &str, sample: Option<&str>, preset: ReadPlot) -> Result<PlotSpec> {
         let style = PlotStyle::default();
@@ -823,7 +823,7 @@ mod test {
         let dir = tempfile::TempDir::with_prefix("read-plot").unwrap();
         let report_path = dir.path().join("read-report.json");
         let r1 = crate::stats::fastq::FastqAnalyzer::new(
-            Path::new("tests/files/raw/read_1.fastq"),
+            Path::new("../../tests/files/raw/read_1.fastq"),
             crate::helper::types::PhredOffset::Auto,
             true,
             1,
@@ -831,7 +831,7 @@ mod test {
         .analyze()
         .unwrap();
         let r2 = crate::stats::fastq::FastqAnalyzer::new(
-            Path::new("tests/files/raw/read_2.fastq"),
+            Path::new("../../tests/files/raw/read_2.fastq"),
             crate::helper::types::PhredOffset::Auto,
             true,
             1,

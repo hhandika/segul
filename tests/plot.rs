@@ -3,7 +3,7 @@ mod utils;
 use std::env;
 use std::path::PathBuf;
 
-const FILES: &str = "crates/segul-core/tests/files";
+const FILES: &str = "tests/files";
 
 fn fixture(name: &str) -> PathBuf {
     env::current_dir().unwrap().join(FILES).join(name)

@@ -100,8 +100,8 @@ impl<'a> SequenceTranspose<'a> {
     /// use tempfile::TempDir;
     ///
     /// let files = vec![
-    ///     PathBuf::from("tests/files/alignments/gene_1.nex"),
-    ///     PathBuf::from("tests/files/alignments/gene_2.nex"),
+    ///     PathBuf::from("../../tests/files/alignments/gene_1.nex"),
+    ///     PathBuf::from("../../tests/files/alignments/gene_2.nex"),
     /// ];
     /// let output = TempDir::with_prefix("temp").unwrap();
     /// let handle = SequenceTranspose::new(
@@ -211,8 +211,8 @@ mod tests {
     #[test]
     fn test_collect_sequences() {
         let files = vec![
-            PathBuf::from("tests/files/alignments/gene_1.nex"),
-            PathBuf::from("tests/files/alignments/gene_2.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_1.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_2.nex"),
         ];
         let handle = SequenceTranspose::new(
             &InputFmt::Nexus,
@@ -250,7 +250,7 @@ mod tests {
             Path::new("."),
             &OutputFmt::Fasta,
         );
-        let locus_id = handle.get_locus_id(Path::new("tests/files/alignments/gene_1.nex"));
+        let locus_id = handle.get_locus_id(Path::new("../../tests/files/alignments/gene_1.nex"));
         assert_eq!(locus_id, "gene_1");
     }
 
@@ -282,8 +282,8 @@ mod tests {
     #[test]
     fn test_collect_sequences_all_samples() {
         let files = vec![
-            PathBuf::from("tests/files/alignments/gene_1.nex"),
-            PathBuf::from("tests/files/alignments/gene_2.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_1.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_2.nex"),
         ];
         let handle = SequenceTranspose::new(
             &InputFmt::Nexus,
@@ -366,8 +366,8 @@ mod tests {
     fn test_transpose_interleaved_fasta_output() {
         let output = TempDir::with_prefix("temp").unwrap();
         let files = vec![
-            PathBuf::from("tests/files/alignments/gene_1.nex"),
-            PathBuf::from("tests/files/alignments/gene_2.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_1.nex"),
+            PathBuf::from("../../tests/files/alignments/gene_2.nex"),
         ];
         let handle = SequenceTranspose::new(
             &InputFmt::Nexus,

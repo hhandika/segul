@@ -130,7 +130,8 @@ mod test {
 
     #[test]
     fn test_trimmed_headers() {
-        let csv = SummaryCsv::from_path(Path::new("tests/files/plot/taxon_summary.csv")).unwrap();
+        let csv =
+            SummaryCsv::from_path(Path::new("../../tests/files/plot/taxon_summary.csv")).unwrap();
         assert!(csv.has_column("total_chars"));
         assert_eq!(csv.len(), 3);
         assert_eq!(csv.column_f64("locus_counts").unwrap(), vec![4.0, 2.0, 1.0]);
@@ -138,8 +139,8 @@ mod test {
 
     #[test]
     fn test_empty_cells_are_nan() {
-        let csv =
-            SummaryCsv::from_path(Path::new("tests/files/plot/distance_summary.csv")).unwrap();
+        let csv = SummaryCsv::from_path(Path::new("../../tests/files/plot/distance_summary.csv"))
+            .unwrap();
         let mean = csv.column_f64("mean").unwrap();
         assert!(mean[0].is_nan());
         assert_eq!(mean[1], 0.125);
@@ -155,7 +156,7 @@ mod test {
     #[test]
     fn test_from_zip() {
         let tables =
-            SummaryCsv::from_zip(Path::new("tests/files/plot/read-pos-summary.zip")).unwrap();
+            SummaryCsv::from_zip(Path::new("../../tests/files/plot/read-pos-summary.zip")).unwrap();
         assert_eq!(tables.len(), 4);
         let (name, table) = tables.iter().find(|(n, _)| n == "read_1").unwrap();
         assert_eq!(name, "read_1");

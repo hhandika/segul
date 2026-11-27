@@ -10,9 +10,7 @@ use segul::parser::txt;
 macro_rules! initiate_part_cmd {
     ($cmd: ident, $tmp_dir: ident, $input_name: expr_2021, $part: expr_2021) => {
         let $tmp_dir = utils::create_tmp_dir().unwrap();
-        let dir = env::current_dir()
-            .unwrap()
-            .join("crates/segul-core/tests/files/partition");
+        let dir = env::current_dir().unwrap().join("tests/files/partition");
         let input = dir.join($input_name);
         let path = PathBuf::from($tmp_dir.path());
         let tmp_input = PathBuf::from(path.join($input_name));

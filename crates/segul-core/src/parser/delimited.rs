@@ -51,14 +51,14 @@ mod test {
 
     test_parse_delimited_text!(
         test_parse_csv,
-        Path::new("tests/files/delimited.csv"),
+        Path::new("../../tests/files/delimited.csv"),
         "sequence_old",
         "sequence_new"
     );
 
     test_parse_delimited_text!(
         test_parse_tsv,
-        Path::new("tests/files/delimited.tsv"),
+        Path::new("../../tests/files/delimited.tsv"),
         "sequence_old",
         "sequence_new"
     );

@@ -167,8 +167,8 @@ mod test {
     use crate::plot::fonts::PlotFonts;
     use crate::plot::spec::PlotFormat;
 
-    const SPECIES: &str = "tests/files/plot/maf_summary_per_species.csv";
-    const FILES: &str = "tests/files/plot/maf_summary_per_file.csv";
+    const SPECIES: &str = "../../tests/files/plot/maf_summary_per_species.csv";
+    const FILES: &str = "../../tests/files/plot/maf_summary_per_file.csv";
 
     fn build(input: &str, preset: MafPlot) -> PlotSpec {
         let style = PlotStyle::default();

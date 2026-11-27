@@ -13,7 +13,7 @@ fn test_remove_id() {
         cmd,
         "sequence",
         "remove",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.arg("--id=ABCD").assert().success();
@@ -26,7 +26,7 @@ fn test_remove_re() {
         cmd,
         "sequence",
         "remove",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.arg("--re=E$").assert().success();

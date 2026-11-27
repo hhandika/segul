@@ -751,7 +751,7 @@ mod tests {
 
     #[test]
     fn test_parse_maf_file() {
-        let file = std::fs::File::open("tests/files/maf/simple.maf").unwrap();
+        let file = std::fs::File::open("../../tests/files/maf/simple.maf").unwrap();
         let reader = MafReader::new(file);
         let mut alignments = Vec::new();
         for paragraph in reader {
@@ -788,7 +788,7 @@ mod tests {
 
     #[test]
     fn test_crlf_blocks_are_not_fused() {
-        let text = std::fs::read_to_string("tests/files/maf/simple.maf")
+        let text = std::fs::read_to_string("../../tests/files/maf/simple.maf")
             .unwrap()
             .replace('\n', "\r\n");
         let blocks = read_blocks(&text).unwrap();

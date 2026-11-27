@@ -264,7 +264,7 @@ mod test {
                 &Path::new($input),
                 &DataType::Dna,
                 &InputFmt::Fasta,
-                &Path::new("tests/files/"),
+                &Path::new("../../tests/files/"),
                 &OutputFmt::Fasta,
             );
         };
@@ -272,7 +272,7 @@ mod test {
 
     #[test]
     fn test_parse_filename() {
-        input_split!(split, "tests/files/test.fasta");
+        input_split!(split, "../../tests/files/test.fasta");
         assert_eq!(
             split.parse_filename("test", &Some("test".to_string())),
             PathBuf::from("test_test")
@@ -281,7 +281,7 @@ mod test {
 
     #[test]
     fn test_sequence_slicing_runs() {
-        input_split!(split, "tests/files/test_aln.fasta");
+        input_split!(split, "../../tests/files/test_aln.fasta");
         let seq = b"AAAAAAAAGGGGTTTTCCCC";
 
         let slice = split.slice_runs(seq, &[(0, 10)], 10);
@@ -292,7 +292,7 @@ mod test {
 
     #[test]
     fn test_generate_matrix_merged_and_out_of_order_column_order() {
-        input_split!(split, "tests/files/partition/concat_part.fas");
+        input_split!(split, "../../tests/files/partition/concat_part.fas");
         let matrix = split.parse_sequence();
         // Sites 11-15 and 1-5 given out of order -> sorted ascending [0..5, 10..15]
         let part = Partition::from_ranges(
@@ -310,7 +310,7 @@ mod test {
 
     #[test]
     fn test_generate_matrix_strided_codon_column_order() {
-        input_split!(split, "tests/files/partition/concat_part.fas");
+        input_split!(split, "../../tests/files/partition/concat_part.fas");
         let matrix = split.parse_sequence();
         // 1-based sites: 1,4,7,10,13 (from 1-15\3) and 2,5,8,11,14 (from 2-15\3)
         // Sorted 1-based: 1,2, 4,5, 7,8, 10,11, 13,14 -> runs: (0,2),(3,5),(6,8),(9,11),(12,14)
@@ -335,7 +335,7 @@ mod test {
         let part_file = tmp.path().join("oob.txt");
         std::fs::write(&part_file, "DNA, p1 = 1-20\n").unwrap();
         let split = AlignmentSplitting::new(
-            Path::new("tests/files/partition/concat_part.fas"),
+            Path::new("../../tests/files/partition/concat_part.fas"),
             &DataType::Dna,
             &InputFmt::Fasta,
             tmp.path(),

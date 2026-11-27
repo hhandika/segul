@@ -121,8 +121,8 @@ impl<'a> SequenceID<'a> {
     /// use segul_core::helper::types::{DataType, InputFmt};
     /// use tempfile::TempDir;
     ///
-    /// let alignment_2 = PathBuf::from("tests/files/alignments/gene_2.nex");
-    /// let alignment_1 = PathBuf::from("tests/files/alignments/gene_1.nex");
+    /// let alignment_2 = PathBuf::from("../../tests/files/alignments/gene_2.nex");
+    /// let alignment_1 = PathBuf::from("../../tests/files/alignments/gene_1.nex");
     /// let files = vec![alignment_1, alignment_2];
     /// let output = TempDir::with_prefix("tempt").unwrap();
     /// let handle = SequenceID::new(&files, &InputFmt::Auto, &DataType::Dna, Path::new(output.path()), None);

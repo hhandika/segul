@@ -259,11 +259,11 @@ mod test {
     #[test]
     fn test_parse_fasta() {
         let mut parser = ContigSummary::new();
-        let path = Path::new("tests/files/contigs/contigs1.fa");
+        let path = Path::new("../../tests/files/contigs/contigs1.fa");
         let file_fmt = ContigFmt::Fasta;
         parser.summarize(path, &file_fmt);
         assert_eq!(parser.contig_name, "contigs1");
-        assert_eq!(parser.file_path, "tests/files/contigs/contigs1.fa");
+        assert_eq!(parser.file_path, "../../tests/files/contigs/contigs1.fa");
         assert_eq!(parser.g_count, 53);
         assert_eq!(parser.c_count, 121);
         assert_eq!(parser.a_count, 187);

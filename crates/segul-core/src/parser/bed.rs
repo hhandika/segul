@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_bed_parser() {
-        let bed_file = PathBuf::from("tests/files/bed/common.bed");
+        let bed_file = PathBuf::from("../../tests/files/bed/common.bed");
         let records = BedParser::new(&bed_file).parse().unwrap();
         assert_eq!(records.len(), 3);
         assert_eq!(records[0].chrom, "chr1");
@@ -185,7 +185,7 @@ mod tests {
 
     #[test]
     fn test_bed_with_header() {
-        let bed_file = PathBuf::from("tests/files/bed/with_header.bed");
+        let bed_file = PathBuf::from("../../tests/files/bed/with_header.bed");
         let records = BedParser::new(&bed_file).parse().unwrap();
         assert_eq!(records.len(), 3);
         assert_eq!(records[0].chrom, "chr1");

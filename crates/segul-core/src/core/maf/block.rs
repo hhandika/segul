@@ -324,7 +324,7 @@ mod tests {
     #[test]
     fn test_first_sample() {
         let resolver = SpeciesResolver::new(SampleNaming::AssemblyPrefix, None);
-        let files = vec![std::path::PathBuf::from("tests/files/maf/simple.maf")];
+        let files = vec![std::path::PathBuf::from("../../tests/files/maf/simple.maf")];
         assert_eq!(first_sample(&files, &resolver).unwrap(), "hg18");
     }
 }

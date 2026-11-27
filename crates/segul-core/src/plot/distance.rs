@@ -209,7 +209,7 @@ mod test {
         let per_locus = dir.path().join("per_locus");
         fs::create_dir_all(&per_locus).unwrap();
         fs::copy(
-            "tests/files/plot/distance_matrix.csv",
+            "../../tests/files/plot/distance_matrix.csv",
             per_locus.join("gene_2.csv"),
         )
         .unwrap();
@@ -219,10 +219,12 @@ mod test {
         let fonts = PlotFonts::new();
         let writer = PlotWriter::new(&plots, None, &PlotFormat::Svg, &style, &fonts);
         let files = DistanceFiles {
-            summary: PathBuf::from("tests/files/plot/distance_summary.csv"),
+            summary: PathBuf::from("../../tests/files/plot/distance_summary.csv"),
             per_locus_dir: per_locus,
             group_mean: None,
-            pairwise_long: Some(PathBuf::from("tests/files/plot/distance_pairwise_long.csv")),
+            pairwise_long: Some(PathBuf::from(
+                "../../tests/files/plot/distance_pairwise_long.csv",
+            )),
             report: dir.path().join("distance-report.json"),
         };
         let written = plot_distance(&files, &writer);
@@ -244,20 +246,23 @@ mod test {
     #[test]
     fn test_locus_mean() {
         let spec = build(
-            "tests/files/plot/distance_summary.csv",
+            "../../tests/files/plot/distance_summary.csv",
             DistancePlot::LocusMean,
         );
         assert_eq!(spec.categories.len(), 4);
         assert!(spec.series[0].y[0].is_nan());
         build(
-            "tests/files/plot/distance_summary.csv",
+            "../../tests/files/plot/distance_summary.csv",
             DistancePlot::MeanHistogram,
         );
     }
 
     #[test]
     fn test_matrix() {
-        let spec = build("tests/files/plot/distance_matrix.csv", DistancePlot::Matrix);
+        let spec = build(
+            "../../tests/files/plot/distance_matrix.csv",
+            DistancePlot::Matrix,
+        );
         let heatmap = spec.heatmap.unwrap();
         assert_eq!(heatmap.rows, vec!["ABCD", "ABCF", "ABCE"]);
         assert_eq!(heatmap.cols, heatmap.rows);
@@ -267,7 +272,7 @@ mod test {
 
     #[test]
     fn test_pairwise() {
-        let input = "tests/files/plot/distance_pairwise_long.csv";
+        let input = "../../tests/files/plot/distance_pairwise_long.csv";
         let hist = build(input, DistancePlot::PairwiseHistogram);
         assert_eq!(hist.series[0].y.iter().sum::<f64>(), 6.0);
         let boxes = build(input, DistancePlot::LocusBox);

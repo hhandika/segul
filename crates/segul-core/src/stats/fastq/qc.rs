@@ -476,9 +476,10 @@ mod test {
 
     #[test]
     fn test_checks() {
-        let report =
-            ReadReport::from_path(std::path::Path::new("tests/files/plot/read-report.json"))
-                .expect("Failed reading fixture");
+        let report = ReadReport::from_path(std::path::Path::new(
+            "../../tests/files/plot/read-report.json",
+        ))
+        .expect("Failed reading fixture");
         let sample = &report.samples[2];
         let checks = qc_checks(sample);
         let names: Vec<&str> = checks.iter().map(|c| c.name).collect();

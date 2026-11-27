@@ -705,9 +705,9 @@ fn character_label(character: &str) -> String {
 mod test {
     use super::*;
 
-    const ALIGN: &str = "crates/segul-core/tests/files/plot/alignment-report.json";
-    const DISTANCE: &str = "crates/segul-core/tests/files/plot/distance-report.json";
-    const CONTIG: &str = "crates/segul-core/tests/files/plot/contig-report.json";
+    const ALIGN: &str = "tests/files/plot/alignment-report.json";
+    const DISTANCE: &str = "tests/files/plot/distance-report.json";
+    const CONTIG: &str = "tests/files/plot/contig-report.json";
 
     #[test]
     fn test_character_label() {

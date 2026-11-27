@@ -13,7 +13,7 @@ fn test_rename() {
         cmd,
         "sequence",
         "rename",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.arg("--remove=D").assert().success();

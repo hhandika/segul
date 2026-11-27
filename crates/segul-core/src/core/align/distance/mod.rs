@@ -251,7 +251,7 @@ impl<'a> AlignmentDistance<'a> {
     /// use segul_core::stats::distance::DistanceModel;
     /// use tempfile::TempDir;
     ///
-    /// let files = vec![PathBuf::from("tests/files/alignments/gene_2.nex")];
+    /// let files = vec![PathBuf::from("../../tests/files/alignments/gene_2.nex")];
     /// let output = TempDir::with_prefix("temp").unwrap();
     /// let handle = AlignmentDistance::new(
     ///     &InputFmt::Nexus,
@@ -1268,7 +1268,7 @@ mod tests {
     #[test]
     fn test_single_taxon_locus() {
         let output = TempDir::with_prefix("temp").unwrap();
-        let file = PathBuf::from("tests/files/alignments/gene_1.nex");
+        let file = PathBuf::from("../../tests/files/alignments/gene_1.nex");
         let handle = AlignmentDistance::new(
             &InputFmt::Nexus,
             &DataType::Dna,

@@ -824,7 +824,7 @@ mod test {
 
     #[test]
     fn test_render() {
-        let files = [PathBuf::from("crates/segul-core/tests/files/simple.fas")];
+        let files = [PathBuf::from("tests/files/simple.fas")];
         let view = AlignmentView::open(&files[0], &InputFmt::Auto, &DataType::Ignore)
             .expect("Failed opening fixture");
         let mut app = App::new(&files, &InputFmt::Auto, &DataType::Ignore, view, 1000);
@@ -850,9 +850,7 @@ mod test {
 
     #[test]
     fn test_render_partitions() {
-        let files = [PathBuf::from(
-            "crates/segul-core/tests/files/view/concat_charset.nex",
-        )];
+        let files = [PathBuf::from("tests/files/view/concat_charset.nex")];
         let view = AlignmentView::open(&files[0], &InputFmt::Auto, &DataType::Ignore)
             .expect("Failed opening fixture");
         let mut app = App::new(&files, &InputFmt::Auto, &DataType::Ignore, view, 1000);
@@ -881,8 +879,8 @@ mod test {
     #[test]
     fn test_render_files() {
         let files = [
-            PathBuf::from("crates/segul-core/tests/files/simple.fas"),
-            PathBuf::from("crates/segul-core/tests/files/simple_aa.fas"),
+            PathBuf::from("tests/files/simple.fas"),
+            PathBuf::from("tests/files/simple_aa.fas"),
         ];
         let view = AlignmentView::open(&files[0], &InputFmt::Auto, &DataType::Ignore)
             .expect("Failed opening fixture");

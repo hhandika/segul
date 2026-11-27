@@ -55,7 +55,7 @@
 //! use segul_core::helper::sequence::SeqParser;
 //! use segul_core::writer::sequences::SeqWriter;
 //!
-//! let input = Path::new("tests/files/simple.fas");
+//! let input = Path::new("../../tests/files/simple.fas");
 //! let input_fmt = InputFmt::Fasta;
 //! let datatype = DataType::Dna;
 //! // Replace binding with your output directory, for example:

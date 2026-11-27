@@ -223,7 +223,7 @@ mod test {
 
     #[test]
     fn test_read_phylip_simple() {
-        let path = Path::new("tests/files/simple.phy");
+        let path = Path::new("../../tests/files/simple.phy");
         let mut phylip = Phylip::new(path, &DNA);
         phylip.parse();
 
@@ -235,14 +235,14 @@ mod test {
     #[test]
     #[should_panic]
     fn test_read_phylip_invalid() {
-        let path = Path::new("tests/files/invalid.phy");
+        let path = Path::new("../../tests/files/invalid.phy");
         let mut phylip = Phylip::new(path, &DNA);
         phylip.parse();
     }
 
     #[test]
     fn test_read_phylip_whitespace() {
-        let path = Path::new("tests/files/whitespaces.phy");
+        let path = Path::new("../../tests/files/whitespaces.phy");
         let mut phylip = Phylip::new(path, &DNA);
         phylip.parse();
         assert_eq!(2, phylip.header.ntax);
@@ -262,7 +262,7 @@ mod test {
 
     #[test]
     fn test_parse_matrix_interleave_phylip() {
-        let path = Path::new("tests/files/interleave.phy");
+        let path = Path::new("../../tests/files/interleave.phy");
         let mut phy = Phylip::new(path, &DNA);
         phy.parse_matrix().unwrap();
         let res = phy.matrix.get("ABCD");
@@ -271,7 +271,7 @@ mod test {
 
     #[test]
     fn test_read_interleave_phylip() {
-        let path = Path::new("tests/files/interleave.phy");
+        let path = Path::new("../../tests/files/interleave.phy");
         let mut phy = Phylip::new(path, &DNA);
         phy.parse();
         let res = phy.matrix.get("ABCD");
@@ -280,7 +280,7 @@ mod test {
 
     #[test]
     fn test_read_int_phylip_whitespaces() {
-        let path = Path::new("tests/files/interleave_whitespaces.phy");
+        let path = Path::new("../../tests/files/interleave_whitespaces.phy");
         let mut phy = Phylip::new(path, &DNA);
         phy.parse();
         let res = phy.matrix.get("ABCD");
@@ -291,14 +291,14 @@ mod test {
     #[should_panic]
     fn test_read_interleave_phylip_panic() {
         // The header does not matches the character length.
-        let path = Path::new("tests/files/invalid_interleave.phy");
+        let path = Path::new("../../tests/files/invalid_interleave.phy");
         let mut phy = Phylip::new(path, &DNA);
         phy.parse();
     }
 
     #[test]
     fn test_read_interleave_phylip_id() {
-        let path = Path::new("tests/files/interleave.phy");
+        let path = Path::new("../../tests/files/interleave.phy");
         let mut phy = Phylip::new(path, &DNA);
         let res = phy.parse_only_id();
         assert_eq!(2, res.len());
@@ -306,7 +306,7 @@ mod test {
 
     #[test]
     fn test_read_sequential_phylip_id() {
-        let path = Path::new("tests/files/simple.phy");
+        let path = Path::new("../../tests/files/simple.phy");
         let mut phy = Phylip::new(path, &DNA);
         let res = phy.parse_only_id();
         assert_eq!(2, res.len());
@@ -315,7 +315,7 @@ mod test {
 
     #[test]
     fn test_interleave_phylip_capacity() {
-        let path = Path::new("tests/files/interleave.phy");
+        let path = Path::new("../../tests/files/interleave.phy");
         let mut phy = Phylip::new(path, &DNA);
         phy.parse();
         assert_eq!(phy.matrix.data_capacity(), 20);
@@ -323,7 +323,7 @@ mod test {
 
     #[test]
     fn test_phylip_simple_aa() {
-        let sample = Path::new("tests/files/simple_aa.phy");
+        let sample = Path::new("../../tests/files/simple_aa.phy");
         let mut phy = Phylip::new(sample, &AA);
         phy.parse();
         let res = b"MAYPMQLGFQDATSPI".as_slice();

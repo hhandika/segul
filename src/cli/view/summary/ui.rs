@@ -1022,10 +1022,8 @@ mod test {
 
     #[test]
     fn test_render_alignment() {
-        let data = SummaryData::from_path(Path::new(
-            "crates/segul-core/tests/files/plot/alignment-report.json",
-        ))
-        .unwrap();
+        let data =
+            SummaryData::from_path(Path::new("tests/files/plot/alignment-report.json")).unwrap();
         let mut app = App::new(
             data,
             String::from("alignment-report.json"),
@@ -1069,10 +1067,8 @@ mod test {
 
     #[test]
     fn test_render_distance() {
-        let data = SummaryData::from_path(Path::new(
-            "crates/segul-core/tests/files/plot/distance-report.json",
-        ))
-        .unwrap();
+        let data =
+            SummaryData::from_path(Path::new("tests/files/plot/distance-report.json")).unwrap();
         let mut app = App::new(
             data,
             String::from("distance-report.json"),
@@ -1100,10 +1096,8 @@ mod test {
 
     #[test]
     fn test_render_contig() {
-        let data = SummaryData::from_path(Path::new(
-            "crates/segul-core/tests/files/plot/contig-report.json",
-        ))
-        .unwrap();
+        let data =
+            SummaryData::from_path(Path::new("tests/files/plot/contig-report.json")).unwrap();
         let mut app = App::new(data, String::from("contig-report.json"), Colormap::Viridis);
         let text = screen(&mut app);
         assert!(text.contains("2 samples · 4 contigs"));

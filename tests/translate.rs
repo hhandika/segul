@@ -13,7 +13,7 @@ fn test_dna_translation() {
         cmd,
         "sequence",
         "translate",
-        "crates/segul-core/tests/files/alignments/",
+        "tests/files/alignments/",
         tmp_dir
     );
     cmd.assert().success();

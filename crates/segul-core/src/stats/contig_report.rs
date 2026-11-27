@@ -256,7 +256,7 @@ mod test {
             .map(|f| {
                 let mut summary = ContigSummary::new();
                 summary.summarize(
-                    &PathBuf::from("tests/files/contigs").join(f),
+                    &PathBuf::from("../../tests/files/contigs").join(f),
                     &ContigFmt::Fasta,
                 );
                 summary

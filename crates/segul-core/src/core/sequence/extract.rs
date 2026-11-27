@@ -191,7 +191,7 @@ mod tests {
     fn test_match_id() {
         let id = "Bunomys_penitus";
         let re = "(?i)(Penitus)$";
-        let output_dir = Path::new("tests/files");
+        let output_dir = Path::new("../../tests/files");
         let output_fmt = OutputFmt::Fasta;
         let extract = SequenceExtraction::new(
             &InputFmt::Fasta,
@@ -206,8 +206,8 @@ mod tests {
     #[test]
     fn test_get_matrix_re() {
         let re = SeqExtractionParameters::Regex(String::from("(?i)(celebensis)"));
-        let file = Path::new("tests/files/complete.nex");
-        let output_dir = Path::new("tests/files");
+        let file = Path::new("../../tests/files/complete.nex");
+        let output_dir = Path::new("../../tests/files");
         let output_fmt = OutputFmt::Fasta;
         let extract = SequenceExtraction::new(
             &InputFmt::Nexus,
@@ -224,8 +224,8 @@ mod tests {
     #[test]
     fn test_get_matrix_id() {
         let re = SeqExtractionParameters::Id(vec![String::from("Taeromys_calitrichus_NMVZ27408")]);
-        let file = Path::new("tests/files/complete.nex");
-        let output_dir = Path::new("tests/files");
+        let file = Path::new("../../tests/files/complete.nex");
+        let output_dir = Path::new("../../tests/files");
         let output_fmt = OutputFmt::Fasta;
         let extract = SequenceExtraction::new(
             &InputFmt::Nexus,

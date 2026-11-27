@@ -61,7 +61,7 @@ impl<'a> PartitionConverter<'a> {
     /// use segul_core::helper::types::{DataType, PartitionFmt};
     /// use tempfile::TempDir;
     ///
-    /// let input = Path::new("tests/files/partition/partition.nex");
+    /// let input = Path::new("../../tests/files/partition/partition.nex");
     /// let output_dir = TempDir::with_prefix("temp").unwrap();
     /// let output_file = output_dir.path().join("partition");
     /// let final_output = construct_partition_path(&output_file, &PartitionFmt::Raxml);

@@ -3,8 +3,8 @@ mod utils;
 use std::env;
 use std::path::PathBuf;
 
-const SIMPLE_MAF: &str = "crates/segul-core/tests/files/maf/simple.maf";
-const SIMPLE_REGIONS: &str = "crates/segul-core/tests/files/bed/simple_regions.bed";
+const SIMPLE_MAF: &str = "tests/files/maf/simple.maf";
+const SIMPLE_REGIONS: &str = "tests/files/bed/simple_regions.bed";
 
 fn fixture(path: &str) -> PathBuf {
     env::current_dir().unwrap().join(path)
@@ -37,7 +37,7 @@ fn test_maf_convert_by_block_from_dir() {
     let tmp_dir = utils::create_tmp_dir().unwrap();
     let mut cmd = utils::segul(tmp_dir.path());
     cmd.args(["maf", "convert", "-d"])
-        .arg(fixture("crates/segul-core/tests/files/maf"))
+        .arg(fixture("tests/files/maf"))
         .args(["-F", "nexus", "--min-score", "-1e9"]);
     cmd.assert().success();
     let output = tmp_dir.path().join("Maf-Convert");

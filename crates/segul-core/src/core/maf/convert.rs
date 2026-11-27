@@ -138,7 +138,7 @@ type FileRegions<K> = (
 /// use segul_core::helper::types::OutputFmt;
 ///
 /// let output = tempfile::TempDir::with_prefix("maf").unwrap();
-/// let files = vec![PathBuf::from("tests/files/maf/simple.maf")];
+/// let files = vec![PathBuf::from("../../tests/files/maf/simple.maf")];
 /// let report = MafConverter::new(&files, output.path(), &OutputFmt::Fasta)
 ///     .convert()
 ///     .unwrap();
@@ -756,8 +756,8 @@ mod tests {
     use flate2::{Compression, write::GzEncoder};
     use tempfile::TempDir;
 
-    const SIMPLE_MAF: &str = "tests/files/maf/simple.maf";
-    const SIMPLE_REGIONS: &str = "tests/files/bed/simple_regions.bed";
+    const SIMPLE_MAF: &str = "../../tests/files/maf/simple.maf";
+    const SIMPLE_REGIONS: &str = "../../tests/files/bed/simple_regions.bed";
 
     #[test]
     fn test_cancelled_mid_file() {

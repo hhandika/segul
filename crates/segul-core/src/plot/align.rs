@@ -244,8 +244,8 @@ mod test {
     use crate::plot::fonts::PlotFonts;
     use crate::plot::spec::PlotFormat;
 
-    const LOCUS: &str = "tests/files/plot/locus_summary.csv";
-    const TAXON: &str = "tests/files/plot/taxon_summary.csv";
+    const LOCUS: &str = "../../tests/files/plot/locus_summary.csv";
+    const TAXON: &str = "../../tests/files/plot/taxon_summary.csv";
 
     fn build(input: &str, preset: AlignPlot) -> PlotSpec {
         let style = PlotStyle::default();

@@ -12,7 +12,7 @@
 //!
 //! let input_fmt = InputFmt::Nexus;
 //! let datatype = DataType::Dna;
-//! let input_dir = Path::new("tests/files/alignments");
+//! let input_dir = Path::new("../../tests/files/alignments");
 //! // Find matching alignment files in the input directory
 //! let files = SeqFileFinder::new(Path::new(input_dir)).find(&input_fmt);
 //! // Replace the temp directory with your own directory.

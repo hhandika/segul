@@ -2642,6 +2642,7 @@ dependencies = [
  "predicates",
  "ratatui",
  "segul-core",
+ "serde_json",
  "tempfile",
  "zip",
 ]

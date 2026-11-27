@@ -118,7 +118,7 @@ mod test {
     use crate::plot::fonts::PlotFonts;
     use crate::plot::spec::PlotFormat;
 
-    const SUMMARY: &str = "tests/files/plot/contig-summary.csv";
+    const SUMMARY: &str = "../../tests/files/plot/contig-summary.csv";
 
     #[test]
     fn test_all_presets_build() {

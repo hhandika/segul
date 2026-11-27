@@ -308,7 +308,7 @@ mod test {
 
     use super::*;
 
-    const READ_1: &str = "tests/files/raw/read_1.fastq";
+    const READ_1: &str = "../../tests/files/raw/read_1.fastq";
 
     #[test]
     fn test_read_count() {
@@ -353,7 +353,7 @@ mod test {
     #[test]
     fn test_empty_file() {
         let report = FastqAnalyzer::new(
-            Path::new("tests/files/raw/read2_1.fq"),
+            Path::new("../../tests/files/raw/read2_1.fq"),
             PhredOffset::Auto,
             true,
             1,
@@ -362,12 +362,12 @@ mod test {
         .unwrap();
         assert_eq!(report.metrics.read_count, 0);
         assert_eq!(
-            count_reads(Path::new("tests/files/raw/read2_1.fq"), 1).unwrap(),
+            count_reads(Path::new("../../tests/files/raw/read2_1.fq"), 1).unwrap(),
             0
         );
     }
 
-    const QC: &str = "tests/files/raw_qc/qc_adapter.fastq";
+    const QC: &str = "../../tests/files/raw_qc/qc_adapter.fastq";
 
     fn analyze(path: &str, phred: PhredOffset) -> SampleReadReport {
         FastqAnalyzer::new(Path::new(path), phred, true, 2)
@@ -426,7 +426,10 @@ mod test {
     #[test]
     fn test_phred64_matches_phred33() {
         let phred33 = analyze(QC, PhredOffset::Auto);
-        let phred64 = analyze("tests/files/raw_qc/qc_phred64.fastq", PhredOffset::Auto);
+        let phred64 = analyze(
+            "../../tests/files/raw_qc/qc_phred64.fastq",
+            PhredOffset::Auto,
+        );
         assert_eq!(phred64.metrics.phred_offset, 64);
         assert_eq!(phred64.positions, phred33.positions);
         assert_eq!(phred64.metrics.q30_bases, phred33.metrics.q30_bases);
@@ -439,15 +442,15 @@ mod test {
     fn test_compressed_inputs_match_plain() {
         let plain = analyze(QC, PhredOffset::Auto);
         for path in [
-            "tests/files/raw_qc/qc_gzip.fastq.gz",
-            "tests/files/raw_qc/qc_bgzf.fastq.gz",
+            "../../tests/files/raw_qc/qc_gzip.fastq.gz",
+            "../../tests/files/raw_qc/qc_bgzf.fastq.gz",
         ] {
             let report = analyze(path, PhredOffset::Auto);
             assert_eq!(report.metrics, plain.metrics);
             assert_eq!(report.positions, plain.positions);
         }
         assert_eq!(
-            count_reads(Path::new("tests/files/raw_qc/qc_bgzf.fastq.gz"), 2).unwrap(),
+            count_reads(Path::new("../../tests/files/raw_qc/qc_bgzf.fastq.gz"), 2).unwrap(),
             6
         );
     }
@@ -466,7 +469,7 @@ mod test {
     #[test]
     fn test_malformed_record() {
         let error = FastqAnalyzer::new(
-            Path::new("tests/files/raw_invalid/malformed.fastq"),
+            Path::new("../../tests/files/raw_invalid/malformed.fastq"),
             PhredOffset::Auto,
             false,
             1,

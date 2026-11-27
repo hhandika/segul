@@ -381,7 +381,7 @@ mod tests {
         };
     }
 
-    const INPUT_PATH: &str = "tests/files/trimming.fas";
+    const INPUT_PATH: &str = "../../tests/files/trimming.fas";
 
     #[test]
     fn test_trim_missing_data() {

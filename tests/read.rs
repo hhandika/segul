@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use segul_core::stats::fastq::qc::QcProfile;
 use segul_core::stats::fastq::report::ReadReport;
 
-const QC_DIR: &str = "crates/segul-core/tests/files/raw_qc";
+const QC_DIR: &str = "tests/files/raw_qc";
 const OUTPUT: &str = "Read-Summary";
 
 fn fixture(dir: &str) -> PathBuf {
@@ -120,13 +120,13 @@ fn test_read_summary_phred_override() {
 
 #[test]
 fn test_read_summary_malformed() {
-    initiate_raw_cmd!(cmd, tmp_dir, "crates/segul-core/tests/files/raw_invalid");
+    initiate_raw_cmd!(cmd, tmp_dir, "tests/files/raw_invalid");
     cmd.assert().failure();
 }
 
 #[test]
 fn test_read_summary_qc_profile_and_pairs() {
-    initiate_raw_cmd!(cmd, tmp_dir, "crates/segul-core/tests/files/raw");
+    initiate_raw_cmd!(cmd, tmp_dir, "tests/files/raw");
     cmd.args(["--qc-profile", "amplicon"]).assert().success();
     let output = tmp_dir.path().join(OUTPUT);
     let report = fs::read_to_string(output.join("report.json")).unwrap();

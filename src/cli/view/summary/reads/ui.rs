@@ -1959,10 +1959,8 @@ mod test {
     use super::super::metric::samples_with_reads;
 
     fn app() -> App {
-        let report = ReadReport::from_path(Path::new(
-            "crates/segul-core/tests/files/plot/read-report.json",
-        ))
-        .expect("Failed reading fixture");
+        let report = ReadReport::from_path(Path::new("tests/files/plot/read-report.json"))
+            .expect("Failed reading fixture");
         App::new(
             samples_with_reads(report),
             String::from("read-report.json"),
@@ -2096,7 +2094,7 @@ mod test {
     #[test]
     fn test_render_cohort_and_relative_toggle() {
         let r1 = segul_core::stats::fastq::FastqAnalyzer::new(
-            std::path::Path::new("crates/segul-core/tests/files/raw/read_1.fastq"),
+            std::path::Path::new("tests/files/raw/read_1.fastq"),
             segul_core::helper::types::PhredOffset::Auto,
             true,
             1,
@@ -2104,7 +2102,7 @@ mod test {
         .analyze()
         .unwrap();
         let r2 = segul_core::stats::fastq::FastqAnalyzer::new(
-            std::path::Path::new("crates/segul-core/tests/files/raw/read_2.fastq"),
+            std::path::Path::new("tests/files/raw/read_2.fastq"),
             segul_core::helper::types::PhredOffset::Auto,
             true,
             1,

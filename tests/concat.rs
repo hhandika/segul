@@ -9,13 +9,7 @@ use segul::helper::types::InputFmt;
 
 #[test]
 fn test_concat() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "concat",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "concat", "tests/files/alignments/", tmp_dir);
     cmd.arg("--partition-format")
         .arg("raxml")
         .assert()
@@ -25,13 +19,7 @@ fn test_concat() {
 
 #[test]
 fn test_concat_nexus_part() {
-    initiate_cmd!(
-        cmd,
-        "align",
-        "concat",
-        "crates/segul-core/tests/files/alignments/",
-        tmp_dir
-    );
+    initiate_cmd!(cmd, "align", "concat", "tests/files/alignments/", tmp_dir);
     cmd.arg("--partition-format")
         .arg("nexus")
         .assert()
