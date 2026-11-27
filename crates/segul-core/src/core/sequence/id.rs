@@ -14,6 +14,9 @@ use crate::helper::utils;
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
+use crate::report::spec::{SequenceIdParams, TaskKind, canonical};
+use crate::report::stats::TaskCounts;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::writer::text::IdWriter;
 
 /// The `Id` struct is used to generate unique IDs
@@ -32,6 +35,7 @@ pub struct SequenceID<'a> {
     /// If not provided, the output file will use the default name `id.txt`.
     /// or `prefix_map.csv` if mapping is enabled.
     pub prefix: Option<&'a str>,
+    report_context: ReportContext,
 }
 
 impl<'a> SequenceID<'a> {
@@ -48,7 +52,63 @@ impl<'a> SequenceID<'a> {
             datatype,
             output,
             prefix,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Extract unique IDs (and optionally map IDs across alignments) and write `report.json`.
+    pub fn run_with_report(&self, map_id: bool) -> anyhow::Result<RunReport> {
+        let mut sorted = self.files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let params = SequenceIdParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            map_id,
+            prefix: self.prefix.map(str::to_string),
+        };
+        let out_dir = if self.output.extension().is_some() {
+            self.output.parent().unwrap_or_else(|| Path::new("."))
+        } else {
+            self.output
+        };
+        let snapshot = DirSnapshot::capture(out_dir);
+        let builder = RunReportBuilder::new(TaskKind::SequenceId, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
+        if map_id {
+            self.map_id();
+        } else {
+            self.get_unique();
+        }
+        let written = snapshot.written_files(out_dir);
+        let output_pairs = written
+            .into_iter()
+            .map(|p| {
+                let role = if p.extension().and_then(|e| e.to_str()) == Some("csv") {
+                    "id_map"
+                } else {
+                    "id_list"
+                };
+                (role, p)
+            })
+            .collect::<Vec<_>>();
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: output_pairs.len(),
+            items_processed: Some(sorted.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(out_dir, self.prefix);
+        builder
+            .outputs(out_dir, output_pairs)
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     /// Generate unique IDs from sequence alignment files.

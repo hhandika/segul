@@ -8,9 +8,11 @@ use crate::helper::types::{DataType, InputFmt};
 use crate::stats::distance::DistanceModel;
 
 use segul_core::plot::distance::plot_distance;
+use segul_core::report::ReportContext;
+use segul_core::report::spec::DistanceGroupingSpec;
 
 use crate::cli::args::align::AlignDistanceArgs;
-use crate::cli::plot::PlotCli;
+use crate::cli::plot::{PlotCli, append_plots_to_report};
 use crate::cli::{AlignSeqInput, InputCli, OutputCli, collect_paths};
 
 impl InputCli for DistanceParser<'_> {}
@@ -31,7 +33,7 @@ impl<'a> DistanceParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn compute(&mut self) {
+    pub(in crate::cli) fn compute(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let model = self.parse_model(&self.args.model);
@@ -67,11 +69,17 @@ impl<'a> DistanceParser<'a> {
             files.len(),
         )
         .log(task);
-        let grouping = self.parse_grouping(&files, &input_fmt, &datatype);
+        let (grouping, requested_spec, resolved_spec) =
+            self.parse_grouping(&files, &input_fmt, &datatype);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut handle = AlignmentDistance::new(&input_fmt, &datatype, &model, &self.args.output)
             .with_triangle(triangle)
-            .with_long_format(self.args.long);
+            .with_long_format(self.args.long)
+            .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()))
+            .with_grouping_specs(requested_spec, resolved_spec);
+        if let Some(group_file) = &self.args.group_file {
+            handle = handle.with_group_map_path(group_file.clone());
+        }
         if let Some(diagonal) = diagonal {
             handle = handle.with_diagonal(diagonal);
         }
@@ -80,9 +88,10 @@ impl<'a> DistanceParser<'a> {
         }
         let prefix = self.args.prefix.as_deref();
         let outputs = handle.compute(&files, prefix);
-        self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
+        let plots = self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
             plot_distance(&outputs, writer)
         });
+        append_plots_to_report(&outputs.report, &self.args.output, &plots);
     }
 
     fn has_grouping(&self) -> bool {
@@ -97,15 +106,41 @@ impl<'a> DistanceParser<'a> {
         files: &[PathBuf],
         input_fmt: &InputFmt,
         datatype: &DataType,
-    ) -> Option<SampleGrouping> {
-        let grouping = if let (Some(delimiter), Some(fields)) =
+    ) -> (
+        Option<SampleGrouping>,
+        Option<DistanceGroupingSpec>,
+        Option<DistanceGroupingSpec>,
+    ) {
+        let (grouping, requested_spec, resolved_spec) = if let (Some(delimiter), Some(fields)) =
             (self.args.group_delimiter, self.args.group_fields)
         {
-            SampleGrouping::from_delimiter(delimiter, fields)
+            let spec = DistanceGroupingSpec::Delimiter {
+                delimiter: delimiter.to_string(),
+                fields,
+            };
+            (
+                SampleGrouping::from_delimiter(delimiter, fields),
+                Some(spec.clone()),
+                Some(spec),
+            )
         } else if let Some(pattern) = &self.args.group_regex {
-            SampleGrouping::from_regex(pattern)
+            let spec = DistanceGroupingSpec::Regex {
+                pattern: pattern.clone(),
+            };
+            (
+                SampleGrouping::from_regex(pattern),
+                Some(spec.clone()),
+                Some(spec),
+            )
         } else if let Some(path) = &self.args.group_file {
-            SampleGrouping::from_map_file(path)
+            let spec = DistanceGroupingSpec::MapFile {
+                path: segul_core::report::paths::to_posix_string(path),
+            };
+            (
+                SampleGrouping::from_map_file(path),
+                Some(spec.clone()),
+                Some(spec),
+            )
         } else if self.args.group_auto {
             let ids: Vec<String> = IDs::new(files, input_fmt, datatype)
                 .id_unique()
@@ -119,7 +154,14 @@ impl<'a> DistanceParser<'a> {
                         suggestion.fields,
                         suggestion.groups
                     );
-                    Ok(suggestion.to_grouping())
+                    (
+                        Ok(suggestion.to_grouping()),
+                        Some(DistanceGroupingSpec::Auto),
+                        Some(DistanceGroupingSpec::Delimiter {
+                            delimiter: suggestion.delimiter.to_string(),
+                            fields: suggestion.fields,
+                        }),
+                    )
                 }
                 None => {
                     log::error!(
@@ -130,10 +172,10 @@ impl<'a> DistanceParser<'a> {
                 }
             }
         } else {
-            return None;
+            return (None, None, None);
         };
         match grouping {
-            Ok(grouping) => Some(grouping),
+            Ok(grouping) => (Some(grouping), requested_spec, resolved_spec),
             Err(e) => {
                 log::error!("{:#}", e);
                 std::process::exit(1);

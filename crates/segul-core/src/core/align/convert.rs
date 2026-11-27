@@ -8,6 +8,9 @@ use crate::core::OutputPrint;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{files, utils};
+use crate::report::spec::{AlignConvertParams, TaskKind, canonical};
+use crate::report::stats::TaskCounts;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for AlignmentConversion<'_> {}
@@ -18,6 +21,7 @@ pub struct AlignmentConversion<'a> {
     output_fmt: &'a OutputFmt,
     datatype: &'a DataType,
     sort: bool,
+    report_context: ReportContext,
 }
 
 impl<'a> AlignmentConversion<'a> {
@@ -32,18 +36,59 @@ impl<'a> AlignmentConversion<'a> {
             output_fmt,
             datatype,
             sort,
+            report_context: ReportContext::default(),
         }
     }
 
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
     pub fn convert(&self, files: &[PathBuf], output: &Path) {
+        self.convert_with_report(files, output)
+            .expect("Failed converting alignments");
+    }
+
+    /// Convert alignments and write a unified `report.json`.
+    pub fn convert_with_report(
+        &self,
+        files: &[PathBuf],
+        output: &Path,
+    ) -> anyhow::Result<RunReport> {
+        let mut sorted = files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let params = AlignConvertParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            sort: self.sort,
+        };
+        let snapshot = DirSnapshot::capture(output);
+        let builder = RunReportBuilder::new(TaskKind::AlignConvert, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
         let spin = utils::set_spinner();
         spin.set_message("Converting sequence format...");
-        files.par_iter().for_each(|file| {
+        sorted.par_iter().for_each(|file| {
             let output_fname = files::create_output_fname(output, file, self.output_fmt);
             self.convert_any(file, &output_fname);
         });
         spin.finish_with_message("Finished converting sequence format!\n");
         self.print_output_info(output);
+        let written = snapshot.written_files(output);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(output, None);
+        builder
+            .outputs(output, written.into_iter().map(|p| ("alignment", p)))
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     fn convert_any(&self, input: &Path, output: &Path) {

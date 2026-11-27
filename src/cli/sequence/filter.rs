@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use colored::Colorize;
+use segul_core::report::ReportContext;
 
 use crate::{
     cli::{AlignSeqInput, InputCli, OutputCli, args::sequence::SequenceFilterArgs, collect_paths},
@@ -29,7 +30,7 @@ impl<'a> SequenceFilterParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn filter(&mut self) {
+    pub(in crate::cli) fn filter(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
@@ -54,8 +55,11 @@ impl<'a> SequenceFilterParser<'a> {
             &self.args.output,
             &output_fmt,
             &self.params,
-        );
-        filter.filter();
+        )
+        .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()));
+        filter
+            .filter_with_report()
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 
     fn parse_params(&mut self) {

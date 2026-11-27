@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use colored::Colorize;
+use segul_core::report::ReportContext;
+use segul_core::report::spec::{SequenceRenameParams, canonical};
 
 use crate::core::sequence::rename::{SeqRenamingParameters, SequenceRenaming, SequenceRenamingDry};
 use crate::helper::logger::AlignSeqLogger;
@@ -27,7 +29,7 @@ impl<'a> RenameParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn rename(&mut self) {
+    pub(in crate::cli) fn rename(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
@@ -46,8 +48,48 @@ impl<'a> RenameParser<'a> {
             SequenceRenamingDry::new(&input_fmt, &datatype, &opts).dry_run(&files);
         } else {
             self.check_output_dir_exist(&self.args.output, self.args.io.force);
+            let (mode, from, to, all_matches) = match &opts {
+                SeqRenamingParameters::RnId(_) => ("replace_id".to_string(), None, None, false),
+                SeqRenamingParameters::RmStr(s) => {
+                    ("remove_str".to_string(), Some(s.clone()), None, false)
+                }
+                SeqRenamingParameters::RmRegex(re, all) => {
+                    ("remove_regex".to_string(), Some(re.clone()), None, *all)
+                }
+                SeqRenamingParameters::RpStr(f, t) => (
+                    "replace_str".to_string(),
+                    Some(f.clone()),
+                    Some(t.clone()),
+                    false,
+                ),
+                SeqRenamingParameters::RpRegex(f, t, all) => (
+                    "replace_regex".to_string(),
+                    Some(f.clone()),
+                    Some(t.clone()),
+                    *all,
+                ),
+                SeqRenamingParameters::None => unreachable!("Missing rename options"),
+            };
+            let params = SequenceRenameParams {
+                input_format: canonical::input_fmt(&input_fmt).to_string(),
+                datatype: canonical::datatype(&datatype).to_string(),
+                output_format: canonical::output_fmt(&output_fmt).to_string(),
+                dry_run: false,
+                mode,
+                from,
+                to,
+                all_matches,
+            };
+            let auxiliary: Vec<(String, PathBuf)> = self
+                .args
+                .replace_id
+                .as_ref()
+                .map(|p| vec![(String::from("rename_map"), PathBuf::from(p))])
+                .unwrap_or_default();
             SequenceRenaming::new(&input_fmt, &datatype, &self.args.output, &output_fmt, &opts)
-                .rename(&files);
+                .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()))
+                .rename_with_report(&files, params, &auxiliary)
+                .unwrap_or_else(|err| panic!("{err}"));
         }
     }
 

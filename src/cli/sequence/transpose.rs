@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use segul_core::report::ReportContext;
+
 use crate::core::sequence::transpose::SequenceTranspose;
 use crate::helper::logger::AlignSeqLogger;
 
@@ -23,7 +25,7 @@ impl<'a> TransposeParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn transpose(&mut self) {
+    pub(in crate::cli) fn transpose(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.output_fmt);
@@ -39,6 +41,8 @@ impl<'a> TransposeParser<'a> {
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         SequenceTranspose::new(&input_fmt, &datatype, &self.args.output, &output_fmt)
-            .transpose(&files);
+            .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()))
+            .transpose_with_report(&files)
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 }

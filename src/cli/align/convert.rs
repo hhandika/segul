@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use segul_core::report::ReportContext;
+
 use crate::{core::align::convert::AlignmentConversion, helper::logger::AlignSeqLogger};
 
 use crate::cli::args::align::AlignConvertArgs;
@@ -23,7 +25,7 @@ impl<'a> ConvertParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn convert(&mut self) {
+    pub(in crate::cli) fn convert(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
@@ -38,7 +40,10 @@ impl<'a> ConvertParser<'a> {
         )
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
-        let convert = AlignmentConversion::new(&input_fmt, &output_fmt, &datatype, self.args.sort);
-        convert.convert(&files, &self.args.output);
+        let convert = AlignmentConversion::new(&input_fmt, &output_fmt, &datatype, self.args.sort)
+            .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()));
+        convert
+            .convert_with_report(&files, &self.args.output)
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 }

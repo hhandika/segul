@@ -58,6 +58,7 @@ colorous.workspace = true
 reqwest = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 md-5 = { workspace = true, optional = true }
+sha2.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

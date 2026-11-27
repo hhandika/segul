@@ -26,6 +26,11 @@ use crate::{
         types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix},
         utils,
     },
+    report::{
+        DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path,
+        spec::{SequenceAddParams, TaskKind, canonical},
+        stats::TaskCounts,
+    },
     writer::sequences::SeqWriter,
 };
 
@@ -44,6 +49,7 @@ pub struct SequenceAddition<'a> {
     /// If true, skipped files will be written to the output.
     /// in the same format as the output.
     added_only: bool,
+    report_context: ReportContext,
 }
 
 impl Default for SequenceAddition<'_> {
@@ -55,6 +61,7 @@ impl Default for SequenceAddition<'_> {
             output: Path::new("output"),
             output_fmt: &OutputFmt::Fasta,
             added_only: false,
+            report_context: ReportContext::default(),
         }
     }
 }
@@ -77,7 +84,63 @@ impl<'a> SequenceAddition<'a> {
             output,
             output_fmt,
             added_only,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Add sequences to destination files or a single destination file and write
+    /// a unified `report.json`.
+    pub fn add_with_report(
+        &self,
+        dest_files: &[PathBuf],
+        dest_fmt: &InputFmt,
+        single_file: bool,
+        include_filename: bool,
+    ) -> anyhow::Result<RunReport> {
+        let mut sorted = self.input_files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let mut sorted_dest = dest_files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted_dest);
+        let params = SequenceAddParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            dest_format: canonical::input_fmt(dest_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            added_only: self.added_only,
+            single_file,
+            include_filename,
+        };
+        let snapshot = DirSnapshot::capture(self.output);
+        let builder = RunReportBuilder::new(TaskKind::SequenceAdd, &self.report_context)
+            .primary_inputs(&sorted)
+            .auxiliary_inputs(sorted_dest.iter().cloned().map(|p| ("destination", p)))
+            .parameters(&params)?;
+        if single_file {
+            let dest = sorted_dest
+                .first()
+                .ok_or_else(|| anyhow::anyhow!("No destination file provided"))?;
+            self.add_single(dest, include_filename);
+        } else {
+            self.add(&sorted_dest, dest_fmt);
+        }
+        let written = snapshot.written_files(self.output);
+        let counts = TaskCounts {
+            files_read: sorted.len() + sorted_dest.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(self.output, None);
+        builder
+            .outputs(self.output, written.into_iter().map(|p| ("sequences", p)))
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     pub fn add(&self, dest_file: &[PathBuf], dest_fmt: &InputFmt) {

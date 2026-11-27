@@ -9,6 +9,9 @@ use colored::Colorize;
 use indicatif::ProgressBar;
 use rayon::prelude::*;
 
+use crate::report::spec::{ReadSummaryParams, TaskKind, canonical};
+use crate::report::{ReportContext, RunReportBuilder, report_path};
+use crate::writer::read::{ReadDistSummaryWriter, ReadPosSummaryWriter, ReadSummaryWriter};
 use crate::{
     helper::{
         progress::{self, ProgressReporter},
@@ -19,10 +22,7 @@ use crate::{
         DEFAULT_DUP_SKETCH_SIZE, FastqAnalyzer, FastqSummary, FastqSummaryMin,
         count_reads_with_progress,
         qc::QcProfile,
-        report::{ReadReport, SampleReadReport},
-    },
-    writer::read::{
-        ReadDistSummaryWriter, ReadPosSummaryWriter, ReadReportWriter, ReadSummaryWriter,
+        report::{ReadMetrics, ReadReport, SampleReadReport, sample_name},
     },
 };
 
@@ -77,10 +77,11 @@ pub struct GenomicReadSummary<'a> {
     /// Distinct sequences kept to estimate duplication in Complete mode.
     /// Zero counts every distinct sequence.
     pub dup_sketch_size: usize,
-    /// Quality-check profile stored in `read-report.json`.
+    /// Quality-check profile stored in `report.json`.
     pub qc_profile: QcProfile,
     /// Receives per-file progress and can cancel the run.
     progress: Option<&'a dyn ProgressReporter>,
+    report_context: ReportContext,
 }
 
 impl<'a> GenomicReadSummary<'a> {
@@ -102,7 +103,14 @@ impl<'a> GenomicReadSummary<'a> {
             dup_sketch_size: DEFAULT_DUP_SKETCH_SIZE,
             qc_profile: QcProfile::Auto,
             progress: None,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
     }
 
     /// Keep this many distinct sequences to estimate duplication, or zero
@@ -165,33 +173,63 @@ impl<'a> GenomicReadSummary<'a> {
 
     /// Same as [`Self::summarize`], but returns errors from invalid input files.
     pub fn try_summarize(&self) -> Result<ReadSummaryFiles> {
+        let params = ReadSummaryParams {
+            input_format: canonical::read_fmt(self.input_fmt).to_string(),
+            mode: canonical::summary_mode(self.mode).to_string(),
+            phred: canonical::phred(self.phred).to_string(),
+            dup_sketch_size: self.dup_sketch_size,
+            qc_profile: self.qc_profile.to_string(),
+            prefix: self.prefix.map(str::to_string),
+        };
+        let mut sorted_inputs = self.inputs.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted_inputs);
+        let builder = RunReportBuilder::new(TaskKind::ReadSummary, &self.report_context)
+            .primary_inputs(&sorted_inputs)
+            .parameters(&params)?;
         let spin = set_spinner();
         spin.set_message("Calculating summary of fastq files");
-        progress::report_start(self.progress, self.inputs.len());
+        progress::report_start(self.progress, sorted_inputs.len());
         let files = match self.mode {
             SummaryMode::Minimal => {
-                let records = self.par_summarize_minimal()?;
+                let records = self.par_summarize_minimal(&sorted_inputs)?;
+                let summary = self.write_record_min(&spin, &records);
+                let report = self.build_minimal_report(&records);
+                let report_out = report_path(self.output, self.prefix);
+                builder
+                    .outputs(self.output, [("summary", summary.clone())])
+                    .statistics(&report)?
+                    .write_to(&report_out)?;
                 ReadSummaryFiles {
-                    summary: self.write_record_min(&spin, &records),
+                    summary,
                     mode: *self.mode,
                     positions: None,
                     distributions: None,
-                    report: None,
+                    report: Some(report_out),
                 }
             }
             SummaryMode::Basic => {
-                let records = self.par_summarize(false)?;
+                let records = self.par_summarize(&sorted_inputs, false)?;
+                let summary = self.write_record_basic(&spin, &records, false);
+                let report = ReadReport::from_samples(
+                    records.into_iter().map(|r| r.report).collect(),
+                    self.qc_profile,
+                );
+                let report_out = report_path(self.output, self.prefix);
+                builder
+                    .outputs(self.output, [("summary", summary.clone())])
+                    .statistics(&report)?
+                    .write_to(&report_out)?;
                 ReadSummaryFiles {
-                    summary: self.write_record_basic(&spin, &records, false),
+                    summary,
                     mode: *self.mode,
                     positions: None,
                     distributions: None,
-                    report: None,
+                    report: Some(report_out),
                 }
             }
             SummaryMode::Complete => {
-                let records = self.par_summarize(true)?;
-                self.write_record_complete(&spin, records)?
+                let records = self.par_summarize(&sorted_inputs, true)?;
+                self.write_record_complete(&spin, records, builder)?
             }
         };
         spin.finish_with_message("Finished processing fastq files\n");
@@ -204,10 +242,9 @@ impl<'a> GenomicReadSummary<'a> {
         (rayon::current_num_threads() / self.inputs.len().max(1)).clamp(1, MAX_FILE_THREADS)
     }
 
-    fn par_summarize(&self, complete: bool) -> Result<Vec<FastqSummary>> {
+    fn par_summarize(&self, inputs: &[PathBuf], complete: bool) -> Result<Vec<FastqSummary>> {
         let threads = self.file_threads();
-        let mut records = self
-            .inputs
+        let mut records = inputs
             .par_iter()
             .map(|path| {
                 progress::track(self.progress, path, || {
@@ -219,7 +256,7 @@ impl<'a> GenomicReadSummary<'a> {
                 })
             })
             .collect::<Result<Vec<FastqSummary>>>()?;
-        records.sort_by(|a, b| a.path.cmp(&b.path));
+        records.sort_by(|a, b| alphanumeric_sort::compare_path(&a.path, &b.path));
         self.print_totals(
             records
                 .iter()
@@ -228,10 +265,9 @@ impl<'a> GenomicReadSummary<'a> {
         Ok(records)
     }
 
-    fn par_summarize_minimal(&self) -> Result<Vec<FastqSummaryMin>> {
+    fn par_summarize_minimal(&self, inputs: &[PathBuf]) -> Result<Vec<FastqSummaryMin>> {
         let threads = self.file_threads();
-        let mut records = self
-            .inputs
+        let mut records = inputs
             .par_iter()
             .map(|path| {
                 progress::track(self.progress, path, || {
@@ -241,8 +277,25 @@ impl<'a> GenomicReadSummary<'a> {
                 })
             })
             .collect::<Result<Vec<FastqSummaryMin>>>()?;
-        records.sort_by(|a, b| a.path.cmp(&b.path));
+        records.sort_by(|a, b| alphanumeric_sort::compare_path(&a.path, &b.path));
         Ok(records)
+    }
+
+    fn build_minimal_report(&self, records: &[FastqSummaryMin]) -> ReadReport {
+        let samples = records
+            .iter()
+            .map(|rec| SampleReadReport {
+                file_path: rec.path.display().to_string(),
+                file_name: rec.file_name.clone(),
+                sample: sample_name(&rec.path),
+                metrics: ReadMetrics {
+                    read_count: rec.read_count as u64,
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .collect();
+        ReadReport::from_samples(samples, self.qc_profile)
     }
 
     fn write_record_min(&self, spin: &ProgressBar, records: &[FastqSummaryMin]) -> PathBuf {
@@ -272,6 +325,7 @@ impl<'a> GenomicReadSummary<'a> {
         &self,
         spin: &ProgressBar,
         records: Vec<FastqSummary>,
+        builder: RunReportBuilder,
     ) -> Result<ReadSummaryFiles> {
         let summary = self.write_record_basic(spin, &records, true);
         let report = ReadReport::from_samples(
@@ -283,13 +337,24 @@ impl<'a> GenomicReadSummary<'a> {
         let positions = ReadPosSummaryWriter::new(self.output, self.prefix).write(samples)?;
         let distributions =
             ReadDistSummaryWriter::new(self.output, self.prefix).write_report(&report)?;
-        let report_path = ReadReportWriter::new(self.output, self.prefix).write(&report)?;
+        let report_out = report_path(self.output, self.prefix);
+        builder
+            .outputs(
+                self.output,
+                [
+                    ("summary", summary.clone()),
+                    ("positions", positions.clone()),
+                    ("distributions", distributions.clone()),
+                ],
+            )
+            .statistics(&report)?
+            .write_to(&report_out)?;
         Ok(ReadSummaryFiles {
             summary,
             mode: *self.mode,
             positions: Some(positions),
             distributions: Some(distributions),
-            report: Some(report_path),
+            report: Some(report_out),
         })
     }
 
@@ -446,19 +511,20 @@ mod test {
 
     #[test]
     fn test_read_count_only() {
-        let mut files = vec![
+        let files = vec![
             PathBuf::from("tests/files/raw/read_1.fastq"),
             PathBuf::from("tests/files/raw/read_2.fastq"),
         ];
         let output = TempDir::with_prefix("tempt").unwrap();
+        let mut files_copy = files.clone();
         let handler = GenomicReadSummary::new(
-            &mut files,
+            &mut files_copy,
             &SeqReadFmt::Auto,
             &SummaryMode::Minimal,
             output.path(),
             None,
         );
-        let records = handler.par_summarize_minimal().unwrap();
+        let records = handler.par_summarize_minimal(&files).unwrap();
         assert_eq!(records.len(), 2);
         assert!(records.iter().all(|r| r.read_count == 2));
     }

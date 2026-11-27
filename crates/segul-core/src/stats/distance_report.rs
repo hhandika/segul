@@ -149,7 +149,7 @@ impl DistanceReport {
     }
 
     pub fn from_json(json: &str) -> Result<Self> {
-        Ok(serde_json::from_str(json)?)
+        crate::report::compat::parse_report_payload(json)
     }
 
     pub fn to_json(&self) -> Result<String> {

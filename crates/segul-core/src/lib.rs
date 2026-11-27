@@ -75,5 +75,6 @@ pub mod helper;
 pub mod parser;
 #[cfg(feature = "plot")]
 pub mod plot;
+pub mod report;
 pub mod stats;
 pub mod writer;

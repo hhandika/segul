@@ -23,6 +23,11 @@ use crate::{
         utils,
     },
     parser::maf::{MafParagraph, MafReader},
+    report::{
+        ReportContext, RunReport, RunReportBuilder, report_path,
+        spec::{MafSummaryParams, TaskKind, canonical},
+        stats::{MafFileSummaryReport, MafSpeciesSummaryReport, MafSummaryReport},
+    },
 };
 
 /// Default prefix of the summary files.
@@ -125,6 +130,15 @@ impl FileStats {
 /// assert!(output.path().join("maf_summary_per_file.csv").exists());
 /// assert!(output.path().join("maf_summary_per_species.csv").exists());
 /// ```
+/// Files written by [`MafSummary::try_summarize_with_report`].
+#[derive(Debug, Clone)]
+pub struct MafSummaryFiles {
+    pub per_file: PathBuf,
+    pub per_species: PathBuf,
+    pub report: PathBuf,
+    pub run_report: RunReport,
+}
+
 pub struct MafSummary<'a> {
     input_files: &'a [PathBuf],
     output_dir: &'a Path,
@@ -133,6 +147,7 @@ pub struct MafSummary<'a> {
     ref_species: Option<String>,
     species: Option<Vec<String>>,
     progress: Option<&'a dyn ProgressReporter>,
+    report_context: ReportContext,
 }
 
 impl<'a> MafSummary<'a> {
@@ -145,7 +160,14 @@ impl<'a> MafSummary<'a> {
             ref_species: None,
             species: None,
             progress: None,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
     }
 
     /// Report per-file progress to `reporter`, which can also cancel the run.
@@ -173,13 +195,29 @@ impl<'a> MafSummary<'a> {
 
     /// Write the summary files. Returns their paths: per file, then per species.
     pub fn summarize(&self) -> Result<(PathBuf, PathBuf)> {
+        let files = self.try_summarize_with_report()?;
+        Ok((files.per_file, files.per_species))
+    }
+
+    /// Write the summary CSVs and unified `report.json`.
+    pub fn try_summarize_with_report(&self) -> Result<MafSummaryFiles> {
         let mut input_files = self.input_files.to_vec();
-        input_files.sort();
+        alphanumeric_sort::sort_path_slice(&mut input_files);
         let resolver = SpeciesResolver::new(self.naming, self.species.as_deref());
         let ref_sample = match &self.ref_species {
             Some(species) => species.clone(),
             None => block::first_sample(&input_files, &resolver)?,
         };
+        let params = MafSummaryParams {
+            naming: canonical::sample_naming(self.naming).to_string(),
+            ref_species: self.ref_species.clone(),
+            resolved_ref_species: Some(ref_sample.clone()),
+            species: self.species.clone(),
+            prefix: self.prefix.map(str::to_string),
+        };
+        let builder = RunReportBuilder::new(TaskKind::MafSummary, &self.report_context)
+            .primary_inputs(&input_files)
+            .parameters(&params)?;
         let spin = utils::set_spinner();
         spin.set_message("Summarizing MAF files...");
         progress::report_start(self.progress, input_files.len());
@@ -203,9 +241,26 @@ impl<'a> MafSummary<'a> {
         let per_species = self.output_dir.join(format!("{}_per_species.csv", prefix));
         self.write_per_file(&per_file, &stats, &ref_sample)?;
         self.write_per_species(&per_species, &stats, &ref_sample)?;
+        let summary_report = build_maf_summary_report(&stats, &ref_sample);
+        let report = report_path(self.output_dir, self.prefix);
+        let run_report = builder
+            .outputs(
+                self.output_dir,
+                [
+                    ("per_file", per_file.clone()),
+                    ("per_species", per_species.clone()),
+                ],
+            )
+            .statistics(&summary_report)?
+            .write_to(&report)?;
         spin.finish_with_message("Finished summarizing MAF files!\n");
         self.print_output_info(&stats, &ref_sample, &per_file, &per_species);
-        Ok((per_file, per_species))
+        Ok(MafSummaryFiles {
+            per_file,
+            per_species,
+            report,
+            run_report,
+        })
     }
 
     fn summarize_file(
@@ -361,6 +416,90 @@ impl<'a> MafSummary<'a> {
         log::info!("{}", "Output".yellow());
         log::info!("{:18}: {}", "Per file", per_file.display());
         log::info!("{:18}: {}", "Per species", per_species.display());
+    }
+}
+
+fn build_maf_summary_report(stats: &[FileStats], ref_sample: &str) -> MafSummaryReport {
+    let opt_ratio = |num: usize, den: usize| -> Option<f64> {
+        if den == 0 {
+            None
+        } else {
+            Some(num as f64 / den as f64)
+        }
+    };
+    let files = stats
+        .iter()
+        .map(|file| MafFileSummaryReport {
+            path: crate::report::paths::to_posix_string(Path::new(&file.path)),
+            blocks: file.blocks,
+            blocks_no_ref: file.blocks_no_ref,
+            species: file.species.len(),
+            ref_chromosomes: file.ref_chroms.len(),
+            ref_chrom_size_total: file.ref_chrom_size_total(),
+            ref_bases: file.ref_bases,
+            ref_genome_coverage: opt_ratio(file.ref_bases, file.ref_chrom_size_total()),
+            aligned_columns: file.aligned_columns,
+            mean_block_columns: opt_ratio(file.aligned_columns, file.blocks),
+            min_block_columns: file.min_block_columns.unwrap_or(0),
+            max_block_columns: file.max_block_columns,
+            mean_block_ref_len: opt_ratio(file.ref_bases, file.blocks),
+            mean_species_per_block: opt_ratio(file.species_in_blocks, file.blocks),
+            mean_score: if file.scored_blocks > 0 {
+                Some(file.score_sum / file.scored_blocks as f64)
+            } else {
+                None
+            },
+            gap_proportion: opt_ratio(file.gaps, file.cells),
+            duplicate_rows: file.duplicate_rows,
+        })
+        .collect();
+
+    let mut rows: Vec<(String, usize, usize, IndexMap<String, SpeciesStats>)> = stats
+        .iter()
+        .map(|f| {
+            (
+                crate::report::paths::to_posix_string(Path::new(&f.path)),
+                f.blocks,
+                f.ref_bases,
+                f.species.clone(),
+            )
+        })
+        .collect();
+    if stats.len() > 1 {
+        let mut combined: IndexMap<String, SpeciesStats> = IndexMap::new();
+        for file in stats {
+            for (name, species) in &file.species {
+                combined.entry(name.clone()).or_default().add(species);
+            }
+        }
+        let blocks = stats.iter().map(|f| f.blocks).sum();
+        let ref_bases = stats.iter().map(|f| f.ref_bases).sum();
+        rows.push((ALL_FILES.to_string(), blocks, ref_bases, combined));
+    }
+
+    let mut species = Vec::new();
+    for (path, blocks, ref_bases, map) in rows {
+        for (name, s) in sorted_species(&map, ref_sample) {
+            species.push(MafSpeciesSummaryReport {
+                path: path.clone(),
+                name: name.to_string(),
+                blocks_present: s.blocks_present,
+                block_proportion: opt_ratio(s.blocks_present, blocks),
+                aligned_columns: s.aligned_columns,
+                bases: s.bases,
+                gaps: s.gaps,
+                gap_proportion: opt_ratio(s.gaps, s.aligned_columns),
+                n_count: s.n_count,
+                ref_bases_covered: s.ref_bases_covered,
+                ref_coverage: opt_ratio(s.ref_bases_covered, ref_bases),
+            });
+        }
+    }
+
+    MafSummaryReport {
+        ref_species: ref_sample.to_string(),
+        files,
+        species,
     }
 }
 

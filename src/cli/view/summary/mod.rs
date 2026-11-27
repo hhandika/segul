@@ -10,6 +10,8 @@ use std::path::Path;
 use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyEventKind};
 use crossterm::execute;
 use segul_core::color::Theme;
+use segul_core::report::stats::ReportStatistics;
+use segul_core::report::{RunReport, TaskKind};
 use segul_core::stats::fastq::report::ReadReport;
 
 use crate::cli::args::view::ViewSummaryArgs;
@@ -34,8 +36,30 @@ impl<'a> SummaryViewParser<'a> {
             .unwrap_or_default();
         let theme = self.args.theme.parse::<Theme>().unwrap_or(Theme::Dark);
         ui::set_accent(theme);
-        // Read reports have a viewer of their own, matching the GUI.
-        if let Ok(report) = ReadReport::from_path(path) {
+        if let Ok(run_report) = RunReport::from_path(path)
+            && run_report.kind == TaskKind::ReadSummary
+        {
+            match run_report.typed_statistics() {
+                Ok(Some(ReportStatistics::Read(read_report))) => {
+                    reads::view(read_report, file_name, theme, self.args.colormap);
+                    return;
+                }
+                Ok(_) => {
+                    eprintln!(
+                        "{file_name} is a minimal/basic read report. Re-run `segul read summary --mode complete` for full viewer metrics."
+                    );
+                    std::process::exit(1);
+                }
+                Err(e) => {
+                    eprintln!("{e:#}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        // Fallback: legacy read-report.json.
+        if !RunReport::is_run_report_file(path)
+            && let Ok(report) = ReadReport::from_path(path)
+        {
             reads::view(report, file_name, theme, self.args.colormap);
             return;
         }

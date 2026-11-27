@@ -14,6 +14,9 @@ use crate::helper::files;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
+use crate::report::spec::{SequenceTransposeParams, TaskKind, canonical};
+use crate::report::stats::TaskCounts;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for SequenceTranspose<'_> {}
@@ -32,6 +35,7 @@ pub struct SequenceTranspose<'a> {
     /// Transposed sequences are unaligned, so NEXUS and PHYLIP
     /// output would have an invalid character count.
     output_fmt: &'a OutputFmt,
+    report_context: ReportContext,
 }
 
 impl<'a> SequenceTranspose<'a> {
@@ -46,7 +50,45 @@ impl<'a> SequenceTranspose<'a> {
             datatype,
             output_dir,
             output_fmt,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Transpose sequences into per-sample files and write `report.json`.
+    pub fn transpose_with_report(&self, files: &[PathBuf]) -> anyhow::Result<RunReport> {
+        let mut sorted = files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let params = SequenceTransposeParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+        };
+        let snapshot = DirSnapshot::capture(self.output_dir);
+        let builder = RunReportBuilder::new(TaskKind::SequenceTranspose, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
+        self.transpose(&sorted);
+        let written = snapshot.written_files(self.output_dir);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(self.output_dir, None);
+        builder
+            .outputs(
+                self.output_dir,
+                written.into_iter().map(|p| ("sequences", p)),
+            )
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     /// Transpose sequences from locus alignments into per-sample files.

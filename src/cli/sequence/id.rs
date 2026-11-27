@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use segul_core::report::ReportContext;
+
 use crate::core::sequence::id::SequenceID;
 use crate::helper::logger::AlignSeqLogger;
 
@@ -23,7 +25,7 @@ impl<'a> IdParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn extract(&mut self) {
+    pub(in crate::cli) fn extract(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let dir = &self.args.io.dir;
@@ -40,17 +42,18 @@ impl<'a> IdParser<'a> {
             &datatype,
             &self.args.output,
             self.args.prefix.as_deref(),
-        );
+        )
+        .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()));
         if self.args.map {
             let task = "Sequence ID Mapping";
             log.log(task);
             self.check_output_dir_exist(&self.args.output, self.args.io.force);
-            id.map_id();
         } else {
             let task = "Sequence ID Generation";
             log.log(task);
             self.check_output_dir_exist(&self.args.output, self.args.io.force);
-            id.get_unique();
         }
+        id.run_with_report(self.args.map)
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 }

@@ -41,6 +41,11 @@ use crate::{
         types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix},
         utils,
     },
+    report::{
+        DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path,
+        spec::{AlignUnalignParams, TaskKind, canonical},
+        stats::TaskCounts,
+    },
     writer::sequences::SeqWriter,
 };
 
@@ -56,6 +61,7 @@ pub struct UnalignAlignment<'a> {
     output_dir: &'a Path,
     /// Output format of sequence files. Always fasta
     output_fmt: &'a OutputFmt,
+    report_context: ReportContext,
 }
 
 impl OutputPrint for UnalignAlignment<'_> {}
@@ -68,6 +74,7 @@ impl Default for UnalignAlignment<'_> {
             datatype: &DataType::Dna,
             output_dir: Path::new(""),
             output_fmt: &OutputFmt::Fasta,
+            report_context: ReportContext::default(),
         }
     }
 }
@@ -88,29 +95,65 @@ impl<'a> UnalignAlignment<'a> {
             datatype,
             output_dir,
             output_fmt,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
     }
 
     /// Convert aligned sequences to unaligned sequences
     /// by removing gaps from each sequence
     pub fn unalign(&self) {
+        self.unalign_with_report()
+            .expect("Failed unaligning alignments");
+    }
+
+    /// Unalign sequences and write a unified `report.json`.
+    pub fn unalign_with_report(&self) -> anyhow::Result<RunReport> {
         if self.output_fmt != &OutputFmt::Fasta && self.output_fmt != &OutputFmt::FastaInt {
-            let msg = format!(
-                "Unalign feature only supports fasta or fasta-int output format.\n\
-                Output format provided: {}",
+            anyhow::bail!(
+                "Unalign feature only supports fasta or fasta-int output format. Output format provided: {}",
                 self.output_fmt
             );
-            log::warn!("{}", msg);
-            return;
         }
+        let mut sorted = self.input_files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let params = AlignUnalignParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+        };
+        let snapshot = DirSnapshot::capture(self.output_dir);
+        let builder = RunReportBuilder::new(TaskKind::AlignUnalign, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
         let spin = utils::set_spinner();
         spin.set_message("Converting un-aligned sequence files...");
-        self.input_files.par_iter().for_each(|file| {
+        sorted.par_iter().for_each(|file| {
             let (matrix, header) = self.get_unalign(file);
             self.write_results(file, &matrix, &header);
         });
         spin.finish_with_message("Finished un-aligning alignments!\n");
         self.print_output_info();
+        let written = snapshot.written_files(self.output_dir);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(self.output_dir, None);
+        builder
+            .outputs(
+                self.output_dir,
+                written.into_iter().map(|p| ("sequences", p)),
+            )
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     fn get_unalign(&self, input: &Path) -> (SeqMatrix, Header) {

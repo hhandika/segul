@@ -5,6 +5,8 @@ use anyhow::{Result, bail};
 use colored::Colorize;
 use rayon::prelude::*;
 
+use crate::report::spec::{ContigSummaryParams, TaskKind, canonical};
+use crate::report::{ReportContext, RunReportBuilder, report_path};
 use crate::writer::contigs::ContigSummaryWriter;
 use crate::{
     helper::{
@@ -15,15 +17,12 @@ use crate::{
     stats::{contig_report::ContigReport, contigs::ContigSummary},
 };
 
-/// File name of the JSON report, after the output prefix if any.
-const REPORT_NAME: &str = "contig-report.json";
-
 /// Files written by [`ContigSummaryHandler::summarize`].
 #[derive(Debug, Clone)]
 pub struct ContigSummaryFiles {
     /// Per-file statistics (`contig-summary.csv`).
     pub summary: PathBuf,
-    /// Every statistic as JSON (`contig-report.json`).
+    /// Unified provenance and statistics JSON (`report.json`).
     pub report: PathBuf,
 }
 
@@ -38,6 +37,7 @@ pub struct ContigSummaryHandler<'a> {
     prefix: Option<&'a str>,
     /// Receives per-file progress and can cancel the run.
     progress: Option<&'a dyn ProgressReporter>,
+    report_context: ReportContext,
 }
 
 impl<'a> ContigSummaryHandler<'a> {
@@ -53,7 +53,14 @@ impl<'a> ContigSummaryHandler<'a> {
             output,
             prefix,
             progress: None,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
     }
 
     /// Report per-file progress to `reporter`, which can also cancel the run.
@@ -71,29 +78,39 @@ impl<'a> ContigSummaryHandler<'a> {
     /// Same as [`Self::summarize`], but returns errors, including
     /// [`progress::Cancelled`] when the progress reporter stops the run.
     pub fn try_summarize(&self) -> Result<ContigSummaryFiles> {
+        let params = ContigSummaryParams {
+            input_format: canonical::contig_fmt(self.input_fmt).to_string(),
+            prefix: self.prefix.map(str::to_string),
+        };
+        let mut sorted_files = self.files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted_files);
+        let builder = RunReportBuilder::new(TaskKind::ContigSummary, &self.report_context)
+            .primary_inputs(&sorted_files)
+            .parameters(&params)?;
         let spin = set_spinner();
         spin.set_message("Calculating summary of contig files");
-        let contig_summary = self.summarize_contigs()?;
+        let contig_summary = self.summarize_contigs(&sorted_files)?;
         let writer = ContigSummaryWriter::new(&contig_summary, self.output, self.prefix);
         spin.set_message("Writing records\n");
         progress::report_stage(self.progress, "Writing records");
         let summary = writer.write()?;
-        let report = self.output.join(match self.prefix {
-            Some(prefix) => format!("{}_{}", prefix, REPORT_NAME),
-            None => REPORT_NAME.to_string(),
-        });
-        ContigReport::new(&contig_summary).write(&report)?;
+        let report = report_path(self.output, self.prefix);
+        let contig_report = ContigReport::new(&contig_summary);
+        builder
+            .outputs(self.output, [("summary", summary.clone())])
+            .statistics(&contig_report)?
+            .write_to(&report)?;
         spin.finish_with_message("Finished processing contig files\n");
         self.print_output_info(&report);
         Ok(ContigSummaryFiles { summary, report })
     }
 
-    fn summarize_contigs(&self) -> Result<Vec<ContigSummary>> {
-        if self.files.is_empty() {
+    fn summarize_contigs(&self, files: &[PathBuf]) -> Result<Vec<ContigSummary>> {
+        if files.is_empty() {
             bail!("No contig files found")
         }
-        progress::report_start(self.progress, self.files.len());
-        self.files
+        progress::report_start(self.progress, files.len());
+        files
             .par_iter()
             .map(|path| progress::track(self.progress, path, || Ok(self.process_contigs(path))))
             .collect()
@@ -129,7 +146,7 @@ mod test {
             ContigSummaryHandler::new(&files, &ContigFmt::Fasta, output.path(), Some("run"))
                 .summarize();
         assert!(written.summary.is_file());
-        assert_eq!(written.report, output.path().join("run_contig-report.json"));
+        assert_eq!(written.report, output.path().join("run_report.json"));
         let report = ContigReport::from_path(&written.report).unwrap();
         assert_eq!(report.summary.samples, 2);
         assert_eq!(report.samples[1].name, "contigs2");

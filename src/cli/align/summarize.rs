@@ -4,9 +4,10 @@ use crate::core::align::summarize::AlignmentSummary;
 use crate::helper::logger::AlignSeqLogger;
 
 use segul_core::plot::align::plot_alignment_summary;
+use segul_core::report::ReportContext;
 
 use crate::cli::args::align::AlignSummaryArgs;
-use crate::cli::plot::PlotCli;
+use crate::cli::plot::{PlotCli, append_plots_to_report};
 use crate::cli::{AlignSeqInput, InputCli, OutputCli, collect_paths};
 
 impl InputCli for SummaryParser<'_> {}
@@ -27,7 +28,7 @@ impl<'a> SummaryParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn summarize(&mut self) {
+    pub(in crate::cli) fn summarize(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.fmt.datatype);
         let task = "Sequence summary statistics";
@@ -42,15 +43,19 @@ impl<'a> SummaryParser<'a> {
         .log(task);
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         let mut summary =
-            AlignmentSummary::new(&input_fmt, &self.args.output, self.args.interval, &datatype);
+            AlignmentSummary::new(&input_fmt, &self.args.output, self.args.interval, &datatype)
+                .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()));
         let prefix = self.args.prefix.as_deref();
         if self.args.per_locus {
-            summary.summarize_locus(&files, prefix);
+            summary
+                .summarize_locus_with_report(&files, prefix)
+                .unwrap_or_else(|err| panic!("{err}"));
         } else {
             let outputs = summary.summarize_all(&files, prefix);
-            self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
+            let plots = self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
                 plot_alignment_summary(&outputs, writer)
             });
+            append_plots_to_report(&outputs.report, &self.args.output, &plots);
         }
     }
 }

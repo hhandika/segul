@@ -11,6 +11,9 @@ use crate::helper::finder::IDs;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
+use crate::report::spec::{SequenceRenameParams, TaskKind};
+use crate::report::stats::TaskCounts;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for SequenceRenaming<'_> {}
@@ -169,6 +172,7 @@ pub struct SequenceRenaming<'a> {
     output_dir: &'a Path,
     output_fmt: &'a OutputFmt,
     opts: &'a SeqRenamingParameters,
+    report_context: ReportContext,
 }
 
 impl<'a> SequenceRenaming<'a> {
@@ -185,7 +189,50 @@ impl<'a> SequenceRenaming<'a> {
             output_dir,
             output_fmt,
             opts,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Rename sequence IDs (or dry-run) and write a unified `report.json`.
+    pub fn rename_with_report(
+        &self,
+        files: &[PathBuf],
+        params: SequenceRenameParams,
+        auxiliary: &[(String, PathBuf)],
+    ) -> anyhow::Result<RunReport> {
+        let mut sorted = files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let snapshot = DirSnapshot::capture(self.output_dir);
+        let builder = RunReportBuilder::new(TaskKind::SequenceRename, &self.report_context)
+            .primary_inputs(&sorted)
+            .auxiliary_inputs(auxiliary.iter().map(|(r, p)| (r.as_str(), p.clone())))
+            .parameters(&params)?;
+        if params.dry_run {
+            SequenceRenamingDry::new(self.input_fmt, self.datatype, self.opts).dry_run(&sorted);
+        } else {
+            self.rename(&sorted);
+        }
+        let written = snapshot.written_files(self.output_dir);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(self.output_dir, None);
+        builder
+            .outputs(
+                self.output_dir,
+                written.into_iter().map(|p| ("sequences", p)),
+            )
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     pub fn rename(&self, files: &[PathBuf]) {

@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use segul_core::report::ReportContext;
+
 use crate::core::align::split::AlignmentSplitting;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::partition::infer_partition_fmt;
@@ -22,7 +24,7 @@ impl<'a> SplitParser<'a> {
         Self { args }
     }
 
-    pub(in crate::cli) fn split(&mut self) {
+    pub(in crate::cli) fn split(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
@@ -44,9 +46,10 @@ impl<'a> SplitParser<'a> {
             &input_fmt,
             &self.args.output,
             &output_fmt,
-        );
+        )
+        .with_report_context(ctx.clone());
         split
-            .try_split(
+            .try_split_with_report(
                 partitions,
                 &part_fmt,
                 &self.args.prefix,

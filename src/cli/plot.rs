@@ -5,11 +5,32 @@ use colored::Colorize;
 use segul_core::plot::batch::PlotWriter;
 use segul_core::plot::fonts::PlotFonts;
 use segul_core::plot::spec::{PlotFormat, PlotStyle};
+use segul_core::report::RunReport;
 
 use crate::cli::args::PlotFlags;
 use crate::helper::utils;
 
 const PLOT_DIR: &str = "plots";
+
+pub(in crate::cli) fn append_plots_to_report(
+    report_path: &Path,
+    output_dir: &Path,
+    plots: &[PathBuf],
+) {
+    if plots.is_empty() {
+        return;
+    }
+    let extra: Vec<(&str, PathBuf)> = plots.iter().map(|p| ("plot", p.clone())).collect();
+    if let Err(err) = RunReport::from_path(report_path).and_then(|mut rep| {
+        rep.append_outputs(&extra, output_dir)?;
+        rep.write(report_path)
+    }) {
+        log::warn!(
+            "Failed recording plot outputs in {}: {err:#}",
+            report_path.display()
+        );
+    }
+}
 
 pub(in crate::cli) trait PlotCli {
     fn plot_style(&self, flags: &PlotFlags) -> PlotStyle {
@@ -47,16 +68,22 @@ pub(in crate::cli) trait PlotCli {
 
     /// Write the charts produced by `plot` into `<output>/plots`.
     /// Does nothing unless `--plot` is set.
-    fn write_plots<F>(&self, flags: &PlotFlags, output: &Path, prefix: Option<&str>, plot: F)
+    fn write_plots<F>(
+        &self,
+        flags: &PlotFlags,
+        output: &Path,
+        prefix: Option<&str>,
+        plot: F,
+    ) -> Vec<PathBuf>
     where
         F: FnOnce(&PlotWriter) -> Vec<PathBuf>,
     {
         if !flags.plot {
-            return;
+            return Vec::new();
         }
         let Some(fonts) = self.plot_fonts(flags) else {
             log::warn!("Skipped writing charts. The summary files are complete.");
-            return;
+            return Vec::new();
         };
         let plot_dir = output.join(PLOT_DIR);
         let style = self.plot_style(flags);
@@ -77,5 +104,6 @@ pub(in crate::cli) trait PlotCli {
             log::info!("{:18}: {}", "Font", family);
         }
         log::info!("{:18}: {}\n", "Charts", utils::fmt_num(&written.len()));
+        written
     }
 }

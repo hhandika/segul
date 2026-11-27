@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 
 use colored::Colorize;
+use segul_core::report::ReportContext;
 
 use crate::{
     cli::{AlignSeqInput, InputCli, OutputCli, args::sequence::SequenceAddArgs, collect_paths},
@@ -40,7 +41,7 @@ impl<'a> AdditionParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn add(&mut self) {
+    pub(in crate::cli) fn add(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let dest_fmt = self.parse_input_fmt(&self.args.to_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
@@ -63,15 +64,24 @@ impl<'a> AdditionParser<'a> {
             &self.args.output,
             &output_fmt,
             self.args.added_only,
-        );
+        )
+        .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()));
         match &self.args.to_file {
-            Some(file) => add.add_single(file, self.args.include_filename),
+            Some(file) => add
+                .add_with_report(
+                    std::slice::from_ref(file),
+                    &dest_fmt,
+                    true,
+                    self.args.include_filename,
+                )
+                .unwrap_or_else(|err| panic!("{err}")),
             None => {
                 let dest_files = self.collect_destination_paths(&dest_fmt);
                 self.log_destination_info(&dest_files);
-                add.add(&dest_files, &dest_fmt);
+                add.add_with_report(&dest_files, &dest_fmt, false, self.args.include_filename)
+                    .unwrap_or_else(|err| panic!("{err}"))
             }
-        }
+        };
     }
 
     fn collect_destination_paths(&mut self, dest_fmt: &InputFmt) -> Vec<PathBuf> {

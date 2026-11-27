@@ -13,6 +13,9 @@ use crate::core::OutputPrint;
 use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{files, utils};
+use crate::report::spec::{SequenceExtractParams, TaskKind};
+use crate::report::stats::TaskCounts;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for SequenceExtraction<'_> {}
@@ -39,6 +42,7 @@ pub struct SequenceExtraction<'a> {
     output_dir: &'a Path,
     /// Output format of the sequence files
     output_fmt: &'a OutputFmt,
+    report_context: ReportContext,
 }
 
 impl<'a> SequenceExtraction<'a> {
@@ -56,7 +60,46 @@ impl<'a> SequenceExtraction<'a> {
             opts,
             output_dir,
             output_fmt,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Extract sequences and write a unified `report.json`.
+    pub fn extract_with_report(
+        &self,
+        files: &[PathBuf],
+        params: SequenceExtractParams,
+        auxiliary: &[(String, PathBuf)],
+    ) -> anyhow::Result<RunReport> {
+        let mut sorted = files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let snapshot = DirSnapshot::capture(self.output_dir);
+        let builder = RunReportBuilder::new(TaskKind::SequenceExtract, &self.report_context)
+            .primary_inputs(&sorted)
+            .auxiliary_inputs(auxiliary.iter().map(|(r, p)| (r.as_str(), p.clone())))
+            .parameters(&params)?;
+        self.extract(&sorted);
+        let written = snapshot.written_files(self.output_dir);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: Some(sorted.len().saturating_sub(written.len())),
+        };
+        let report_file = report_path(self.output_dir, None);
+        builder
+            .outputs(
+                self.output_dir,
+                written.into_iter().map(|p| ("sequences", p)),
+            )
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     /// Extract sequences with matching IDs or regular expressions

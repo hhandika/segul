@@ -9,6 +9,11 @@ Installation:
 
 New Features:
 
+- Unified reproducible `report.json` (`<prefix>_report.json`) written by every SEGUL command across CLI, SEGUI, and PySEGUL, recording Schema v2 provenance, sorted POSIX-relative input/output manifests, canonical `parameters`, chained `parent_reports`, and task `statistics` (preserving existing summary report payloads under `"statistics"`).
+- Global `--checksum <none|outputs|inputs|all>` flag (and `SEGUL_CHECKSUM` env var) for opt-in SHA-256 hashing of input and output files.
+- New `segul report verify` command (with `--scope`, `--json`, `--input-dir`, and `--output-dir`) to check recorded SHA-256 digests and file sizes, exiting non-zero on missing or mismatched files.
+- New `segul run <report.json|segul-workflow.json>` command to deterministically replay single analyses or multi-step pipelines with optional `--verify-inputs`.
+- New `segul report workflow` and `segul report methods` commands to export multi-step `segul-workflow.json` recipes and publication-ready Methods text in Markdown or plain text.
 - `segul read summary` now defaults to `--mode complete` (matching SEGUI) and renames the middle mode from `default` to `basic` (`--mode default` remains accepted as an alias). The per-sample CSV is named `read-summary.csv`.
 - `segul read summary` adds error-probability–aware quality metrics (`effective_mean_QScore`, `mean_error_rate`, `Q10_pct`, `Q15_pct`, `Q40_pct`, `distinct_QScores`, expected errors per read and per 100 bp, expected error-free read share, and read-level base survival at Q10/Q20/Q30), sequence complexity (`mean_complexity`, `low_complexity_reads_pct`), homopolymer run and 3'-terminal tail statistics with homopolymer quality gap, extended length metrics (`N90`, `L50`, `auN`, `empty_reads`), strand skew (`AT_skew`, `GC_skew`), quantitative GC shape (`GC_stdev`, `GC_normal_divergence_pct`, `GC_peaks`), and lightweight FASTQ header metadata (`platform`, Illumina chastity-failed reads, run/lane group count) in both `basic` and `complete` modes.
 - Complete mode adds relative-position (0-100%) quality and base profiles (`relative-pos.csv`), read length × quality summaries (`length-quality.csv`), expected-error and complexity distributions, per-position effective quality and read survival, and summary scalars (`QScore_tail_drop`, `effective_Q20_span`, `effective_Q30_span`, `head_bias_bp`), plus matching `--plot` presets (`rel-pos-qscore`, `length-qscore`, `expected-errors`, `complexity-dist`, `pair-q30`) and `segul view summary` charts and columns.
@@ -39,6 +44,8 @@ Performance:
 
 Library Changes:
 
+- Added `segul_core::report` (`RunReport`, `RunReportBuilder`, `ReportContext`, `ChecksumMode`, `verify_report`, `replay_report`, `replay_workflow`, `WorkflowRecipe`, `render_methods`, and `compat::parse_report_payload` for reading both Schema v2 `report.json` and legacy flat `*-report.json`).
+- Updated `AlignReport::from_json`, `ContigReport::from_json`, `DistanceReport::from_json`, and `ReadReport::from_json` to deserialize both Schema v2 and legacy flat JSON reports, and sorted input file discovery in `helper::finder`.
 - Added byte-slice helpers for alphabet validation, distance encoding, translation (`codon_table`, `translate_bytes`), and streaming FASTA reading (`for_each_record`).
 - Added `SiteRange` in `helper::types` and extended `Partition` with `ranges: Vec<SiteRange>`, `model: Option<String>`, and helpers (`from_range`, `from_ranges`, `effective_ranges`, `has_stride`, `max_site`, `sorted_site_positions`, `contiguous_site_runs`).
 - Added `PartitionTrack` and `PartitionBlock` in `core::align::view` to find and look up the partitions of an alignment, and `AlignmentView::range_stats` for gap and variable-site shares of any run of sites.

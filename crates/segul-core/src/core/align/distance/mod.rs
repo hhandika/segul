@@ -39,6 +39,8 @@ use serde::Serialize;
 use crate::helper::sequence::SeqParser;
 use crate::helper::types::{DataType, InputFmt, SeqMatrix};
 use crate::helper::utils;
+use crate::report::spec::{AlignDistanceParams, DistanceGroupingSpec, TaskKind, canonical};
+use crate::report::{ReportContext, RunReportBuilder, report_path};
 use crate::stats::distance::{self, BaseFreqs, DistanceModel, DistanceSummary, PairCounts};
 
 use group::{GroupAssignment, GroupDistances, SampleGrouping};
@@ -50,8 +52,6 @@ const LONG_TMP_DIR: &str = ".pairwise_long_tmp";
 const DEFAULT_PREFIX: &str = "distance";
 /// Locus name of the pooled rows in the long group table.
 const ALL_LOCI: &str = "all";
-/// File name of the JSON report, after the output prefix if any.
-const REPORT_NAME: &str = "distance-report.json";
 
 /// Which part of the distance matrix to write.
 /// The diagonal is always written, see [`MatrixDiagonal`].
@@ -163,6 +163,10 @@ pub struct AlignmentDistance<'a> {
     grouping: Option<SampleGrouping>,
     /// Whether to write long-format tables. Defaults to false.
     long_format: bool,
+    report_context: ReportContext,
+    grouping_spec: Option<DistanceGroupingSpec>,
+    resolved_grouping_spec: Option<DistanceGroupingSpec>,
+    group_map_path: Option<PathBuf>,
 }
 
 impl<'a> AlignmentDistance<'a> {
@@ -181,7 +185,34 @@ impl<'a> AlignmentDistance<'a> {
             diagonal: None,
             grouping: None,
             long_format: false,
+            report_context: ReportContext::default(),
+            grouping_spec: None,
+            resolved_grouping_spec: None,
+            group_map_path: None,
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Record the requested and resolved grouping configuration for `report.json`.
+    pub fn with_grouping_specs(
+        mut self,
+        requested: Option<DistanceGroupingSpec>,
+        resolved: Option<DistanceGroupingSpec>,
+    ) -> Self {
+        self.grouping_spec = requested;
+        self.resolved_grouping_spec = resolved;
+        self
+    }
+
+    /// Record an auxiliary sample group map file for `report.json`.
+    pub fn with_group_map_path(mut self, path: PathBuf) -> Self {
+        self.group_map_path = Some(path);
+        self
     }
 
     /// Write only the lower or upper triangle of each distance matrix,
@@ -239,10 +270,29 @@ impl<'a> AlignmentDistance<'a> {
             self.model,
             self.datatype
         );
-        let report_path = self.output_dir.join(match prefix {
-            Some(prefix) => format!("{}_{}", prefix, REPORT_NAME),
-            None => REPORT_NAME.to_string(),
-        });
+        let params = AlignDistanceParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            model: canonical::distance_model(self.model).to_string(),
+            triangle: canonical::matrix_triangle(self.triangle).to_string(),
+            diagonal: self
+                .diagonal
+                .map(|d| canonical::matrix_diagonal(d).to_string()),
+            long_format: self.long_format,
+            grouping: self.grouping_spec.clone(),
+            resolved_grouping: self.resolved_grouping_spec.clone(),
+            prefix: prefix.map(str::to_string),
+        };
+        let mut aux = Vec::new();
+        if let Some(map_path) = &self.group_map_path {
+            aux.push(("group_map", map_path.clone()));
+        }
+        let report_builder = RunReportBuilder::new(TaskKind::AlignDistance, &self.report_context)
+            .primary_inputs(files)
+            .auxiliary_inputs(aux)
+            .parameters(&params)
+            .expect("Failed serializing distance parameters");
+        let report_path = report_path(self.output_dir, prefix);
         let prefix = prefix.unwrap_or(DEFAULT_PREFIX);
         let spin = utils::set_spinner();
         spin.set_message("Computing pairwise distances...");
@@ -253,6 +303,28 @@ impl<'a> AlignmentDistance<'a> {
         let summaries: Vec<&LocusDistance> = results.iter().map(|r| &r.summary).collect();
         let summary = self.write_summary(&summaries, prefix);
         let mut outputs = vec![("Summary", summary.clone())];
+        let mut report_outputs: Vec<(&str, PathBuf)> = vec![("summary", summary.clone())];
+        for r in &results {
+            let locus = self.get_locus_id(&r.summary.path);
+            let matrix_path = self
+                .output_dir
+                .join(PER_LOCUS_DIR)
+                .join(&locus)
+                .with_extension("csv");
+            if matrix_path.is_file() {
+                report_outputs.push(("per_locus_matrix", matrix_path));
+            }
+            if r.groups.is_some() {
+                let group_path = self
+                    .output_dir
+                    .join(PER_LOCUS_GROUP_DIR)
+                    .join(&locus)
+                    .with_extension("csv");
+                if group_path.is_file() {
+                    report_outputs.push(("per_locus_group", group_path));
+                }
+            }
+        }
         let mut group_mean = None;
         let pooled = self.grouping.as_ref().map(|_| pool_groups(&results));
         if let Some(pooled) = &pooled {
@@ -261,6 +333,15 @@ impl<'a> AlignmentDistance<'a> {
                 .write_group_outputs(&results, pooled, prefix)
                 .expect("Failed to write group mean distances");
             group_mean = group_outputs.first().map(|(_, path)| path.clone());
+            for (label, path) in &group_outputs {
+                let role = match *label {
+                    "Group mean" => "group_mean",
+                    "Group pairs" => "group_pairs",
+                    "Group long" => "group_long",
+                    _ => "group_output",
+                };
+                report_outputs.push((role, path.clone()));
+            }
             outputs.extend(group_outputs);
         }
         let mut pairwise_long = None;
@@ -270,6 +351,7 @@ impl<'a> AlignmentDistance<'a> {
                 .write_pairwise_long(&results, prefix)
                 .expect("Failed to write long-format pairwise distances");
             pairwise_long = Some(path.clone());
+            report_outputs.push(("pairwise_long", path.clone()));
             outputs.push(("Pairwise long", path));
         }
         spin.set_message("Writing report...");
@@ -282,14 +364,17 @@ impl<'a> AlignmentDistance<'a> {
                 utils::fmt_num(&MAX_MATRIX_SAMPLES)
             );
         }
-        accumulator
-            .into_report(
-                self.datatype,
-                self.model,
-                &summaries,
-                self.grouping.as_ref().zip(pooled.as_ref()),
-            )
-            .write(&report_path)
+        let dist_report = accumulator.into_report(
+            self.datatype,
+            self.model,
+            &summaries,
+            self.grouping.as_ref().zip(pooled.as_ref()),
+        );
+        report_builder
+            .outputs(self.output_dir, report_outputs)
+            .statistics(&dist_report)
+            .expect("Failed serializing distance report")
+            .write_to(&report_path)
             .expect("Failed writing the distance report");
         outputs.push(("Report", report_path.clone()));
         spin.finish_with_message("Finished computing pairwise distances!\n");
@@ -1200,7 +1285,7 @@ mod tests {
     fn test_report() {
         let output = TempDir::with_prefix("temp").unwrap();
         compute_grouped(output.path(), false);
-        let report = DistanceReport::from_path(&output.path().join(REPORT_NAME)).unwrap();
+        let report = DistanceReport::from_path(&output.path().join("report.json")).unwrap();
         assert_eq!(report.datatype, "dna");
         assert_eq!(report.model, "p-distance");
         let summary = &report.summary;
@@ -1275,10 +1360,7 @@ mod tests {
             output.path(),
         )
         .compute(&[file], Some("test"));
-        assert_eq!(
-            files.report,
-            output.path().join("test_distance-report.json")
-        );
+        assert_eq!(files.report, output.path().join("test_report.json"));
         assert!(files.report.is_file());
     }
 

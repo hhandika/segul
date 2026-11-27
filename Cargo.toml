@@ -63,6 +63,7 @@ crossterm = { version = "0.29.*", features = ["osc52"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "http2"] }
 tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "macros"] }
 md-5 = "0.10"
+sha2 = "0.10"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

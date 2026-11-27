@@ -91,13 +91,14 @@ impl<'a> SeqReadFinder<'a> {
     /// let files = SeqReadFinder::new(&dir).find(&input_fmt);
     /// assert_eq!(files.len(), 4);
     pub fn find(&mut self, input_fmt: &'a SeqReadFmt) -> Vec<PathBuf> {
-        let files = if SeqReadFmt::Auto == *input_fmt {
+        let mut files = if SeqReadFmt::Auto == *input_fmt {
             self.find_recursive()
         } else {
             self.raw_pattern(input_fmt);
             self.glob_files(&self.pattern)
         };
 
+        alphanumeric_sort::sort_path_slice(&mut files);
         self.check_results(&files);
 
         files
@@ -117,7 +118,9 @@ impl<'a> SeqReadFinder<'a> {
     /// assert_eq!(files.len(), 4);
     /// ```
     pub fn find_recursive(&self) -> Vec<PathBuf> {
-        walk_dir!(self, re_matches_fastq_lazy)
+        let mut files: Vec<PathBuf> = walk_dir!(self, re_matches_fastq_lazy);
+        alphanumeric_sort::sort_path_slice(&mut files);
+        files
     }
 
     fn raw_pattern(&mut self, input_fmt: &'a SeqReadFmt) {
@@ -159,13 +162,14 @@ impl<'a> ContigFileFinder<'a> {
     /// let files = ContigFileFinder::new(&dir).find(&input_fmt);
     /// assert_eq!(files.len(), 2);
     pub fn find(&mut self, input_fmt: &'a ContigFmt) -> Vec<PathBuf> {
-        let files = if ContigFmt::Auto == *input_fmt {
+        let mut files = if ContigFmt::Auto == *input_fmt {
             self.find_recursive()
         } else {
             self.contig_pattern(input_fmt);
             self.glob_files(&self.pattern)
         };
 
+        alphanumeric_sort::sort_path_slice(&mut files);
         self.check_results(&files);
 
         files
@@ -185,7 +189,9 @@ impl<'a> ContigFileFinder<'a> {
     /// assert_eq!(files.len(), 2);
     /// ```
     pub fn find_recursive(&self) -> Vec<PathBuf> {
-        walk_dir!(self, re_matches_fasta_lazy)
+        let mut files: Vec<PathBuf> = walk_dir!(self, re_matches_fasta_lazy);
+        alphanumeric_sort::sort_path_slice(&mut files);
+        files
     }
 
     fn contig_pattern(&mut self, input_fmt: &'a ContigFmt) {
@@ -297,12 +303,13 @@ impl<'a> SeqFileFinder<'a> {
     /// assert_eq!(files.len(), 4);
     /// ```
     pub fn find(&mut self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
-        let files = if InputFmt::Auto == *input_fmt {
+        let mut files = if InputFmt::Auto == *input_fmt {
             self.find_recursive()
         } else {
             self.pattern(input_fmt);
             self.glob_files(&self.pattern)
         };
+        alphanumeric_sort::sort_path_slice(&mut files);
         self.check_results(&files);
 
         files
@@ -321,7 +328,9 @@ impl<'a> SeqFileFinder<'a> {
     /// assert_eq!(files.len(), 4);
     /// ```
     pub fn find_recursive(&self) -> Vec<PathBuf> {
-        walk_dir!(self, re_match_sequence_lazy)
+        let mut files: Vec<PathBuf> = walk_dir!(self, re_match_sequence_lazy);
+        alphanumeric_sort::sort_path_slice(&mut files);
+        files
     }
 
     /// Find input files for sequence and alignment, recursively.
@@ -337,12 +346,14 @@ impl<'a> SeqFileFinder<'a> {
     /// let files = SeqFileFinder::new(&dir).find_recursive_only(&InputFmt::Nexus);
     /// assert_eq!(files.len(), 4);
     pub fn find_recursive_only(&self, input_fmt: &'a InputFmt) -> Vec<PathBuf> {
-        match input_fmt {
+        let mut files: Vec<PathBuf> = match input_fmt {
             InputFmt::Fasta => walk_dir!(self, re_matches_fasta_lazy),
             InputFmt::Nexus => walk_dir!(self, re_match_nexus_lazy),
             InputFmt::Phylip => walk_dir!(self, re_match_phylip_lazy),
             _ => unreachable!(),
-        }
+        };
+        alphanumeric_sort::sort_path_slice(&mut files);
+        files
     }
 
     fn check_results(&self, files: &[PathBuf]) {

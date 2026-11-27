@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use colored::Colorize;
+use segul_core::report::ReportContext;
+use segul_core::report::spec::{SequenceExtractParams, canonical};
 
 use crate::core::sequence::extract::{SeqExtractionParameters, SequenceExtraction};
 use crate::helper::logger::AlignSeqLogger;
@@ -28,7 +30,7 @@ impl<'a> ExtractParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn extract(&mut self) {
+    pub(in crate::cli) fn extract(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
@@ -45,14 +47,36 @@ impl<'a> ExtractParser<'a> {
         self.check_output_dir_exist(&self.args.output, self.args.io.force);
         log::info!("{}", "Extracting Parameters".yellow());
         self.parse_params();
+        let (mode, ids, regex) = match &self.params {
+            SeqExtractionParameters::Regex(re) => ("regex".to_string(), None, Some(re.clone())),
+            SeqExtractionParameters::Id(list) => ("id".to_string(), Some(list.clone()), None),
+            SeqExtractionParameters::None => unreachable!("Invalid sequence extraction options"),
+        };
+        let params = SequenceExtractParams {
+            input_format: canonical::input_fmt(&input_fmt).to_string(),
+            datatype: canonical::datatype(&datatype).to_string(),
+            output_format: canonical::output_fmt(&output_fmt).to_string(),
+            mode,
+            ids,
+            regex,
+        };
+        let auxiliary: Vec<(String, PathBuf)> = self
+            .args
+            .file
+            .as_ref()
+            .map(|p| vec![(String::from("ids"), p.clone())])
+            .unwrap_or_default();
         let extract = SequenceExtraction::new(
             &input_fmt,
             &datatype,
             &self.params,
             &self.args.output,
             &output_fmt,
-        );
-        extract.extract(&files);
+        )
+        .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()));
+        extract
+            .extract_with_report(&files, params, &auxiliary)
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 
     fn parse_params(&mut self) {

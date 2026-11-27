@@ -39,6 +39,11 @@ use crate::{
         bed::BedParser,
         maf::{MafParagraph, MafReader},
     },
+    report::{
+        DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path,
+        spec::{MafConvertParams, TaskKind, canonical},
+        stats::MafConvertStats,
+    },
     writer::sequences::SeqWriter,
 };
 
@@ -154,6 +159,7 @@ pub struct MafConverter<'a> {
     write_unmatched: bool,
     prefix: Option<String>,
     progress: Option<&'a dyn ProgressReporter>,
+    report_context: ReportContext,
 }
 
 impl OutputPrint for MafConverter<'_> {}
@@ -178,7 +184,14 @@ impl<'a> MafConverter<'a> {
             write_unmatched: false,
             prefix: None,
             progress: None,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
     }
 
     /// Report per-file progress to `reporter`, which can also cancel the run.
@@ -269,6 +282,72 @@ impl<'a> MafConverter<'a> {
         spin.finish_with_message("Finished converting MAF files!\n");
         self.print_output_info(&ref_sample, &report);
         Ok(report)
+    }
+
+    /// Convert MAF files and write a unified `report.json`.
+    pub fn convert_with_report(&self, auxiliary: &[(String, PathBuf)]) -> Result<RunReport> {
+        let mut input_files = self.input_files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut input_files);
+        let resolver = SpeciesResolver::new(self.naming, self.filter.species.as_deref());
+        let resolved_ref = match &self.ref_species {
+            Some(species) => species.clone(),
+            None => block::first_sample(&input_files, &resolver)?,
+        };
+        let params = MafConvertParams {
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            group_by: self.grouping.to_string(),
+            clip: self.clip,
+            strand_aware: self.strand_aware,
+            naming: canonical::sample_naming(self.naming).to_string(),
+            ref_species: self.ref_species.clone(),
+            resolved_ref_species: Some(resolved_ref),
+            species: self.filter.species.clone(),
+            min_block_len: self.filter.min_ref_len,
+            min_species: self.filter.min_species,
+            min_score: self.filter.min_score,
+            write_unmatched: self.write_unmatched,
+            prefix: self.prefix.clone(),
+        };
+        let mut aux: Vec<(String, PathBuf)> = auxiliary.to_vec();
+        if let Some(bed) = self.bed
+            && !aux.iter().any(|(r, _)| r == "bed")
+        {
+            aux.push((String::from("bed"), bed.to_path_buf()));
+        }
+        let snapshot = DirSnapshot::capture(self.output_dir);
+        let builder = RunReportBuilder::new(TaskKind::MafConvert, &self.report_context)
+            .primary_inputs(&input_files)
+            .auxiliary_inputs(aux)
+            .parameters(&params)?;
+        let report = self.convert()?;
+        let stats = MafConvertStats {
+            files: report.files,
+            blocks_read: report.blocks_read,
+            blocks_no_ref: report.blocks_no_ref,
+            blocks_filtered: report.blocks_filtered,
+            blocks_unmatched: report.blocks_unmatched,
+            duplicate_rows: report.duplicate_rows,
+            overlapping_pieces: report.overlapping_pieces,
+            loci_written: report.loci_written,
+            loci_empty: report.loci_empty,
+        };
+        let written = snapshot.written_files(self.output_dir);
+        let output_pairs = written
+            .into_iter()
+            .map(|p| {
+                let role = if p.extension().and_then(|e| e.to_str()) == Some("csv") {
+                    "locus_report"
+                } else {
+                    "alignment"
+                };
+                (role, p)
+            })
+            .collect::<Vec<_>>();
+        let report_file = report_path(self.output_dir, self.prefix.as_deref());
+        builder
+            .outputs(self.output_dir, output_pairs)
+            .statistics(&stats)?
+            .write_to(&report_file)
     }
 
     fn convert_regions(

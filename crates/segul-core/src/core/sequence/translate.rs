@@ -9,6 +9,9 @@ use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::translation::{CodonTable, codon_table, translate_bytes};
 use crate::helper::types::{DataType, GeneticCodes, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::{files, utils};
+use crate::report::spec::{SequenceTranslateParams, TaskKind, canonical};
+use crate::report::stats::TaskCounts;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for SequenceTranslation<'_> {}
@@ -18,6 +21,7 @@ pub struct SequenceTranslation<'a> {
     trans_table: &'a GeneticCodes,
     datatype: &'a DataType,
     output_fmt: &'a OutputFmt,
+    report_context: ReportContext,
 }
 
 impl<'a> SequenceTranslation<'a> {
@@ -32,7 +36,85 @@ impl<'a> SequenceTranslation<'a> {
             input_fmt,
             datatype,
             output_fmt,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Translate sequences using a fixed reading frame and write `report.json`.
+    pub fn translate_with_report(
+        &self,
+        files: &[PathBuf],
+        frame: usize,
+        output: &Path,
+    ) -> anyhow::Result<RunReport> {
+        let mut sorted = files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let params = SequenceTranslateParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            table: canonical::genetic_code(self.trans_table).to_string(),
+            reading_frame: frame,
+            auto_frame: false,
+        };
+        let snapshot = DirSnapshot::capture(output);
+        let builder = RunReportBuilder::new(TaskKind::SequenceTranslate, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
+        self.translate(&sorted, frame, output);
+        let written = snapshot.written_files(output);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(output, None);
+        builder
+            .outputs(output, written.into_iter().map(|p| ("sequences", p)))
+            .statistics(&counts)?
+            .write_to(&report_file)
+    }
+
+    /// Translate sequences with automatic frame detection and write `report.json`.
+    pub fn translate_all_autoframe_with_report(
+        &self,
+        files: &[PathBuf],
+        output: &Path,
+    ) -> anyhow::Result<RunReport> {
+        let mut sorted = files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let params = SequenceTranslateParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            table: canonical::genetic_code(self.trans_table).to_string(),
+            reading_frame: 1,
+            auto_frame: true,
+        };
+        let snapshot = DirSnapshot::capture(output);
+        let builder = RunReportBuilder::new(TaskKind::SequenceTranslate, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
+        self.translate_all_autoframe(&sorted, output);
+        let written = snapshot.written_files(output);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(output, None);
+        builder
+            .outputs(output, written.into_iter().map(|p| ("sequences", p)))
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     pub fn translate(&self, files: &[PathBuf], frame: usize, output: &Path) {

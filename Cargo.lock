@@ -2679,6 +2679,7 @@ dependencies = [
  "resvg",
  "serde",
  "serde_json",
+ "sha2",
  "svg2pdf",
  "tempfile",
  "tokio",

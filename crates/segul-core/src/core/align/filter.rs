@@ -25,6 +25,9 @@ use crate::helper::{files, utils};
 use crate::parser::fasta;
 use crate::parser::nexus::Nexus;
 use crate::parser::phylip::Phylip;
+use crate::report::spec::{AlignFilterCriterion, AlignFilterParams, TaskKind};
+use crate::report::stats::FilterStats;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::stats::sequence;
 
 pub enum FilteringParameters {
@@ -54,6 +57,7 @@ pub struct AlignmentFiltering<'a> {
     output: &'a Path,
     params: &'a FilteringParameters,
     concat: Option<ConcatParams>,
+    report_context: ReportContext,
 }
 
 impl<'a> AlignmentFiltering<'a> {
@@ -72,7 +76,14 @@ impl<'a> AlignmentFiltering<'a> {
             output,
             params,
             concat: None,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
     }
 
     /// Filter the alignment based on the selected criteria.
@@ -83,6 +94,7 @@ impl<'a> AlignmentFiltering<'a> {
         } else {
             self.par_ftr_aln()
         };
+        alphanumeric_sort::sort_path_slice(&mut ftr_aln);
 
         assert!(!ftr_aln.is_empty(), "No alignments left after filtering!");
 
@@ -102,6 +114,88 @@ impl<'a> AlignmentFiltering<'a> {
                 self.print_output(ftr_aln.len());
             }
         }
+    }
+
+    /// Filter alignments and write a unified `report.json`.
+    pub fn filter_with_report(
+        &mut self,
+        mut report_params: AlignFilterParams,
+        auxiliary: &[(String, PathBuf)],
+    ) -> anyhow::Result<RunReport> {
+        let mut sorted = self.files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let snapshot = DirSnapshot::capture(self.output);
+        let builder = RunReportBuilder::new(TaskKind::AlignFilter, &self.report_context)
+            .primary_inputs(&sorted)
+            .auxiliary_inputs(auxiliary.iter().map(|(r, p)| (r.as_str(), p.clone())));
+        let mut ftr_aln: Vec<PathBuf> = if let FilteringParameters::PercInf(perc_inf) = self.params
+        {
+            self.par_ftr_perc_inf(perc_inf)
+        } else {
+            self.par_ftr_aln()
+        };
+        alphanumeric_sort::sort_path_slice(&mut ftr_aln);
+        if ftr_aln.is_empty() {
+            anyhow::bail!("No alignments left after filtering!");
+        }
+        let retained_loci = ftr_aln.len();
+        let resolved_min_taxa = match &self.params {
+            FilteringParameters::MinTax(n) => Some(*n),
+            _ => None,
+        };
+        if let AlignFilterCriterion::MinTaxPercent {
+            resolved_min_taxa: slot,
+            ..
+        } = &mut report_params.criterion
+        {
+            *slot = resolved_min_taxa;
+        }
+        let prefix = report_params.prefix.clone();
+        match &self.concat {
+            Some(concat) => self.concat_results(
+                &mut ftr_aln,
+                &concat.part_fmt,
+                &concat.output_fmt,
+                &concat.prefix,
+            ),
+            None => {
+                let spin = utils::set_spinner();
+                fs::create_dir_all(self.output)?;
+                spin.set_message("Copying matching alignments...");
+                self.par_copy_files(&ftr_aln);
+                spin.finish_with_message("Finished copying files!\n");
+                self.print_output(retained_loci);
+            }
+        }
+        let written = snapshot.written_files(self.output);
+        let output_pairs = written
+            .into_iter()
+            .map(|p| {
+                let role = if p
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .is_some_and(|s| s.ends_with("_partition"))
+                {
+                    "partition"
+                } else {
+                    "alignment"
+                };
+                (role, p)
+            })
+            .collect::<Vec<_>>();
+        let stats = FilterStats {
+            input_loci: sorted.len(),
+            retained_loci,
+            dropped_loci: sorted.len().saturating_sub(retained_loci),
+            resolved_min_taxa,
+            resolved_min_pinf: None,
+        };
+        let report_file = report_path(self.output, prefix.as_deref());
+        builder
+            .parameters(&report_params)?
+            .outputs(self.output, output_pairs)
+            .statistics(&stats)?
+            .write_to(&report_file)
     }
 
     /// Set the concatenation parameters. The resulting alignment will be concatenated.

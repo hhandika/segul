@@ -12,6 +12,9 @@ use genomics::MafSubcommand;
 use genomics::SeqReadSubcommand;
 use segul_core::color::{Colormap, CvdKind, Palette};
 use segul_core::plot::spec::PlotFormat;
+use segul_core::report::ChecksumMode;
+use segul_core::report::methods::MethodsFormat;
+use segul_core::report::verify::VerifyScope;
 
 use super::args::sequence::SequenceSubcommand;
 use super::args::view::ViewSubcommand;
@@ -38,6 +41,15 @@ pub(crate) struct Cli {
         global = true
     )]
     pub(crate) log: PathBuf,
+    #[arg(
+        long = "checksum",
+        value_name = "MODE",
+        help = "Compute SHA-256 checksums for recorded files [env: SEGUL_CHECKSUM]",
+        value_parser = builder::PossibleValuesParser::new(["none", "outputs", "inputs", "all"])
+            .map(|x| x.parse::<ChecksumMode>().expect("Invalid checksum mode")),
+        global = true
+    )]
+    pub(crate) checksum: Option<ChecksumMode>,
 }
 
 #[derive(Subcommand)]
@@ -62,12 +74,127 @@ pub(crate) enum MainSubcommand {
     Partition(PartitionSubcommand),
     #[command(subcommand, about = "Sequence analyses", name = "sequence")]
     Sequence(SequenceSubcommand),
+    #[command(about = "Re-run a report.json or segul-workflow.json", name = "run")]
+    Run(RunArgs),
+    #[command(
+        subcommand,
+        about = "Verify checksums, export methods, and build workflows from reports",
+        name = "report"
+    )]
+    Report(ReportSubcommand),
     #[command(
         subcommand,
         about = "Interactive viewers in the terminal",
         name = "view"
     )]
     View(ViewSubcommand),
+}
+
+#[derive(Args)]
+pub(crate) struct RunArgs {
+    #[arg(
+        value_name = "FILE",
+        help = "Path to report.json or segul-workflow.json"
+    )]
+    pub(crate) file: PathBuf,
+    #[arg(short, long, value_name = "DIR", help = "Override output directory")]
+    pub(crate) output: Option<PathBuf>,
+    #[arg(
+        long = "input-dir",
+        value_name = "DIR",
+        help = "Override input base directory"
+    )]
+    pub(crate) input_dir: Option<PathBuf>,
+    #[arg(long, help = "Overwrite existing output directory")]
+    pub(crate) force: bool,
+    #[arg(
+        long = "verify-inputs",
+        help = "Verify recorded input hashes and sizes before re-running"
+    )]
+    pub(crate) verify_inputs: bool,
+}
+
+#[derive(Subcommand)]
+pub(crate) enum ReportSubcommand {
+    #[command(about = "Verify SHA-256 checksums and file sizes recorded in report.json")]
+    Verify(ReportVerifyArgs),
+    #[command(about = "Generate a publication-ready Methods section from reports or workflows")]
+    Methods(ReportMethodsArgs),
+    #[command(about = "Export a segul-workflow.json recipe from chained or ordered reports")]
+    Workflow(ReportWorkflowArgs),
+}
+
+#[derive(Args)]
+pub(crate) struct ReportVerifyArgs {
+    #[arg(value_name = "REPORT", help = "Path to report.json")]
+    pub(crate) report: PathBuf,
+    #[arg(
+        long,
+        default_value_t = VerifyScope::All,
+        value_parser = builder::PossibleValuesParser::new(["all", "inputs", "outputs"])
+            .map(|x| x.parse::<VerifyScope>().expect("Invalid verify scope")),
+        help = "Which manifest files to verify"
+    )]
+    pub(crate) scope: VerifyScope,
+    #[arg(
+        long = "input-dir",
+        value_name = "DIR",
+        help = "Override input base directory"
+    )]
+    pub(crate) input_dir: Option<PathBuf>,
+    #[arg(
+        long = "output-dir",
+        value_name = "DIR",
+        help = "Override output directory"
+    )]
+    pub(crate) output_dir: Option<PathBuf>,
+    #[arg(long, help = "Print machine-readable JSON verification results")]
+    pub(crate) json: bool,
+}
+
+#[derive(Args)]
+pub(crate) struct ReportMethodsArgs {
+    #[arg(
+        value_name = "FILE",
+        help = "Path to report.json or segul-workflow.json"
+    )]
+    pub(crate) report: PathBuf,
+    #[arg(
+        long,
+        default_value_t = MethodsFormat::Markdown,
+        value_parser = builder::PossibleValuesParser::new(["markdown", "text"])
+            .map(|x| x.parse::<MethodsFormat>().expect("Invalid methods format")),
+        help = "Output format for generated Methods text"
+    )]
+    pub(crate) format: MethodsFormat,
+    #[arg(
+        long = "no-chain",
+        help = "Only describe the specified report instead of walking parent_reports"
+    )]
+    pub(crate) no_chain: bool,
+    #[arg(
+        short,
+        long,
+        value_name = "FILE",
+        help = "Write output to a file instead of stdout"
+    )]
+    pub(crate) output: Option<PathBuf>,
+}
+
+#[derive(Args)]
+pub(crate) struct ReportWorkflowArgs {
+    #[arg(value_name = "REPORTS", num_args(1..), required = true, help = "Leaf report.json (auto-walks lineage) or ordered report.json files")]
+    pub(crate) reports: Vec<PathBuf>,
+    #[arg(long, help = "Workflow name")]
+    pub(crate) name: Option<String>,
+    #[arg(
+        short,
+        long,
+        value_name = "FILE",
+        default_value = "segul-workflow.json",
+        help = "Output workflow recipe path"
+    )]
+    pub(crate) output: PathBuf,
 }
 
 #[derive(Args)]

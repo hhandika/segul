@@ -6,6 +6,8 @@ use crate::{
     helper::utils,
 };
 
+use segul_core::report::ReportContext;
+
 use super::MafInputCli;
 use crate::cli::{InputCli, OutputCli, args::genomics::MafConvertArgs};
 
@@ -22,7 +24,7 @@ impl<'a> MafConvertParser<'a> {
         Self { args }
     }
 
-    pub(in crate::cli) fn convert(&mut self) {
+    pub(in crate::cli) fn convert(&mut self, ctx: &ReportContext) {
         let output_fmt = self.parse_output_fmt(&self.args.output_fmt);
         let files = self.collect_maf_files(&self.args.io);
         log::info!("{:18}: {}", "File counts", utils::fmt_num(&files.len()));
@@ -43,6 +45,7 @@ impl<'a> MafConvertParser<'a> {
             min_score: self.args.min_score,
             species: self.parse_species(&self.args.common),
         };
+        let input_dir = self.args.io.dir.as_ref().map(std::path::PathBuf::from);
         let mut converter = MafConverter::new(&files, &self.args.output, &output_fmt)
             .with_grouping(grouping)
             .with_clip(!self.args.no_clip)
@@ -51,11 +54,14 @@ impl<'a> MafConvertParser<'a> {
             .with_ref_species(self.args.common.ref_species.clone())
             .with_filter(filter)
             .with_unmatched(self.args.write_unmatched)
-            .with_prefix(self.args.prefix.clone());
+            .with_prefix(self.args.prefix.clone())
+            .with_report_context(ctx.clone().with_input_dir(input_dir));
+        let mut aux: Vec<(String, std::path::PathBuf)> = Vec::new();
         if let Some(bed) = &self.args.bed {
             converter = converter.with_bed(bed);
+            aux.push((String::from("bed"), bed.clone()));
         }
-        if let Err(e) = converter.convert() {
+        if let Err(e) = converter.convert_with_report(&aux) {
             log::error!("{:#}", e);
             std::process::exit(1);
         }

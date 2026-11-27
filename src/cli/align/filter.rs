@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
 use colored::Colorize;
+use segul_core::report::ReportContext;
+use segul_core::report::spec::{AlignFilterCriterion, AlignFilterParams, canonical};
 
 use crate::cli::args::align::AlignFilterArgs;
 use crate::cli::collect_paths;
@@ -44,7 +46,7 @@ impl<'a> FilterParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn filter(&mut self) {
+    pub(in crate::cli) fn filter(&mut self, ctx: &ReportContext) {
         self.input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         self.datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let task = "Alignment filtering";
@@ -60,27 +62,27 @@ impl<'a> FilterParser<'a> {
         .log(task);
 
         if let Some(npercent) = &self.args.npercent {
-            self.filter_min_taxa_npercent(npercent);
+            self.filter_min_taxa_npercent(npercent, ctx);
         } else {
             self.parse_params();
             self.fmt_output_path();
-            self.filter_aln();
+            self.filter_aln(ctx);
         }
     }
 
-    fn filter_min_taxa_npercent(&mut self, npercent: &[f64]) {
+    fn filter_min_taxa_npercent(&mut self, npercent: &[f64], ctx: &ReportContext) {
         self.count_ntax();
         npercent.iter().for_each(|np| {
             self.percent = *np;
             let min_taxa = self.count_min_tax();
             self.params = FilteringParameters::MinTax(min_taxa);
             self.fmt_output_path();
-            self.filter_aln();
+            self.filter_aln(ctx);
             utils::print_divider();
         });
     }
 
-    fn filter_aln(&self) {
+    fn filter_aln(&self, ctx: &ReportContext) {
         self.check_output_dir_exist(&self.output_dir, self.args.io.force);
         self.print_params();
         let mut filter = AlignmentFiltering::new(
@@ -89,15 +91,92 @@ impl<'a> FilterParser<'a> {
             &self.datatype,
             &self.output_dir,
             &self.params,
-        );
+        )
+        .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()));
+
+        let criterion = match &self.params {
+            FilteringParameters::MinTax(min_taxa) => {
+                if self.args.percent.is_some() || self.args.npercent.is_some() {
+                    AlignFilterCriterion::MinTaxPercent {
+                        percent: self.percent,
+                        resolved_min_taxa: Some(*min_taxa),
+                    }
+                } else {
+                    AlignFilterCriterion::MinTaxCount {
+                        min_taxa: *min_taxa,
+                    }
+                }
+            }
+            FilteringParameters::MinLen(min_len) => {
+                AlignFilterCriterion::MinLen { min_len: *min_len }
+            }
+            FilteringParameters::MaxLen(max_len) => {
+                AlignFilterCriterion::MaxLen { max_len: *max_len }
+            }
+            FilteringParameters::MinParsInf(min_pars_inf) => AlignFilterCriterion::MinParsInf {
+                min_pars_inf: *min_pars_inf,
+            },
+            FilteringParameters::MaxParsInf(max_pars_inf) => AlignFilterCriterion::MaxParsInf {
+                max_pars_inf: *max_pars_inf,
+            },
+            FilteringParameters::PercInf(percent_inf) => AlignFilterCriterion::PercentInf {
+                percent_inf: *percent_inf,
+                resolved_min_pinf: None,
+            },
+            FilteringParameters::TaxonAll(ids) => {
+                AlignFilterCriterion::TaxonAll { taxa: ids.clone() }
+            }
+            FilteringParameters::MissingData(max_missing) => AlignFilterCriterion::MissingData {
+                max_missing: *max_missing,
+            },
+        };
+        let auxiliary: Vec<(String, PathBuf)> = self
+            .args
+            .ids
+            .as_ref()
+            .map(|p| vec![(String::from("taxon_ids"), p.clone())])
+            .unwrap_or_default();
+
         match self.check_concat() {
             Some(part_fmt) => {
                 let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
                 let prefix = self.parse_prefix(&self.args.partition.prefix, &self.output_dir);
+                let prefix_name = self
+                    .args
+                    .partition
+                    .prefix
+                    .as_deref()
+                    .and_then(|p| p.file_name())
+                    .and_then(|s| s.to_str())
+                    .map(str::to_string);
+                let params = AlignFilterParams {
+                    input_format: canonical::input_fmt(&self.input_fmt).to_string(),
+                    datatype: canonical::datatype(&self.datatype).to_string(),
+                    criterion,
+                    concat: true,
+                    output_format: Some(canonical::output_fmt(&output_fmt).to_string()),
+                    partition_format: Some(canonical::partition_fmt(&part_fmt).to_string()),
+                    prefix: prefix_name,
+                };
                 filter.set_concat(&output_fmt, &part_fmt, &prefix);
-                filter.filter();
+                filter
+                    .filter_with_report(params, &auxiliary)
+                    .unwrap_or_else(|err| panic!("{err}"));
             }
-            None => filter.filter(),
+            None => {
+                let params = AlignFilterParams {
+                    input_format: canonical::input_fmt(&self.input_fmt).to_string(),
+                    datatype: canonical::datatype(&self.datatype).to_string(),
+                    criterion,
+                    concat: false,
+                    output_format: None,
+                    partition_format: None,
+                    prefix: None,
+                };
+                filter
+                    .filter_with_report(params, &auxiliary)
+                    .unwrap_or_else(|err| panic!("{err}"));
+            }
         }
     }
 

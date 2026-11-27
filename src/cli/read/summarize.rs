@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use crate::{core::read::summarize::GenomicReadSummary, helper::logger::ReadLogger};
 
 use segul_core::plot::read::plot_read_summary;
+use segul_core::report::ReportContext;
 
-use crate::cli::plot::PlotCli;
+use crate::cli::plot::{PlotCli, append_plots_to_report};
 use crate::cli::{
     InputCli, OutputCli, RawInputCli, args::genomics::SeqReadSummaryArgs, collect_paths,
 };
@@ -27,7 +28,7 @@ impl<'a> ReadSummaryCliParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn summarize(&mut self) {
+    pub(in crate::cli) fn summarize(&mut self, ctx: &ReportContext) {
         let input_fmt = &self.args.input_format;
         let dir = &self.args.io.dir;
         let mut files = collect_paths!(self, dir, input_fmt);
@@ -46,9 +47,13 @@ impl<'a> ReadSummaryCliParser<'a> {
         .with_phred(self.args.phred)
         .with_dup_sketch_size(self.args.dup_size)
         .with_qc_profile(self.args.qc_profile)
+        .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()))
         .summarize();
-        self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
+        let plots = self.write_plots(&self.args.plot, &self.args.output, prefix, |writer| {
             plot_read_summary(&outputs, writer)
         });
+        if let Some(report_path) = &outputs.report {
+            append_plots_to_report(report_path, &self.args.output, &plots);
+        }
     }
 }

@@ -6,6 +6,7 @@ mod contig;
 mod maf;
 mod plot;
 mod read;
+mod report;
 mod sequence;
 mod view;
 
@@ -22,7 +23,9 @@ use clap::Parser;
 use colored::Colorize;
 use dialoguer::{Confirm, theme::ColorfulTheme};
 
-use crate::cli::args::{Cli, MainSubcommand};
+use segul_core::report::{ChecksumMode, FrontendInfo, ReportContext};
+
+use crate::cli::args::{Cli, MainSubcommand, ReportSubcommand};
 use crate::helper::finder::{ContigFileFinder, SeqFileFinder, SeqReadFinder};
 use crate::helper::types::{ContigFmt, DataType, InputFmt, OutputFmt, PartitionFmt, SeqReadFmt};
 use crate::helper::{logger, utils};
@@ -31,14 +34,32 @@ use crate::helper::{logger, utils};
 pub fn parse_cli() {
     let time = Instant::now();
     let args = Cli::parse();
-    // Viewers take over the screen, so skip the banner and log file.
+    // Viewers take over the screen, and machine-readable report commands emit
+    // clean stdout, so skip the banner and log file for them.
     if let MainSubcommand::View(subcommand) = &args.subcommand {
         commands::match_view_subcommand(subcommand);
         return;
     }
+    if let MainSubcommand::Report(subcommand) = &args.subcommand {
+        match subcommand {
+            ReportSubcommand::Verify(v) => {
+                crate::cli::report::ReportCliParser::verify(v);
+                return;
+            }
+            ReportSubcommand::Methods(m) => {
+                crate::cli::report::ReportCliParser::methods(m);
+                return;
+            }
+            ReportSubcommand::Workflow(_) => {}
+        }
+    }
+    let report_ctx = ReportContext::new(
+        FrontendInfo::cli(clap::crate_version!()),
+        ChecksumMode::resolve(args.checksum),
+    );
     logger::init_logger(&args.log).expect("Failed setting up a log file.");
     utils::print_welcome_text(clap::crate_version!());
-    commands::match_cli_subcommand(&args.subcommand);
+    commands::match_cli_subcommand(&args.subcommand, &report_ctx);
     log::info!("{:18}: {}", "Log file", args.log.display());
     let duration = time.elapsed();
     println!();

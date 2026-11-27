@@ -9,6 +9,8 @@ use crate::cli::view::thousands;
 use crate::stats::align_report::{AlignReport, SiteTypeSummary};
 use crate::stats::contig_report::ContigReport;
 use crate::stats::distance_report::{DistanceReport, PairStats};
+use segul_core::report::stats::ReportStatistics;
+use segul_core::report::{RunReport, TaskKind};
 
 /// Most bars in the pairwise distance histogram.
 const DISTANCE_BINS: usize = 20;
@@ -92,11 +94,30 @@ impl Format {
 }
 
 impl SummaryData {
-    /// Read an alignment, distance, or contig report, telling them apart
-    /// by content.
+    /// Read a unified v2 `report.json` or legacy alignment, distance, or contig report.
     pub(super) fn from_path(path: &Path) -> Result<Self> {
         let text = fs::read_to_string(path)
             .with_context(|| format!("Failed reading {}", path.display()))?;
+        if let Ok(run_report) = RunReport::from_json(&text) {
+            let mut data = match (run_report.kind, run_report.typed_statistics()?) {
+                (TaskKind::AlignSummary, Some(ReportStatistics::Align(report))) => {
+                    Self::from_alignment(&report)
+                }
+                (TaskKind::AlignDistance, Some(ReportStatistics::Distance(report))) => {
+                    Self::from_distance(&report)
+                }
+                (TaskKind::ContigSummary, Some(ReportStatistics::Contig(report))) => {
+                    Self::from_contig(&report)
+                }
+                (kind, _) => bail!(
+                    "{} is a '{}' report; `segul view summary` supports align.summary, align.distance, contig.summary, and read.summary reports.",
+                    path.display(),
+                    kind
+                ),
+            };
+            data.append_provenance(&run_report);
+            return Ok(data);
+        }
         if let Ok(report) = AlignReport::from_json(&text) {
             return Ok(Self::from_alignment(&report));
         }
@@ -107,13 +128,22 @@ impl SummaryData {
             return Ok(Self::from_contig(&report));
         }
         bail!(
-            "{} is not a segul summary report. Use alignment-report.json from \
-            `segul align summary`, read-report.json from \
-            `segul read summary --mode complete`, distance-report.json from \
-            `segul align distance`, or contig-report.json from \
-            `segul contig summary`.",
+            "{} is not a segul summary report. Use report.json (or legacy \
+            alignment-report.json, read-report.json, distance-report.json, \
+            or contig-report.json).",
             path.display()
         )
+    }
+
+    fn append_provenance(&mut self, run: &RunReport) {
+        self.overview.push((
+            String::from("Frontend"),
+            format!("{} {}", run.run.frontend.name, run.run.frontend.version),
+        ));
+        self.overview
+            .push((String::from("Timestamp"), run.run.timestamp_utc.clone()));
+        self.overview
+            .push((String::from("Checksums"), run.run.checksum_mode.to_string()));
     }
 
     pub(super) fn from_alignment(report: &AlignReport) -> Self {

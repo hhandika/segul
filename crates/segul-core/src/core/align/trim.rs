@@ -18,6 +18,13 @@ use crate::{
         types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix},
         utils,
     },
+    report::{
+        DirSnapshot, ReportContext, RunReport, RunReportBuilder,
+        paths::relative_posix,
+        report_path,
+        spec::{AlignTrimCriterion, AlignTrimParams, TaskKind, canonical},
+        stats::{TrimEntry, TrimStats},
+    },
     stats::sequence::Sites,
     writer::sequences::SeqWriter,
 };
@@ -47,6 +54,7 @@ pub struct AlignmentTrimming<'a> {
     pub output_fmt: &'a OutputFmt,
     /// Trimming parameters
     pub params: &'a TrimmingParameters,
+    report_context: ReportContext,
 }
 
 impl Default for AlignmentTrimming<'_> {
@@ -58,6 +66,7 @@ impl Default for AlignmentTrimming<'_> {
             output_dir: Path::new(""),
             output_fmt: &OutputFmt::Fasta,
             params: &TrimmingParameters::MissingData(0.1),
+            report_context: ReportContext::default(),
         }
     }
 }
@@ -81,18 +90,91 @@ impl<'a> AlignmentTrimming<'a> {
             output_dir,
             output_fmt,
             params,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
     }
 
     /// Trim alignment files based on the given parameters
     pub fn trim(&self) {
+        self.trim_with_report().expect("Failed trimming alignments");
+    }
+
+    /// Trim alignment files and write a unified `report.json`.
+    pub fn trim_with_report(&self) -> anyhow::Result<RunReport> {
+        let mut sorted = self.input_files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let criterion = match self.params {
+            TrimmingParameters::MissingData(max_missing) => AlignTrimCriterion::MissingData {
+                max_missing: *max_missing,
+            },
+            TrimmingParameters::ParsInf(min_pars_inf) => AlignTrimCriterion::ParsInf {
+                min_pars_inf: *min_pars_inf,
+            },
+            TrimmingParameters::None => {
+                log::warn!("No trimming parameters provided. Skipping trimming...");
+                std::process::exit(1);
+            }
+        };
+        let params = AlignTrimParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            criterion,
+        };
+        let snapshot = DirSnapshot::capture(self.output_dir);
+        let builder = RunReportBuilder::new(TaskKind::AlignTrim, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
         let spinner = utils::set_spinner();
         spinner.set_message("Trimming alignment files...");
         spinner.set_message("Writing summary...");
-        let summary = self.trim_sites();
+        let mut summary = self.trim_sites();
+        summary.sort_by(|a, b| {
+            alphanumeric_sort::compare_path(&a.parent_path, &b.parent_path)
+                .then_with(|| alphanumeric_sort::compare_str(&a.file_name, &b.file_name))
+        });
         self.write_summary(&summary);
         spinner.finish_with_message("Alignment files trimmed successfully\n");
         self.print_output_info();
+
+        let base_dir = crate::report::paths::common_base_dir(&sorted);
+        let entries = summary
+            .iter()
+            .map(|s| TrimEntry {
+                path: relative_posix(&s.parent_path.join(&s.file_name), &base_dir),
+                initial_sites: s.site_count_before,
+                final_sites: s.site_count_after,
+                removed_sites: s.site_removed,
+            })
+            .collect::<Vec<_>>();
+        let stats = TrimStats {
+            files: entries.len(),
+            entries,
+        };
+        let written = snapshot.written_files(self.output_dir);
+        let output_pairs = written
+            .into_iter()
+            .map(|p| {
+                let role = if p.file_name().and_then(|n| n.to_str()) == Some("trimming_summary.csv")
+                {
+                    "summary"
+                } else {
+                    "alignment"
+                };
+                (role, p)
+            })
+            .collect::<Vec<_>>();
+        let report_file = report_path(self.output_dir, None);
+        builder
+            .outputs(self.output_dir, output_pairs)
+            .statistics(&stats)?
+            .write_to(&report_file)
     }
 
     fn trim_sites(&self) -> Vec<TrimmingSummary> {
@@ -330,6 +412,6 @@ mod tests {
         let align_trim = init_trimming!(&input_files, output_dir, &params);
         align_trim.trim();
         let output_files = output_dir.path().read_dir().unwrap();
-        assert_eq!(output_files.count(), 2);
+        assert_eq!(output_files.count(), 3);
     }
 }

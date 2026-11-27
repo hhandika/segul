@@ -11,6 +11,9 @@ use crate::helper::finder::IDs;
 use crate::helper::sequence::{SeqCheck, SeqParser};
 use crate::helper::types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix};
 use crate::helper::utils;
+use crate::report::spec::{SequenceRemoveParams, TaskKind, canonical};
+use crate::report::stats::TaskCounts;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for SequenceRemoval<'_> {}
@@ -26,6 +29,7 @@ pub struct SequenceRemoval<'a> {
     output_dir: &'a Path,
     output_fmt: &'a OutputFmt,
     opts: &'a SeqRemovalParameters,
+    report_context: ReportContext,
 }
 
 impl<'a> SequenceRemoval<'a> {
@@ -42,7 +46,52 @@ impl<'a> SequenceRemoval<'a> {
             output_dir,
             output_fmt,
             opts,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Remove sequences and write a unified `report.json`.
+    pub fn remove_with_report(&self, files: &[PathBuf]) -> anyhow::Result<RunReport> {
+        let mut sorted = files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let (mode, ids, regex) = match self.opts {
+            SeqRemovalParameters::Id(ids) => ("id".to_string(), Some(ids.clone()), None),
+            SeqRemovalParameters::Regex(re) => ("regex".to_string(), None, Some(re.clone())),
+        };
+        let params = SequenceRemoveParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            mode,
+            ids,
+            regex,
+        };
+        let snapshot = DirSnapshot::capture(self.output_dir);
+        let builder = RunReportBuilder::new(TaskKind::SequenceRemove, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
+        self.remove(&sorted);
+        let written = snapshot.written_files(self.output_dir);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: Some(sorted.len().saturating_sub(written.len())),
+        };
+        let report_file = report_path(self.output_dir, None);
+        builder
+            .outputs(
+                self.output_dir,
+                written.into_iter().map(|p| ("sequences", p)),
+            )
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     pub fn remove(&self, files: &[PathBuf]) {

@@ -14,7 +14,7 @@ macro_rules! generate_test {
         let output_dir = $tmp_dir.path().join("Align-Summary");
         let locus_path = output_dir.join("locus_summary.csv");
         let taxon_path = output_dir.join("taxon_summary.csv");
-        let report_path = output_dir.join("alignment-report.json");
+        let report_path = output_dir.join("report.json");
 
         // Check column counts
         let locus_cols = count_header_cols(&locus_path);

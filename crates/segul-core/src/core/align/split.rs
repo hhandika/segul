@@ -16,6 +16,9 @@ use crate::helper::types::{
 };
 use crate::helper::utils;
 use crate::parser::partition::PartitionParser;
+use crate::report::spec::{AlignSplitParams, TaskKind, canonical};
+use crate::report::stats::TaskCounts;
+use crate::report::{DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path};
 use crate::writer::sequences::SeqWriter;
 
 impl OutputPrint for AlignmentSplitting<'_> {}
@@ -27,6 +30,7 @@ pub struct AlignmentSplitting<'a> {
     input_fmt: &'a InputFmt,
     output: &'a Path,
     output_fmt: &'a OutputFmt,
+    report_context: ReportContext,
 }
 
 impl<'a> AlignmentSplitting<'a> {
@@ -43,7 +47,14 @@ impl<'a> AlignmentSplitting<'a> {
             input_fmt,
             output,
             output_fmt,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
     }
 
     /// Split the alignment by partitions, panicking on error.
@@ -56,6 +67,46 @@ impl<'a> AlignmentSplitting<'a> {
     ) {
         self.try_split(part_path, partition_fmt, prefix, is_uncheck)
             .unwrap_or_else(|err| panic!("{err}"));
+    }
+
+    /// Split the alignment by partitions and write a unified `report.json`.
+    pub fn try_split_with_report(
+        &self,
+        part_path: &Path,
+        partition_fmt: &PartitionFmt,
+        prefix: &Option<String>,
+        is_uncheck: bool,
+    ) -> Result<RunReport> {
+        let params = AlignSplitParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            partition_format: canonical::partition_fmt(partition_fmt).to_string(),
+            skip_checking: is_uncheck,
+            prefix: prefix.clone(),
+        };
+        let mut aux = Vec::new();
+        if part_path != self.input {
+            aux.push(("partition", part_path.to_path_buf()));
+        }
+        let snapshot = DirSnapshot::capture(self.output);
+        let builder = RunReportBuilder::new(TaskKind::AlignSplit, &self.report_context)
+            .primary_inputs(&[self.input.to_path_buf()])
+            .auxiliary_inputs(aux)
+            .parameters(&params)?;
+        self.try_split(part_path, partition_fmt, prefix, is_uncheck)?;
+        let written = snapshot.written_files(self.output);
+        let counts = TaskCounts {
+            files_read: 1,
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: None,
+        };
+        let report_file = report_path(self.output, prefix.as_deref());
+        builder
+            .outputs(self.output, written.into_iter().map(|p| ("alignment", p)))
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     /// Split the alignment by partitions, returning an error on invalid partitions or I/O failure.

@@ -24,6 +24,11 @@ use crate::{
         types::{DataType, Header, InputFmt, OutputFmt, SeqMatrix},
         utils,
     },
+    report::{
+        DirSnapshot, ReportContext, RunReport, RunReportBuilder, report_path,
+        spec::{SequenceFilterCriterion, SequenceFilterParams, TaskKind, canonical},
+        stats::TaskCounts,
+    },
     writer::sequences::SeqWriter,
 };
 
@@ -79,6 +84,7 @@ pub struct SequenceFiltering<'a> {
     output_fmt: &'a OutputFmt,
     /// Choice of filtering options.
     params: &'a SeqFilteringParameters,
+    report_context: ReportContext,
 }
 
 impl OutputPrint for SequenceFiltering<'_> {}
@@ -99,7 +105,59 @@ impl<'a> SequenceFiltering<'a> {
             output,
             output_fmt,
             params,
+            report_context: ReportContext::default(),
         }
+    }
+
+    /// Attach frontend provenance and SHA-256 checksum settings for `report.json`.
+    pub fn with_report_context(mut self, context: ReportContext) -> Self {
+        self.report_context = context;
+        self
+    }
+
+    /// Filter sequences and write a unified `report.json`.
+    pub fn filter_with_report(&self) -> anyhow::Result<RunReport> {
+        let mut sorted = self.files.to_vec();
+        alphanumeric_sort::sort_path_slice(&mut sorted);
+        let criterion = match self.params {
+            SeqFilteringParameters::MinSequenceLength(min_length) => {
+                SequenceFilterCriterion::MinLength {
+                    min_length: *min_length,
+                }
+            }
+            SeqFilteringParameters::MaxSequenceLength(max_length) => {
+                SequenceFilterCriterion::MaxLength {
+                    max_length: *max_length,
+                }
+            }
+            SeqFilteringParameters::PercentMaxGap(max_gap) => {
+                SequenceFilterCriterion::MaxGap { max_gap: *max_gap }
+            }
+            SeqFilteringParameters::None => anyhow::bail!("No filtering parameters were provided!"),
+        };
+        let params = SequenceFilterParams {
+            input_format: canonical::input_fmt(self.input_fmt).to_string(),
+            datatype: canonical::datatype(self.datatype).to_string(),
+            output_format: canonical::output_fmt(self.output_fmt).to_string(),
+            criterion,
+        };
+        let snapshot = DirSnapshot::capture(self.output);
+        let builder = RunReportBuilder::new(TaskKind::SequenceFilter, &self.report_context)
+            .primary_inputs(&sorted)
+            .parameters(&params)?;
+        self.filter();
+        let written = snapshot.written_files(self.output);
+        let counts = TaskCounts {
+            files_read: sorted.len(),
+            files_written: written.len(),
+            items_processed: Some(written.len()),
+            items_skipped: Some(sorted.len().saturating_sub(written.len())),
+        };
+        let report_file = report_path(self.output, None);
+        builder
+            .outputs(self.output, written.into_iter().map(|p| ("sequences", p)))
+            .statistics(&counts)?
+            .write_to(&report_file)
     }
 
     /// Filter sequences based on the selected criteria.

@@ -4,6 +4,9 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use segul_core::stats::fastq::qc::QcProfile;
+use segul_core::stats::fastq::report::ReadReport;
+
 const QC_DIR: &str = "crates/segul-core/tests/files/raw_qc";
 const OUTPUT: &str = "Read-Summary";
 
@@ -72,7 +75,8 @@ fn test_read_summary_basic() {
         assert!(
             header.ends_with("platform,chastity_failed_reads,chastity_failed_pct,run_group_count")
         );
-        assert!(!output.join("read-report.json").exists());
+        assert!(!output.join("read-dist-summary.zip").exists());
+        assert!(output.join("report.json").is_file());
     }
 }
 
@@ -95,10 +99,16 @@ fn test_read_summary_default_is_complete() {
     assert!(distributions.contains(&"qc_adapter/expected-errors.csv".to_string()));
     assert!(distributions.contains(&"qc_adapter/complexity.csv".to_string()));
     assert!(distributions.contains(&"qc_phred64/duplication.csv".to_string()));
-    let report = fs::read_to_string(output.join("qc_read-report.json")).unwrap();
-    assert!(report.contains("\"phred_offset\":64"));
+    let report = fs::read_to_string(output.join("qc_report.json")).unwrap();
+    let parsed = ReadReport::from_json(&report).unwrap();
+    assert!(parsed.samples.iter().any(|s| s.metrics.phred_offset == 64));
     assert!(report.contains("Illumina Universal"));
-    assert!(report.contains("\"effective_mean_qscore\""));
+    assert!(
+        parsed
+            .samples
+            .iter()
+            .any(|s| s.metrics.effective_mean_qscore > 0.0)
+    );
 }
 
 #[test]
@@ -119,11 +129,16 @@ fn test_read_summary_qc_profile_and_pairs() {
     initiate_raw_cmd!(cmd, tmp_dir, "crates/segul-core/tests/files/raw");
     cmd.args(["--qc-profile", "amplicon"]).assert().success();
     let output = tmp_dir.path().join(OUTPUT);
-    let report = fs::read_to_string(output.join("read-report.json")).unwrap();
-    assert!(report.contains("\"qc_profile\":\"amplicon\""));
-    assert!(report.contains("\"pair_name\":\"read\""));
-    assert!(report.contains("\"in_sync\":true"));
-    assert!(report.contains("\"cohort\":{"));
+    let report = fs::read_to_string(output.join("report.json")).unwrap();
+    let parsed = ReadReport::from_json(&report).unwrap();
+    assert_eq!(parsed.qc_profile, QcProfile::Amplicon);
+    assert!(
+        parsed
+            .pairs
+            .iter()
+            .any(|p| p.pair_name == "read" && p.in_sync)
+    );
+    assert!(parsed.cohort.is_some());
     let distributions = zip_entries(&output.join("read-dist-summary.zip"));
     assert!(distributions.contains(&"pairs.csv".to_string()));
 }
@@ -135,10 +150,15 @@ fn test_read_summary_dup_size() {
         cmd.args(["--mode", "complete", "--dup-size", size])
             .assert()
             .success();
-        let report =
-            fs::read_to_string(tmp_dir.path().join(OUTPUT).join("read-report.json")).unwrap();
+        let report = fs::read_to_string(tmp_dir.path().join(OUTPUT).join("report.json")).unwrap();
+        let parsed = ReadReport::from_json(&report).unwrap();
         // Six reads with four distinct sequences: a sketch of two is an estimate.
-        let exact = if size == "0" { "true" } else { "false" };
-        assert!(report.contains(&format!("\"exact\":{}", exact)));
+        let exact = size == "0";
+        assert!(
+            parsed
+                .samples
+                .iter()
+                .all(|s| s.duplication.as_ref().is_some_and(|d| d.exact == exact))
+        );
     }
 }

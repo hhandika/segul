@@ -4,6 +4,7 @@ use crate::core::sequence::translate::SequenceTranslation;
 use crate::helper::logger::AlignSeqLogger;
 use crate::helper::types::GeneticCodes;
 use colored::Colorize;
+use segul_core::report::ReportContext;
 
 use crate::cli::args::sequence::SequenceTranslateArgs;
 use crate::cli::{AlignSeqInput, InputCli, OutputCli, collect_paths};
@@ -25,15 +26,15 @@ impl<'a> TranslateParser<'a> {
         }
     }
 
-    pub(in crate::cli) fn translate(&mut self) {
+    pub(in crate::cli) fn translate(&mut self, ctx: &ReportContext) {
         if self.args.show_tables {
             self.show_ncbi_tables();
         } else {
-            self.translate_all();
+            self.translate_all(ctx);
         }
     }
 
-    fn translate_all(&mut self) {
+    fn translate_all(&mut self, ctx: &ReportContext) {
         let input_fmt = self.parse_input_fmt(&self.args.in_fmt.input_fmt);
         let datatype = self.parse_datatype(&self.args.in_fmt.datatype);
         let output_fmt = self.parse_output_fmt(&self.args.out_fmt.output_fmt);
@@ -52,15 +53,20 @@ impl<'a> TranslateParser<'a> {
         log::info!("{}", "Params".yellow());
         self.show_trans_table();
         let table = self.parse_table_num();
-        let translate = SequenceTranslation::new(&input_fmt, &table, &datatype, &output_fmt);
+        let translate = SequenceTranslation::new(&input_fmt, &table, &datatype, &output_fmt)
+            .with_report_context(ctx.clone().with_input_dir(self.input_dir.clone()));
         match frame {
             Some(num) => {
                 log::info!("{:18}: {}\n", "Reading frame", num);
-                translate.translate(&files, num, &self.args.output);
+                translate
+                    .translate_with_report(&files, num, &self.args.output)
+                    .unwrap_or_else(|err| panic!("{err}"));
             }
             None => {
                 log::info!("{:18}: Auto\n", "Reading frame");
-                translate.translate_all_autoframe(&files, &self.args.output);
+                translate
+                    .translate_all_autoframe_with_report(&files, &self.args.output)
+                    .unwrap_or_else(|err| panic!("{err}"));
             }
         }
     }
