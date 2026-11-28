@@ -35,6 +35,7 @@
 //! | `read`     | Raw read (FASTQ) summary statistics                       |
 //! | `contig`   | Contiguous sequence summary statistics                    |
 //! | `maf`      | Multiple alignment format (MAF) conversion                |
+//! | `tree`     | Phylogenetic tree parsing, writing, and conversion (opt-in) |
 //! | `plot`     | Charts from summary statistics (SVG, PNG)                 |
 //! | `pdf`      | PDF output for charts (adds `plot`)                       |
 //! | `download` | Concurrent GenBank and ENA archive downloader             |

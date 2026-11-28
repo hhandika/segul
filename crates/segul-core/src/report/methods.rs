@@ -311,5 +311,9 @@ fn describe_value_params(kind: super::spec::TaskKind, val: &serde_json::Value) -
                 p.input_format, p.output_format, p.datatype
             )
         }
+        TaskParameters::TreeConvert(p) => format!(
+            "in={}, out={}, translate={}, strip_annotations={}, gzip={}",
+            p.input_format, p.output_format, p.translate, p.strip_annotations, p.gzip
+        ),
     }
 }

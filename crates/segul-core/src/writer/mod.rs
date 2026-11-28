@@ -19,6 +19,8 @@ pub mod sequences;
 pub mod summary;
 #[cfg(feature = "sequence")]
 pub mod text;
+#[cfg(feature = "tree")]
+pub mod tree;
 
 use std::fs::{self, File, OpenOptions};
 use std::io::BufWriter;

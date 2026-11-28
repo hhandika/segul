@@ -11,6 +11,8 @@ pub mod maf;
 pub mod read;
 #[cfg(feature = "sequence")]
 pub mod sequence;
+#[cfg(feature = "tree")]
+pub mod tree;
 
 #[cfg(any(feature = "align", feature = "sequence", feature = "maf"))]
 use crate::helper::types::OutputFmt;

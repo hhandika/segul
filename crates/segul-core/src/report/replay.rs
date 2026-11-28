@@ -703,6 +703,29 @@ fn execute_task(
                 .with_report_context(ctx.clone())
                 .transpose_with_report(primary)
         }
+        #[cfg(feature = "tree")]
+        (TaskKind::TreeConvert, TaskParameters::TreeConvert(p)) => {
+            use crate::core::tree::convert::TreeConversion;
+            use crate::parser::tree::{ParseOptions, TreeFmt, TreeOutputFmt};
+            use crate::writer::tree::TreeWriteOptions;
+            let input_fmt: TreeFmt = p.input_format.parse().map_err(anyhow::Error::msg)?;
+            let output_fmt: TreeOutputFmt = p.output_format.parse().map_err(anyhow::Error::msg)?;
+            let parse_opts = ParseOptions {
+                parse_annotations: !p.strip_annotations,
+                ..Default::default()
+            };
+            let write_opts = TreeWriteOptions {
+                use_translate: p.translate,
+                write_annotations: !p.strip_annotations,
+                gzip: p.gzip,
+                ..Default::default()
+            };
+            TreeConversion::new(&input_fmt, &output_fmt)
+                .with_parse_options(parse_opts)
+                .with_write_options(write_opts)
+                .with_report_context(ctx.clone())
+                .convert_with_report(primary, output_dir)
+        }
         _ => bail!("Task '{}' is not enabled in this build of segul-core", kind),
     }
 }

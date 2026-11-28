@@ -52,6 +52,8 @@ pub enum TaskKind {
     SequenceTranslate,
     #[serde(rename = "sequence.transpose")]
     SequenceTranspose,
+    #[serde(rename = "tree.convert")]
+    TreeConvert,
 }
 
 impl TaskKind {
@@ -79,6 +81,7 @@ impl TaskKind {
             Self::SequenceRename => "sequence.rename",
             Self::SequenceTranslate => "sequence.translate",
             Self::SequenceTranspose => "sequence.transpose",
+            Self::TreeConvert => "tree.convert",
         }
     }
 
@@ -106,6 +109,7 @@ impl TaskKind {
             Self::SequenceRename => "Sequence ID renaming",
             Self::SequenceTranslate => "Sequence translation",
             Self::SequenceTranspose => "Sequence transposition",
+            Self::TreeConvert => "Tree format conversion",
         }
     }
 
@@ -150,6 +154,7 @@ impl FromStr for TaskKind {
             "sequence.rename" => Ok(Self::SequenceRename),
             "sequence.translate" => Ok(Self::SequenceTranslate),
             "sequence.transpose" => Ok(Self::SequenceTranspose),
+            "tree.convert" => Ok(Self::TreeConvert),
             _ => Err(format!("Unknown SEGUL task kind '{}'", s)),
         }
     }
@@ -179,6 +184,7 @@ pub enum TaskParameters {
     SequenceRename(SequenceRenameParams),
     SequenceTranslate(SequenceTranslateParams),
     SequenceTranspose(SequenceTransposeParams),
+    TreeConvert(TreeConvertParams),
 }
 
 impl TaskParameters {
@@ -207,6 +213,7 @@ impl TaskParameters {
             TaskKind::SequenceRename => Self::SequenceRename(serde_json::from_value(v)?),
             TaskKind::SequenceTranslate => Self::SequenceTranslate(serde_json::from_value(v)?),
             TaskKind::SequenceTranspose => Self::SequenceTranspose(serde_json::from_value(v)?),
+            TaskKind::TreeConvert => Self::TreeConvert(serde_json::from_value(v)?),
         };
         Ok(parsed)
     }
@@ -235,6 +242,7 @@ impl TaskParameters {
             Self::SequenceRename(p) => serde_json::to_value(p),
             Self::SequenceTranslate(p) => serde_json::to_value(p),
             Self::SequenceTranspose(p) => serde_json::to_value(p),
+            Self::TreeConvert(p) => serde_json::to_value(p),
         };
         v.context("Failed serializing task parameters")
     }
@@ -501,6 +509,15 @@ pub struct SequenceTransposeParams {
     pub output_format: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TreeConvertParams {
+    pub input_format: String,
+    pub output_format: String,
+    pub translate: bool,
+    pub strip_annotations: bool,
+    pub gzip: bool,
+}
+
 /// Canonical string helpers for `segul-core` enums so `report.json`
 /// parameters always match `FromStr` across CLI, SEGUI, and PySEGUL.
 pub mod canonical {
@@ -647,6 +664,27 @@ pub mod canonical {
         match n {
             SampleNaming::AssemblyPrefix => "assembly_prefix",
             SampleNaming::FullSource => "full_source",
+        }
+    }
+
+    #[cfg(feature = "tree")]
+    pub fn tree_fmt(fmt: &crate::parser::tree::TreeFmt) -> &'static str {
+        use crate::parser::tree::TreeFmt;
+        match fmt {
+            TreeFmt::Auto => "auto",
+            TreeFmt::Newick => "newick",
+            TreeFmt::ExtendedNewick => "enewick",
+            TreeFmt::Nexus => "nexus",
+        }
+    }
+
+    #[cfg(feature = "tree")]
+    pub fn tree_output_fmt(fmt: &crate::parser::tree::TreeOutputFmt) -> &'static str {
+        use crate::parser::tree::TreeOutputFmt;
+        match fmt {
+            TreeOutputFmt::Newick => "newick",
+            TreeOutputFmt::ExtendedNewick => "enewick",
+            TreeOutputFmt::Nexus => "nexus",
         }
     }
 }

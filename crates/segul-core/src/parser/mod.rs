@@ -12,6 +12,8 @@ pub mod phylip;
 pub mod qscores;
 #[cfg(feature = "plot")]
 pub mod summary_csv;
+#[cfg(feature = "tree")]
+pub mod tree;
 pub mod txt;
 
 #[cfg(feature = "maf")]
