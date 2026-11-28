@@ -89,8 +89,12 @@ pub(super) fn render(frame: &mut Frame, app: &mut App, palette: &TreePalette) {
         Constraint::Min(1),
     ])
     .areas(main);
-    let [ruler, canvas] =
-        Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).areas(tree_area);
+    let [ruler_top, canvas, ruler_bottom] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Min(1),
+        Constraint::Length(1),
+    ])
+    .areas(tree_area);
 
     app.canvas_rows = canvas.height as usize;
     app.canvas_cols = canvas.width as usize;
@@ -111,7 +115,8 @@ pub(super) fn render(frame: &mut Frame, app: &mut App, palette: &TreePalette) {
     if app.show_sidebar {
         render_sidebar(frame, sidebar, app, palette);
     }
-    render_ruler(frame.buffer_mut(), ruler, app);
+    render_ruler(frame.buffer_mut(), ruler_top, app, Edge::Top);
+    render_ruler(frame.buffer_mut(), ruler_bottom, app, Edge::Bottom);
     render_canvas(frame.buffer_mut(), canvas, app, palette);
     render_status(frame, status, app, palette);
 
@@ -134,6 +139,9 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
         Rootedness::Rooted => summary.push_str(" · rooted"),
         Rootedness::Unrooted => summary.push_str(" · unrooted"),
         Rootedness::Unknown => (),
+    }
+    if view.is_rerooted() {
+        summary.push_str(" · rerooted");
     }
     if !view.has_lengths() {
         summary.push_str(" · no lengths");
@@ -165,7 +173,7 @@ fn render_toolbar(frame: &mut Frame, area: Rect, app: &App) {
             TreeScale::Length => "Lengths",
             TreeScale::Cladogram => "Cladogram",
         }),
-        Span::from(format!(" · Zoom {}", app.zoom)),
+        Span::from(format!(" · Zoom {}×", app.zoom)),
         Span::from("  │ ").dim(),
         Span::from(tree),
     ]);
@@ -326,13 +334,27 @@ fn render_sidebar(frame: &mut Frame, area: Rect, app: &App, palette: &TreePalett
     frame.render_widget(Paragraph::new(lines), inner);
 }
 
-// Branch length scale with round steps, or a note for cladograms.
-fn render_ruler(buf: &mut Buffer, area: Rect, app: &App) {
+/// Which side of the canvas a ruler sits on.
+#[derive(Clone, Copy, PartialEq)]
+enum Edge {
+    Top,
+    Bottom,
+}
+
+// Branch length scale with round steps, ticks pointing at the canvas. For
+// cladograms, a note on the top ruler only.
+fn render_ruler(buf: &mut Buffer, area: Rect, app: &App, edge: Edge) {
     let width = area.width as usize;
     if app.scale == TreeScale::Cladogram {
-        buf.set_stringn(area.x, area.y, "Cladogram", width, Style::new().dim());
+        if edge == Edge::Top {
+            buf.set_stringn(area.x, area.y, "Cladogram", width, Style::new().dim());
+        }
         return;
     }
+    let tick_mark = match edge {
+        Edge::Top => '╵',
+        Edge::Bottom => '╷',
+    };
     let (lo, hi) = app.view.x_range(app.scale);
     let usable = app.virtual_cols().saturating_sub(2).max(1) as f64;
     let per_col = (hi - lo) / usable;
@@ -349,7 +371,7 @@ fn render_ruler(buf: &mut Buffer, area: Rect, app: &App) {
             break;
         }
         if col >= free_from && col >= 0 {
-            let label = format!("╵{:.*}", decimals, tick);
+            let label = format!("{tick_mark}{:.*}", decimals, tick);
             let room = width - col as usize;
             buf.set_stringn(
                 area.x + col as u16,
@@ -459,6 +481,7 @@ fn render_canvas(buf: &mut Buffer, area: Rect, app: &App, palette: &TreePalette)
                 x,
                 top,
                 bottom,
+                ..
             } => {
                 let col = app.column(x);
                 let style = style_of(node);
@@ -659,7 +682,16 @@ const HELP: &[(&str, &str, &str)] = &[
     ("PgUp / PgDn", "Option+↑ / ↓", "Page rows"),
     ("Home / End", "fn+← / →", "First / last row"),
     ("Shift+← / →", "Shift+← / →", "Scroll sideways"),
-    ("+ / - / Ctrl+0", "+ / - / Ctrl+0", "Zoom in / out / reset"),
+    (
+        "+ / - / 0, Ctrl+wheel",
+        "+ / - / 0, Option+wheel",
+        "Zoom in / out / fit",
+    ),
+    (
+        "r, R, Ctrl+R",
+        "r, R, Ctrl+R",
+        "Root on branch, at midpoint, original",
+    ),
     ("[ / ]", "[ / ]", "Previous / next tree in file"),
     (
         "Ctrl+F, F3",
@@ -816,11 +848,18 @@ mod test {
         assert!(text.contains(" Taxon_A"));
         assert!(text.contains(" Taxon_E"));
         // Support values sit on their branches.
-        assert!(text.contains("98┬─────── Taxon_A"));
+        assert!(text.contains("98┴────────────────────────── Taxon_B"));
+        // The root sits midway between its clades.
+        assert!(text.contains("─┤                              ┌─────── Taxon_C"));
         assert!(text.contains("85┼"));
         assert!(text.contains("╵0.0"));
+        assert!(text.contains("╷0.0"));
         assert!(text.contains("Taxon_A · Lengths 0.12"));
         assert!(text.contains("? Help"));
+
+        app.view.root_on(app.cursor).expect("Failed rerooting");
+        let text = screen(&mut app, &palette);
+        assert!(text.contains("rerooted"));
 
         app.show_sidebar = true;
         let text = screen(&mut app, &palette);

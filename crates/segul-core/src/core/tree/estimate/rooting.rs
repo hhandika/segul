@@ -3,7 +3,7 @@
 use ahash::AHashSet;
 use anyhow::{Result, bail};
 
-use crate::parser::tree::{NodeId, Rootedness, Tree};
+use crate::parser::tree::{AnnotationTarget, NodeId, Rootedness, Tree};
 
 /// Rooting strategy applied after tree estimation.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -17,8 +17,13 @@ pub enum RootingMethod {
     Outgroup(Vec<String>),
 }
 
+/// Old node index to its node in a rerooted tree, or `None` for a
+/// two-child root that was removed.
+pub(crate) type NodeMap = Vec<Option<NodeId>>;
+
 /// Reroot `tree` on the edge separating `outgroup` from the remaining taxa.
 pub fn reroot_outgroup(tree: &Tree, outgroup: &[String]) -> Result<Tree> {
+    ensure_not_network(tree)?;
     if outgroup.is_empty() {
         bail!("Outgroup taxon list must not be empty");
     }
@@ -62,16 +67,87 @@ pub fn reroot_outgroup(tree: &Tree, outgroup: &[String]) -> Result<Tree> {
 
     let (u, v, len) = target_edge;
     let half = len.map(|l| l * 0.5);
-    Ok(rebuild_rooted_tree(&graph, tree, u, v, half, half))
+    Ok(rebuild_rooted_tree(&graph, tree, u, v, half, half).0)
 }
 
 /// Reroot `tree` at the midpoint of its longest tip-to-tip path (tree diameter).
 pub fn reroot_midpoint(tree: &Tree) -> Result<Tree> {
+    Ok(reroot_midpoint_mapped(tree)?.0)
+}
+
+/// [`reroot_midpoint`], also returning where each old node went.
+pub(crate) fn reroot_midpoint_mapped(tree: &Tree) -> Result<(Tree, NodeMap)> {
+    ensure_not_network(tree)?;
     if tree.tip_count() < 2 {
         bail!("Cannot midpoint-root a tree with fewer than 2 tips");
     }
-
     let graph = TreeGraph::from_tree(tree);
+    let (u, v, d_u, d_v) = midpoint_edge(&graph)?;
+    Ok(rebuild_rooted_tree(
+        &graph,
+        tree,
+        u,
+        v,
+        Some(d_u),
+        Some(d_v),
+    ))
+}
+
+/// Reroot `tree` at the middle of the branch above `node`. Internal labels,
+/// such as support values, and annotations stay with their branches.
+pub fn reroot_on_branch(tree: &Tree, node: NodeId) -> Result<Tree> {
+    Ok(reroot_on_branch_mapped(tree, node)?.0)
+}
+
+/// [`reroot_on_branch`], also returning where each old node went.
+pub(crate) fn reroot_on_branch_mapped(tree: &Tree, node: NodeId) -> Result<(Tree, NodeMap)> {
+    ensure_not_network(tree)?;
+    if tree.tip_count() < 2 {
+        bail!("Cannot reroot a tree with fewer than 2 tips");
+    }
+    let parent = tree
+        .parent(node)
+        .ok_or_else(|| anyhow::anyhow!("Cannot root on the branch above the root"))?;
+    let graph = TreeGraph::from_tree(tree);
+    if graph.adj[parent.index()].is_empty() {
+        // A two-child root was merged into one branch joining `node` and its
+        // sibling. Rooting there keeps the original root and lengths.
+        let sibling = tree
+            .children(parent)
+            .find(|&c| c != node)
+            .expect("Two-child root has a sibling");
+        return Ok(rebuild_rooted_tree(
+            &graph,
+            tree,
+            node.index(),
+            sibling.index(),
+            tree.branch_length(node),
+            tree.branch_length(sibling),
+        ));
+    }
+    let half = graph
+        .edge_length(node.index(), parent.index())
+        .map(|l| l * 0.5);
+    Ok(rebuild_rooted_tree(
+        &graph,
+        tree,
+        node.index(),
+        parent.index(),
+        half,
+        half,
+    ))
+}
+
+fn ensure_not_network(tree: &Tree) -> Result<()> {
+    if tree.is_network() {
+        bail!("Cannot reroot a network");
+    }
+    Ok(())
+}
+
+// Edge holding the midpoint of the tree diameter, with the distances from
+// each end of the edge to the midpoint.
+fn midpoint_edge(graph: &TreeGraph) -> Result<(usize, usize, f64, f64)> {
     for (u, nbrs) in graph.adj.iter().enumerate() {
         for &(v, len) in nbrs {
             if u < v {
@@ -94,8 +170,8 @@ pub fn reroot_midpoint(tree: &Tree) -> Result<Tree> {
         .position(|&is_l| is_l)
         .ok_or_else(|| anyhow::anyhow!("Tree has no leaf nodes"))?;
 
-    let (end_a, _, _) = farthest_leaf(&graph, first_leaf);
-    let (end_b, diameter, parents) = farthest_leaf(&graph, end_a);
+    let (end_a, _, _) = farthest_leaf(graph, first_leaf);
+    let (end_b, diameter, parents) = farthest_leaf(graph, end_a);
     if diameter <= 0.0 {
         bail!("Cannot midpoint-root a tree with zero total branch length");
     }
@@ -118,14 +194,7 @@ pub fn reroot_midpoint(tree: &Tree) -> Result<Tree> {
         if acc + edge_len >= target || idx + 2 == path.len() {
             let d_u = (target - acc).clamp(0.0, edge_len);
             let d_v = (edge_len - d_u).max(0.0);
-            return Ok(rebuild_rooted_tree(
-                &graph,
-                tree,
-                u,
-                v,
-                Some(d_u),
-                Some(d_v),
-            ));
+            return Ok((u, v, d_u, d_v));
         }
         acc += edge_len;
     }
@@ -138,6 +207,8 @@ struct TreeGraph {
     labels: Vec<Option<String>>,
     quoted: Vec<bool>,
     is_leaf: Vec<bool>,
+    // Parent in the input tree, or `usize::MAX` for the root.
+    orig_parent: Vec<usize>,
     leaf_count: usize,
 }
 
@@ -148,6 +219,7 @@ impl TreeGraph {
         let mut labels = vec![None; n];
         let mut quoted = vec![false; n];
         let mut is_leaf = vec![false; n];
+        let mut orig_parent = vec![usize::MAX; n];
         let mut leaf_count = 0usize;
 
         for id in tree.preorder() {
@@ -161,6 +233,7 @@ impl TreeGraph {
             }
             if let Some(parent) = tree.parent(id) {
                 let len = tree.branch_length(id);
+                orig_parent[idx] = parent.index();
                 adj[idx].push((parent.index(), len));
                 adj[parent.index()].push((idx, len));
             }
@@ -195,6 +268,7 @@ impl TreeGraph {
             labels,
             quoted,
             is_leaf,
+            orig_parent,
             leaf_count,
         }
     }
@@ -204,6 +278,18 @@ impl TreeGraph {
             .iter()
             .find(|&&(nbr, _)| nbr == v)
             .and_then(|&(_, len)| len)
+    }
+
+    // Node whose labels and annotations describe the edge from `parent` to
+    // `child` in the new tree. Values on a node belong to the branch above
+    // it, so they move when that branch flips. The two children of a merged
+    // two-child root each keep their own.
+    fn edge_owner(&self, child: usize, parent: usize) -> usize {
+        if self.orig_parent[parent] == child {
+            parent
+        } else {
+            child
+        }
     }
 }
 
@@ -290,6 +376,9 @@ fn farthest_leaf(graph: &TreeGraph, start: usize) -> (usize, f64, Vec<usize>) {
     (best_leaf, best_dist, parent)
 }
 
+// Builds the tree rooted on the edge `edge_u`-`edge_v`, with `len_u` and
+// `len_v` on the two new root branches. Returns the tree and where each old
+// node went.
 fn rebuild_rooted_tree(
     graph: &TreeGraph,
     orig: &Tree,
@@ -297,7 +386,7 @@ fn rebuild_rooted_tree(
     edge_v: usize,
     len_u: Option<f64>,
     len_v: Option<f64>,
-) -> Tree {
+) -> (Tree, NodeMap) {
     let label_cap: usize = graph.labels.iter().flatten().map(String::len).sum();
     let mut out = Tree::with_capacity(graph.adj.len() + 1, label_cap);
     out.metadata = orig.metadata.clone();
@@ -306,16 +395,43 @@ fn rebuild_rooted_tree(
     let root = out.add_node();
     out.set_root(root);
 
-    let mut mapped: Vec<Option<NodeId>> = vec![None; graph.adj.len()];
+    let mut mapped: NodeMap = vec![None; graph.adj.len()];
+    // Tips keep their names; internal nodes take the labels and annotations
+    // of the branch now above them.
+    let copy_node = |out: &mut Tree, new_id: NodeId, node: usize, owner: Option<usize>| {
+        if graph.is_leaf[node]
+            && let Some(lbl) = graph.labels[node].as_deref()
+        {
+            out.set_label(new_id, lbl, graph.quoted[node]);
+        }
+        let Some(owner) = owner else {
+            return;
+        };
+        if !graph.is_leaf[owner]
+            && !graph.is_leaf[node]
+            && let Some(lbl) = graph.labels[owner].as_deref()
+        {
+            out.set_label(new_id, lbl, graph.quoted[owner]);
+        }
+        let Some(owner_id) = orig.node_id(owner) else {
+            return;
+        };
+        for annotation in orig.node_annotations(owner_id) {
+            out.add_annotation(new_id, AnnotationTarget::Node, annotation.clone());
+        }
+        for annotation in orig.branch_annotations(owner_id) {
+            out.add_annotation(new_id, AnnotationTarget::Branch, annotation.clone());
+        }
+    };
+
     let mut attach_branch =
         |start: usize, avoid: usize, bl: Option<f64>, prev: Option<NodeId>| -> NodeId {
             let start_id = out.add_node();
             mapped[start] = Some(start_id);
-            if let Some(lbl) = graph.labels[start].as_deref()
-                && graph.is_leaf[start]
-            {
-                out.set_label(start_id, lbl, graph.quoted[start]);
-            }
+            // The split root branch keeps its values on the side that was
+            // below it.
+            let owner = (graph.orig_parent[avoid] != start).then_some(start);
+            copy_node(&mut out, start_id, start, owner);
             if let Some(l) = bl {
                 out.set_branch_length(start_id, l);
             }
@@ -331,11 +447,7 @@ fn rebuild_rooted_tree(
                     }
                     let child_id = out.add_node();
                     mapped[v] = Some(child_id);
-                    if let Some(lbl) = graph.labels[v].as_deref()
-                        && graph.is_leaf[v]
-                    {
-                        out.set_label(child_id, lbl, graph.quoted[v]);
-                    }
+                    copy_node(&mut out, child_id, v, Some(graph.edge_owner(v, u)));
                     if let Some(l) = edge_len {
                         out.set_branch_length(child_id, l);
                     }
@@ -350,7 +462,7 @@ fn rebuild_rooted_tree(
     let child_u = attach_branch(edge_u, edge_v, len_u, None);
     let _child_v = attach_branch(edge_v, edge_u, len_v, Some(child_u));
 
-    out
+    (out, mapped)
 }
 
 #[cfg(test)]
@@ -410,5 +522,105 @@ mod tests {
         let right = max_depth(&rooted, root_children[1]);
         assert_approx_eq!(left, 4.0, 1e-9);
         assert_approx_eq!(right, 4.0, 1e-9);
+    }
+
+    fn tip(tree: &Tree, name: &str) -> NodeId {
+        tree.leaves()
+            .find(|&id| tree.label(id) == Some(name))
+            .expect("Failed finding tip")
+    }
+
+    // Tip names below `id`, sorted.
+    fn clade(tree: &Tree, id: NodeId) -> Vec<String> {
+        let mut names: Vec<String> = tree
+            .leaves()
+            .filter(|&leaf| {
+                let mut cur = Some(leaf);
+                while let Some(node) = cur {
+                    if node == id {
+                        return true;
+                    }
+                    cur = tree.parent(node);
+                }
+                false
+            })
+            .map(|leaf| tree.label(leaf).unwrap_or("").to_string())
+            .collect();
+        names.sort();
+        names
+    }
+
+    // Each internal label with the tips below it.
+    fn labeled_clades(tree: &Tree) -> Vec<(String, Vec<String>)> {
+        let mut out: Vec<(String, Vec<String>)> = tree
+            .preorder()
+            .filter(|&id| !tree.is_leaf(id))
+            .filter_map(|id| tree.label(id).map(|l| (l.to_string(), clade(tree, id))))
+            .collect();
+        out.sort();
+        out
+    }
+
+    #[test]
+    fn test_root_on_branch_keeps_support() {
+        let tree = parse_tree_str("((A:1,B:2)90:0.5,C:1,(D:1,E:1)80:0.4);").unwrap();
+        let rooted = reroot_on_branch(&tree, tip(&tree, "A")).unwrap();
+        assert_eq!(rooted.metadata.rootedness, Rootedness::Rooted);
+        assert_eq!(rooted.child_count(rooted.root()), 2);
+        let a = tip(&rooted, "A");
+        assert_eq!(rooted.parent(a), Some(rooted.root()));
+        assert_eq!(rooted.branch_length(a), Some(0.5));
+        // 90 split {A, B} from the rest, now the clade of C, D, and E.
+        let expected = vec![
+            (
+                String::from("80"),
+                vec![String::from("D"), String::from("E")],
+            ),
+            (
+                String::from("90"),
+                vec![String::from("C"), String::from("D"), String::from("E")],
+            ),
+        ];
+        assert_eq!(labeled_clades(&rooted), expected);
+    }
+
+    #[test]
+    fn test_root_on_clade_and_two_child_root() {
+        let tree = parse_tree_str("((A:1,B:1)90:0.5,(C:1,D:1)80:0.5);").unwrap();
+        let ab = tree.parent(tip(&tree, "A")).unwrap();
+        // Rooting above a child of a two-child root keeps the tree as is.
+        let same = reroot_on_branch(&tree, ab).unwrap();
+        assert_eq!(labeled_clades(&same), labeled_clades(&tree));
+        let ab_new = same.parent(tip(&same, "A")).unwrap();
+        assert_eq!(same.branch_length(ab_new), Some(0.5));
+
+        let rooted = reroot_on_branch(&tree, tip(&tree, "C")).unwrap();
+        let labels = labeled_clades(&rooted);
+        assert!(labels.contains(&(
+            String::from("90"),
+            vec![String::from("A"), String::from("B")]
+        )));
+        assert!(reroot_on_branch(&tree, tree.root()).is_err());
+    }
+
+    #[test]
+    fn test_root_on_branch_moves_annotations() {
+        let path = std::path::Path::new("../../tests/files/trees/beast_annotated.trees");
+        let tree =
+            crate::core::tree::view::read_tree_at(path, crate::parser::tree::TreeFmt::Auto, 0)
+                .unwrap();
+        let rooted = reroot_on_branch(&tree, tip(&tree, "TaxonC")).unwrap();
+        let a = tip(&rooted, "TaxonA");
+        assert!(!rooted.node_annotations(a).is_empty());
+        let ab = rooted.parent(a).unwrap();
+        assert_eq!(rooted.support_value(ab), Some(0.99));
+    }
+
+    #[test]
+    fn test_reroot_rejects_networks() {
+        let tree = parse_tree_str("((A,(B)#H1),(#H1,C));").unwrap();
+        assert!(tree.is_network());
+        assert!(reroot_on_branch(&tree, tip(&tree, "A")).is_err());
+        assert!(reroot_midpoint(&tree).is_err());
     }
 }

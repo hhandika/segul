@@ -19,7 +19,6 @@ pub(super) const ZOOM_LEVELS: [usize; 6] = [1, 2, 4, 8, 16, 32];
 const JUMP_COLUMNS: usize = 10;
 const MIN_NAME_WIDTH: u16 = 6;
 const MAX_NAME_WIDTH: u16 = 60;
-pub(super) const DEFAULT_NAME_WIDTH: u16 = 24;
 
 /// Popups and prompts over the tree.
 #[derive(Debug, PartialEq)]
@@ -68,7 +67,10 @@ pub(super) struct App<'a> {
     pub(super) scale: TreeScale,
     pub(super) show_sidebar: bool,
     pub(super) sidebar_tab: SidebarTab,
+    /// Columns for tip names: the longest name, until resized.
     pub(super) name_width: u16,
+    // Whether the names were resized, so new trees keep that width.
+    is_name_width_set: bool,
     pub(super) overlay: Overlay,
     /// Last search, kept for F3 after the prompt closes.
     pub(super) find_query: String,
@@ -93,6 +95,7 @@ impl<'a> App<'a> {
     pub(super) fn new(files: &'a [PathBuf], input_fmt: TreeFmt, view: TreeView) -> Self {
         let layers = Layers::for_tree(view.tree(), None);
         let scale = default_scale(&view);
+        let name_width = fit_name_width(&view);
         let mut app = Self {
             files,
             file_index: 0,
@@ -110,7 +113,8 @@ impl<'a> App<'a> {
             scale,
             show_sidebar: false,
             sidebar_tab: SidebarTab::Trees,
-            name_width: DEFAULT_NAME_WIDTH,
+            name_width,
+            is_name_width_set: false,
             overlay: Overlay::None,
             find_query: String::new(),
             message: None,
@@ -164,11 +168,11 @@ impl<'a> App<'a> {
         self.counter = Some(rx);
     }
 
-    /// Canvas columns for branches; tip names use the rest.
+    /// Canvas columns for branches; tip names use the rest, up to half the
+    /// canvas.
     pub(super) fn tree_cols(&self) -> usize {
-        self.canvas_cols
-            .saturating_sub(self.name_width as usize)
-            .max(4)
+        let names = (self.name_width as usize).min(self.canvas_cols / 2);
+        self.canvas_cols.saturating_sub(names).max(4)
     }
 
     /// Width of the whole tree in columns at the current zoom.
@@ -248,6 +252,9 @@ impl<'a> App<'a> {
             self.is_chord = false;
             match key.code {
                 KeyCode::Char('c' | 'C') => self.cycle_color(),
+                KeyCode::Char('m' | 'M') => self.root_at_midpoint(),
+                KeyCode::Char('o' | 'O') => self.restore_root(),
+                KeyCode::Char('r' | 'R') => self.root_on_cursor(),
                 KeyCode::Char('s' | 'S') => self.toggle_scale(),
                 KeyCode::Char('t' | 'T') => self.toggle_sidebar_tab(),
                 _ => self.message = Some(String::from("Unknown chord")),
@@ -261,7 +268,7 @@ impl<'a> App<'a> {
             KeyCode::Char('k') if ctrl => {
                 self.is_chord = true;
                 self.message = Some(String::from(
-                    "Ctrl+K: C color branches · S scale · T sidebar list",
+                    "Ctrl+K: C color · S scale · T sidebar · R root here · M midpoint · O original root",
                 ));
             }
             KeyCode::Char('f') if ctrl => self.overlay = Overlay::Find(String::new()),
@@ -273,9 +280,12 @@ impl<'a> App<'a> {
             }
             KeyCode::Char('b') if ctrl => self.show_sidebar = !self.show_sidebar,
             KeyCode::Char('c') if ctrl => self.copy_subtree(),
-            KeyCode::Char('0') if ctrl => self.set_zoom(ZOOM_LEVELS[0]),
-            KeyCode::Char('=' | '+') => self.zoom_by(1),
-            KeyCode::Char('-' | '_') => self.zoom_by(-1),
+            KeyCode::Char('r') if ctrl => self.restore_root(),
+            KeyCode::Char('0') => self.fit(),
+            KeyCode::Char('=' | '+') => self.zoom_by(1, None),
+            KeyCode::Char('-' | '_') => self.zoom_by(-1, None),
+            KeyCode::Char('r') => self.root_on_cursor(),
+            KeyCode::Char('R') => self.root_at_midpoint(),
             KeyCode::Char(' ') | KeyCode::Enter => self.toggle_fold(),
             KeyCode::Char('*') => self.unfold_all(),
             KeyCode::Char('[') => self.step_tree(-1),
@@ -380,11 +390,13 @@ impl<'a> App<'a> {
             return;
         }
         let ctrl = mouse.modifiers.contains(KeyModifiers::CONTROL);
+        let alt = mouse.modifiers.contains(KeyModifiers::ALT);
         let shift = mouse.modifiers.contains(KeyModifiers::SHIFT);
         let at = Position::new(mouse.column, mouse.row);
         match mouse.kind {
-            MouseEventKind::ScrollUp if ctrl => self.zoom_by(1),
-            MouseEventKind::ScrollDown if ctrl => self.zoom_by(-1),
+            // Option+wheel too, since macOS Terminal keeps Ctrl+wheel.
+            MouseEventKind::ScrollUp if ctrl || alt => self.zoom_by(1, self.canvas_col(at)),
+            MouseEventKind::ScrollDown if ctrl || alt => self.zoom_by(-1, self.canvas_col(at)),
             MouseEventKind::ScrollUp if shift => self.scroll_cols(-(JUMP_COLUMNS as isize)),
             MouseEventKind::ScrollDown if shift => self.scroll_cols(JUMP_COLUMNS as isize),
             MouseEventKind::ScrollLeft => self.scroll_cols(-(JUMP_COLUMNS as isize)),
@@ -509,21 +521,83 @@ impl<'a> App<'a> {
         self.clamp_scroll();
     }
 
-    pub(super) fn zoom_by(&mut self, step: isize) {
+    /// Zooms one step, keeping the tree under canvas column `anchor` in
+    /// place, or the cursor when `None`.
+    pub(super) fn zoom_by(&mut self, step: isize, anchor: Option<usize>) {
         let at = ZOOM_LEVELS
             .iter()
             .position(|&z| z == self.zoom)
             .unwrap_or(0);
         let next = offset(at, step, ZOOM_LEVELS.len() - 1);
-        self.set_zoom(ZOOM_LEVELS[next]);
+        self.set_zoom(ZOOM_LEVELS[next], anchor);
     }
 
-    // Keeps the cursor in view while zooming.
-    fn set_zoom(&mut self, zoom: usize) {
+    fn set_zoom(&mut self, zoom: usize, anchor: Option<usize>) {
+        if zoom == self.zoom {
+            return;
+        }
+        let visible = self.tree_cols();
+        let anchor = anchor.filter(|&a| a < visible).unwrap_or_else(|| {
+            let col = self.column(self.view.x(self.cursor, self.scale));
+            if (0..visible as isize).contains(&col) {
+                col as usize
+            } else {
+                visible / 2
+            }
+        });
+        // Virtual columns run from the root stub at 1 across `usable`.
+        let old_usable = self.virtual_cols().saturating_sub(2).max(1) as f64;
+        let position = (self.left_col + anchor) as f64 - 1.0;
         self.zoom = zoom;
+        let new_usable = self.virtual_cols().saturating_sub(2).max(1) as f64;
+        let moved = 1.0 + position * new_usable / old_usable;
+        self.left_col = (moved.round() as isize - anchor as isize).max(0) as usize;
+        self.clamp_scroll();
+    }
+
+    /// Shows the whole tree width.
+    fn fit(&mut self) {
+        self.zoom = ZOOM_LEVELS[0];
         self.left_col = 0;
         self.clamp_scroll();
-        self.scroll_to_cursor();
+    }
+
+    // Canvas column of a mouse position on the canvas.
+    fn canvas_col(&self, at: Position) -> Option<usize> {
+        let canvas = self.areas.canvas;
+        canvas.contains(at).then(|| (at.x - canvas.x) as usize)
+    }
+
+    fn root_on_cursor(&mut self) {
+        let result = self.view.root_on(self.cursor);
+        self.after_root(result, "Rooted on the selected branch");
+    }
+
+    fn root_at_midpoint(&mut self) {
+        let result = self.view.root_at_midpoint();
+        self.after_root(result, "Rooted at the midpoint");
+    }
+
+    fn restore_root(&mut self) {
+        if !self.view.restore_root() {
+            self.message = Some(String::from("Already at the original root"));
+            return;
+        }
+        let root = self.view.tree().root();
+        self.after_root(Ok(root), "Original root restored");
+    }
+
+    // Refreshes the layout after rooting and moves to `node`.
+    fn after_root(&mut self, result: anyhow::Result<NodeId>, done: &str) {
+        match result {
+            Ok(node) => {
+                self.clades = self.view.named_clades();
+                self.layout_version += 1;
+                self.go_to_node(node);
+                self.message = Some(done.to_string());
+            }
+            Err(e) => self.message = Some(format!("{e:#}")),
+        }
     }
 
     fn toggle_scale(&mut self) {
@@ -562,6 +636,7 @@ impl<'a> App<'a> {
     }
 
     fn resize_names(&mut self, delta: i16) {
+        self.is_name_width_set = true;
         self.name_width = self
             .name_width
             .saturating_add_signed(delta)
@@ -721,11 +796,28 @@ impl<'a> App<'a> {
         }
         self.clades = view.named_clades();
         self.cursor = view.row_node(0);
+        if !self.is_name_width_set {
+            self.name_width = fit_name_width(&view);
+        }
         self.view = view;
         self.top_row = 0;
         self.left_col = 0;
         self.layout_version += 1;
     }
+}
+
+// Room for the longest tip name, with a space before it and one after.
+fn fit_name_width(view: &TreeView) -> u16 {
+    let tree = view.tree();
+    let longest = tree
+        .leaves()
+        .filter_map(|id| tree.label(id))
+        .map(|label| label.chars().count())
+        .max()
+        .unwrap_or(0);
+    u16::try_from(longest + 2)
+        .unwrap_or(MAX_NAME_WIDTH)
+        .clamp(MIN_NAME_WIDTH, MAX_NAME_WIDTH)
 }
 
 fn default_scale(view: &TreeView) -> TreeScale {
@@ -878,13 +970,18 @@ mod test {
         let mut app = app(&files);
         app.handle_key(key(KeyCode::Char('+')));
         assert_eq!(app.zoom, 2);
-        assert_eq!(app.virtual_cols(), 72);
+        // Names take the longest tip, Taxon_A, plus a space each side.
+        assert_eq!(app.name_width, 9);
+        assert_eq!(app.virtual_cols(), 102);
         app.handle_key(with(KeyCode::Char('0'), KeyModifiers::CONTROL));
         assert_eq!(app.zoom, 1);
         app.handle_key(key(KeyCode::F(4)));
         assert_eq!(app.scale, TreeScale::Cladogram);
         // Tips line up on the right in a cladogram.
-        assert_eq!(app.column(app.view.x(app.cursor, app.scale)), 35);
+        assert_eq!(app.column(app.view.x(app.cursor, app.scale)), 50);
+        // `>` still widens the names.
+        app.handle_key(key(KeyCode::Char('>')));
+        assert_eq!(app.name_width, 11);
     }
 
     #[test]
@@ -913,5 +1010,44 @@ mod test {
         assert!(!app.should_quit);
         app.handle_key(key(KeyCode::Esc));
         assert!(app.should_quit);
+    }
+
+    #[test]
+    fn test_zoom_keeps_anchor() {
+        let files = [PathBuf::from(SIMPLE)];
+        let mut app = app(&files);
+        app.handle_key(key(KeyCode::End));
+        let before = app.column(app.view.x(app.cursor, app.scale));
+        app.handle_key(key(KeyCode::Char('+')));
+        app.handle_key(key(KeyCode::Char('+')));
+        assert_eq!(app.zoom, 4);
+        // The cursor stays near the same screen column.
+        let after = app.column(app.view.x(app.cursor, app.scale));
+        assert!((after - before).abs() <= 1, "{before} -> {after}");
+        assert!(app.left_col > 0);
+        app.handle_key(key(KeyCode::Char('0')));
+        assert_eq!((app.zoom, app.left_col), (1, 0));
+    }
+
+    #[test]
+    fn test_reroot() {
+        let files = [PathBuf::from(SIMPLE)];
+        let mut app = app(&files);
+        app.handle_key(key(KeyCode::End));
+        app.handle_key(key(KeyCode::Char('r')));
+        assert_eq!(cursor_label(&app), "Taxon_E");
+        assert!(app.view.is_rerooted());
+        let tree = app.view.tree();
+        assert_eq!(tree.parent(app.cursor), Some(tree.root()));
+        app.handle_key(with(KeyCode::Char('R'), KeyModifiers::SHIFT));
+        assert_eq!(app.message.as_deref(), Some("Rooted at the midpoint"));
+        app.handle_key(with(KeyCode::Char('r'), KeyModifiers::CONTROL));
+        assert!(!app.view.is_rerooted());
+        assert_eq!(app.view.label(app.view.row_node(0)), Some("Taxon_A"));
+        app.handle_key(with(KeyCode::Char('r'), KeyModifiers::CONTROL));
+        assert_eq!(app.message.as_deref(), Some("Already at the original root"));
+        // On the root itself, the error shows in the status bar.
+        app.handle_key(key(KeyCode::Char('r')));
+        assert!(app.message.unwrap().contains("root"));
     }
 }

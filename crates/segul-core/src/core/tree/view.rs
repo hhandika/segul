@@ -39,6 +39,7 @@ use std::sync::OnceLock;
 use ahash::AHashSet;
 use anyhow::{Context, Result};
 
+use crate::core::tree::estimate::rooting::{reroot_midpoint_mapped, reroot_on_branch_mapped};
 use crate::parser::tree::{
     AnnotationValue, NodeId, ParseOptions, Rootedness, Tree, TreeFmt, TreeReader,
 };
@@ -59,20 +60,25 @@ pub enum TreeScale {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Segment {
     /// Horizontal branch on `row` from the parent (`from`) to the node (`to`).
+    /// `y` is the exact height in rows, midway between the node's first and
+    /// last child; `row` is `y` rounded, for drawing on whole rows.
     Branch {
         node: NodeId,
         row: usize,
+        y: f64,
         from: f64,
         to: f64,
     },
     /// Vertical line joining the children of `node`, from its first child's
-    /// row (`top`) to its last child's row (`bottom`). Rows may lie outside
-    /// the requested range.
+    /// row (`top`) to its last child's row (`bottom`), or exactly from
+    /// `top_y` to `bottom_y`. Rows may lie outside the requested range.
     Connector {
         node: NodeId,
         x: f64,
         top: usize,
         bottom: usize,
+        top_y: f64,
+        bottom_y: f64,
     },
 }
 
@@ -90,13 +96,22 @@ pub struct TreeView {
     rows: Vec<NodeId>,
     // Node to its row, or `HIDDEN` inside a folded clade.
     node_rows: Vec<u32>,
+    // Node to its exact height in rows; tips and folded clades sit on whole
+    // rows, internal nodes midway between their first and last child.
+    node_ys: Vec<f64>,
     // Lowercase tip names in tip order, built on the first search.
     search_names: OnceLock<Vec<(NodeId, String)>>,
+    // The tree as read, kept once the view is rerooted.
+    original: Option<Tree>,
 }
 
 impl TreeView {
     /// Lay out `tree`, with every clade unfolded.
     pub fn new(tree: Tree) -> Self {
+        Self::with_original(tree, None)
+    }
+
+    fn with_original(tree: Tree, original: Option<Tree>) -> Self {
         let len = tree.len();
         let preorder: Vec<NodeId> = tree.preorder().collect();
         let has_lengths = preorder
@@ -146,7 +161,9 @@ impl TreeView {
             folded: vec![false; len],
             rows: Vec::new(),
             node_rows: vec![HIDDEN; len],
+            node_ys: vec![0.0; len],
             search_names: OnceLock::new(),
+            original,
         };
         view.layout_rows();
         view
@@ -183,6 +200,52 @@ impl TreeView {
         self.tree.metadata.rootedness
     }
 
+    /// Whether the view is rooted somewhere other than in the file.
+    pub fn is_rerooted(&self) -> bool {
+        self.original.is_some()
+    }
+
+    /// Root on the middle of the branch above `id`, keeping support values
+    /// and annotations with their branches. Clades are unfolded. Returns the
+    /// new id of `id`.
+    pub fn root_on(&mut self, id: NodeId) -> Result<NodeId> {
+        let (tree, mapped) = reroot_on_branch_mapped(&self.tree, id)?;
+        self.replace_tree(tree);
+        Ok(mapped
+            .get(id.index())
+            .copied()
+            .flatten()
+            .unwrap_or_else(|| self.tree.root()))
+    }
+
+    /// Root at the middle of the longest path between two tips. Needs branch
+    /// lengths. Returns the new root.
+    pub fn root_at_midpoint(&mut self) -> Result<NodeId> {
+        let (tree, _) = reroot_midpoint_mapped(&self.tree)?;
+        self.replace_tree(tree);
+        Ok(self.tree.root())
+    }
+
+    /// Go back to the root from the file. Returns whether anything changed.
+    pub fn restore_root(&mut self) -> bool {
+        match self.original.take() {
+            Some(original) => {
+                *self = Self::new(original);
+                true
+            }
+            None => false,
+        }
+    }
+
+    // Lays out a rerooted tree, keeping the tree from the file.
+    fn replace_tree(&mut self, tree: Tree) {
+        let original = self
+            .original
+            .take()
+            .unwrap_or_else(|| std::mem::take(&mut self.tree));
+        *self = Self::with_original(tree, Some(original));
+    }
+
     /// Rows in the current layout: one per tip or folded clade.
     pub fn row_count(&self) -> usize {
         self.rows.len()
@@ -200,6 +263,13 @@ impl TreeView {
             HIDDEN => None,
             row => Some(row as usize),
         }
+    }
+
+    /// Exact height of `id` in rows, or `None` when it is inside a folded
+    /// clade. Internal nodes sit midway between their first and last child,
+    /// so they may fall between rows.
+    pub fn y(&self, id: NodeId) -> Option<f64> {
+        self.row_of(id).map(|_| self.node_ys[id.index()])
     }
 
     /// Horizontal position of `id` from the root.
@@ -279,6 +349,7 @@ impl TreeView {
                     segments.push(Segment::Branch {
                         node: id,
                         row: node_row,
+                        y: self.node_ys[id.index()],
                         from,
                         to: x,
                     });
@@ -287,11 +358,14 @@ impl TreeView {
                     && top < end
                     && bottom >= first
                 {
+                    let (top_y, bottom_y) = self.children_ys(id);
                     segments.push(Segment::Connector {
                         node: id,
                         x,
                         top,
                         bottom,
+                        top_y,
+                        bottom_y,
                     });
                 }
                 current = self.tree.parent(id);
@@ -417,6 +491,13 @@ impl TreeView {
         ))
     }
 
+    // Exact heights of the first and last child of an unfolded node.
+    fn children_ys(&self, id: NodeId) -> (f64, f64) {
+        let first = self.tree.first_child(id).expect("Connector has children");
+        let last = self.tree.children(id).last().unwrap_or(first);
+        (self.node_ys[first.index()], self.node_ys[last.index()])
+    }
+
     fn search_names(&self) -> &[(NodeId, String)] {
         self.search_names.get_or_init(|| {
             self.tree
@@ -427,7 +508,8 @@ impl TreeView {
     }
 
     // Gives each tip or folded clade a row, then places internal nodes
-    // midway between their first and last child.
+    // midway between their first and last child. Heights are kept exact, so
+    // nested clades stay centered; rows are the heights rounded.
     fn layout_rows(&mut self) {
         self.rows.clear();
         self.node_rows.iter_mut().for_each(|r| *r = HIDDEN);
@@ -440,6 +522,7 @@ impl TreeView {
             visited.push(id);
             if self.tree.is_leaf(id) || self.folded[id.index()] {
                 self.node_rows[id.index()] = self.rows.len() as u32;
+                self.node_ys[id.index()] = self.rows.len() as f64;
                 self.rows.push(id);
                 continue;
             }
@@ -448,8 +531,11 @@ impl TreeView {
             stack[start..].reverse();
         }
         for &id in visited.iter().rev() {
-            if let Some((top, bottom)) = self.children_rows(id) {
-                self.node_rows[id.index()] = ((top + bottom) / 2) as u32;
+            if self.children_rows(id).is_some() {
+                let (top, bottom) = self.children_ys(id);
+                let y = (top + bottom) / 2.0;
+                self.node_ys[id.index()] = y;
+                self.node_rows[id.index()] = y.round() as u32;
             }
         }
     }
@@ -642,7 +728,10 @@ mod test {
         let clade = view.tree().parent(view.row_node(2)).unwrap();
         assert_eq!(view.row_of(clade), Some(3));
         assert_eq!(view.tips_below(clade), 3);
-        assert_eq!(view.row_of(view.tree().root()), Some(1));
+        // The root sits midway between its clades at 0.5 and 3.
+        let root = view.tree().root();
+        assert_eq!(view.y(root), Some(1.75));
+        assert_eq!(view.row_of(root), Some(2));
     }
 
     #[test]
@@ -781,5 +870,34 @@ mod test {
         );
         assert_eq!(LayerValue::Number(95.0).to_string(), "95");
         assert_eq!(LayerValue::Number(0.031_24).to_string(), "0.0312");
+    }
+
+    #[test]
+    fn test_reroot() {
+        let mut view = view("((A:1,B:2)90:0.5,C:1,(D:1,E:1)80:0.4);");
+        assert!(!view.is_rerooted());
+        let ab = view.tree().parent(view.row_node(0)).unwrap();
+        view.toggle_fold(ab);
+        let c = view.find_tips("c")[0];
+        let new_c = view.root_on(c).unwrap();
+        assert!(view.is_rerooted());
+        assert_eq!(view.label(new_c), Some("C"));
+        assert_eq!(view.tree().parent(new_c), Some(view.tree().root()));
+        assert_eq!(view.row_count(), 5);
+        assert_eq!(view.rootedness(), Rootedness::Rooted);
+        // Rerooting twice still restores the file's root.
+        view.root_on(view.find_tips("d")[0]).unwrap();
+        assert!(view.restore_root());
+        assert!(!view.is_rerooted());
+        assert_eq!(row_labels(&view), ["A", "B", "C", "D", "E"]);
+        assert!(!view.restore_root());
+        let root = view.root_at_midpoint().unwrap();
+        assert_eq!(root, view.tree().root());
+        assert!(view.root_on(view.tree().root()).is_err());
+        assert!(
+            super::TreeView::new(parse_tree_str("((A,B),C);").unwrap())
+                .root_at_midpoint()
+                .is_err()
+        );
     }
 }

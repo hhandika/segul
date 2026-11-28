@@ -32,7 +32,7 @@ pub use parsimony::{
     BranchSwap, GapMode, ParsimonyBranchLengths, ParsimonyOptions, ParsimonyResult,
     ParsimonySearch, estimate_parsimony,
 };
-pub use rooting::{RootingMethod, reroot_midpoint, reroot_outgroup};
+pub use rooting::{RootingMethod, reroot_midpoint, reroot_on_branch, reroot_outgroup};
 
 const DEFAULT_PREFIX: &str = "tree_infer";
 
