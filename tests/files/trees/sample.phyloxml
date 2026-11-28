@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phyloxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.phyloxml.org">
+  <!-- Sample PhyloXML fixture -->
+  <phylogeny rooted="true">
+    <name>primates</name>
+    <description>Sample primate phylogeny</description>
+    <clade>
+      <clade branch_length="0.12">
+        <confidence type="bootstrap">98</confidence>
+        <property ref="rate" datatype="xsd:decimal" applies_to="parent_branch">0.002</property>
+        <clade branch_length="0.05">
+          <name>Homo &amp; sapiens</name>
+        </clade>
+        <clade>
+          <branch_length>0.07</branch_length>
+          <taxonomy>
+            <scientific_name>Pan troglodytes</scientific_name>
+          </taxonomy>
+        </clade>
+      </clade>
+      <clade branch_length="0.25">
+        <name>Gorilla</name>
+      </clade>
+    </clade>
+  </phylogeny>
+</phyloxml>

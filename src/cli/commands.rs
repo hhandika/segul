@@ -21,6 +21,7 @@ use super::args::MainSubcommand;
 use super::args::align::{AlignmentSubcommand, PartitionSubcommand};
 use super::args::genomics::{ContigSubcommand, MafSubcommand, SeqReadSubcommand};
 use super::args::sequence::SequenceSubcommand;
+use super::args::tree::TreeSubcommand;
 use super::args::view::ViewSubcommand;
 use super::contig::summarize::ContigCliParser;
 use super::maf::convert::MafConvertParser;
@@ -28,6 +29,7 @@ use super::maf::summary::MafSummaryParser;
 use super::report::{ReportCliParser, RunCliParser};
 use super::sequence::addition::AdditionParser;
 use super::sequence::filter::SequenceFilterParser;
+use super::tree::convert::TreeConvertParser;
 use super::view::align::AlignViewParser;
 use super::view::summary::SummaryViewParser;
 
@@ -39,6 +41,7 @@ pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand, ctx: &ReportCont
         MainSubcommand::Alignment(subcommand) => match_alignment_subcommand(subcommand, ctx),
         MainSubcommand::Partition(subcommand) => match_partition_subcommand(subcommand, ctx),
         MainSubcommand::Sequence(subcommand) => match_sequence_subcommand(subcommand, ctx),
+        MainSubcommand::Tree(subcommand) => match_tree_subcommand(subcommand, ctx),
         MainSubcommand::Run(args) => RunCliParser::new(args).run(ctx),
         MainSubcommand::Report(sub) => match sub {
             super::args::ReportSubcommand::Verify(args) => ReportCliParser::verify(args),
@@ -116,5 +119,11 @@ pub(crate) fn match_view_subcommand(subcommand: &ViewSubcommand) {
     match subcommand {
         ViewSubcommand::Align(args) => AlignViewParser::new(args).view(),
         ViewSubcommand::Summary(args) => SummaryViewParser::new(args).view(),
+    };
+}
+
+fn match_tree_subcommand(subcommand: &TreeSubcommand, ctx: &ReportContext) {
+    match subcommand {
+        TreeSubcommand::Convert(args) => TreeConvertParser::new(args).convert(ctx),
     };
 }

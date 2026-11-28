@@ -1,0 +1,8 @@
+[&R] (
+  TaxonA:0.1,
+  TaxonB:0.2
+):0.05;
+
+(TaxonC:0.3,
+ TaxonD:0.4);
+(TaxonE:0.5,TaxonF:0.6);

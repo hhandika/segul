@@ -1,0 +1,8 @@
+#NEXUS
+BEGIN TAXA;
+  DIMENSIONS NTAX=3;
+  TAXLABELS Alpha Beta Gamma;
+END;
+BEGIN TREES;
+  TREE t1 = [&R] ((1:0.1,2:0.2):0.3,3:0.4);
+END;

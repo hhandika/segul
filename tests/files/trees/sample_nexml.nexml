@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nex:nexml version="0.9" xmlns:nex="http://www.nexml.org/2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <otus id="otus1">
+    <otu id="otu1" label="Taxon_A"/>
+    <otu id="otu2" label="Taxon_B"/>
+    <otu id="otu3" label="Taxon_C"/>
+  </otus>
+  <characters id="chars1" otus="otus1">
+    <matrix>
+      <row id="r1" otu="otu1"><seq>ACGTACGT</seq></row>
+    </matrix>
+  </characters>
+  <trees id="trees1" otus="otus1">
+    <tree id="tree1" label="nexml_demo" xsi:type="nex:FloatTree">
+      <rootedge id="re1" target="n0" length="0.05"/>
+      <node id="n0" root="true"/>
+      <node id="n1" label="95"/>
+      <node id="n2" otu="otu1"/>
+      <node id="n3" otu="otu2"/>
+      <node id="n4" otu="otu3"/>
+      <edge id="e1" source="n0" target="n1" length="0.2">
+        <meta xsi:type="nex:LiteralMeta" property="posterior" content="0.99"/>
+      </edge>
+      <edge id="e2" source="n0" target="n4" length="0.35"/>
+      <edge id="e3" source="n1" target="n2" length="0.1"/>
+      <edge id="e4" source="n1" target="n3" length="0.15"/>
+    </tree>
+  </trees>
+</nex:nexml>

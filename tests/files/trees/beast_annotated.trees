@@ -1,0 +1,12 @@
+#NEXUS
+BEGIN TAXA;
+  DIMENSIONS NTAX=3;
+  TAXLABELS TaxonA TaxonB TaxonC;
+END;
+BEGIN TREES;
+  TRANSLATE
+    1 TaxonA,
+    2 TaxonB,
+    3 TaxonC;
+  TREE mcc = [&R] ((1[&height=0.2,rate=0.002]:0.2,2[&height=0.2,rate=0.002]:0.2)[&height_95%_HPD={0.1,0.5},posterior=0.99]:0.3,3:0.5);
+END;

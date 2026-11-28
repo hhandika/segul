@@ -1,0 +1,17 @@
+#NEXUS
+BEGIN DATA;
+  DIMENSIONS NTAX=3 NCHAR=6;
+  FORMAT DATATYPE=DNA MISSING=? GAP=-;
+  MATRIX
+    TaxonA ACGTAC
+    TaxonB TGCATG
+    TaxonC AAAAAA
+  ;
+END;
+BEGIN TREES;
+  TRANSLATE
+    1 TaxonA,
+    2 TaxonB,
+    3 TaxonC;
+  TREE t1 = [&R] ((1:0.1,2:0.2):0.3,3:0.4);
+END;

@@ -8,6 +8,7 @@ mod plot;
 mod read;
 mod report;
 mod sequence;
+mod tree;
 mod view;
 
 #[cfg(target_os = "windows")]

@@ -1,0 +1,12 @@
+#NEXUS
+[Simple NEXUS tree file [with nested comment]]
+BEGIN TREES;
+  TRANSLATE
+    1 'Homo sapiens',
+    2 Pan_troglodytes,
+    3 Gorilla_gorilla,
+    4 Pongo_abelii
+  ;
+  TREE * best_tree = [&R] ((1:0.1,2:0.15)99:0.2,(3:0.25,4:0.3)95:0.1);
+  UTREE unrooted_tree = [&U] (1:0.1,2:0.15,(3:0.25,4:0.3):0.3);
+END;

@@ -17,6 +17,7 @@ use segul_core::report::methods::MethodsFormat;
 use segul_core::report::verify::VerifyScope;
 
 use super::args::sequence::SequenceSubcommand;
+use super::args::tree::TreeSubcommand;
 use super::args::view::ViewSubcommand;
 use crate::helper::logger;
 use clap::{crate_authors, crate_description, crate_name, crate_version};
@@ -24,6 +25,7 @@ use clap::{crate_authors, crate_description, crate_name, crate_version};
 pub(crate) mod align;
 pub(crate) mod genomics;
 pub(crate) mod sequence;
+pub(crate) mod tree;
 pub(crate) mod view;
 
 #[derive(Parser)]
@@ -74,6 +76,8 @@ pub(crate) enum MainSubcommand {
     Partition(PartitionSubcommand),
     #[command(subcommand, about = "Sequence analyses", name = "sequence")]
     Sequence(SequenceSubcommand),
+    #[command(subcommand, about = "Phylogenetic tree analyses", name = "tree")]
+    Tree(TreeSubcommand),
     #[command(about = "Re-run a report.json or segul-workflow.json", name = "run")]
     Run(RunArgs),
     #[command(

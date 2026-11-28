@@ -92,6 +92,7 @@ segul-core = { workspace = true, features = [
     "read",
     "contig",
     "maf",
+    "tree",
     "plot",
 ] }
 alphanumeric-sort.workspace = true
