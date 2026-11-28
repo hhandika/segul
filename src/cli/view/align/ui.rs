@@ -8,7 +8,7 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Clear, Paragraph, Wrap};
 
-use crate::cli::view::thousands;
+use crate::cli::view::{centered, count, truncate};
 use crate::core::align::view::{WindowStat, is_gap};
 
 use super::app::{App, Overlay, SIDEBAR_LINES, SidebarTab};
@@ -765,30 +765,6 @@ fn render_goto_matches(
     frame.render_widget(Paragraph::new(lines), inner);
 }
 
-fn centered(area: Rect, width: u16, height: u16) -> Rect {
-    Rect::new(
-        area.x + (area.width - width) / 2,
-        area.y + (area.height - height) / 2,
-        width,
-        height,
-    )
-}
-
-// Site and taxon counts with thousands separators.
-fn count(value: usize) -> String {
-    thousands(value as i128)
-}
-
-// Cuts `text` to `width` characters, ending with an ellipsis when cut.
-fn truncate(text: &str, width: usize) -> String {
-    if text.chars().count() <= width {
-        return text.to_string();
-    }
-    let mut cut: String = text.chars().take(width.saturating_sub(1)).collect();
-    cut.push('…');
-    cut
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -897,11 +873,5 @@ mod test {
         let text = screen(&mut app, &palette);
         assert!(text.contains("Open file (2)"));
         assert!(text.contains("Enter open"));
-    }
-
-    #[test]
-    fn test_truncate() {
-        assert_eq!(truncate("sample", 10), "sample");
-        assert_eq!(truncate("sample_long", 6), "sampl…");
     }
 }

@@ -33,6 +33,7 @@ use super::tree::convert::TreeConvertParser;
 use super::tree::infer::TreeInferParser;
 use super::view::align::AlignViewParser;
 use super::view::summary::SummaryViewParser;
+use super::view::tree::TreeViewParser;
 
 pub(crate) fn match_cli_subcommand(subcommand: &MainSubcommand, ctx: &ReportContext) {
     match subcommand {
@@ -120,6 +121,7 @@ pub(crate) fn match_view_subcommand(subcommand: &ViewSubcommand) {
     match subcommand {
         ViewSubcommand::Align(args) => AlignViewParser::new(args).view(),
         ViewSubcommand::Summary(args) => SummaryViewParser::new(args).view(),
+        ViewSubcommand::Tree(args) => TreeViewParser::new(args).view(),
     };
 }
 

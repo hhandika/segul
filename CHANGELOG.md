@@ -28,6 +28,7 @@ New Features:
 - `segul view align` calls runs of sites windows instead of chunks. Set their size with `--window`; `--chunk` still works.
 - `segul view align` shows the partitions of concatenated alignments, read from a NEXUS `sets` block in the file or a `<name>_partition.nex` or `<name>_partition.txt` file next to it. A track above the ruler names each partition, `{` and `}` jump between them, Ctrl+G goes to a site, partition, `partition:site` (a site counted within the partition), or taxon and suggests matching partitions as you type, and the sidebar lists partitions with their gap and variable-site shares (Ctrl+K T switches between windows and partitions). Codon position subsets of a gene share one band.
 - `segul view align` no longer has paged windows (Ctrl+K P), which showed one window at a time. Windows, their sizes, and `[` and `]` stay.
+- New `segul view tree` opens Newick, Extended Newick, NEXUS, PhyloXML, and NeXML trees in an interactive terminal viewer laid out like `segul view align`. It stays fast on trees with hundreds of thousands of tips and draws only the rows in view. Fold clades with Space, move between trees in a file with `[` and `]`, find tips with Ctrl+F, switch between branch lengths and a cladogram with F4, and copy a subtree as Newick with Ctrl+C. Support, branch lengths, and annotation values (such as BEAST `posterior`) are layers you show or hide with 1 to 9, and F2 colors branches by a layer.
 
 Bug Fixes:
 
@@ -46,6 +47,7 @@ Performance:
 Library Changes:
 
 - `TreeConversion::with_progress` and `TreeEstimation::with_progress` report progress per file and can cancel a run, like the other tasks.
+- Added `segul_core::core::tree::view` under the `tree` feature: `TreeView` lays out a tree in rows with foldable clades and returns only the branches in view (`segments`), plus `read_tree_at` and `count_trees` for multi-tree files. Values drawn over the tree come from the `TreeLayer` trait (`SupportLayer`, `BranchLengthLayer`, `AnnotationLayer`, `annotation_keys`), so new layers need no layout changes. `Tree::node_id` turns an index back into a `NodeId`.
 - Added `segul_core::core::tree::estimate` (`TreeEstimation`, `estimate_matrix`, `DistanceMatrix`, `TreeMethod`, `estimate_nj`, `estimate_bionj`, `estimate_upgma`, `estimate_parsimony`, `reroot_outgroup`, `reroot_midpoint`) and `TaskKind::TreeInfer` / `TreeInferParams` / `TreeInferStats` under the `tree` feature, widening `stats::distance` to `#[cfg(any(feature = "align", feature = "tree"))]`.
 - Added `segul_core::report` (`RunReport`, `RunReportBuilder`, `ReportContext`, `ChecksumMode`, `verify_report`, `replay_report`, `replay_workflow`, `WorkflowRecipe`, `render_methods`, and `compat::parse_report_payload` for reading both Schema v2 `report.json` and legacy flat `*-report.json`).
 - Updated `AlignReport::from_json`, `ContigReport::from_json`, `DistanceReport::from_json`, and `ReadReport::from_json` to deserialize both Schema v2 and legacy flat JSON reports, and sorted input file discovery in `helper::finder`.

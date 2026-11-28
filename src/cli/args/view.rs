@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use clap::{Args, Subcommand, builder};
 use segul_core::color::Colormap;
+use segul_core::parser::tree::TreeFmt;
 
 use super::IOArgs;
 
@@ -25,6 +26,17 @@ pub(crate) enum ViewSubcommand {
         name = "summary"
     )]
     Summary(ViewSummaryArgs),
+    #[command(
+        about = "View phylogenetic trees in an interactive terminal viewer",
+        name = "tree",
+        after_help = "Multiple files:\n  \
+        segul view tree -d trees/             View every tree file in a folder\n  \
+        segul view tree -i a.nwk b.tre        View several files\n\n\
+        Files with several trees open on the first one. [ / ] moves to the previous \
+        or next tree. Ctrl+PgUp / Ctrl+PgDn (Ctrl+fn+↑ / ↓ on macOS) moves to the \
+        previous or next file."
+    )]
+    Tree(ViewTreeArgs),
 }
 
 #[derive(Args)]
@@ -70,6 +82,42 @@ pub(crate) struct ViewAlignArgs {
             .map(|s| s.parse::<usize>().expect("Failed parsing window size")),
     )]
     pub(crate) window: usize,
+}
+
+#[derive(Args)]
+pub(crate) struct ViewTreeArgs {
+    #[command(flatten)]
+    pub(crate) io: IOArgs,
+    #[arg(
+        short = 'f',
+        long = "input-format",
+        value_name = "TREE INPUT FORMAT",
+        help = "Specify input tree format",
+        default_value = "auto",
+        value_parser = builder::PossibleValuesParser::new([
+            "auto", "newick", "enewick", "nexus", "phyloxml", "nexml",
+        ])
+        .map(|x| x.parse::<TreeFmt>().expect("Invalid tree input format")),
+    )]
+    pub(crate) input_fmt: TreeFmt,
+    #[arg(
+        long = "theme",
+        help = "Colors for a dark or light terminal",
+        default_value = "dark",
+        value_parser = builder::PossibleValuesParser::new(["dark", "light"]),
+    )]
+    pub(crate) theme: String,
+    #[arg(
+        long,
+        help = "Colormap for coloring branches by a value",
+        default_value_t = Colormap::Viridis,
+        value_parser = builder::PossibleValuesParser::new([
+            "viridis", "cividis", "magma", "inferno", "plasma", "blues", "greens",
+            "ylgnbu", "ylorrd", "rdbu", "puor", "brbg",
+        ])
+            .map(|x| x.parse::<Colormap>().expect("Invalid colormap")),
+    )]
+    pub(crate) colormap: Colormap,
 }
 
 #[derive(Args)]

@@ -429,6 +429,13 @@ impl Tree {
         self.root
     }
 
+    /// Node at arena index `index`, or `None` past the last node. Use it to
+    /// turn an index from [`NodeId::index`] back into a [`NodeId`].
+    #[inline]
+    pub fn node_id(&self, index: usize) -> Option<NodeId> {
+        (index < self.nodes.len()).then_some(NodeId(index as u32))
+    }
+
     /// Total number of nodes (tips + internal nodes) in the tree.
     #[inline]
     pub fn len(&self) -> usize {
@@ -834,5 +841,7 @@ mod tests {
             vec!["A", "B", "C"]
         );
         assert_eq!(tree.support_values(internal), vec![95.0, 99.0]);
+        assert_eq!(tree.node_id(internal.index()), Some(internal));
+        assert_eq!(tree.node_id(5), None);
     }
 }
