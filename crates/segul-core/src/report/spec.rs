@@ -54,6 +54,8 @@ pub enum TaskKind {
     SequenceTranspose,
     #[serde(rename = "tree.convert")]
     TreeConvert,
+    #[serde(rename = "tree.infer")]
+    TreeInfer,
 }
 
 impl TaskKind {
@@ -82,6 +84,7 @@ impl TaskKind {
             Self::SequenceTranslate => "sequence.translate",
             Self::SequenceTranspose => "sequence.transpose",
             Self::TreeConvert => "tree.convert",
+            Self::TreeInfer => "tree.infer",
         }
     }
 
@@ -110,6 +113,7 @@ impl TaskKind {
             Self::SequenceTranslate => "Sequence translation",
             Self::SequenceTranspose => "Sequence transposition",
             Self::TreeConvert => "Tree format conversion",
+            Self::TreeInfer => "Tree inference",
         }
     }
 
@@ -155,12 +159,13 @@ impl FromStr for TaskKind {
             "sequence.translate" => Ok(Self::SequenceTranslate),
             "sequence.transpose" => Ok(Self::SequenceTranspose),
             "tree.convert" => Ok(Self::TreeConvert),
+            "tree.infer" => Ok(Self::TreeInfer),
             _ => Err(format!("Unknown SEGUL task kind '{}'", s)),
         }
     }
 }
 
-/// Typed parameters for all 21 SEGUL tasks, dispatched explicitly by [`TaskKind`].
+/// Typed parameters for all 23 SEGUL tasks, dispatched explicitly by [`TaskKind`].
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskParameters {
     AlignSummary(AlignSummaryParams),
@@ -185,6 +190,7 @@ pub enum TaskParameters {
     SequenceTranslate(SequenceTranslateParams),
     SequenceTranspose(SequenceTransposeParams),
     TreeConvert(TreeConvertParams),
+    TreeInfer(TreeInferParams),
 }
 
 impl TaskParameters {
@@ -214,6 +220,7 @@ impl TaskParameters {
             TaskKind::SequenceTranslate => Self::SequenceTranslate(serde_json::from_value(v)?),
             TaskKind::SequenceTranspose => Self::SequenceTranspose(serde_json::from_value(v)?),
             TaskKind::TreeConvert => Self::TreeConvert(serde_json::from_value(v)?),
+            TaskKind::TreeInfer => Self::TreeInfer(serde_json::from_value(v)?),
         };
         Ok(parsed)
     }
@@ -243,6 +250,7 @@ impl TaskParameters {
             Self::SequenceTranslate(p) => serde_json::to_value(p),
             Self::SequenceTranspose(p) => serde_json::to_value(p),
             Self::TreeConvert(p) => serde_json::to_value(p),
+            Self::TreeInfer(p) => serde_json::to_value(p),
         };
         v.context("Failed serializing task parameters")
     }
@@ -518,6 +526,28 @@ pub struct TreeConvertParams {
     pub gzip: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TreeInferParams {
+    pub input_format: String,
+    pub datatype: String,
+    pub method: String,
+    pub model: Option<String>,
+    pub parsimony_search: Option<String>,
+    pub swap: Option<String>,
+    pub replicates: Option<usize>,
+    pub gap_mode: Option<String>,
+    pub mp_branch_lengths: Option<String>,
+    pub bootstrap: usize,
+    pub seed: u64,
+    pub rooting: String,
+    pub outgroup: Option<Vec<String>>,
+    pub output_format: String,
+    pub single_file: bool,
+    pub translate: bool,
+    pub gzip: bool,
+    pub prefix: Option<String>,
+}
+
 /// Canonical string helpers for `segul-core` enums so `report.json`
 /// parameters always match `FromStr` across CLI, SEGUI, and PySEGUL.
 pub mod canonical {
@@ -624,7 +654,7 @@ pub mod canonical {
         }
     }
 
-    #[cfg(feature = "align")]
+    #[cfg(any(feature = "align", feature = "tree"))]
     pub fn distance_model(model: &crate::stats::distance::DistanceModel) -> &'static str {
         use crate::stats::distance::DistanceModel;
         match model {

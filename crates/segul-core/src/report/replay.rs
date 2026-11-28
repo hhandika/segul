@@ -726,6 +726,84 @@ fn execute_task(
                 .with_report_context(ctx.clone())
                 .convert_with_report(primary, output_dir)
         }
+        #[cfg(feature = "tree")]
+        (TaskKind::TreeInfer, TaskParameters::TreeInfer(p)) => {
+            use crate::core::tree::estimate::{
+                BranchSwap, GapMode, ParsimonyBranchLengths, ParsimonyOptions, ParsimonySearch,
+                RootingMethod, TreeEstimateOptions, TreeEstimation, TreeMethod,
+            };
+            use crate::helper::types::{DataType, InputFmt};
+            use crate::parser::tree::TreeOutputFmt;
+            use crate::stats::distance::DistanceModel;
+            use crate::writer::tree::TreeWriteOptions;
+
+            let input_fmt: InputFmt = p.input_format.parse().map_err(anyhow::Error::msg)?;
+            let datatype: DataType = p.datatype.parse().map_err(anyhow::Error::msg)?;
+            let method: TreeMethod = p.method.parse().map_err(anyhow::Error::msg)?;
+            let model: DistanceModel = p
+                .model
+                .as_deref()
+                .unwrap_or("jc69")
+                .parse()
+                .map_err(anyhow::Error::msg)?;
+            let search: ParsimonySearch = p
+                .parsimony_search
+                .as_deref()
+                .unwrap_or("auto")
+                .parse()
+                .map_err(anyhow::Error::msg)?;
+            let swap: BranchSwap = p
+                .swap
+                .as_deref()
+                .unwrap_or("tbr")
+                .parse()
+                .map_err(anyhow::Error::msg)?;
+            let gap_mode: GapMode = p
+                .gap_mode
+                .as_deref()
+                .unwrap_or("missing")
+                .parse()
+                .map_err(anyhow::Error::msg)?;
+            let branch_lengths: ParsimonyBranchLengths = p
+                .mp_branch_lengths
+                .as_deref()
+                .unwrap_or("acctran")
+                .parse()
+                .map_err(anyhow::Error::msg)?;
+            let rooting = match p.rooting.as_str() {
+                "midpoint" => RootingMethod::Midpoint,
+                "outgroup" => RootingMethod::Outgroup(p.outgroup.clone().unwrap_or_default()),
+                _ => RootingMethod::None,
+            };
+            let output_fmt: TreeOutputFmt = p.output_format.parse().map_err(anyhow::Error::msg)?;
+            let write_opts = TreeWriteOptions {
+                use_translate: p.translate,
+                gzip: p.gzip,
+                ..Default::default()
+            };
+            let options = TreeEstimateOptions {
+                method,
+                model,
+                parsimony: ParsimonyOptions {
+                    search,
+                    swap,
+                    replicates: p.replicates.unwrap_or(10),
+                    gap_mode,
+                    branch_lengths,
+                    seed: p.seed,
+                },
+                bootstrap: p.bootstrap,
+                seed: p.seed,
+                rooting,
+                output_fmt,
+                single_file: p.single_file,
+                write_opts,
+            };
+            let (_, report) = TreeEstimation::new(&input_fmt, &datatype, options)
+                .with_report_context(ctx.clone())
+                .estimate_with_report(primary, output_dir, p.prefix.as_deref())?;
+            Ok(report)
+        }
         _ => bail!("Task '{}' is not enabled in this build of segul-core", kind),
     }
 }

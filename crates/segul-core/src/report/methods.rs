@@ -315,5 +315,17 @@ fn describe_value_params(kind: super::spec::TaskKind, val: &serde_json::Value) -
             "in={}, out={}, translate={}, strip_annotations={}, gzip={}",
             p.input_format, p.output_format, p.translate, p.strip_annotations, p.gzip
         ),
+        TaskParameters::TreeInfer(p) => format!(
+            "in={}, datatype={}, method={}, model={}, bootstrap={}, seed={}, rooting={}, out={}, single_file={}",
+            p.input_format,
+            p.datatype,
+            p.method,
+            p.model.as_deref().unwrap_or("none"),
+            p.bootstrap,
+            p.seed,
+            p.rooting,
+            p.output_format,
+            p.single_file
+        ),
     }
 }

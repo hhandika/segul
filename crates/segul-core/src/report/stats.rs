@@ -31,6 +31,7 @@ pub enum ReportStatistics {
     Concat(ConcatStats),
     Filter(FilterStats),
     Trim(TrimStats),
+    TreeInfer(TreeInferStats),
     Counts(TaskCounts),
     Raw(Value),
 }
@@ -53,6 +54,7 @@ impl ReportStatistics {
             TaskKind::AlignConcat => Self::Concat(serde_json::from_value(v)?),
             TaskKind::AlignFilter => Self::Filter(serde_json::from_value(v)?),
             TaskKind::AlignTrim => Self::Trim(serde_json::from_value(v)?),
+            TaskKind::TreeInfer => Self::TreeInfer(serde_json::from_value(v)?),
             _ => match serde_json::from_value::<TaskCounts>(v.clone()) {
                 Ok(counts) => Self::Counts(counts),
                 Err(_) => Self::Raw(v),
@@ -77,6 +79,7 @@ impl ReportStatistics {
             Self::Concat(r) => serde_json::to_value(r),
             Self::Filter(r) => serde_json::to_value(r),
             Self::Trim(r) => serde_json::to_value(r),
+            Self::TreeInfer(r) => serde_json::to_value(r),
             Self::Counts(r) => serde_json::to_value(r),
             Self::Raw(v) => Ok(v.clone()),
         };
@@ -177,6 +180,30 @@ pub struct MafSpeciesSummaryReport {
     pub n_count: usize,
     pub ref_bases_covered: usize,
     pub ref_coverage: Option<f64>,
+}
+
+/// Per-locus summary statistics for phylogenetic tree inference.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LocusTreeInferStats {
+    pub locus: String,
+    pub ntax: usize,
+    pub nchar: usize,
+    pub parsimony_score: Option<usize>,
+    pub ci: Option<f64>,
+    pub ri: Option<f64>,
+    pub tree_length: Option<f64>,
+    pub bootstrap_replicates: usize,
+    pub rooted: bool,
+    pub undefined_pairs: usize,
+}
+
+/// Tree inference summary across all processed alignments.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TreeInferStats {
+    pub files: usize,
+    pub trees_written: usize,
+    pub method: String,
+    pub entries: Vec<LocusTreeInferStats>,
 }
 
 /// Concise counts for transform and utility tasks.
