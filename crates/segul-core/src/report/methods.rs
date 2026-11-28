@@ -327,5 +327,16 @@ fn describe_value_params(kind: super::spec::TaskKind, val: &serde_json::Value) -
             p.output_format,
             p.single_file
         ),
+        TaskParameters::TreeSummary(p) => format!(
+            "in={}, method={}, burnin={}, branch_lengths={}, hpd={}, partial_taxa={}, rooting={}, out={}",
+            p.input_format,
+            p.method,
+            p.burnin,
+            p.branch_lengths,
+            p.hpd_level,
+            p.allow_partial_taxa,
+            p.rooting,
+            p.output_format
+        ),
     }
 }

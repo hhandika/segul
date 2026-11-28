@@ -31,6 +31,7 @@ use super::sequence::addition::AdditionParser;
 use super::sequence::filter::SequenceFilterParser;
 use super::tree::convert::TreeConvertParser;
 use super::tree::infer::TreeInferParser;
+use super::tree::summary::TreeSummaryParser;
 use super::view::align::AlignViewParser;
 use super::view::summary::SummaryViewParser;
 
@@ -127,5 +128,6 @@ fn match_tree_subcommand(subcommand: &TreeSubcommand, ctx: &ReportContext) {
     match subcommand {
         TreeSubcommand::Convert(args) => TreeConvertParser::new(args).convert(ctx),
         TreeSubcommand::Infer(args) => TreeInferParser::new(args).infer(ctx),
+        TreeSubcommand::Summary(args) => TreeSummaryParser::new(args).summarize(ctx),
     };
 }

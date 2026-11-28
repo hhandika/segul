@@ -16,9 +16,11 @@ use std::str::FromStr;
 
 use anyhow::{Context, Result, bail};
 use flate2::read::MultiGzDecoder;
+use rayon::prelude::*;
 use walkdir::WalkDir;
 
 use crate::helper::files;
+use crate::helper::progress::{self, ProgressReporter};
 use crate::parser::IO_BUF_SIZE;
 
 pub use model::{
@@ -324,6 +326,141 @@ pub fn parse_trees_file_par(path: &Path, fmt: TreeFmt) -> Result<Vec<Tree>> {
             parse_newick_bytes_par(&bytes, &opts)
         }
     }
+}
+
+/// Count trees in a file without building node arenas.
+pub fn count_trees_file(path: &Path, fmt: TreeFmt) -> Result<usize> {
+    let opts = ParseOptions {
+        parse_annotations: false,
+        ..Default::default()
+    };
+    let mut reader = TreeReader::open(path, fmt, opts)?;
+    reader.skip_trees(usize::MAX)
+}
+
+/// Read a single tree at 0-based `index` from a file, skipping earlier trees cleanly.
+pub(crate) fn read_single_tree_at(
+    path: &Path,
+    fmt: TreeFmt,
+    opts: &ParseOptions,
+    index: usize,
+) -> Result<Tree> {
+    let mut reader = TreeReader::open(path, fmt, opts.clone())?;
+    let skipped = reader.skip_trees(index)?;
+    if skipped < index {
+        bail!(
+            "Requested tree index {} in {}, but file only contains {} tree(s)",
+            index,
+            path.display(),
+            skipped
+        );
+    }
+    reader
+        .next()
+        .transpose()?
+        .with_context(|| format!("Tree index {} not found in {}", index, path.display()))
+}
+
+/// Stream a tree file in bounded chunks, parsing Newick/NEXUS chunks in parallel via `rayon`.
+///
+/// Calls `on_chunk(start_retained_idx, trees)` for each non-empty chunk after skipping `skip`
+/// initial trees, returning the total number of retained trees processed.
+pub(crate) fn read_trees_chunked_par<F>(
+    path: &Path,
+    fmt: TreeFmt,
+    opts: &ParseOptions,
+    skip: usize,
+    chunk_size: usize,
+    progress: Option<&dyn ProgressReporter>,
+    mut on_chunk: F,
+) -> Result<usize>
+where
+    F: FnMut(usize, Vec<Tree>) -> Result<()>,
+{
+    let chunk_size = chunk_size.max(1);
+    let mut reader = TreeReader::open(path, fmt, opts.clone())?;
+    if skip > 0 {
+        reader.skip_trees(skip)?;
+    }
+
+    let mut total_retained = 0usize;
+    match &mut reader.inner {
+        ReaderKind::Newick(r) => loop {
+            progress::check_cancelled(progress)?;
+            let raw = r.next_raw_chunk(chunk_size)?;
+            if raw.is_empty() {
+                break;
+            }
+            let trees: Vec<Tree> = raw
+                .into_par_iter()
+                .map(|slice| NewickParser::parse_bytes(&slice, opts))
+                .collect::<Result<Vec<_>>>()?;
+            let count = trees.len();
+            on_chunk(total_retained, trees)?;
+            total_retained += count;
+        },
+        ReaderKind::Nexus(r) => loop {
+            progress::check_cancelled(progress)?;
+            let raw = r.next_raw_chunk(chunk_size)?;
+            if raw.is_empty() {
+                break;
+            }
+            let trees: Vec<Tree> = raw
+                .into_par_iter()
+                .map(|rec| {
+                    let mut tree = NewickParser::parse_bytes_with_translate(
+                        &rec.body,
+                        rec.translate.as_deref(),
+                        opts,
+                    )?;
+                    tree.metadata.name = Some(rec.name);
+                    tree.metadata.is_default = rec.is_default;
+                    if tree.metadata.rootedness == Rootedness::Unknown {
+                        tree.metadata.rootedness = rec.default_rooted;
+                    }
+                    Ok(tree)
+                })
+                .collect::<Result<Vec<_>>>()?;
+            let count = trees.len();
+            on_chunk(total_retained, trees)?;
+            total_retained += count;
+        },
+        ReaderKind::PhyloXml(r) => {
+            read_iter_chunks(r, chunk_size, progress, &mut total_retained, &mut on_chunk)?;
+        }
+        ReaderKind::NeXml(r) => {
+            read_iter_chunks(r, chunk_size, progress, &mut total_retained, &mut on_chunk)?;
+        }
+    }
+
+    Ok(total_retained)
+}
+
+fn read_iter_chunks<I, F>(
+    iter: &mut I,
+    chunk_size: usize,
+    progress: Option<&dyn ProgressReporter>,
+    total_retained: &mut usize,
+    on_chunk: &mut F,
+) -> Result<()>
+where
+    I: Iterator<Item = Result<Tree>>,
+    F: FnMut(usize, Vec<Tree>) -> Result<()>,
+{
+    loop {
+        progress::check_cancelled(progress)?;
+        let mut chunk = Vec::with_capacity(chunk_size.min(64));
+        for item in iter.by_ref().take(chunk_size) {
+            chunk.push(item?);
+        }
+        if chunk.is_empty() {
+            break;
+        }
+        let count = chunk.len();
+        on_chunk(*total_retained, chunk)?;
+        *total_retained += count;
+    }
+    Ok(())
 }
 
 /// Discover tree files in a directory independently of [`crate::helper::finder::SeqFileFinder`].

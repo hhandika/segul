@@ -804,6 +804,61 @@ fn execute_task(
                 .estimate_with_report(primary, output_dir, p.prefix.as_deref())?;
             Ok(report)
         }
+        #[cfg(feature = "tree")]
+        (TaskKind::TreeSummary, TaskParameters::TreeSummary(p)) => {
+            use crate::core::tree::estimate::RootingMethod;
+            use crate::core::tree::summary::{
+                BranchLengthStrategy, BurninSpec, MccScoring, RootedMode, SummaryMethod,
+                SupportFormat, SupportPlacement, TreeSummarization, TreeSummaryOptions,
+            };
+            use crate::parser::tree::{TreeFmt, TreeOutputFmt};
+            use crate::writer::tree::TreeWriteOptions;
+
+            let input_fmt: TreeFmt = p.input_format.parse().map_err(anyhow::Error::msg)?;
+            let method: SummaryMethod = p.method.parse().map_err(anyhow::Error::msg)?;
+            let burnin: BurninSpec = p.burnin.parse().map_err(anyhow::Error::msg)?;
+            let rooted_mode: RootedMode = p.rooted_mode.parse().map_err(anyhow::Error::msg)?;
+            let mcc_scoring: MccScoring = p.mcc_scoring.parse().map_err(anyhow::Error::msg)?;
+            let branch_lengths: BranchLengthStrategy =
+                p.branch_lengths.parse().map_err(anyhow::Error::msg)?;
+            let support_format: SupportFormat =
+                p.support_format.parse().map_err(anyhow::Error::msg)?;
+            let support_placement: SupportPlacement =
+                p.support_placement.parse().map_err(anyhow::Error::msg)?;
+            let output_fmt: TreeOutputFmt = p.output_format.parse().map_err(anyhow::Error::msg)?;
+            let rooting = match p.rooting.as_str() {
+                "midpoint" => RootingMethod::Midpoint,
+                "outgroup" => RootingMethod::Outgroup(p.outgroup.clone().unwrap_or_default()),
+                _ => RootingMethod::None,
+            };
+            let target_tree = aux_path(auxiliary, "target").map(Path::to_path_buf);
+            let options = TreeSummaryOptions {
+                method,
+                target_tree,
+                burnin,
+                min_clade_prob: Some(p.min_clade_prob),
+                rooted_mode,
+                mcc_scoring,
+                branch_lengths,
+                support_format,
+                support_placement,
+                hpd_level: p.hpd_level,
+                summarize_annotations: p.summarize_annotations,
+                allow_partial_taxa: p.allow_partial_taxa,
+                rooting,
+                output_fmt,
+                write_opts: TreeWriteOptions {
+                    use_translate: p.translate,
+                    write_annotations: !p.strip_annotations,
+                    gzip: p.gzip,
+                    ..Default::default()
+                },
+            };
+            let (_, report) = TreeSummarization::new(&input_fmt, options)
+                .with_report_context(ctx.clone())
+                .summarize_with_report(primary, output_dir, p.prefix.as_deref())?;
+            Ok(report)
+        }
         _ => bail!("Task '{}' is not enabled in this build of segul-core", kind),
     }
 }

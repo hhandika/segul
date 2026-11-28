@@ -31,6 +31,12 @@ impl NodeId {
 pub struct TaxonId(u32);
 
 impl TaxonId {
+    /// Construct a [`TaxonId`] from a zero-based taxon table index.
+    #[inline]
+    pub(crate) fn from_raw(raw: u32) -> Self {
+        Self(raw)
+    }
+
     /// Return the zero-based index of this taxon.
     #[inline]
     pub fn index(self) -> usize {
@@ -373,10 +379,67 @@ impl Tree {
         }
     }
 
+    /// Return the interned [`TaxonId`] for `id` if it uses a shared [`TaxonTable`].
+    #[inline]
+    pub fn taxon_id(&self, id: NodeId) -> Option<TaxonId> {
+        let node = self.nodes.get(id.index())?;
+        if (node.flags & FLAG_INTERNED_LABEL) != 0 {
+            Some(TaxonId(node.label_start))
+        } else {
+            None
+        }
+    }
+
+    /// Clear `id`'s inline or interned label.
+    #[inline]
+    pub(crate) fn clear_label(&mut self, id: NodeId) {
+        if let Some(node) = self.nodes.get_mut(id.index()) {
+            node.label_start = 0;
+            node.label_len = 0;
+            node.flags &= !(FLAG_INTERNED_LABEL | FLAG_QUOTED_LABEL);
+        }
+    }
+
     /// Set the branch length leading into `id`.
     #[inline]
     pub(crate) fn set_branch_length(&mut self, id: NodeId, length: f64) {
         self.nodes[id.index()].branch_length = length;
+    }
+
+    /// Remove branch length leading into `id`.
+    #[inline]
+    pub(crate) fn clear_branch_length(&mut self, id: NodeId) {
+        self.nodes[id.index()].branch_length = f64::NAN;
+    }
+
+    /// Clear all node and branch annotations from the tree while keeping hybrid metadata.
+    pub(crate) fn clear_annotations(&mut self) {
+        for node in &mut self.nodes {
+            node.flags &= !(FLAG_HAS_NODE_ANNOT | FLAG_HAS_BRANCH_ANNOT);
+        }
+        if let Some(store) = self.annotations.as_deref_mut() {
+            store.node_annotations.clear();
+            store.branch_annotations.clear();
+            if store.hybrids.is_empty() {
+                self.annotations = None;
+            }
+        }
+    }
+
+    /// Replace all node-level annotations on `id`.
+    pub(crate) fn set_node_annotations(&mut self, id: NodeId, annots: Vec<Annotation>) {
+        if annots.is_empty() {
+            self.nodes[id.index()].flags &= !FLAG_HAS_NODE_ANNOT;
+            if let Some(store) = self.annotations.as_deref_mut() {
+                store.node_annotations.remove(&id);
+            }
+            return;
+        }
+        self.nodes[id.index()].flags |= FLAG_HAS_NODE_ANNOT;
+        let store = self
+            .annotations
+            .get_or_insert_with(|| Box::new(AnnotationStore::default()));
+        store.node_annotations.insert(id, annots);
     }
 
     /// Attach a parsed annotation to a node or its subtending branch.

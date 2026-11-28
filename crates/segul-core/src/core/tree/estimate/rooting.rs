@@ -3,7 +3,7 @@
 use ahash::AHashSet;
 use anyhow::{Result, bail};
 
-use crate::parser::tree::{NodeId, Rootedness, Tree};
+use crate::parser::tree::{Annotation, AnnotationTarget, NodeId, Rootedness, Tree};
 
 /// Rooting strategy applied after tree estimation.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -73,7 +73,7 @@ pub fn reroot_midpoint(tree: &Tree) -> Result<Tree> {
 
     let graph = TreeGraph::from_tree(tree);
     for (u, nbrs) in graph.adj.iter().enumerate() {
-        for &(v, len) in nbrs {
+        for &(v, len, _) in nbrs {
             if u < v {
                 let l = len.ok_or_else(|| {
                     anyhow::anyhow!(
@@ -133,10 +133,58 @@ pub fn reroot_midpoint(tree: &Tree) -> Result<Tree> {
     unreachable!("Midpoint must lie along diameter path")
 }
 
+#[derive(Clone, Default)]
+struct EdgeMeta {
+    label: Option<String>,
+    quoted: bool,
+    node_annotations: Vec<Annotation>,
+    branch_annotations: Vec<Annotation>,
+}
+
+impl EdgeMeta {
+    fn is_empty(&self) -> bool {
+        self.label.is_none()
+            && self.node_annotations.is_empty()
+            && self.branch_annotations.is_empty()
+    }
+
+    fn merge_with(self, other: Self) -> Self {
+        if self.is_empty() {
+            return other;
+        }
+        if other.is_empty() {
+            return self;
+        }
+        let (label, quoted) = if self.label.is_some() {
+            (self.label, self.quoted)
+        } else {
+            (other.label, other.quoted)
+        };
+        let node_annotations = if !self.node_annotations.is_empty() {
+            self.node_annotations
+        } else {
+            other.node_annotations
+        };
+        let branch_annotations = if !self.branch_annotations.is_empty() {
+            self.branch_annotations
+        } else {
+            other.branch_annotations
+        };
+        Self {
+            label,
+            quoted,
+            node_annotations,
+            branch_annotations,
+        }
+    }
+}
+
 struct TreeGraph {
-    adj: Vec<Vec<(usize, Option<f64>)>>,
+    adj: Vec<Vec<(usize, Option<f64>, EdgeMeta)>>,
     labels: Vec<Option<String>>,
     quoted: Vec<bool>,
+    leaf_node_annotations: Vec<Vec<Annotation>>,
+    root_node_annotations: Vec<Annotation>,
     is_leaf: Vec<bool>,
     leaf_count: usize,
 }
@@ -147,8 +195,10 @@ impl TreeGraph {
         let mut adj = vec![Vec::new(); n];
         let mut labels = vec![None; n];
         let mut quoted = vec![false; n];
+        let mut leaf_node_annotations = vec![Vec::new(); n];
         let mut is_leaf = vec![false; n];
         let mut leaf_count = 0usize;
+        let root_node_annotations = tree.node_annotations(tree.root()).to_vec();
 
         for id in tree.preorder() {
             let idx = id.index();
@@ -158,34 +208,51 @@ impl TreeGraph {
             is_leaf[idx] = leaf;
             if leaf {
                 leaf_count += 1;
+                leaf_node_annotations[idx] = tree.node_annotations(id).to_vec();
             }
             if let Some(parent) = tree.parent(id) {
                 let len = tree.branch_length(id);
-                adj[idx].push((parent.index(), len));
-                adj[parent.index()].push((idx, len));
+                let edge_meta = if leaf {
+                    EdgeMeta {
+                        label: None,
+                        quoted: false,
+                        node_annotations: Vec::new(),
+                        branch_annotations: tree.branch_annotations(id).to_vec(),
+                    }
+                } else {
+                    EdgeMeta {
+                        label: labels[idx].clone(),
+                        quoted: quoted[idx],
+                        node_annotations: tree.node_annotations(id).to_vec(),
+                        branch_annotations: tree.branch_annotations(id).to_vec(),
+                    }
+                };
+                adj[idx].push((parent.index(), len, edge_meta.clone()));
+                adj[parent.index()].push((idx, len, edge_meta));
             }
         }
 
         // Collapse degree-2 root if present so the undirected graph has no redundant node.
         let root_idx = tree.root().index();
         if adj[root_idx].len() == 2 {
-            let (c1, l1) = adj[root_idx][0];
-            let (c2, l2) = adj[root_idx][1];
+            let (c1, l1, m1) = adj[root_idx][0].clone();
+            let (c2, l2, m2) = adj[root_idx][1].clone();
             let combined = match (l1, l2) {
                 (Some(a), Some(b)) => Some(a + b),
                 (Some(a), None) => Some(a),
                 (None, Some(b)) => Some(b),
                 (None, None) => None,
             };
+            let combined_meta = m1.merge_with(m2);
             adj[root_idx].clear();
             for item in &mut adj[c1] {
                 if item.0 == root_idx {
-                    *item = (c2, combined);
+                    *item = (c2, combined, combined_meta.clone());
                 }
             }
             for item in &mut adj[c2] {
                 if item.0 == root_idx {
-                    *item = (c1, combined);
+                    *item = (c1, combined, combined_meta.clone());
                 }
             }
         }
@@ -194,6 +261,8 @@ impl TreeGraph {
             adj,
             labels,
             quoted,
+            leaf_node_annotations,
+            root_node_annotations,
             is_leaf,
             leaf_count,
         }
@@ -202,8 +271,15 @@ impl TreeGraph {
     fn edge_length(&self, u: usize, v: usize) -> Option<f64> {
         self.adj[u]
             .iter()
-            .find(|&&(nbr, _)| nbr == v)
-            .and_then(|&(_, len)| len)
+            .find(|(nbr, _, _)| *nbr == v)
+            .and_then(|(_, len, _)| *len)
+    }
+
+    fn edge_meta(&self, u: usize, v: usize) -> Option<&EdgeMeta> {
+        self.adj[u]
+            .iter()
+            .find(|(nbr, _, _)| *nbr == v)
+            .map(|(_, _, meta)| meta)
     }
 }
 
@@ -223,7 +299,7 @@ fn find_bipartition_edge(
     while let Some((u, p)) = stack.pop() {
         parent[u] = p;
         order.push(u);
-        for &(v, _) in &graph.adj[u] {
+        for &(v, _, _) in &graph.adj[u] {
             if v != p {
                 stack.push((v, u));
             }
@@ -240,7 +316,7 @@ fn find_bipartition_edge(
         } else {
             let mut tot = 0usize;
             let mut out = 0usize;
-            for &(v, _) in &graph.adj[u] {
+            for &(v, _, _) in &graph.adj[u] {
                 if v != parent[u] {
                     tot += sub_total[v];
                     out += sub_out[v];
@@ -278,7 +354,7 @@ fn farthest_leaf(graph: &TreeGraph, start: usize) -> (usize, f64, Vec<usize>) {
             best_dist = dist[u];
             best_leaf = u;
         }
-        for &(v, len) in &graph.adj[u] {
+        for &(v, len, _) in &graph.adj[u] {
             if dist[v].is_nan() {
                 dist[v] = dist[u] + len.unwrap_or(0.0);
                 parent[v] = u;
@@ -305,43 +381,66 @@ fn rebuild_rooted_tree(
 
     let root = out.add_node();
     out.set_root(root);
+    for annot in &graph.root_node_annotations {
+        out.add_annotation(root, AnnotationTarget::Node, annot.clone());
+    }
 
+    let apply_node_and_edge = |out_tree: &mut Tree,
+                               node_id: NodeId,
+                               graph_node: usize,
+                               edge_meta: Option<&EdgeMeta>,
+                               bl: Option<f64>| {
+        if graph.is_leaf[graph_node] {
+            if let Some(lbl) = graph.labels[graph_node].as_deref() {
+                out_tree.set_label(node_id, lbl, graph.quoted[graph_node]);
+            }
+            for annot in &graph.leaf_node_annotations[graph_node] {
+                out_tree.add_annotation(node_id, AnnotationTarget::Node, annot.clone());
+            }
+            if let Some(meta) = edge_meta {
+                for annot in &meta.branch_annotations {
+                    out_tree.add_annotation(node_id, AnnotationTarget::Branch, annot.clone());
+                }
+            }
+        } else if let Some(meta) = edge_meta {
+            if let Some(lbl) = meta.label.as_deref() {
+                out_tree.set_label(node_id, lbl, meta.quoted);
+            }
+            for annot in &meta.node_annotations {
+                out_tree.add_annotation(node_id, AnnotationTarget::Node, annot.clone());
+            }
+            for annot in &meta.branch_annotations {
+                out_tree.add_annotation(node_id, AnnotationTarget::Branch, annot.clone());
+            }
+        }
+        if let Some(l) = bl {
+            out_tree.set_branch_length(node_id, l);
+        }
+    };
+
+    let split_edge_meta = graph.edge_meta(edge_u, edge_v);
     let mut mapped: Vec<Option<NodeId>> = vec![None; graph.adj.len()];
     let mut attach_branch =
         |start: usize, avoid: usize, bl: Option<f64>, prev: Option<NodeId>| -> NodeId {
             let start_id = out.add_node();
             mapped[start] = Some(start_id);
-            if let Some(lbl) = graph.labels[start].as_deref()
-                && graph.is_leaf[start]
-            {
-                out.set_label(start_id, lbl, graph.quoted[start]);
-            }
-            if let Some(l) = bl {
-                out.set_branch_length(start_id, l);
-            }
+            apply_node_and_edge(&mut out, start_id, start, split_edge_meta, bl);
             out.attach_child(root, start_id, prev);
 
             let mut stack = vec![(start, avoid)];
             while let Some((u, p)) = stack.pop() {
                 let parent_id = mapped[u].expect("Mapped graph node");
                 let mut child_prev: Option<NodeId> = None;
-                for &(v, edge_len) in &graph.adj[u] {
-                    if v == p {
+                for (v, edge_len, edge_meta) in &graph.adj[u] {
+                    if *v == p {
                         continue;
                     }
                     let child_id = out.add_node();
-                    mapped[v] = Some(child_id);
-                    if let Some(lbl) = graph.labels[v].as_deref()
-                        && graph.is_leaf[v]
-                    {
-                        out.set_label(child_id, lbl, graph.quoted[v]);
-                    }
-                    if let Some(l) = edge_len {
-                        out.set_branch_length(child_id, l);
-                    }
+                    mapped[*v] = Some(child_id);
+                    apply_node_and_edge(&mut out, child_id, *v, Some(edge_meta), *edge_len);
                     out.attach_child(parent_id, child_id, child_prev);
                     child_prev = Some(child_id);
-                    stack.push((v, u));
+                    stack.push((*v, u));
                 }
             }
             start_id
@@ -410,5 +509,22 @@ mod tests {
         let right = max_depth(&rooted, root_children[1]);
         assert_approx_eq!(left, 4.0, 1e-9);
         assert_approx_eq!(right, 4.0, 1e-9);
+    }
+
+    #[test]
+    fn test_reroot_preserves_internal_supports_and_annotations() {
+        let tree =
+            parse_tree_str("((A:0.1,B:0.2)95[&posterior=0.95]:0.3,C:0.4,(D:0.1,E:0.2)88:0.5);")
+                .unwrap();
+
+        let rooted_c = reroot_outgroup(&tree, &["C".into()]).unwrap();
+        let out_nwk = crate::writer::tree::to_newick_string(&rooted_c, &Default::default());
+        assert!(out_nwk.contains("95[&posterior=0.95]"));
+        assert!(out_nwk.contains("88"));
+
+        let mid = reroot_midpoint(&tree).unwrap();
+        let mid_nwk = crate::writer::tree::to_newick_string(&mid, &Default::default());
+        assert!(mid_nwk.contains("95[&posterior=0.95]"));
+        assert!(mid_nwk.contains("88"));
     }
 }

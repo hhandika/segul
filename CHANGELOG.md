@@ -9,6 +9,7 @@ Installation:
 
 New Features:
 
+- New `segul tree summary` subcommand for high-performance phylogenetic summary tree construction and annotation (`mcc` default, `mrc`, `mre`, `strict`, `map`, and `target` modes), supporting per-file burn-in (`count` or `%`), parallel Zobrist-hashed clade accumulation, $O(N \log N)$ Euler-RMQ Common Ancestor (`ca`) node heights, exact Chen–Shao 95% HPD intervals, BEAST/FigTree/NHX numeric and categorical annotation summarization, optional `--allow-partial-taxa` decisive-tree gCF mapping and shared-taxon consensus, per-clade and topology credible-set CSVs, post-summary rooting, and Newick/Extended Newick/NEXUS/PhyloXML/NeXML output.
 - New `segul tree infer` subcommand for inferring phylogenetic trees from DNA or amino acid alignments using distance-based methods (`nj`, `bionj`, `upgma` with `p`, `jc69`, `k2p`, `tn93`, and `poisson` models) and Maximum Parsimony (`mp`/`parsimony` with exact Branch-and-Bound, parallel stepwise addition + NNI/SPR/TBR swapping, `acctran`/`deltran`/`none` branch lengths, and `missing`/`fifth` gap handling), plus parallel bootstrapping (`--bootstrap`), outgroup/midpoint rooting, and single- or multi-tree output across Newick, NEXUS, PhyloXML, and NeXML.
 - Unified reproducible `report.json` (`<prefix>_report.json`) written by every SEGUL command across CLI, SEGUI, and PySEGUL, recording Schema v2 provenance, sorted POSIX-relative input/output manifests, canonical `parameters`, chained `parent_reports`, and task `statistics` (preserving existing summary report payloads under `"statistics"`).
 - Global `--checksum <none|outputs|inputs|all>` flag (and `SEGUL_CHECKSUM` env var) for opt-in SHA-256 hashing of input and output files.
@@ -45,6 +46,7 @@ Performance:
 
 Library Changes:
 
+- Added `segul_core::core::tree::summary` (`TreeSummarization`, `summarize_trees`, `TreeSummaryOptions`, `TreeSummaryResult`, `SummaryMethod`, `BranchLengthStrategy`, `BurninSpec`, `ProgressReporter` support), chunked parallel tree readers (`count_trees_file`, `read_trees_chunked_par`), `Tree::taxon_id`, annotation-preserving tree rooting, and `TaskKind::TreeSummary` / `TreeSummaryParams` / `TreeSummaryStats` under the `tree` feature.
 - Added `segul_core::core::tree::estimate` (`TreeEstimation`, `estimate_matrix`, `DistanceMatrix`, `TreeMethod`, `estimate_nj`, `estimate_bionj`, `estimate_upgma`, `estimate_parsimony`, `reroot_outgroup`, `reroot_midpoint`) and `TaskKind::TreeInfer` / `TreeInferParams` / `TreeInferStats` under the `tree` feature, widening `stats::distance` to `#[cfg(any(feature = "align", feature = "tree"))]`.
 - Added `segul_core::report` (`RunReport`, `RunReportBuilder`, `ReportContext`, `ChecksumMode`, `verify_report`, `replay_report`, `replay_workflow`, `WorkflowRecipe`, `render_methods`, and `compat::parse_report_payload` for reading both Schema v2 `report.json` and legacy flat `*-report.json`).
 - Updated `AlignReport::from_json`, `ContigReport::from_json`, `DistanceReport::from_json`, and `ReadReport::from_json` to deserialize both Schema v2 and legacy flat JSON reports, and sorted input file discovery in `helper::finder`.

@@ -226,6 +226,15 @@ impl<R: BufRead> NewickReader<R> {
         Ok(skipped)
     }
 
+    /// Read up to `chunk_size` raw `;`-terminated tree records without parsing topologies.
+    pub(crate) fn next_raw_chunk(&mut self, chunk_size: usize) -> Result<Vec<Vec<u8>>> {
+        let mut records = Vec::with_capacity(chunk_size.min(64));
+        while records.len() < chunk_size && self.read_next_raw_tree()? {
+            records.push(self.buf.clone());
+        }
+        Ok(records)
+    }
+
     /// Scan the next `;`-terminated Newick record into `self.buf`.
     /// Returns `Ok(false)` at clean EOF.
     fn read_next_raw_tree(&mut self) -> Result<bool> {

@@ -32,6 +32,7 @@ pub enum ReportStatistics {
     Filter(FilterStats),
     Trim(TrimStats),
     TreeInfer(TreeInferStats),
+    TreeSummary(TreeSummaryStats),
     Counts(TaskCounts),
     Raw(Value),
 }
@@ -55,6 +56,7 @@ impl ReportStatistics {
             TaskKind::AlignFilter => Self::Filter(serde_json::from_value(v)?),
             TaskKind::AlignTrim => Self::Trim(serde_json::from_value(v)?),
             TaskKind::TreeInfer => Self::TreeInfer(serde_json::from_value(v)?),
+            TaskKind::TreeSummary => Self::TreeSummary(serde_json::from_value(v)?),
             _ => match serde_json::from_value::<TaskCounts>(v.clone()) {
                 Ok(counts) => Self::Counts(counts),
                 Err(_) => Self::Raw(v),
@@ -80,6 +82,7 @@ impl ReportStatistics {
             Self::Filter(r) => serde_json::to_value(r),
             Self::Trim(r) => serde_json::to_value(r),
             Self::TreeInfer(r) => serde_json::to_value(r),
+            Self::TreeSummary(r) => serde_json::to_value(r),
             Self::Counts(r) => serde_json::to_value(r),
             Self::Raw(v) => Ok(v.clone()),
         };
@@ -204,6 +207,38 @@ pub struct TreeInferStats {
     pub trees_written: usize,
     pub method: String,
     pub entries: Vec<LocusTreeInferStats>,
+}
+
+/// Per-file tree counts recorded during a `tree.summary` run.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TreeSummaryFileStats {
+    pub path: String,
+    pub trees_read: usize,
+    pub trees_burned_in: usize,
+    pub trees_retained: usize,
+}
+
+/// Summary statistics recorded inside `report.json` for `tree.summary`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TreeSummaryStats {
+    pub files: usize,
+    pub trees_read: usize,
+    pub trees_burned_in: usize,
+    pub trees_summarized: usize,
+    pub unique_topologies: usize,
+    pub credible_set_95_topologies: Option<usize>,
+    pub map_topology_frequency: Option<f64>,
+    pub ntax: usize,
+    pub union_ntax: usize,
+    pub rooted: bool,
+    pub method: String,
+    pub summary_internal_nodes: usize,
+    pub mean_support: Option<f64>,
+    pub median_support: Option<f64>,
+    pub tree_length: Option<f64>,
+    pub tree_height: Option<f64>,
+    pub mcc_log_score: Option<f64>,
+    pub per_file: Vec<TreeSummaryFileStats>,
 }
 
 /// Concise counts for transform and utility tasks.

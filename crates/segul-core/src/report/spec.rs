@@ -56,6 +56,8 @@ pub enum TaskKind {
     TreeConvert,
     #[serde(rename = "tree.infer")]
     TreeInfer,
+    #[serde(rename = "tree.summary")]
+    TreeSummary,
 }
 
 impl TaskKind {
@@ -85,6 +87,7 @@ impl TaskKind {
             Self::SequenceTranspose => "sequence.transpose",
             Self::TreeConvert => "tree.convert",
             Self::TreeInfer => "tree.infer",
+            Self::TreeSummary => "tree.summary",
         }
     }
 
@@ -114,6 +117,7 @@ impl TaskKind {
             Self::SequenceTranspose => "Sequence transposition",
             Self::TreeConvert => "Tree format conversion",
             Self::TreeInfer => "Tree inference",
+            Self::TreeSummary => "Tree summary",
         }
     }
 
@@ -160,12 +164,13 @@ impl FromStr for TaskKind {
             "sequence.transpose" => Ok(Self::SequenceTranspose),
             "tree.convert" => Ok(Self::TreeConvert),
             "tree.infer" => Ok(Self::TreeInfer),
+            "tree.summary" => Ok(Self::TreeSummary),
             _ => Err(format!("Unknown SEGUL task kind '{}'", s)),
         }
     }
 }
 
-/// Typed parameters for all 23 SEGUL tasks, dispatched explicitly by [`TaskKind`].
+/// Typed parameters for all 24 SEGUL tasks, dispatched explicitly by [`TaskKind`].
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskParameters {
     AlignSummary(AlignSummaryParams),
@@ -191,6 +196,7 @@ pub enum TaskParameters {
     SequenceTranspose(SequenceTransposeParams),
     TreeConvert(TreeConvertParams),
     TreeInfer(TreeInferParams),
+    TreeSummary(TreeSummaryParams),
 }
 
 impl TaskParameters {
@@ -221,6 +227,7 @@ impl TaskParameters {
             TaskKind::SequenceTranspose => Self::SequenceTranspose(serde_json::from_value(v)?),
             TaskKind::TreeConvert => Self::TreeConvert(serde_json::from_value(v)?),
             TaskKind::TreeInfer => Self::TreeInfer(serde_json::from_value(v)?),
+            TaskKind::TreeSummary => Self::TreeSummary(serde_json::from_value(v)?),
         };
         Ok(parsed)
     }
@@ -251,6 +258,7 @@ impl TaskParameters {
             Self::SequenceTranspose(p) => serde_json::to_value(p),
             Self::TreeConvert(p) => serde_json::to_value(p),
             Self::TreeInfer(p) => serde_json::to_value(p),
+            Self::TreeSummary(p) => serde_json::to_value(p),
         };
         v.context("Failed serializing task parameters")
     }
@@ -544,6 +552,29 @@ pub struct TreeInferParams {
     pub output_format: String,
     pub single_file: bool,
     pub translate: bool,
+    pub gzip: bool,
+    pub prefix: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TreeSummaryParams {
+    pub input_format: String,
+    pub method: String,
+    pub burnin: String,
+    pub min_clade_prob: f64,
+    pub rooted_mode: String,
+    pub mcc_scoring: String,
+    pub branch_lengths: String,
+    pub support_format: String,
+    pub support_placement: String,
+    pub hpd_level: f64,
+    pub summarize_annotations: bool,
+    pub allow_partial_taxa: bool,
+    pub rooting: String,
+    pub outgroup: Option<Vec<String>>,
+    pub output_format: String,
+    pub translate: bool,
+    pub strip_annotations: bool,
     pub gzip: bool,
     pub prefix: Option<String>,
 }

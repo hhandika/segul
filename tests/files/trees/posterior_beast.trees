@@ -1,0 +1,22 @@
+#NEXUS
+BEGIN TAXA;
+  DIMENSIONS NTAX=4;
+  TAXLABELS TaxonA TaxonB TaxonC TaxonD;
+END;
+BEGIN TREES;
+  TRANSLATE
+    1 TaxonA,
+    2 TaxonB,
+    3 TaxonC,
+    4 TaxonD;
+  TREE STATE_0 = [&R] (((1:0.5,4:0.5):0.5,2:1.0):1.0,3:2.0);
+  TREE STATE_100 = [&R] (((1:0.5,4:0.5):0.5,2:1.0):1.0,3:2.0);
+  TREE STATE_200 = [&R] (((1[&rate=0.1,loc=north]:1.0,2[&rate=0.2,loc=north]:1.0)[&rate=0.15,loc=north]:1.0,3:2.0)[&rate=0.12]:1.0,4:3.0);
+  TREE STATE_300 = [&R] (((1[&rate=0.1,loc=north]:1.0,2[&rate=0.2,loc=north]:1.0)[&rate=0.15,loc=north]:1.0,3:2.0)[&rate=0.12]:1.0,4:3.0);
+  TREE STATE_400 = [&R] (((1[&rate=0.1,loc=north]:1.0,2[&rate=0.2,loc=north]:1.0)[&rate=0.15,loc=north]:1.0,3:2.0)[&rate=0.12]:1.0,4:3.0);
+  TREE STATE_500 = [&R] (((1[&rate=0.1,loc=north]:1.0,2[&rate=0.2,loc=north]:1.0)[&rate=0.15,loc=north]:1.0,3:2.0)[&rate=0.12]:1.0,4:3.0);
+  TREE STATE_600 = [&R] (((1[&rate=0.1,loc=north]:1.0,2[&rate=0.2,loc=north]:1.0)[&rate=0.15,loc=north]:1.0,3:2.0)[&rate=0.12]:1.0,4:3.0);
+  TREE STATE_700 = [&R] (((1[&rate=0.3,loc=south]:1.2,2[&rate=0.2,loc=north]:1.2)[&rate=0.25,loc=north]:0.8,4:2.0):1.0,3:3.0);
+  TREE STATE_800 = [&R] (((1[&rate=0.3,loc=south]:1.2,2[&rate=0.2,loc=north]:1.2)[&rate=0.25,loc=north]:0.8,4:2.0):1.0,3:3.0);
+  TREE STATE_900 = [&R] ((1:1.0,3:1.0):2.0,(2:1.0,4:1.0):2.0);
+END;

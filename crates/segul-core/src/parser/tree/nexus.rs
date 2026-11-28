@@ -697,38 +697,49 @@ impl<R: BufRead> Iterator for NexusTreeReader<R> {
     }
 }
 
+/// Raw unparsed NEXUS tree record ready for parallel Newick parsing.
+pub(crate) struct RawNexusRecord {
+    pub(crate) name: String,
+    pub(crate) is_default: bool,
+    pub(crate) default_rooted: Rootedness,
+    pub(crate) translate: Option<Arc<TranslateTable>>,
+    pub(crate) body: Vec<u8>,
+}
+
+impl<R: BufRead> NexusTreeReader<R> {
+    /// Read up to `chunk_size` raw NEXUS tree records without parsing their Newick topologies.
+    pub(crate) fn next_raw_chunk(&mut self, chunk_size: usize) -> Result<Vec<RawNexusRecord>> {
+        let mut records = Vec::with_capacity(chunk_size.min(64));
+        while records.len() < chunk_size {
+            let Some((name, is_default, default_rooted)) = self.advance_to_next_tree()? else {
+                break;
+            };
+            let mut body = Vec::new();
+            self.scanner
+                .read_tree_body(&mut body, self.opts.allow_double_quotes)?;
+            let translate = self
+                .block_translate
+                .clone()
+                .or_else(|| self.taxa_fallback.clone());
+            records.push(RawNexusRecord {
+                name,
+                is_default,
+                default_rooted,
+                translate,
+                body,
+            });
+        }
+        Ok(records)
+    }
+}
+
 /// Parse all trees in an in-memory NEXUS byte buffer in parallel using `rayon`.
 ///
 /// `TAXA` and `TRANSLATE` tables are parsed once sequentially and shared
 /// read-only across worker threads while Newick bodies are parsed in parallel.
 pub fn parse_nexus_bytes_par(input: &[u8], opts: &ParseOptions) -> Result<Vec<Tree>> {
-    struct RawNexusTree {
-        name: String,
-        is_default: bool,
-        default_rooted: Rootedness,
-        translate: Option<Arc<TranslateTable>>,
-        body: Vec<u8>,
-    }
-
     let mut reader = NexusTreeReader::new(std::io::Cursor::new(input), opts.clone());
-    let mut raw_trees = Vec::new();
-    while let Some((name, is_default, default_rooted)) = reader.advance_to_next_tree()? {
-        let mut body = Vec::new();
-        reader
-            .scanner
-            .read_tree_body(&mut body, opts.allow_double_quotes)?;
-        let translate = reader
-            .block_translate
-            .clone()
-            .or_else(|| reader.taxa_fallback.clone());
-        raw_trees.push(RawNexusTree {
-            name,
-            is_default,
-            default_rooted,
-            translate,
-            body,
-        });
-    }
+    let raw_trees = reader.next_raw_chunk(usize::MAX)?;
 
     raw_trees
         .into_par_iter()
