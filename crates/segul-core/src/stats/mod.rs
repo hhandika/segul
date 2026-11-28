@@ -13,7 +13,7 @@ pub mod common;
 pub mod contig_report;
 #[cfg(feature = "contig")]
 pub mod contigs;
-#[cfg(feature = "align")]
+#[cfg(any(feature = "align", feature = "tree"))]
 pub mod distance;
 #[cfg(feature = "align")]
 pub mod distance_report;
