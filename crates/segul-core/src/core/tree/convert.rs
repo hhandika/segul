@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use colored::Colorize;
 use rayon::prelude::*;
 
+use crate::helper::progress::{self, ProgressReporter};
 use crate::helper::utils;
 use crate::parser::tree::{ParseOptions, TreeFmt, TreeOutputFmt, TreeReader};
 use crate::report::spec::{TaskKind, TreeConvertParams, canonical};
@@ -19,6 +20,7 @@ pub struct TreeConversion<'a> {
     parse_opts: ParseOptions,
     write_opts: TreeWriteOptions,
     report_context: ReportContext,
+    progress: Option<&'a dyn ProgressReporter>,
 }
 
 impl<'a> TreeConversion<'a> {
@@ -30,6 +32,7 @@ impl<'a> TreeConversion<'a> {
             parse_opts: ParseOptions::default(),
             write_opts: TreeWriteOptions::default(),
             report_context: ReportContext::default(),
+            progress: None,
         }
     }
 
@@ -51,8 +54,15 @@ impl<'a> TreeConversion<'a> {
         self
     }
 
+    /// Report per-file progress to `reporter`, which can also cancel the run.
+    pub fn with_progress(mut self, reporter: &'a dyn ProgressReporter) -> Self {
+        self.progress = Some(reporter);
+        self
+    }
+
     /// Convert `files` into `output` directory without emitting `report.json`.
     pub fn convert(&self, files: &[PathBuf], output: &Path) -> anyhow::Result<usize> {
+        progress::report_start(self.progress, files.len());
         let mut total_trees = 0usize;
         let counts: Vec<usize> = files
             .par_iter()
@@ -84,6 +94,7 @@ impl<'a> TreeConversion<'a> {
             .primary_inputs(&sorted)
             .parameters(&params)?;
 
+        progress::report_start(self.progress, sorted.len());
         let spin = utils::set_spinner();
         spin.set_message("Converting phylogenetic trees...");
         let tree_counts: Vec<usize> = sorted
@@ -112,9 +123,16 @@ impl<'a> TreeConversion<'a> {
     fn convert_single(&self, input: &Path, output_dir: &Path) -> anyhow::Result<usize> {
         let output_path =
             output_tree_path(output_dir, input, *self.output_fmt, self.write_opts.gzip);
-        let reader = TreeReader::open(input, *self.input_fmt, self.parse_opts.clone())?;
-        let writer = TreeWriter::new(&output_path, *self.output_fmt, self.write_opts.clone());
-        writer.write_stream(reader)
+        progress::track(self.progress, input, || {
+            let reader = TreeReader::open(input, *self.input_fmt, self.parse_opts.clone())?;
+            let writer = TreeWriter::new(&output_path, *self.output_fmt, self.write_opts.clone());
+            // Checked per tree, so a cancelled run stops mid-file.
+            let trees = reader.map(|tree| {
+                progress::check_cancelled(self.progress)?;
+                tree
+            });
+            writer.write_stream(trees)
+        })
     }
 
     fn print_output_info(&self, output: &Path, total_trees: usize) {
@@ -163,7 +181,41 @@ fn strip_gzip_suffix(name: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::Ordering;
+
+    use tempfile::TempDir;
+
     use super::*;
+    use crate::helper::progress::CancelAfter;
+
+    const MULTI_NWK: &str = "../../tests/files/trees/multi.nwk";
+
+    #[test]
+    fn test_progress_reports_each_file() {
+        let output = TempDir::with_prefix("tree-convert").unwrap();
+        let files = vec![PathBuf::from(MULTI_NWK)];
+        let reporter = CancelAfter::new(usize::MAX);
+        let trees = TreeConversion::new(&TreeFmt::Auto, &TreeOutputFmt::Nexus)
+            .with_progress(&reporter)
+            .convert(&files, output.path())
+            .unwrap();
+        assert!(trees > 1);
+        assert_eq!(reporter.finished.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn test_cancelled_mid_file() {
+        let output = TempDir::with_prefix("tree-convert").unwrap();
+        let files = vec![PathBuf::from(MULTI_NWK)];
+        // The first check passes before the file starts, then the first tree cancels.
+        let reporter = CancelAfter::new(1);
+        let error = TreeConversion::new(&TreeFmt::Auto, &TreeOutputFmt::Newick)
+            .with_progress(&reporter)
+            .convert(&files, output.path())
+            .unwrap_err();
+        assert!(error.downcast_ref::<progress::Cancelled>().is_some());
+        assert_eq!(reporter.finished.load(Ordering::Relaxed), 0);
+    }
 
     #[test]
     fn test_output_tree_path() {

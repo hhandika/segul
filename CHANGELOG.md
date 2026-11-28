@@ -44,6 +44,7 @@ Performance:
 
 Library Changes:
 
+- `TreeConversion::with_progress` reports progress per tree file and can cancel a run, like the other conversion tasks.
 - Added `segul_core::report` (`RunReport`, `RunReportBuilder`, `ReportContext`, `ChecksumMode`, `verify_report`, `replay_report`, `replay_workflow`, `WorkflowRecipe`, `render_methods`, and `compat::parse_report_payload` for reading both Schema v2 `report.json` and legacy flat `*-report.json`).
 - Updated `AlignReport::from_json`, `ContigReport::from_json`, `DistanceReport::from_json`, and `ReadReport::from_json` to deserialize both Schema v2 and legacy flat JSON reports, and sorted input file discovery in `helper::finder`.
 - Added byte-slice helpers for alphabet validation, distance encoding, translation (`codon_table`, `translate_bytes`), and streaming FASTA reading (`for_each_record`).
