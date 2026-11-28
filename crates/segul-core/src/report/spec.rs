@@ -675,6 +675,8 @@ pub mod canonical {
             TreeFmt::Newick => "newick",
             TreeFmt::ExtendedNewick => "enewick",
             TreeFmt::Nexus => "nexus",
+            TreeFmt::PhyloXml => "phyloxml",
+            TreeFmt::NeXml => "nexml",
         }
     }
 
@@ -685,6 +687,8 @@ pub mod canonical {
             TreeOutputFmt::Newick => "newick",
             TreeOutputFmt::ExtendedNewick => "enewick",
             TreeOutputFmt::Nexus => "nexus",
+            TreeOutputFmt::PhyloXml => "phyloxml",
+            TreeOutputFmt::NeXml => "nexml",
         }
     }
 }

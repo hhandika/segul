@@ -681,7 +681,11 @@ fn annotation_support(annot: &Annotation) -> Option<f64> {
             .filter(|v| v.is_finite()),
         AnnotationFormat::Beast => {
             for (k, v) in &annot.entries {
-                if k.eq_ignore_ascii_case("posterior") || k.eq_ignore_ascii_case("prob") {
+                if k.eq_ignore_ascii_case("posterior")
+                    || k.eq_ignore_ascii_case("prob")
+                    || k.eq_ignore_ascii_case("confidence")
+                    || k.eq_ignore_ascii_case("bootstrap")
+                {
                     match v {
                         AnnotationValue::Float(x) if x.is_finite() => return Some(*x),
                         AnnotationValue::Int(x) => return Some(*x as f64),

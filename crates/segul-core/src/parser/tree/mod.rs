@@ -1,9 +1,12 @@
-//! High-performance phylogenetic tree parsers for Newick, Extended Newick, NHX, and NEXUS.
+//! High-performance phylogenetic tree parsers for Newick, Extended Newick, NHX, NEXUS, PhyloXML, and NeXML.
 
 pub mod comments;
 pub mod model;
 pub mod newick;
+pub mod nexml;
 pub mod nexus;
+pub mod phyloxml;
+pub(crate) mod xml_pull;
 
 use std::fmt;
 use std::fs::File;
@@ -23,7 +26,9 @@ pub use model::{
     Rootedness, TaxonId, TaxonTable, Tree, TreeMetadata,
 };
 pub use newick::{NewickParser, NewickReader, ParseOptions, parse_newick_bytes_par};
+pub use nexml::NeXmlReader;
 pub use nexus::{NexusTreeReader, TranslateTable, parse_nexus_bytes_par};
+pub use phyloxml::PhyloXmlReader;
 
 /// Input tree format selector.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -36,6 +41,10 @@ pub enum TreeFmt {
     ExtendedNewick,
     /// NEXUS `TREES` block (skips `DATA` and other non-tree blocks).
     Nexus,
+    /// PhyloXML XML tree format.
+    PhyloXml,
+    /// NeXML XML tree format.
+    NeXml,
 }
 
 impl fmt::Display for TreeFmt {
@@ -45,6 +54,8 @@ impl fmt::Display for TreeFmt {
             Self::Newick => write!(f, "newick"),
             Self::ExtendedNewick => write!(f, "enewick"),
             Self::Nexus => write!(f, "nexus"),
+            Self::PhyloXml => write!(f, "phyloxml"),
+            Self::NeXml => write!(f, "nexml"),
         }
     }
 }
@@ -58,6 +69,8 @@ impl FromStr for TreeFmt {
             "newick" | "nwk" => Ok(Self::Newick),
             "enewick" | "extended-newick" | "enwk" => Ok(Self::ExtendedNewick),
             "nexus" | "nex" => Ok(Self::Nexus),
+            "phyloxml" | "pxml" => Ok(Self::PhyloXml),
+            "nexml" => Ok(Self::NeXml),
             _ => Err(format!("{} is not a valid tree input format", s)),
         }
     }
@@ -72,6 +85,10 @@ pub enum TreeOutputFmt {
     ExtendedNewick,
     /// NEXUS `TREES` block.
     Nexus,
+    /// PhyloXML XML format.
+    PhyloXml,
+    /// NeXML XML format.
+    NeXml,
 }
 
 impl TreeOutputFmt {
@@ -81,6 +98,8 @@ impl TreeOutputFmt {
             Self::Newick => "nwk",
             Self::ExtendedNewick => "enwk",
             Self::Nexus => "nex",
+            Self::PhyloXml => "phyloxml",
+            Self::NeXml => "nexml",
         }
     }
 }
@@ -91,6 +110,8 @@ impl fmt::Display for TreeOutputFmt {
             Self::Newick => write!(f, "newick"),
             Self::ExtendedNewick => write!(f, "enewick"),
             Self::Nexus => write!(f, "nexus"),
+            Self::PhyloXml => write!(f, "phyloxml"),
+            Self::NeXml => write!(f, "nexml"),
         }
     }
 }
@@ -103,6 +124,8 @@ impl FromStr for TreeOutputFmt {
             "newick" | "nwk" => Ok(Self::Newick),
             "enewick" | "extended-newick" | "enwk" => Ok(Self::ExtendedNewick),
             "nexus" | "nex" => Ok(Self::Nexus),
+            "phyloxml" | "pxml" => Ok(Self::PhyloXml),
+            "nexml" => Ok(Self::NeXml),
             _ => Err(format!("{} is not a valid tree output format", s)),
         }
     }
@@ -111,7 +134,7 @@ impl FromStr for TreeOutputFmt {
 /// Sniff tree format from the beginning of a decoded byte buffer.
 ///
 /// Skips UTF-8 BOM, leading ASCII whitespace, and leading `[...]` comments
-/// before checking for `#NEXUS`.
+/// before checking for `#NEXUS` or XML root elements (`phyloxml`/`nexml`).
 pub fn detect_tree_format(buf: &[u8]) -> TreeFmt {
     let mut pos = if buf.starts_with(&[0xEF, 0xBB, 0xBF]) {
         3
@@ -136,17 +159,40 @@ pub fn detect_tree_format(buf: &[u8]) -> TreeFmt {
     let rest = &buf[pos..];
     if rest.len() >= 6 && rest[..6].eq_ignore_ascii_case(b"#nexus") {
         TreeFmt::Nexus
+    } else if rest.starts_with(b"<") {
+        detect_xml_tree_format(rest).unwrap_or(TreeFmt::PhyloXml)
     } else {
         TreeFmt::Newick
+    }
+}
+
+fn detect_xml_tree_format(buf: &[u8]) -> Option<TreeFmt> {
+    let mut reader = xml_pull::XmlPullReader::new(std::io::Cursor::new(buf));
+    loop {
+        match reader.next_event().ok()? {
+            xml_pull::XmlEvent::Start { name, .. } => {
+                if name.eq_ignore_ascii_case("nexml") {
+                    return Some(TreeFmt::NeXml);
+                }
+                if name.eq_ignore_ascii_case("phyloxml") || name.eq_ignore_ascii_case("phylogeny") {
+                    return Some(TreeFmt::PhyloXml);
+                }
+                return None;
+            }
+            xml_pull::XmlEvent::Text(_) => {}
+            xml_pull::XmlEvent::End(_) | xml_pull::XmlEvent::Eof => return None,
+        }
     }
 }
 
 enum ReaderKind<R: BufRead> {
     Newick(NewickReader<R>),
     Nexus(NexusTreeReader<R>),
+    PhyloXml(PhyloXmlReader<R>),
+    NeXml(NeXmlReader<R>),
 }
 
-/// Unified streaming tree reader supporting Newick, Extended Newick, NHX, NEXUS, and gzip.
+/// Unified streaming tree reader supporting Newick, Extended Newick, NHX, NEXUS, PhyloXML, NeXML, and gzip.
 pub struct TreeReader<R: BufRead> {
     inner: ReaderKind<R>,
 }
@@ -155,7 +201,7 @@ impl<R: BufRead> TreeReader<R> {
     /// Construct a streaming reader from a buffered source.
     ///
     /// When `fmt` is [`TreeFmt::Auto`], peeks the buffered header bytes without
-    /// consuming them to select Newick vs NEXUS.
+    /// consuming them to select the format.
     pub fn from_reader(mut reader: R, fmt: TreeFmt, opts: ParseOptions) -> Result<Self> {
         let resolved = match fmt {
             TreeFmt::Auto => {
@@ -166,6 +212,8 @@ impl<R: BufRead> TreeReader<R> {
         };
         let inner = match resolved {
             TreeFmt::Nexus => ReaderKind::Nexus(NexusTreeReader::new(reader, opts)),
+            TreeFmt::PhyloXml => ReaderKind::PhyloXml(PhyloXmlReader::new(reader, opts)),
+            TreeFmt::NeXml => ReaderKind::NeXml(NeXmlReader::new(reader, opts)),
             TreeFmt::Newick | TreeFmt::ExtendedNewick | TreeFmt::Auto => {
                 ReaderKind::Newick(NewickReader::new(reader, opts))
             }
@@ -178,6 +226,8 @@ impl<R: BufRead> TreeReader<R> {
         match &mut self.inner {
             ReaderKind::Newick(r) => r.skip_trees(count),
             ReaderKind::Nexus(r) => r.skip_trees(count),
+            ReaderKind::PhyloXml(r) => r.skip_trees(count),
+            ReaderKind::NeXml(r) => r.skip_trees(count),
         }
     }
 }
@@ -197,6 +247,8 @@ impl<R: BufRead> Iterator for TreeReader<R> {
         match &mut self.inner {
             ReaderKind::Newick(r) => r.next(),
             ReaderKind::Nexus(r) => r.next(),
+            ReaderKind::PhyloXml(r) => r.next(),
+            ReaderKind::NeXml(r) => r.next(),
         }
     }
 }
@@ -266,6 +318,8 @@ pub fn parse_trees_file_par(path: &Path, fmt: TreeFmt) -> Result<Vec<Tree>> {
     let opts = ParseOptions::default();
     match resolved {
         TreeFmt::Nexus => parse_nexus_bytes_par(&bytes, &opts),
+        TreeFmt::PhyloXml => PhyloXmlReader::new(std::io::Cursor::new(&bytes), opts).collect(),
+        TreeFmt::NeXml => NeXmlReader::new(std::io::Cursor::new(&bytes), opts).collect(),
         TreeFmt::Newick | TreeFmt::ExtendedNewick | TreeFmt::Auto => {
             parse_newick_bytes_par(&bytes, &opts)
         }
@@ -338,6 +392,8 @@ fn matches_tree_extension(path: &Path, fmt: &TreeFmt) -> bool {
             "enwk" | "enewick" | "nwk" | "newick" | "tre" | "tree" | "net"
         ),
         TreeFmt::Nexus => matches!(ext, "nex" | "nxs" | "nexus" | "tre" | "trees" | "t"),
+        TreeFmt::PhyloXml => matches!(ext, "phyloxml" | "pxml" | "xml"),
+        TreeFmt::NeXml => matches!(ext, "nexml" | "xml"),
         TreeFmt::Auto => matches!(
             ext,
             "nwk"
@@ -354,6 +410,10 @@ fn matches_tree_extension(path: &Path, fmt: &TreeFmt) -> bool {
                 | "nxs"
                 | "nexus"
                 | "t"
+                | "phyloxml"
+                | "pxml"
+                | "nexml"
+                | "xml"
         ),
     }
 }
@@ -376,6 +436,16 @@ mod tests {
         assert_eq!(
             detect_tree_format(b"\xEF\xBB\xBF  [comment] #nexus\nBEGIN TREES;"),
             TreeFmt::Nexus
+        );
+        assert_eq!(
+            detect_tree_format(b"<?xml version=\"1.0\"?><!-- c --><phyloxml>"),
+            TreeFmt::PhyloXml
+        );
+        assert_eq!(
+            detect_tree_format(
+                b"<?xml version=\"1.0\"?><nex:nexml xmlns:nex=\"http://www.nexml.org/2009\">"
+            ),
+            TreeFmt::NeXml
         );
     }
 
